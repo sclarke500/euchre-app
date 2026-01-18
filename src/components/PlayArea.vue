@@ -33,6 +33,11 @@ const currentTrick = computed(() => gameStore.currentTrick)
   display: flex;
   align-items: center;
   justify-content: center;
+
+  @media (max-height: 500px) {
+    width: 180px;
+    height: 130px;
+  }
 }
 
 .played-cards {

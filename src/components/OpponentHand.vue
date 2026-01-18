@@ -90,6 +90,10 @@ const trumpColor = computed(() => {
   align-items: center;
   justify-content: center;
   gap: $spacing-md;
+
+  @media (max-height: 500px) {
+    gap: $spacing-xs;
+  }
 }
 
 .player-info {
@@ -100,6 +104,10 @@ const trumpColor = computed(() => {
   position: relative;
   min-height: 60px; // Reserve space to prevent shifting
 
+  @media (max-height: 500px) {
+    min-height: 35px;
+  }
+
   .current-turn {
     position: absolute;
     top: 100%;
@@ -108,6 +116,10 @@ const trumpColor = computed(() => {
     color: $secondary-color;
     font-weight: bold;
     animation: pulse 1.5s ease-in-out infinite;
+
+    @media (max-height: 500px) {
+      font-size: 0.625rem;
+    }
   }
 
   .bid-action {
@@ -121,6 +133,11 @@ const trumpColor = computed(() => {
     padding: $spacing-xs $spacing-sm;
     border-radius: 4px;
     animation: fadeInOut 1s ease-in-out;
+
+    @media (max-height: 500px) {
+      font-size: 0.75rem;
+      padding: 2px $spacing-xs;
+    }
   }
 }
 

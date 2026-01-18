@@ -36,6 +36,12 @@ defineProps<Props>()
   border-radius: 8px;
   padding: $spacing-xs $spacing-sm;
   backdrop-filter: blur(10px);
+
+  @media (max-height: 500px) {
+    gap: $spacing-xs;
+    padding: 2px $spacing-xs;
+    border-radius: 5px;
+  }
 }
 
 .tricks-won {
@@ -49,6 +55,12 @@ defineProps<Props>()
   font-weight: bold;
   font-size: 0.875rem;
   color: white;
+
+  @media (max-height: 500px) {
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+  }
 }
 
 .player-name-container {
@@ -57,6 +69,10 @@ defineProps<Props>()
   align-items: center;
   justify-content: center;
   min-width: 60px;
+
+  @media (max-height: 500px) {
+    min-width: 45px;
+  }
 }
 
 .player-name {
@@ -64,6 +80,10 @@ defineProps<Props>()
   font-weight: bold;
   color: white;
   white-space: nowrap;
+
+  @media (max-height: 500px) {
+    font-size: 0.75rem;
+  }
 }
 
 .dealer-indicator {
@@ -78,6 +98,13 @@ defineProps<Props>()
   font-weight: bold;
   font-size: 0.875rem;
   color: white;
+
+  @media (max-height: 500px) {
+    width: 18px;
+    height: 18px;
+    font-size: 0.625rem;
+    border-width: 1px;
+  }
 }
 
 .trump-indicator {
@@ -91,9 +118,20 @@ defineProps<Props>()
   border-radius: 50%;
   font-weight: bold;
   font-size: 1rem;
+
+  @media (max-height: 500px) {
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+    border-width: 1px;
+  }
 }
 
 .indicator-spacer {
   width: 24px;
+
+  @media (max-height: 500px) {
+    width: 18px;
+  }
 }
 </style>

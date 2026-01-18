@@ -7,8 +7,8 @@
     ". bottom .";
   grid-template-columns: 1fr 2fr 1fr;
   grid-template-rows: 0.8fr 1.5fr 1fr;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   max-width: 1400px;
   max-height: 900px;
   margin: 0 auto;
@@ -16,6 +16,13 @@
   gap: $spacing-sm;
   padding: $spacing-sm;
   box-sizing: border-box;
+
+  // Mobile landscape adjustments
+  @media (max-height: 500px) {
+    grid-template-rows: 0.6fr 1.5fr 0.9fr;
+    gap: $spacing-xs;
+    padding: $spacing-xs;
+  }
 }
 
 .player-position-top {

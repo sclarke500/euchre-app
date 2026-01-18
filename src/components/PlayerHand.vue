@@ -107,11 +107,16 @@ function isCardPlayable(card: CardType): boolean {
   return legalPlays.value.some((c) => c.id === card.id)
 }
 
+function isMobileViewport() {
+  return window.innerHeight < 500
+}
+
 function getCardStyle(index: number, totalCards: number) {
-  // Create a tight fan like a real card hand
-  const cardOffset = 18 // Small overlap between cards
-  const maxRotation = 8 // Subtle rotation angle
-  const arcDepth = 15 // Subtle arc depth
+  // Responsive values for mobile
+  const isMobile = isMobileViewport()
+  const cardOffset = isMobile ? 12 : 18 // Small overlap between cards
+  const maxRotation = isMobile ? 5 : 8 // Subtle rotation angle
+  const arcDepth = isMobile ? 8 : 15 // Subtle arc depth
 
   // Calculate position along the fan (0 to 1)
   const position = totalCards > 1 ? index / (totalCards - 1) : 0.5
@@ -143,6 +148,10 @@ function handleCardClick(card: CardType) {
   flex-direction: column;
   align-items: center;
   gap: $spacing-md;
+
+  @media (max-height: 500px) {
+    gap: $spacing-xs;
+  }
 }
 
 .player-info {
@@ -153,6 +162,10 @@ function handleCardClick(card: CardType) {
   position: relative;
   min-height: 60px; // Reserve space to prevent shifting
 
+  @media (max-height: 500px) {
+    min-height: 40px;
+  }
+
   .current-turn {
     position: absolute;
     top: 100%;
@@ -161,6 +174,10 @@ function handleCardClick(card: CardType) {
     color: $secondary-color;
     font-weight: bold;
     animation: pulse 1.5s ease-in-out infinite;
+
+    @media (max-height: 500px) {
+      font-size: 0.75rem;
+    }
   }
 }
 
@@ -172,6 +189,10 @@ function handleCardClick(card: CardType) {
   align-items: flex-end;
   justify-content: center;
 
+  @media (max-height: 500px) {
+    height: $card-height-mobile + 15px;
+  }
+
   :deep(.card) {
     position: absolute;
     left: 50%;
@@ -179,11 +200,19 @@ function handleCardClick(card: CardType) {
     margin-left: calc(-1 * $card-width / 2); // Center the card
     transition: all 0.15s ease;
     transform-origin: bottom center;
+
+    @media (max-height: 500px) {
+      margin-left: calc(-1 * $card-width-mobile / 2);
+    }
   }
 
   :deep(.card-playable.card) {
     // Raise playable cards slightly
     bottom: 10px;
+
+    @media (max-height: 500px) {
+      bottom: 6px;
+    }
   }
 }
 

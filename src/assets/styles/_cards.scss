@@ -9,9 +9,24 @@
   cursor: pointer;
   user-select: none;
 
+  // Mobile sizing
+  @media (max-height: 500px) {
+    width: $card-width-mobile;
+    height: $card-height-mobile;
+    border-radius: 5px;
+  }
+
   &:hover {
     transform: translateY(-8px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  // Disable hover effects on touch devices
+  @media (hover: none) {
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
   }
 
   &.disabled {
@@ -35,6 +50,13 @@
   border-radius: 8px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  // Mobile sizing
+  @media (max-height: 500px) {
+    width: $card-width-mobile;
+    height: $card-height-mobile;
+    border-radius: 5px;
+  }
 }
 
 // Card animations
