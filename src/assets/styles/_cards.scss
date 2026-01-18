@@ -1,0 +1,68 @@
+// Card styling
+.card {
+  width: $card-width;
+  height: $card-height;
+  border-radius: 8px;
+  background: $card-background;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  &.selected {
+    transform: translateY(-12px);
+    box-shadow: 0 6px 16px rgba(66, 185, 131, 0.5);
+  }
+}
+
+.card-back {
+  width: $card-width;
+  height: $card-height;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+// Card animations
+@keyframes deal-card {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes play-card {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.8;
+    transform: scale(0.9);
+  }
+}
+
+.dealing {
+  animation: deal-card 0.3s ease-out;
+}
+
+.playing {
+  animation: play-card 0.2s ease-out;
+}

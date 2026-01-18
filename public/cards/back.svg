@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 150 210" xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <!-- Card background (red) -->
+  <rect width="150" height="210" rx="15" ry="15" fill="#C41E3A" stroke="#000" stroke-width="4"/>
+  
+  <!-- Classic diagonal pattern overlay -->
+  <defs>
+    <pattern id="pattern" patternUnits="userSpaceOnUse" width="30" height="30" patternTransform="rotate(45)">
+      <rect width="15" height="30" fill="#FF3333"/>
+      <rect x="15" width="15" height="30" fill="#B22222"/>
+    </pattern>
+  </defs>
+  
+  <rect width="150" height="210" rx="15" ry="15" fill="url(#pattern)" opacity="0.6"/>
+  
+  <!-- Border inset for depth -->
+  <rect x="8" y="8" width="134" height="194" rx="10" ry="10" fill="none" stroke="#FFF" stroke-width="4" opacity="0.3"/>
+  
+  <!-- Optional center emblem (simple) -->
+  <circle cx="75" cy="105" r="40" fill="none" stroke="#FFF" stroke-width="6"/>
+  <text x="75" y="115" font-family="Arial, sans-serif" font-size="60" fill="#FFF" text-anchor="middle">♠</text> <!-- Or use a different symbol -->
+</svg>
