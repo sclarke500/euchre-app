@@ -10,16 +10,37 @@
 
       <div v-if="isMyTurn" class="actions">
         <template v-if="phase === GamePhase.BiddingRound1">
+          <div class="alone-option">
+            <label>
+              <input v-model="goingAlone" type="checkbox" />
+              <span>Go Alone</span>
+            </label>
+          </div>
           <ActionButtons
             :actions="round1Actions"
             @action="handleBidAction"
           />
         </template>
         <template v-else-if="phase === GamePhase.BiddingRound2">
-          <ActionButtons
-            :actions="round2Actions"
-            @action="handleBidAction"
-          />
+          <div class="suit-selection">
+            <button
+              v-for="suit in allSuits"
+              :key="suit"
+              :class="['suit-btn', getSuitColor(suit), { disabled: !isSuitSelectable(suit) }]"
+              :disabled="!isSuitSelectable(suit)"
+              @click="handleSuitSelect(suit)"
+            >
+              <span class="suit-symbol">{{ getSuitSymbol(suit) }}</span>
+              <span class="suit-name">{{ getSuitName(suit) }}</span>
+            </button>
+          </div>
+          <div class="alone-option">
+            <label>
+              <input v-model="goingAlone" type="checkbox" />
+              <span>Go Alone</span>
+            </label>
+          </div>
+          <button class="pass-btn" @click="handleBidAction(BidAction.Pass)">Pass</button>
         </template>
       </div>
 
@@ -31,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { GamePhase, BidAction, Suit } from '@/models/types'
 import type { Bid } from '@/models/types'
@@ -44,6 +65,12 @@ const phase = computed(() => gameStore.phase)
 const currentRound = computed(() => gameStore.currentRound)
 const currentPlayer = computed(() => gameStore.currentPlayer)
 const players = computed(() => gameStore.players)
+
+// Go alone checkbox state
+const goingAlone = ref(false)
+
+// All suits in display order
+const allSuits = [Suit.Hearts, Suit.Diamonds, Suit.Clubs, Suit.Spades]
 
 const isMyTurn = computed(() => {
   return players.value[0]?.id === currentPlayer.value
@@ -75,35 +102,58 @@ const round1Actions = computed(() => {
   ]
 })
 
-const round2Actions = computed(() => {
-  const turnCardSuit = currentRound.value?.turnUpCard?.suit
-  const availableSuits = Object.values(Suit).filter((s) => s !== turnCardSuit)
+const turnCardSuit = computed(() => currentRound.value?.turnUpCard?.suit)
 
-  return [
-    ...availableSuits.map((suit) => ({
-      label: suitSymbol(suit),
-      value: suit,
-    })),
-    {
-      label: 'Pass',
-      value: BidAction.Pass,
-    },
-  ]
-})
+function isSuitSelectable(suit: Suit): boolean {
+  return suit !== turnCardSuit.value
+}
 
-function suitSymbol(suit: Suit): string {
+function getSuitSymbol(suit: Suit): string {
   switch (suit) {
     case Suit.Hearts:
-      return '♥ Hearts'
+      return '♥'
     case Suit.Diamonds:
-      return '♦ Diamonds'
+      return '♦'
     case Suit.Clubs:
-      return '♣ Clubs'
+      return '♣'
     case Suit.Spades:
-      return '♠ Spades'
+      return '♠'
     default:
       return ''
   }
+}
+
+function getSuitName(suit: Suit): string {
+  switch (suit) {
+    case Suit.Hearts:
+      return 'Hearts'
+    case Suit.Diamonds:
+      return 'Diamonds'
+    case Suit.Clubs:
+      return 'Clubs'
+    case Suit.Spades:
+      return 'Spades'
+    default:
+      return ''
+  }
+}
+
+function getSuitColor(suit: Suit): string {
+  return suit === Suit.Hearts || suit === Suit.Diamonds ? 'red' : 'black'
+}
+
+function handleSuitSelect(suit: Suit) {
+  if (!isMyTurn.value || !isSuitSelectable(suit)) return
+
+  const bid: Bid = {
+    playerId: players.value[0]!.id,
+    action: BidAction.CallTrump,
+    suit: suit,
+    goingAlone: goingAlone.value,
+  }
+
+  goingAlone.value = false
+  gameStore.makeBid(bid)
 }
 
 function handleBidAction(action: string) {
@@ -112,6 +162,7 @@ function handleBidAction(action: string) {
   const bid: Bid = {
     playerId: players.value[0]!.id,
     action: BidAction.Pass,
+    goingAlone: goingAlone.value,
   }
 
   if (phase.value === GamePhase.BiddingRound1) {
@@ -121,14 +172,10 @@ function handleBidAction(action: string) {
       bid.action = BidAction.Pass
     }
   } else if (phase.value === GamePhase.BiddingRound2) {
-    if (action === BidAction.Pass) {
-      bid.action = BidAction.Pass
-    } else {
-      bid.action = BidAction.CallTrump
-      bid.suit = action as Suit
-    }
+    bid.action = BidAction.Pass
   }
 
+  goingAlone.value = false
   gameStore.makeBid(bid)
 }
 </script>
@@ -159,9 +206,19 @@ function handleBidAction(action: string) {
   color: white;
   backdrop-filter: blur(10px);
 
+  @media (max-height: 500px) {
+    padding: $spacing-md;
+    min-width: 280px;
+  }
+
   h2 {
     margin-bottom: $spacing-md;
     font-size: 1.5rem;
+
+    @media (max-height: 500px) {
+      font-size: 1.25rem;
+      margin-bottom: $spacing-sm;
+    }
   }
 }
 
@@ -172,10 +229,156 @@ function handleBidAction(action: string) {
     margin-bottom: $spacing-sm;
     font-size: 1rem;
   }
+
+  @media (max-height: 500px) {
+    margin: $spacing-sm 0;
+  }
 }
 
 .actions {
   margin-top: $spacing-md;
+
+  @media (max-height: 500px) {
+    margin-top: $spacing-sm;
+  }
+}
+
+.suit-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  @media (max-height: 500px) {
+    gap: $spacing-xs;
+    margin-bottom: $spacing-sm;
+  }
+}
+
+.suit-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+  border-radius: 8px;
+  background: white;
+  border: 2px solid white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  @media (max-height: 500px) {
+    padding: $spacing-sm;
+  }
+
+  .suit-symbol {
+    font-size: 2rem;
+    line-height: 1;
+
+    @media (max-height: 500px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  .suit-name {
+    font-size: 0.875rem;
+    font-weight: bold;
+    margin-top: $spacing-xs;
+
+    @media (max-height: 500px) {
+      font-size: 0.75rem;
+    }
+  }
+
+  &.red {
+    color: #e74c3c;
+
+    .suit-symbol {
+      color: #e74c3c;
+    }
+  }
+
+  &.black {
+    color: #2c3e50;
+
+    .suit-symbol {
+      color: #2c3e50;
+    }
+  }
+
+  &:hover:not(.disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  &.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+.alone-option {
+  margin-bottom: $spacing-md;
+
+  @media (max-height: 500px) {
+    margin-bottom: $spacing-sm;
+  }
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+    padding: $spacing-xs $spacing-md;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: $secondary-color;
+  }
+
+  span {
+    font-size: 1rem;
+    font-weight: bold;
+
+    @media (max-height: 500px) {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+.pass-btn {
+  padding: $spacing-md $spacing-lg;
+  font-size: 1rem;
+  font-weight: bold;
+  background: transparent;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+
+  @media (max-height: 500px) {
+    padding: $spacing-sm $spacing-md;
+    font-size: 0.875rem;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
 }
 
 .waiting {

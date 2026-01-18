@@ -7,6 +7,7 @@
         :is-dealer="isDealer"
         :trump-symbol="showTrumpIndicator ? trumpSymbol : undefined"
         :trump-color="showTrumpIndicator ? trumpColor : undefined"
+        :going-alone="showTrumpIndicator ? trump?.goingAlone : undefined"
       />
       <span v-if="isCurrentPlayer && !bidActionMessage" class="current-turn">Turn</span>
       <span v-if="bidActionMessage" class="bid-action">{{ bidActionMessage }}</span>

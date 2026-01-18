@@ -7,6 +7,7 @@
         :is-dealer="isDealer"
         :trump-symbol="showTrumpIndicator ? trumpSymbol : undefined"
         :trump-color="showTrumpIndicator ? trumpColor : undefined"
+        :going-alone="showTrumpIndicator ? trump?.goingAlone : undefined"
       />
       <span v-if="isCurrentPlayer" class="current-turn">Your Turn</span>
     </div>
@@ -114,9 +115,9 @@ function isMobileViewport() {
 function getCardStyle(index: number, totalCards: number) {
   // Responsive values for mobile
   const isMobile = isMobileViewport()
-  const cardOffset = isMobile ? 12 : 18 // Small overlap between cards
-  const maxRotation = isMobile ? 5 : 8 // Subtle rotation angle
-  const arcDepth = isMobile ? 8 : 15 // Subtle arc depth
+  const cardOffset = isMobile ? 24 : 36 // Spread cards wider apart
+  const maxRotation = isMobile ? 8 : 12 // Fan rotation angle
+  const arcDepth = isMobile ? 12 : 20 // Arc depth
 
   // Calculate position along the fan (0 to 1)
   const position = totalCards > 1 ? index / (totalCards - 1) : 0.5
