@@ -204,7 +204,7 @@ function startGame() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
   color: white;
 
   h1 {
@@ -234,7 +234,7 @@ function startGame() {
   font-size: 1.5rem;
   font-weight: bold;
   background: white;
-  color: #667eea;
+  color: #1e4d2b;
   border: none;
   border-radius: 12px;
   cursor: pointer;

@@ -18,9 +18,9 @@ $breakpoint-lg: 992px;
 $breakpoint-xl: 1200px;
 
 // Card dimensions (desktop)
-$card-width: 60px;
-$card-height: 84px;
+$card-width: 70px;
+$card-height: 98px;
 
-// Card dimensions (mobile)
-$card-width-mobile: 45px;
-$card-height-mobile: 63px;
+// Card dimensions (mobile) - larger cards, only top half visible
+$card-width-mobile: 60px;
+$card-height-mobile: 84px;

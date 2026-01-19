@@ -30,6 +30,8 @@ export const useGameStore = defineStore('game', () => {
   const phase = ref<GamePhase>(GamePhase.Setup)
   const currentDealer = ref(0)
   const lastAIBidAction = ref<{ playerId: number; message: string } | null>(null)
+  const biddingStartPlayer = ref(0) // Track who started the bidding round
+  const passCount = ref(0) // Track passes in current bidding round
 
   // Computed
   const gameState = computed<GameState>(() => ({
@@ -131,6 +133,10 @@ export const useGameStore = defineStore('game', () => {
       alonePlayer: null,
     }
 
+    // Initialize bidding tracking
+    biddingStartPlayer.value = (currentDealer.value + 1) % 4
+    passCount.value = 0
+
     // Start bidding phase
     setTimeout(() => {
       phase.value = GamePhase.BiddingRound1
@@ -151,7 +157,12 @@ export const useGameStore = defineStore('game', () => {
 
       // If dealer picked up, they need to discard
       if (bid.action === BidAction.PickUp || bid.action === BidAction.OrderUp) {
-        handleDealerPickup()
+        const needsHumanDiscard = handleDealerPickup()
+        if (needsHumanDiscard) {
+          // Wait for human dealer to discard before starting play
+          phase.value = GamePhase.DealerDiscard
+          return
+        }
       }
 
       // Start playing phase
@@ -159,22 +170,25 @@ export const useGameStore = defineStore('game', () => {
     }
     // Pass - continue bidding
     else if (bid.action === BidAction.Pass) {
-      // Check if round 1 bidding is complete
+      passCount.value++
+
+      // Check if round 1 bidding is complete (all 4 players passed)
       if (currentRound.value.biddingRound === 1) {
-        const passCount = countPasses()
-        if (passCount >= 4) {
+        if (passCount.value >= 4) {
           // Move to round 2
           currentRound.value.biddingRound = 2
           currentRound.value.currentPlayer = (currentRound.value.dealer + 1) % 4
+          biddingStartPlayer.value = (currentRound.value.dealer + 1) % 4
+          passCount.value = 0
           phase.value = GamePhase.BiddingRound2
         } else {
           currentRound.value.currentPlayer = (currentRound.value.currentPlayer + 1) % 4
         }
       } else {
-        // Round 2 - continue or dealer must call
-        if (currentRound.value.currentPlayer === currentRound.value.dealer) {
-          // Dealer must call (stick the dealer)
-          // AI will handle this automatically
+        // Round 2 - continue or dealer must call (stick the dealer)
+        if (passCount.value >= 4) {
+          // Dealer is stuck - they must call trump (AI handles this in makeAIBidRound2)
+          // This shouldn't normally happen as dealer is forced to call
         } else {
           currentRound.value.currentPlayer = (currentRound.value.currentPlayer + 1) % 4
         }
@@ -184,11 +198,11 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  function handleDealerPickup() {
-    if (!currentRound.value || !currentRound.value.turnUpCard) return
+  function handleDealerPickup(): boolean {
+    if (!currentRound.value || !currentRound.value.turnUpCard) return false
 
     const dealer = players.value[currentRound.value.dealer]
-    if (!dealer) return
+    if (!dealer) return false
 
     const turnCard = currentRound.value.turnUpCard
 
@@ -202,7 +216,11 @@ export const useGameStore = defineStore('game', () => {
       if (index !== -1) {
         dealer.hand.splice(index, 1)
       }
+      return false // No human input needed
     }
+
+    // Human dealer needs to discard
+    return dealer.isHuman
   }
 
   function startPlayingPhase() {
@@ -264,21 +282,29 @@ export const useGameStore = defineStore('game', () => {
     const completedTrick = completeTrick(currentRound.value.currentTrick, currentRound.value.trump.suit)
     currentRound.value.tricks.push(completedTrick)
 
+    console.log(`Trick ${currentRound.value.tricks.length} complete. Winner: Player ${completedTrick.winnerId}`)
+
     phase.value = GamePhase.TrickComplete
 
     // Check if round is complete (5 tricks)
     if (currentRound.value.tricks.length === 5) {
+      console.log('All 5 tricks complete, ending round')
       setTimeout(() => {
         completeRound()
       }, 1500)
     } else {
       // Start next trick
+      console.log(`Starting trick ${currentRound.value.tricks.length + 1}...`)
       setTimeout(() => {
-        if (!currentRound.value || completedTrick.winnerId === null) return
+        if (!currentRound.value || completedTrick.winnerId === null) {
+          console.log('Early return - currentRound or winnerId is null')
+          return
+        }
 
         currentRound.value.currentTrick = createTrick()
         currentRound.value.currentPlayer = completedTrick.winnerId
         phase.value = GamePhase.Playing
+        console.log(`Trick ${currentRound.value.tricks.length + 1} started. Current player: ${completedTrick.winnerId}`)
 
         processAITurn()
       }, 1500)
@@ -334,7 +360,10 @@ export const useGameStore = defineStore('game', () => {
     if (!player) return
 
     // Human player - wait for input
-    if (player.isHuman) return
+    if (player.isHuman) {
+      console.log(`Waiting for human player ${player.id} to play. Hand size: ${player.hand.length}`)
+      return
+    }
 
     // AI turn - add delay for realism
     setTimeout(() => {
@@ -378,11 +407,6 @@ export const useGameStore = defineStore('game', () => {
         playCard(card, player.id)
       }
     }, 800)
-  }
-
-  function countPasses(): number {
-    // This is simplified - in a real implementation, track bids
-    return 4
   }
 
   function nextTrick() {

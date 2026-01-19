@@ -36,30 +36,35 @@ function handleClick(value: string) {
 .action-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: $spacing-md;
+  gap: $spacing-xs;
   justify-content: center;
 }
 
 .action-btn {
-  padding: $spacing-md $spacing-lg;
-  font-size: 1rem;
+  padding: 4px $spacing-md;
+  font-size: 0.8rem;
   font-weight: bold;
   background: white;
-  color: #667eea;
+  color: #2d5f3f;
   border: 2px solid white;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 100px;
+  transition: all 0.15s ease;
+
+  @media (max-height: 500px) {
+    padding: 2px $spacing-sm;
+    font-size: 0.7rem;
+    border-radius: 4px;
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 0.9);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   &:active {
-    transform: translateY(0);
+    transform: scale(0.98);
   }
 }
 </style>

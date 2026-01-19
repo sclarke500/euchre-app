@@ -1,52 +1,43 @@
 <template>
   <div class="trump-selection-overlay">
     <div class="trump-selection">
-      <h2>{{ title }}</h2>
-
-      <div v-if="currentRound?.turnUpCard && phase === GamePhase.BiddingRound1" class="turn-card">
-        <p>Turn Card:</p>
-        <Card :card="currentRound.turnUpCard" :selectable="false" />
-      </div>
-
-      <div v-if="isMyTurn" class="actions">
-        <template v-if="phase === GamePhase.BiddingRound1">
+      <template v-if="phase === GamePhase.BiddingRound1">
+        <div class="round1-actions">
           <div class="alone-option">
             <label>
               <input v-model="goingAlone" type="checkbox" />
-              <span>Go Alone</span>
+              <span>Alone</span>
             </label>
           </div>
           <ActionButtons
             :actions="round1Actions"
             @action="handleBidAction"
           />
-        </template>
-        <template v-else-if="phase === GamePhase.BiddingRound2">
-          <div class="suit-selection">
-            <button
-              v-for="suit in allSuits"
-              :key="suit"
-              :class="['suit-btn', getSuitColor(suit), { disabled: !isSuitSelectable(suit) }]"
-              :disabled="!isSuitSelectable(suit)"
-              @click="handleSuitSelect(suit)"
-            >
-              <span class="suit-symbol">{{ getSuitSymbol(suit) }}</span>
-              <span class="suit-name">{{ getSuitName(suit) }}</span>
-            </button>
-          </div>
+        </div>
+      </template>
+      <template v-else-if="phase === GamePhase.BiddingRound2">
+        <div class="round2-header">Call Trump</div>
+        <div class="suit-selection">
+          <button
+            v-for="suit in allSuits"
+            :key="suit"
+            :class="['suit-btn', getSuitColor(suit), { disabled: !isSuitSelectable(suit) }]"
+            :disabled="!isSuitSelectable(suit)"
+            @click="handleSuitSelect(suit)"
+          >
+            <span class="suit-symbol">{{ getSuitSymbol(suit) }}</span>
+          </button>
+        </div>
+        <div class="round2-footer">
           <div class="alone-option">
             <label>
               <input v-model="goingAlone" type="checkbox" />
-              <span>Go Alone</span>
+              <span>Alone</span>
             </label>
           </div>
           <button class="pass-btn" @click="handleBidAction(BidAction.Pass)">Pass</button>
-        </template>
-      </div>
-
-      <div v-else class="waiting">
-        <p>Waiting for {{ currentPlayerName }}...</p>
-      </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -56,7 +47,6 @@ import { computed, ref } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { GamePhase, BidAction, Suit } from '@/models/types'
 import type { Bid } from '@/models/types'
-import Card from './Card.vue'
 import ActionButtons from './ActionButtons.vue'
 
 const gameStore = useGameStore()
@@ -71,21 +61,6 @@ const goingAlone = ref(false)
 
 // All suits in display order
 const allSuits = [Suit.Hearts, Suit.Diamonds, Suit.Clubs, Suit.Spades]
-
-const isMyTurn = computed(() => {
-  return players.value[0]?.id === currentPlayer.value
-})
-
-const currentPlayerName = computed(() => {
-  return players.value[currentPlayer.value]?.name ?? 'Unknown'
-})
-
-const title = computed(() => {
-  if (phase.value === GamePhase.BiddingRound1) {
-    return 'Bidding Round 1'
-  }
-  return 'Bidding Round 2 - Call Trump'
-})
 
 const round1Actions = computed(() => {
   const isDealer = currentPlayer.value === currentRound.value?.dealer
@@ -143,7 +118,7 @@ function getSuitColor(suit: Suit): string {
 }
 
 function handleSuitSelect(suit: Suit) {
-  if (!isMyTurn.value || !isSuitSelectable(suit)) return
+  if (!isSuitSelectable(suit)) return
 
   const bid: Bid = {
     playerId: players.value[0]!.id,
@@ -157,8 +132,6 @@ function handleSuitSelect(suit: Suit) {
 }
 
 function handleBidAction(action: string) {
-  if (!isMyTurn.value) return
-
   const bid: Bid = {
     playerId: players.value[0]!.id,
     action: BidAction.Pass,
@@ -187,154 +160,140 @@ function handleBidAction(action: string) {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  pointer-events: none;
 }
 
 .trump-selection {
   background: linear-gradient(135deg, #2d5f3f 0%, #1a3d28 100%);
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  padding: $spacing-lg;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  min-width: 320px;
-  max-width: 400px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  padding: $spacing-sm $spacing-md;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   text-align: center;
   color: white;
   backdrop-filter: blur(10px);
+  pointer-events: auto;
 
   @media (max-height: 500px) {
-    padding: $spacing-md;
-    min-width: 280px;
-  }
-
-  h2 {
-    margin-bottom: $spacing-md;
-    font-size: 1.5rem;
-
-    @media (max-height: 500px) {
-      font-size: 1.25rem;
-      margin-bottom: $spacing-sm;
-    }
+    padding: $spacing-xs $spacing-sm;
+    border-radius: 8px;
   }
 }
 
-.turn-card {
-  margin: $spacing-md 0;
-
-  p {
-    margin-bottom: $spacing-sm;
-    font-size: 1rem;
-  }
+.round1-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
 
   @media (max-height: 500px) {
-    margin: $spacing-sm 0;
+    gap: $spacing-xs;
   }
 }
 
-.actions {
-  margin-top: $spacing-md;
+.round2-header {
+  font-size: 0.875rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: $spacing-xs;
+  opacity: 0.9;
 
   @media (max-height: 500px) {
-    margin-top: $spacing-sm;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
   }
 }
 
 .suit-selection {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-xs;
 
   @media (max-height: 500px) {
-    gap: $spacing-xs;
-    margin-bottom: $spacing-sm;
+    gap: 4px;
+    margin-bottom: 4px;
   }
 }
 
 .suit-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: $spacing-md;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   background: white;
   border: 2px solid white;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 
   @media (max-height: 500px) {
-    padding: $spacing-sm;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
   }
 
   .suit-symbol {
-    font-size: 2rem;
+    font-size: 1.5rem;
     line-height: 1;
 
     @media (max-height: 500px) {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
     }
   }
 
-  .suit-name {
-    font-size: 0.875rem;
-    font-weight: bold;
-    margin-top: $spacing-xs;
-
-    @media (max-height: 500px) {
-      font-size: 0.75rem;
-    }
-  }
-
-  &.red {
+  &.red .suit-symbol {
     color: #e74c3c;
-
-    .suit-symbol {
-      color: #e74c3c;
-    }
   }
 
-  &.black {
+  &.black .suit-symbol {
     color: #2c3e50;
-
-    .suit-symbol {
-      color: #2c3e50;
-    }
   }
 
   &:hover:not(.disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   &.disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
     background: rgba(255, 255, 255, 0.5);
     border-color: rgba(255, 255, 255, 0.5);
   }
 }
 
-.alone-option {
-  margin-bottom: $spacing-md;
+.round2-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
 
   @media (max-height: 500px) {
-    margin-bottom: $spacing-sm;
+    gap: $spacing-xs;
   }
+}
 
+.alone-option {
   label {
     display: inline-flex;
     align-items: center;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
     cursor: pointer;
-    padding: $spacing-xs $spacing-md;
+    padding: 4px $spacing-sm;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    transition: background 0.2s ease;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+
+    @media (max-height: 500px) {
+      padding: 2px $spacing-xs;
+      border-radius: 4px;
+    }
 
     &:hover {
       background: rgba(255, 255, 255, 0.2);
@@ -342,62 +301,47 @@ function handleBidAction(action: string) {
   }
 
   input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     cursor: pointer;
     accent-color: $secondary-color;
+
+    @media (max-height: 500px) {
+      width: 12px;
+      height: 12px;
+    }
   }
 
   span {
-    font-size: 1rem;
+    font-size: 0.8rem;
     font-weight: bold;
 
     @media (max-height: 500px) {
-      font-size: 0.875rem;
+      font-size: 0.7rem;
     }
   }
 }
 
 .pass-btn {
-  padding: $spacing-md $spacing-lg;
-  font-size: 1rem;
+  padding: 4px $spacing-md;
+  font-size: 0.8rem;
   font-weight: bold;
   background: transparent;
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 100px;
+  transition: all 0.15s ease;
 
   @media (max-height: 500px) {
-    padding: $spacing-sm $spacing-md;
-    font-size: 0.875rem;
+    padding: 2px $spacing-sm;
+    font-size: 0.7rem;
+    border-radius: 4px;
   }
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.8);
-  }
-}
-
-.waiting {
-  margin-top: $spacing-md;
-  font-size: 1rem;
-  opacity: 0.9;
-
-  p {
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
   }
 }
 </style>

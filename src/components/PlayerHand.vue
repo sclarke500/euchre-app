@@ -9,16 +9,17 @@
         :trump-color="showTrumpIndicator ? trumpColor : undefined"
         :going-alone="showTrumpIndicator ? trump?.goingAlone : undefined"
       />
-      <span v-if="isCurrentPlayer" class="current-turn">Your Turn</span>
+      <span v-if="isDiscardPhase" class="current-turn discard-prompt">Select a card to discard</span>
+      <span v-else-if="isCurrentPlayer" class="current-turn">Your Turn</span>
     </div>
     <div class="cards">
       <Card
         v-for="(card, index) in sortedHand"
         :key="card.id"
         :card="card"
-        :selectable="isCardPlayable(card)"
+        :selectable="isCardSelectable(card)"
         :style="getCardStyle(index, sortedHand.length)"
-        :class="{ 'card-playable': isCardPlayable(card) }"
+        :class="{ 'card-playable': isCardSelectable(card) }"
         @click="handleCardClick(card)"
       />
     </div>
@@ -92,6 +93,10 @@ const canPlay = computed(() => {
   return phase.value === GamePhase.Playing && isCurrentPlayer.value
 })
 
+const isDiscardPhase = computed(() => {
+  return phase.value === GamePhase.DealerDiscard && isDealer.value
+})
+
 const sortedHand = computed(() => {
   if (!props.player?.hand) return []
   const trumpSuit = trump.value?.suit ?? null
@@ -108,6 +113,13 @@ function isCardPlayable(card: CardType): boolean {
   return legalPlays.value.some((c) => c.id === card.id)
 }
 
+function isCardSelectable(card: CardType): boolean {
+  // During discard phase, all cards are selectable
+  if (isDiscardPhase.value) return true
+  // During play phase, only legal plays are selectable
+  return isCardPlayable(card)
+}
+
 function isMobileViewport() {
   return window.innerHeight < 500
 }
@@ -115,9 +127,9 @@ function isMobileViewport() {
 function getCardStyle(index: number, totalCards: number) {
   // Responsive values for mobile
   const isMobile = isMobileViewport()
-  const cardOffset = isMobile ? 24 : 36 // Spread cards wider apart
-  const maxRotation = isMobile ? 8 : 12 // Fan rotation angle
-  const arcDepth = isMobile ? 12 : 20 // Arc depth
+  const cardOffset = isMobile ? 32 : 40 // Spread cards wider apart
+  const maxRotation = isMobile ? 6 : 12 // Fan rotation angle (less on mobile)
+  const arcDepth = isMobile ? 8 : 20 // Arc depth (less on mobile since only top visible)
 
   // Calculate position along the fan (0 to 1)
   const position = totalCards > 1 ? index / (totalCards - 1) : 0.5
@@ -138,7 +150,16 @@ function getCardStyle(index: number, totalCards: number) {
 }
 
 function handleCardClick(card: CardType) {
-  if (!isCardPlayable(card) || !props.player) return
+  if (!props.player) return
+
+  // Handle dealer discard phase
+  if (isDiscardPhase.value) {
+    gameStore.dealerDiscard(card)
+    return
+  }
+
+  // Handle normal play phase
+  if (!isCardPlayable(card)) return
   gameStore.playCard(card, props.player.id)
 }
 </script>
@@ -179,6 +200,10 @@ function handleCardClick(card: CardType) {
     @media (max-height: 500px) {
       font-size: 0.75rem;
     }
+
+    &.discard-prompt {
+      color: #f39c12;
+    }
   }
 }
 
@@ -191,7 +216,9 @@ function handleCardClick(card: CardType) {
   justify-content: center;
 
   @media (max-height: 500px) {
-    height: $card-height-mobile + 15px;
+    // Only show top half of cards on mobile - clip the bottom
+    height: 50px;
+    overflow: visible; // Allow cards to extend below but container is short
   }
 
   :deep(.card) {
@@ -204,6 +231,8 @@ function handleCardClick(card: CardType) {
 
     @media (max-height: 500px) {
       margin-left: calc(-1 * $card-width-mobile / 2);
+      // Position cards so they extend below the container
+      bottom: -40px;
     }
   }
 
@@ -212,7 +241,7 @@ function handleCardClick(card: CardType) {
     bottom: 10px;
 
     @media (max-height: 500px) {
-      bottom: 6px;
+      bottom: -30px; // Raised version on mobile
     }
   }
 }

@@ -1,6 +1,12 @@
 <template>
   <div class="play-area-container">
-    <div v-if="currentTrick.cards.length > 0" class="played-cards">
+    <!-- Turn-up card during bidding -->
+    <div v-if="showTurnUpCard" class="turn-up-card">
+      <Card :card="turnUpCard!" :selectable="false" />
+      <span class="turn-up-label">Turn Up</span>
+    </div>
+    <!-- Played cards during trick -->
+    <div v-else-if="currentTrick.cards.length > 0" class="played-cards">
       <div
         v-for="playedCard in currentTrick.cards"
         :key="`${playedCard.playerId}-${playedCard.card.id}`"
@@ -18,11 +24,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { GamePhase } from '@/models/types'
 import Card from './Card.vue'
 
 const gameStore = useGameStore()
 
 const currentTrick = computed(() => gameStore.currentTrick)
+const phase = computed(() => gameStore.phase)
+const currentRound = computed(() => gameStore.currentRound)
+
+const turnUpCard = computed(() => currentRound.value?.turnUpCard)
+
+const showTurnUpCard = computed(() => {
+  return (phase.value === GamePhase.BiddingRound1 || phase.value === GamePhase.BiddingRound2) && turnUpCard.value
+})
 </script>
 
 <style scoped lang="scss">
@@ -75,6 +90,25 @@ const currentTrick = computed(() => gameStore.currentTrick)
     top: 50%;
     transform: translateY(-50%);
     animation: play-card-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+.turn-up-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .turn-up-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: bold;
+
+    @media (max-height: 500px) {
+      font-size: 0.625rem;
+    }
   }
 }
 

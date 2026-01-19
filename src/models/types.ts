@@ -90,6 +90,7 @@ export enum GamePhase {
   Dealing = 'dealing',
   BiddingRound1 = 'bidding_round_1', // Turn up card bidding
   BiddingRound2 = 'bidding_round_2', // Call any suit bidding
+  DealerDiscard = 'dealer_discard', // Dealer must discard after picking up
   Playing = 'playing',
   TrickComplete = 'trick_complete',
   RoundComplete = 'round_complete',
