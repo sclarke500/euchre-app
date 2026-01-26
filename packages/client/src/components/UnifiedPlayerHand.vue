@@ -118,9 +118,9 @@ function isMobileViewport() {
 
 function getCardStyle(index: number, totalCards: number) {
   const isMobile = isMobileViewport()
-  const cardOffset = isMobile ? 32 : 40
-  const maxRotation = isMobile ? 6 : 12
-  const arcDepth = isMobile ? 8 : 20
+  const cardOffset = isMobile ? 38 : 40
+  const maxRotation = isMobile ? 4 : 12
+  const arcDepth = isMobile ? 5 : 20
 
   const position = totalCards > 1 ? index / (totalCards - 1) : 0.5
   const rotation = (position - 0.5) * maxRotation * 2
@@ -157,7 +157,12 @@ function handleCardClick(card: CardType) {
   gap: $spacing-md;
 
   @media (max-height: 500px) {
-    gap: $spacing-xs;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    width: 100%;
+    padding-right: $spacing-md;
   }
 }
 
@@ -170,7 +175,9 @@ function handleCardClick(card: CardType) {
   min-height: 60px;
 
   @media (max-height: 500px) {
-    min-height: 40px;
+    min-height: auto;
+    order: 2;
+    margin-bottom: $spacing-sm;
   }
 
   .current-turn {
@@ -205,7 +212,11 @@ function handleCardClick(card: CardType) {
   justify-content: center;
 
   @media (max-height: 500px) {
-    height: 50px;
+    height: 55px;
+    width: auto;
+    order: 1;
+    flex: 1;
+    justify-content: center;
     overflow: visible;
   }
 
@@ -218,8 +229,8 @@ function handleCardClick(card: CardType) {
     transform-origin: bottom center;
 
     @media (max-height: 500px) {
-      margin-left: calc(-1 * $card-width-mobile / 2);
-      bottom: -40px;
+      margin-left: calc(-1 * $card-width / 2);
+      bottom: -50px;
     }
   }
 
@@ -227,7 +238,7 @@ function handleCardClick(card: CardType) {
     bottom: 10px;
 
     @media (max-height: 500px) {
-      bottom: -30px;
+      bottom: -40px;
     }
   }
 
@@ -236,7 +247,7 @@ function handleCardClick(card: CardType) {
     box-shadow: 0 0 15px $secondary-color;
 
     @media (max-height: 500px) {
-      bottom: -25px;
+      bottom: -35px;
     }
   }
 }

@@ -129,6 +129,12 @@ onUnmounted(() => {
   justify-content: center;
   align-items: flex-start;
   padding-top: $spacing-md;
+
+  @media (max-height: 500px) {
+    justify-content: flex-start;
+    padding-left: $spacing-md;
+    padding-top: $spacing-xs;
+  }
 }
 
 .player-position-left {
@@ -153,6 +159,10 @@ onUnmounted(() => {
   justify-content: center;
   align-items: flex-end;
   padding-bottom: $spacing-md;
+
+  @media (max-height: 500px) {
+    padding-bottom: 0;
+  }
 }
 
 .play-area {
