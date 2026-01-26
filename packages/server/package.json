@@ -1,0 +1,22 @@
+{
+  "name": "@euchre/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@euchre/shared": "*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.4",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.0",
+    "typescript": "~5.9.3"
+  }
+}
