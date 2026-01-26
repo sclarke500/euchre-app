@@ -40,6 +40,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   const gameOver = computed(() => gameState.value?.gameOver ?? false)
   const winner = computed(() => gameState.value?.winner ?? null)
   const tricksTaken = computed(() => gameState.value?.tricksTaken ?? [0, 0] as [number, number])
+  const tricksWonByPlayer = computed(() => gameState.value?.tricksWonByPlayer ?? { 0: 0, 1: 0, 2: 0, 3: 0 })
 
   // Find the human player (the one with a hand)
   const myPlayer = computed(() => {
@@ -54,6 +55,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   function handleMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'game_state':
+        console.log('MP game_state received - trump:', message.state.trump, 'trumpCalledBy:', message.state.trumpCalledBy)
         gameState.value = message.state
         break
 
@@ -201,6 +203,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     gameOver,
     winner,
     tricksTaken,
+    tricksWonByPlayer,
     myPlayer,
     myPlayerId,
     myHand,

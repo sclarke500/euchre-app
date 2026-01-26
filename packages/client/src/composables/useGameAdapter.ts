@@ -44,6 +44,7 @@ export interface GameAdapter {
   gameOver: ComputedRef<boolean>
   winner: ComputedRef<number | null>
   tricksTaken: ComputedRef<[number, number]>
+  tricksWonByPlayer: ComputedRef<Record<number, number>> // playerId -> tricks won
 
   // Player-specific state
   myPlayerId: ComputedRef<number>
@@ -90,12 +91,12 @@ function createSinglePlayerAdapter(): GameAdapter {
   })
 
   const trump = computed<TrumpInfo | null>(() => {
-    const t = store.trump
-    if (!t) return null
+    const round = store.currentRound
+    if (!round?.trump) return null
     return {
-      suit: t.suit,
-      calledBy: t.calledBy,
-      goingAlone: t.goingAlone,
+      suit: round.trump.suit,
+      calledBy: round.trump.calledBy,
+      goingAlone: round.trump.goingAlone,
     }
   })
 
@@ -114,6 +115,17 @@ function createSinglePlayerAdapter(): GameAdapter {
       }
     }
     return [team0, team1]
+  })
+
+  const tricksWonByPlayer = computed<Record<number, number>>(() => {
+    const tricks = store.currentRound?.tricks ?? []
+    const result: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
+    for (const trick of tricks) {
+      if (trick.winnerId !== null) {
+        result[trick.winnerId] = (result[trick.winnerId] ?? 0) + 1
+      }
+    }
+    return result
   })
 
   const myPlayerId = computed(() => 0) // Human is always player 0 in single-player
@@ -145,6 +157,7 @@ function createSinglePlayerAdapter(): GameAdapter {
     gameOver: computed(() => store.gameOver),
     winner: computed(() => store.winner),
     tricksTaken,
+    tricksWonByPlayer,
     myPlayerId,
     myHand,
     myTeamId,
@@ -206,6 +219,7 @@ function createMultiplayerAdapter(): GameAdapter {
   })
 
   const trump = computed<TrumpInfo | null>(() => {
+    console.log('MP trump computed - store.trump:', store.trump, 'store.trumpCalledBy:', store.trumpCalledBy)
     if (!store.trump || store.trumpCalledBy === null) return null
     return {
       suit: store.trump,
@@ -229,6 +243,7 @@ function createMultiplayerAdapter(): GameAdapter {
     gameOver: computed(() => store.gameOver),
     winner: computed(() => store.winner),
     tricksTaken: computed(() => store.tricksTaken),
+    tricksWonByPlayer: computed(() => store.tricksWonByPlayer),
     myPlayerId: computed(() => store.myPlayerId),
     myHand: computed(() => store.myHand),
     myTeamId: computed(() => store.myTeamId),

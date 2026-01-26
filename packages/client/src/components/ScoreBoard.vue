@@ -28,9 +28,6 @@ function teamScore(teamId: number): number {
 
 <style scoped lang="scss">
 .score-board {
-  position: absolute;
-  top: $spacing-sm;
-  right: $spacing-sm;
   display: flex;
   align-items: center;
   gap: $spacing-sm;
@@ -39,14 +36,6 @@ function teamScore(teamId: number): number {
   border-radius: 8px;
   color: white;
   font-family: 'Courier New', monospace;
-
-  // Desktop: larger spacing
-  @media (min-width: 768px) {
-    top: $spacing-lg;
-    right: $spacing-lg;
-    gap: $spacing-md;
-    padding: $spacing-md $spacing-lg;
-  }
 }
 
 .team-score {

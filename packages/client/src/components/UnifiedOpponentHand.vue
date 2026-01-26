@@ -37,8 +37,7 @@ const isDealer = computed(() => {
 
 const tricksWon = computed(() => {
   if (!props.player) return 0
-  const teamId = props.player.teamId
-  return game.tricksTaken.value[teamId] ?? 0
+  return game.tricksWonByPlayer.value[props.player.id] ?? 0
 })
 
 const bidActionMessage = computed(() => {
@@ -85,11 +84,7 @@ const trumpColor = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: $spacing-md;
-
-  @media (max-height: 500px) {
-    gap: $spacing-xs;
-  }
+  gap: $spacing-xs;
 }
 
 .player-info {
@@ -98,42 +93,29 @@ const trumpColor = computed(() => {
   align-items: center;
   color: white;
   position: relative;
-  min-height: 60px;
-
-  @media (max-height: 500px) {
-    min-height: 35px;
-  }
+  min-height: 35px;
 
   .current-turn {
     position: absolute;
     top: 100%;
     margin-top: $spacing-xs;
-    font-size: 0.75rem;
+    font-size: 0.625rem;
     color: $secondary-color;
     font-weight: bold;
     animation: pulse 1.5s ease-in-out infinite;
-
-    @media (max-height: 500px) {
-      font-size: 0.625rem;
-    }
   }
 
   .bid-action {
     position: absolute;
     top: 100%;
     margin-top: $spacing-xs;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: white;
     font-weight: bold;
     background: rgba(255, 255, 255, 0.2);
-    padding: $spacing-xs $spacing-sm;
+    padding: 2px $spacing-xs;
     border-radius: 4px;
     animation: fadeInOut 1s ease-in-out;
-
-    @media (max-height: 500px) {
-      font-size: 0.75rem;
-      padding: 2px $spacing-xs;
-    }
   }
 }
 

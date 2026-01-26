@@ -163,6 +163,7 @@ export interface ClientGameState {
   gameOver: boolean
   winner: number | null
   tricksTaken: [number, number] // [team0, team1] tricks in current round
+  tricksWonByPlayer: Record<number, number> // playerId -> tricks won this round
 }
 
 export interface ClientPlayer {

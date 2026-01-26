@@ -71,6 +71,20 @@ export const useGameStore = defineStore('game', () => {
     return currentRound.value?.currentTrick ?? createTrick()
   })
 
+  const tricksTaken = computed<[number, number]>(() => {
+    const tricks = currentRound.value?.tricks ?? []
+    let team0 = 0
+    let team1 = 0
+    for (const trick of tricks) {
+      if (trick.winnerId !== null) {
+        // Players 0 and 2 are team 0, players 1 and 3 are team 1
+        if (trick.winnerId % 2 === 0) team0++
+        else team1++
+      }
+    }
+    return [team0, team1]
+  })
+
   // Actions
   function startNewGame() {
     // Initialize 4 players (0 = human, 1-3 = AI)
@@ -456,6 +470,7 @@ export const useGameStore = defineStore('game', () => {
     currentPlayer,
     trump,
     currentTrick,
+    tricksTaken,
     gameState,
     lastAIBidAction,
 

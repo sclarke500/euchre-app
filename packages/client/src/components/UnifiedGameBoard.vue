@@ -1,26 +1,32 @@
 <template>
   <div class="game-board">
-    <div class="player-position-top">
+    <!-- Top row: back button | partner plaque | scoreboard -->
+    <div class="cell-back">
+      <button class="back-button" @click="$emit('leaveGame')">← Back</button>
+    </div>
+    <div class="cell-partner">
       <UnifiedOpponentHand
         :player="getPlayerAtPosition(2)"
         :is-current="currentPlayer === getPlayerAtPosition(2)?.id"
         position="top"
       />
     </div>
+    <div class="cell-score">
+      <ScoreBoard :scores="scores" />
+    </div>
 
-    <div class="player-position-left">
+    <!-- Middle row: left player | play area | right player -->
+    <div class="cell-left">
       <UnifiedOpponentHand
         :player="getPlayerAtPosition(1)"
         :is-current="currentPlayer === getPlayerAtPosition(1)?.id"
         position="left"
       />
     </div>
-
-    <div class="play-area">
+    <div class="cell-play">
       <UnifiedPlayArea />
     </div>
-
-    <div class="player-position-right">
+    <div class="cell-right">
       <UnifiedOpponentHand
         :player="getPlayerAtPosition(3)"
         :is-current="currentPlayer === getPlayerAtPosition(3)?.id"
@@ -28,11 +34,14 @@
       />
     </div>
 
-    <div class="player-position-bottom">
+    <!-- Bottom row: empty | user hand | user plaque -->
+    <div class="cell-empty"></div>
+    <div class="cell-hand">
       <UnifiedPlayerHand />
     </div>
-
-    <ScoreBoard :scores="scores" />
+    <div class="cell-user-plaque">
+      <UnifiedPlayerPlaque />
+    </div>
 
     <TrumpSelection v-if="showBidding" />
 
@@ -48,6 +57,7 @@ import { GamePhase } from '@euchre/shared'
 import ScoreBoard from './ScoreBoard.vue'
 import UnifiedPlayerHand from './UnifiedPlayerHand.vue'
 import UnifiedOpponentHand from './UnifiedOpponentHand.vue'
+import UnifiedPlayerPlaque from './UnifiedPlayerPlaque.vue'
 import UnifiedPlayArea from './UnifiedPlayArea.vue'
 import TrumpSelection from './TrumpSelection.vue'
 import GameOver from './GameOver.vue'
@@ -110,63 +120,90 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .game-board {
-  position: relative;
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
   display: grid;
-  grid-template-areas:
-    ". top ."
-    "left play right"
-    ". bottom .";
   grid-template-columns: 1fr 2fr 1fr;
-  grid-template-rows: 1fr 2fr 1fr;
+  grid-template-rows: auto 1fr 40%;
+  grid-template-areas:
+    "back partner score"
+    "left play right"
+    "empty hand plaque";
 }
 
-.player-position-top {
-  grid-area: top;
+.cell-back {
+  grid-area: back;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: $spacing-md;
+  align-items: center;
+  padding: $spacing-sm;
+}
 
-  @media (max-height: 500px) {
-    justify-content: flex-start;
-    padding-left: $spacing-md;
-    padding-top: $spacing-xs;
+.back-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
 }
 
-.player-position-left {
-  grid-area: left;
+.cell-partner {
+  grid-area: partner;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  padding-left: $spacing-md;
+  padding: $spacing-sm;
 }
 
-.player-position-right {
-  grid-area: right;
+.cell-score {
+  grid-area: score;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding-right: $spacing-md;
+  padding: $spacing-sm;
 }
 
-.player-position-bottom {
-  grid-area: bottom;
+.cell-left {
+  grid-area: left;
   display: flex;
   justify-content: center;
-  align-items: flex-end;
-  padding-bottom: $spacing-md;
-
-  @media (max-height: 500px) {
-    padding-bottom: 0;
-  }
+  align-items: center;
 }
 
-.play-area {
+.cell-play {
   grid-area: play;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cell-right {
+  grid-area: right;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cell-empty {
+  grid-area: empty;
+}
+
+.cell-hand {
+  grid-area: hand;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+}
+
+.cell-user-plaque {
+  grid-area: plaque;
   display: flex;
   justify-content: center;
   align-items: center;

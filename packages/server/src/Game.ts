@@ -124,17 +124,21 @@ export class Game {
       teamId: p.teamId,
     }))
 
-    // Count tricks taken by each team
+    // Count tricks taken by each team and player
     let team0Tricks = 0
     let team1Tricks = 0
+    const tricksWonByPlayer: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
     if (this.currentRound) {
       for (const trick of this.currentRound.tricks) {
         if (trick.winnerId !== null) {
           if (trick.winnerId % 2 === 0) team0Tricks++
           else team1Tricks++
+          tricksWonByPlayer[trick.winnerId] = (tricksWonByPlayer[trick.winnerId] ?? 0) + 1
         }
       }
     }
+
+    console.log('Server getStateForPlayer - this.currentRound?.trump:', this.currentRound?.trump)
 
     return {
       phase: this.phase,
@@ -152,6 +156,7 @@ export class Game {
       gameOver: this.gameOver,
       winner: this.winner,
       tricksTaken: [team0Tricks, team1Tricks] as [number, number],
+      tricksWonByPlayer,
     }
   }
 
@@ -282,11 +287,14 @@ export class Game {
     // Broadcast the bid
     this.events.onBidMade(bid.playerId, bid, player.name)
 
+    console.log('Server processBidInternal - bid:', JSON.stringify(bid))
     const newTrump = processBid(bid, this.currentRound.turnUpCard, this.currentRound.trump)
+    console.log('Server processBidInternal - newTrump:', JSON.stringify(newTrump))
 
     // If trump was set (someone ordered up or called)
     if (newTrump && !this.currentRound.trump) {
       this.currentRound.trump = newTrump
+      console.log('Server trump set to:', this.currentRound.trump)
       this.currentRound.goingAlone = newTrump.goingAlone
       this.currentRound.alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
 
