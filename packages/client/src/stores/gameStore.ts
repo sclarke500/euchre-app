@@ -19,7 +19,6 @@ import {
   playCardToTrick,
   completeTrick,
   isTrickComplete,
-  getNextPlayer,
   isPlayerSittingOut,
   calculateRoundScore,
   updateScores,
@@ -297,9 +296,8 @@ export const useGameStore = defineStore('game', () => {
     if (isTrickComplete(currentRound.value.currentTrick, currentRound.value.goingAlone)) {
       completeTrickAndContinue()
     } else {
-      // Next player's turn
-      const leadPlayer = currentRound.value.currentTrick.cards[0]?.playerId ?? 0
-      currentRound.value.currentPlayer = getNextPlayer(currentRound.value.currentTrick, leadPlayer)
+      // Next player's turn - advance by 1 from current player
+      currentRound.value.currentPlayer = (currentRound.value.currentPlayer + 1) % 4
 
       // Skip if sitting out
       if (isPlayerSittingOut(currentRound.value.currentPlayer, currentRound.value.alonePlayer)) {

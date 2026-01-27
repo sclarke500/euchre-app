@@ -1,25 +1,34 @@
 <template>
   <div class="hand-container">
     <!-- Picked-up card shown separately during discard phase -->
-    <div v-if="isDiscardPhase && pickedUpCard" class="picked-up-section">
+    <div
+      v-if="isDiscardPhase && pickedUpCard"
+      class="picked-up-section"
+      :class="{ 'discarding': isCardDiscarding(pickedUpCard) }"
+    >
       <Card
         :card="pickedUpCard"
-        :selectable="true"
+        :selectable="!isCardDiscarding(pickedUpCard)"
         @click="handleCardClick(pickedUpCard)"
       />
       <span class="picked-up-label">Picked Up</span>
     </div>
 
-    <div class="player-hand" :class="{ 'dealing': isDealing, 'hidden': !showHand }" :style="handContainerStyle">
-      <Card
+    <div class="player-hand" :class="{ 'dealing': isDealing, 'hidden': !showHand, 'discard-phase': isDiscardPhase }" :style="handContainerStyle">
+      <div
         v-for="(card, index) in displayHand"
         :key="card.id"
-        :card="card"
-        :selectable="isCardSelectable(card)"
-        :dimmed="isCardDimmed(card)"
+        class="card-wrapper"
+        :class="{ 'discarding': isCardDiscarding(card) }"
         :style="getCardStyle(index, displayHand.length)"
-        @click="handleCardClick(card)"
-      />
+      >
+        <Card
+          :card="card"
+          :selectable="isCardSelectable(card) && !isCardDiscarding(card)"
+          :dimmed="isCardDimmed(card)"
+          @click="handleCardClick(card)"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -45,6 +54,7 @@ const turnUpCard = computed(() => game.turnUpCard.value)
 
 const isDealing = ref(false)
 const showHand = ref(false)
+const discardingCardId = ref<string | null>(null)
 let dealingTimeout: number | null = null
 
 // Watch for Dealing phase and trigger slide-up animation
@@ -158,6 +168,10 @@ function isCardDimmed(card: CardType): boolean {
   return !validCards.value.includes(card.id)
 }
 
+function isCardDiscarding(card: CardType): boolean {
+  return discardingCardId.value === card.id
+}
+
 function getCardStyle(index: number, totalCards: number) {
   const FULL_HAND_SIZE = 5 // Euchre hand size
   const cardOffset = 45
@@ -196,7 +210,12 @@ function getCardStyle(index: number, totalCards: number) {
 
 function handleCardClick(card: CardType) {
   if (isDiscardPhase.value) {
-    game.discardCard(card)
+    // Animate the card flying away before actually discarding
+    discardingCardId.value = card.id
+    setTimeout(() => {
+      game.discardCard(card)
+      discardingCardId.value = null
+    }, 400) // Match animation duration
     return
   }
 
@@ -223,6 +242,11 @@ function handleCardClick(card: CardType) {
   align-items: center;
   gap: $spacing-xs;
   animation: picked-up-appear 0.4s ease-out;
+
+  &.discarding {
+    animation: discard-fly-away 0.4s ease-in forwards;
+    pointer-events: none;
+  }
 
   .picked-up-label {
     font-size: 0.7rem;
@@ -272,11 +296,23 @@ function handleCardClick(card: CardType) {
   &.dealing {
     animation: slide-up-hand 0.6s ease-out;
   }
+
+  &.discard-phase {
+    overflow: visible; // Allow discard animation to extend beyond bounds
+  }
+}
+
+.card-wrapper {
+  position: absolute;
+  top: 0;
+
+  &.discarding {
+    animation: discard-fly-away 0.4s ease-in forwards;
+    pointer-events: none;
+  }
 }
 
 :deep(.player-hand .card) {
-  position: absolute;
-  top: 0;
   transition: transform 0.15s ease;
 }
 
@@ -286,6 +322,16 @@ function handleCardClick(card: CardType) {
 
 :deep(.player-hand .card.selectable:hover) {
   transform: translateY(-8px);
+}
+
+@keyframes discard-fly-away {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-250px) rotate(20deg) scale(0.6);
+  }
 }
 
 @keyframes slide-up-hand {
