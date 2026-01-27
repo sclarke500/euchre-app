@@ -46,7 +46,7 @@
       <UnifiedPlayerHand />
     </div>
 
-    <TrumpSelection v-if="showBidding" />
+    <TrumpSelection :show="showBidding" />
     <GameOver v-if="gameOver" :winner="winner" @leave-game="emit('leaveGame')" />
 
     <Modal :show="showDiscardPrompt" non-blocking>

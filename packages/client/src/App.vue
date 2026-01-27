@@ -24,6 +24,16 @@ const isIOS = ref(false)
 const isStandalone = ref(false)
 const isAppInstalled = ref(false)
 
+// IMPORTANT: Capture beforeinstallprompt immediately - it fires early and only once per page load
+// Must be set up before onMounted to avoid missing the event
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    deferredPrompt.value = e
+    console.log('PWA: beforeinstallprompt captured')
+  })
+}
+
 onMounted(async () => {
   // Check if running as installed PWA
   isStandalone.value = window.matchMedia('(display-mode: standalone)').matches
@@ -32,11 +42,13 @@ onMounted(async () => {
   // If running standalone, mark as installed for future browser visits
   if (isStandalone.value) {
     localStorage.setItem('pwa-installed', 'true')
+    console.log('PWA: Running in standalone mode')
     return // Don't show any prompts when running as PWA
   }
 
   // Detect iOS
   isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  console.log('PWA: iOS detected:', isIOS.value)
 
   // Check if app was previously installed
   const wasInstalled = localStorage.getItem('pwa-installed') === 'true'
@@ -47,6 +59,7 @@ onMounted(async () => {
       const relatedApps = await (navigator as any).getInstalledRelatedApps()
       if (relatedApps.length > 0) {
         isAppInstalled.value = true
+        console.log('PWA: App detected as installed via getInstalledRelatedApps')
       }
     } catch {
       // API not supported or failed
@@ -66,28 +79,29 @@ onMounted(async () => {
     return // Don't show install prompt if already installed
   }
 
-  // For users who haven't installed - show install prompt
+  // For users who haven't installed - check dismissal time
   const dismissed = localStorage.getItem('pwa-install-dismissed')
   const dismissedTime = dismissed ? parseInt(dismissed, 10) : 0
   const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
 
-  if (daysSinceDismissed > 7) {
-    // For Android/Chrome - capture the beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault()
-      deferredPrompt.value = e
-      // Show prompt after a brief delay (user engagement)
-      setTimeout(() => {
-        showInstallPrompt.value = true
-      }, 3000)
-    })
+  console.log('PWA: Days since dismissed:', daysSinceDismissed, 'Has deferred prompt:', !!deferredPrompt.value)
 
-    // For iOS - show manual instructions after a delay
-    if (isIOS.value) {
-      setTimeout(() => {
+  if (daysSinceDismissed > 7) {
+    // Show prompt after a brief delay
+    setTimeout(() => {
+      // For Android/Chrome - show if we have the deferred prompt
+      if (deferredPrompt.value) {
+        console.log('PWA: Showing install prompt (Android/Chrome)')
         showInstallPrompt.value = true
-      }, 3000)
-    }
+      }
+      // For iOS - always show manual instructions
+      else if (isIOS.value) {
+        console.log('PWA: Showing install instructions (iOS)')
+        showInstallPrompt.value = true
+      } else {
+        console.log('PWA: No prompt available - Chrome requires 2+ visits with 5min between')
+      }
+    }, 2000)
   }
 })
 

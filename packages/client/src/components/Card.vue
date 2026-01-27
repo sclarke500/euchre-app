@@ -70,8 +70,8 @@ function handleClick() {
   width: $card-width;
   height: $card-height;
   background: $card-background;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   position: relative;
   user-select: none;
   flex-shrink: 0;
@@ -93,17 +93,17 @@ function handleClick() {
   font-weight: bold;
 
   &.top-left {
-    top: 6px;
-    left: 8px;
+    top: 5px;
+    left: 6px;
   }
 
   .rank {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     line-height: 1;
   }
 
   .suit {
-    font-size: 1.25rem;
+    font-size: 1rem;
     line-height: 1;
   }
 
@@ -123,7 +123,7 @@ function handleClick() {
   transform: translate(-50%, -50%);
 
   .suit-large {
-    font-size: 3rem;
+    font-size: 2.5rem;
   }
 
   &.red {

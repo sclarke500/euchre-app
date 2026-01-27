@@ -1,6 +1,6 @@
 <template>
   <div class="player-plaque-container">
-    <div class="player-plaque" :class="{ 'current-turn': isCurrentTurn }">
+    <div class="player-plaque" :class="{ 'current-turn': isCurrentTurn, 'is-ai': !isHuman }">
       <div class="tricks-won">{{ tricksWon }}</div>
       <div class="player-name-container">
         <span class="player-name" :class="{ 'clanker': !isHuman }">{{ playerName }}</span>
@@ -57,6 +57,35 @@ defineProps<Props>()
     border-color: #f4d03f;
     box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
   }
+
+  &.is-ai {
+    // Subtle graph paper grid pattern for AI vibe
+    background:
+      // Vertical lines
+      repeating-linear-gradient(
+        90deg,
+        rgba(100, 200, 255, 0.08) 0px,
+        rgba(100, 200, 255, 0.08) 1px,
+        transparent 1px,
+        transparent 8px
+      ),
+      // Horizontal lines
+      repeating-linear-gradient(
+        0deg,
+        rgba(100, 200, 255, 0.08) 0px,
+        rgba(100, 200, 255, 0.08) 1px,
+        transparent 1px,
+        transparent 8px
+      ),
+      // Base background
+      rgba(255, 255, 255, 0.1);
+    border-color: rgba(100, 200, 255, 0.3);
+
+    // Keep yellow highlight when it's their turn
+    &.current-turn {
+      border-color: #f4d03f;
+    }
+  }
 }
 
 .tricks-won {
@@ -85,9 +114,11 @@ defineProps<Props>()
   font-weight: bold;
   color: white;
   white-space: nowrap;
+  font-family: 'Shadows Into Light', cursive;
 
   &.clanker {
     font-family: 'Audiowide', cursive;
+    font-size: 1rem;
     font-weight: 400;
     letter-spacing: 0.05em;
   }

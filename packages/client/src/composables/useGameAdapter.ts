@@ -45,6 +45,7 @@ export interface GameAdapter {
   winner: ComputedRef<number | null>
   tricksTaken: ComputedRef<[number, number]>
   tricksWonByPlayer: ComputedRef<Record<number, number>> // playerId -> tricks won
+  lastTrickWinnerId: ComputedRef<number | null> // winnerId of most recent completed trick
 
   // Player-specific state
   myPlayerId: ComputedRef<number>
@@ -128,6 +129,13 @@ function createSinglePlayerAdapter(): GameAdapter {
     return result
   })
 
+  const lastTrickWinnerId = computed<number | null>(() => {
+    const tricks = store.currentRound?.tricks ?? []
+    if (tricks.length === 0) return null
+    const lastTrick = tricks[tricks.length - 1]
+    return lastTrick?.winnerId ?? null
+  })
+
   const myPlayerId = computed(() => 0) // Human is always player 0 in single-player
   const myHand = computed(() => store.players[0]?.hand ?? [])
   const myTeamId = computed(() => 0) // Human is always team 0 in single-player
@@ -161,6 +169,7 @@ function createSinglePlayerAdapter(): GameAdapter {
     winner: computed(() => store.winner),
     tricksTaken,
     tricksWonByPlayer,
+    lastTrickWinnerId,
     myPlayerId,
     myHand,
     myTeamId,
@@ -233,6 +242,11 @@ function createMultiplayerAdapter(): GameAdapter {
 
   const currentTrick = computed(() => store.currentTrick ?? createEmptyTrick())
 
+  // For multiplayer, get winnerId from currentTrick (server sets this)
+  const lastTrickWinnerId = computed<number | null>(() => {
+    return store.currentTrick?.winnerId ?? null
+  })
+
   return {
     phase: computed(() => store.phase),
     players,
@@ -247,6 +261,7 @@ function createMultiplayerAdapter(): GameAdapter {
     winner: computed(() => store.winner),
     tricksTaken: computed(() => store.tricksTaken),
     tricksWonByPlayer: computed(() => store.tricksWonByPlayer),
+    lastTrickWinnerId,
     myPlayerId: computed(() => store.myPlayerId),
     myHand: computed(() => store.myHand),
     myTeamId: computed(() => store.myTeamId),

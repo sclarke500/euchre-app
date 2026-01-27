@@ -89,12 +89,15 @@ export const useGameStore = defineStore('game', () => {
   function startNewGame() {
     // Get random AI names for this game
     const aiNames = getRandomAINames(3)
-    
+
+    // Use stored nickname if available, otherwise 'You'
+    const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
+
     // Initialize 4 players (0 = human, 1-3 = AI)
     players.value = [
       {
         id: 0,
-        name: 'You',
+        name: playerName,
         hand: [],
         isHuman: true,
         teamId: 0,
@@ -367,7 +370,7 @@ export const useGameStore = defineStore('game', () => {
       setTimeout(() => {
         currentDealer.value = (currentDealer.value + 1) % 4
         startNewRound()
-      }, 3000)
+      }, 2000)
     }
   }
 

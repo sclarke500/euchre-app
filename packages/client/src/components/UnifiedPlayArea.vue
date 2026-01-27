@@ -6,7 +6,7 @@
       <span class="turn-up-label">Turn Up</span>
     </div>
     <!-- Played cards during trick -->
-    <div v-else-if="currentTrickCards.length > 0" class="played-cards" :class="{ 'sweeping-away': isSweepingAway }">
+    <div v-else-if="currentTrickCards.length > 0" class="played-cards" :class="sweepClass">
       <div
         v-for="playedCard in currentTrickCards"
         :key="`${playedCard.playerId}-${playedCard.card.id}`"
@@ -32,9 +32,19 @@ const currentTrick = computed(() => game.currentTrick.value)
 const myPlayerId = computed(() => game.myPlayerId.value)
 
 const isSweepingAway = ref(false)
+const winnerPosition = ref<number | null>(null)
 let sweepTimeout: number | null = null
 
-// Watch for RoundComplete phase and trigger sweep animation halfway through
+// Compute the sweep class based on winner position
+const sweepClass = computed(() => {
+  if (!isSweepingAway.value) return {}
+  return {
+    'sweeping-away': true,
+    [`sweep-to-${winnerPosition.value}`]: winnerPosition.value !== null
+  }
+})
+
+// Watch for TrickComplete or RoundComplete phase and trigger sweep animation
 watch(phase, (newPhase) => {
   // Clear any existing timeout
   if (sweepTimeout !== null) {
@@ -42,14 +52,21 @@ watch(phase, (newPhase) => {
     sweepTimeout = null
   }
 
-  if (newPhase === GamePhase.RoundComplete) {
-    // Trigger sweep animation halfway through the 3000ms pause (at 1500ms)
+  if (newPhase === GamePhase.TrickComplete || newPhase === GamePhase.RoundComplete) {
+    // Capture the winner position before triggering animation
+    const winnerId = game.lastTrickWinnerId.value
+    if (winnerId !== null) {
+      winnerPosition.value = getCardPosition(winnerId)
+    }
+
+    const delay = newPhase === GamePhase.TrickComplete ? 700 : 1000
     sweepTimeout = window.setTimeout(() => {
       isSweepingAway.value = true
-    }, 1500)
+    }, delay)
   } else {
-    // Reset sweep state when phase changes away from RoundComplete
+    // Reset sweep state when phase changes
     isSweepingAway.value = false
+    winnerPosition.value = null
   }
 })
 
@@ -73,15 +90,15 @@ function getCardPosition(playerId: number): number {
 <style scoped lang="scss">
 .play-area-container {
   position: relative;
-  width: 240px;
-  height: 180px;
+  width: 200px;
+  height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
 
   @media (max-height: 500px) {
-    width: 180px;
-    height: 130px;
+    width: 150px;
+    height: 110px;
   }
 }
 
@@ -90,22 +107,36 @@ function getCardPosition(playerId: number): number {
   width: 100%;
   height: 100%;
 
-  &.sweeping-away .played-card {
-    &.position-0 {
-      animation: sweep-away-bottom 0.8s ease-in forwards;
-    }
+  // Sweep towards winner at position 0 (bottom/human player)
+  &.sweeping-away.sweep-to-0 .played-card {
+    &.position-0 { animation: sweep-0-to-0 0.4s ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-0 0.4s ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-0 0.4s ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-0 0.4s ease-in forwards; }
+  }
 
-    &.position-1 {
-      animation: sweep-away-left 0.8s ease-in forwards;
-    }
+  // Sweep towards winner at position 1 (left)
+  &.sweeping-away.sweep-to-1 .played-card {
+    &.position-0 { animation: sweep-0-to-1 0.4s ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-1 0.4s ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-1 0.4s ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-1 0.4s ease-in forwards; }
+  }
 
-    &.position-2 {
-      animation: sweep-away-top 0.8s ease-in forwards;
-    }
+  // Sweep towards winner at position 2 (top/partner)
+  &.sweeping-away.sweep-to-2 .played-card {
+    &.position-0 { animation: sweep-0-to-2 0.4s ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-2 0.4s ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-2 0.4s ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-2 0.4s ease-in forwards; }
+  }
 
-    &.position-3 {
-      animation: sweep-away-right 0.8s ease-in forwards;
-    }
+  // Sweep towards winner at position 3 (right)
+  &.sweeping-away.sweep-to-3 .played-card {
+    &.position-0 { animation: sweep-0-to-3 0.4s ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-3 0.4s ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-3 0.4s ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-3 0.4s ease-in forwards; }
   }
 }
 
@@ -113,28 +144,28 @@ function getCardPosition(playerId: number): number {
   position: absolute;
 
   &.position-0 {
-    bottom: -25px;
+    bottom: -20px;
     left: 50%;
     transform: translateX(-50%);
     animation: play-card-bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   &.position-1 {
-    left: -25px;
+    left: -20px;
     top: 50%;
     transform: translateY(-50%);
     animation: play-card-left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   &.position-2 {
-    top: -25px;
+    top: -20px;
     left: 50%;
     transform: translateX(-50%);
     animation: play-card-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   &.position-3 {
-    right: -25px;
+    right: -20px;
     top: 50%;
     transform: translateY(-50%);
     animation: play-card-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -143,11 +174,11 @@ function getCardPosition(playerId: number): number {
   @media (max-height: 500px) {
 
     &.position-1 {
-      left: -20px;
+      left: -15px;
     }
 
     &.position-3 {
-      right: -20px;
+      right: -15px;
     }
   }
 }
@@ -243,47 +274,75 @@ function getCardPosition(playerId: number): number {
   }
 }
 
-@keyframes sweep-away-bottom {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(150px) translateY(-150px) rotate(45deg) scale(0.3);
-  }
+// Sweep animations from each position to winner position 0 (bottom)
+@keyframes sweep-0-to-0 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(-50%) translateY(80px) scale(0.5); }
+}
+@keyframes sweep-1-to-0 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(60px) translateY(80px) scale(0.5); }
+}
+@keyframes sweep-2-to-0 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(-50%) translateY(120px) scale(0.5); }
+}
+@keyframes sweep-3-to-0 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(-60px) translateY(80px) scale(0.5); }
 }
 
-@keyframes sweep-away-left {
-  from {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-150px) translateX(150px) rotate(45deg) scale(0.3);
-  }
+// Sweep animations from each position to winner position 1 (left)
+@keyframes sweep-0-to-1 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(-120px) translateY(-60px) scale(0.5); }
+}
+@keyframes sweep-1-to-1 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(-80px) translateY(-50%) scale(0.5); }
+}
+@keyframes sweep-2-to-1 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(-120px) translateY(60px) scale(0.5); }
+}
+@keyframes sweep-3-to-1 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(-120px) translateY(-50%) scale(0.5); }
 }
 
-@keyframes sweep-away-top {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(150px) translateY(-150px) rotate(45deg) scale(0.3);
-  }
+// Sweep animations from each position to winner position 2 (top)
+@keyframes sweep-0-to-2 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(-50%) translateY(-120px) scale(0.5); }
+}
+@keyframes sweep-1-to-2 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(60px) translateY(-80px) scale(0.5); }
+}
+@keyframes sweep-2-to-2 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(-50%) translateY(-80px) scale(0.5); }
+}
+@keyframes sweep-3-to-2 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(-60px) translateY(-80px) scale(0.5); }
 }
 
-@keyframes sweep-away-right {
-  from {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-150px) translateX(150px) rotate(45deg) scale(0.3);
-  }
+// Sweep animations from each position to winner position 3 (right)
+@keyframes sweep-0-to-3 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(60px) translateY(-60px) scale(0.5); }
+}
+@keyframes sweep-1-to-3 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(120px) translateY(-50%) scale(0.5); }
+}
+@keyframes sweep-2-to-3 {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translateX(60px) translateY(60px) scale(0.5); }
+}
+@keyframes sweep-3-to-3 {
+  from { opacity: 1; transform: translateY(-50%); }
+  to { opacity: 0; transform: translateX(80px) translateY(-50%) scale(0.5); }
 }
 </style>

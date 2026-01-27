@@ -174,9 +174,9 @@ function isCardDiscarding(card: CardType): boolean {
 
 function getCardStyle(index: number, totalCards: number) {
   const FULL_HAND_SIZE = 5 // Euchre hand size
-  const cardOffset = 45
-  const maxRotation = 12
-  const arcRadius = 400 // Cards arranged on arc of this radius
+  const cardOffset = 38
+  const maxRotation = 10
+  const arcRadius = 340 // Cards arranged on arc of this radius
 
   // Map current card index to position in a full hand (0-4)
   // Cards should occupy the center positions to maintain constant spacing
@@ -285,8 +285,8 @@ function handleCardClick(card: CardType) {
   display: flex;
   justify-content: center;
   flex: 1;
-  min-width: 300px;
-  height: 95px; // Show ~75% of 126px card height
+  min-width: 250px;
+  height: 80px; // Show ~75% of 105px card height
   overflow: hidden;
 
   &.hidden {

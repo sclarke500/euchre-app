@@ -1,5 +1,5 @@
 <template>
-  <Modal :show="true">
+  <Modal :show="show">
     <div class="trump-selection">
       <template v-if="phase === GamePhase.BiddingRound1">
       <div class="round1-content">
@@ -56,6 +56,10 @@ import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase, BidAction, Suit } from '@euchre/shared'
 import Card from './Card.vue'
 import Modal from './Modal.vue'
+
+defineProps<{
+  show: boolean
+}>()
 
 const game = inject<GameAdapter>('game')!
 
@@ -126,19 +130,19 @@ function handlePass() {
 
 .kitty-stack {
   position: relative;
-  width: 90px;
-  height: 126px;
+  width: $card-width;
+  height: $card-height;
 }
 
 .kitty-back {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 90px;
-  height: 126px;
-  border-radius: 8px;
+  top: 3px;
+  left: 3px;
+  width: $card-width;
+  height: $card-height;
+  border-radius: 6px;
   background: linear-gradient(135deg, #4a69bd 0%, #6a89cc 50%, #4a69bd 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .turn-up-card {
@@ -154,13 +158,13 @@ function handlePass() {
 }
 
 .action-btn {
-  padding: $spacing-sm $spacing-lg;
-  font-size: 1rem;
+  padding: $spacing-xs $spacing-md;
+  font-size: 0.875rem;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
-  min-width: 120px;
+  min-width: 100px;
   border: none;
 
   &.primary {
@@ -175,9 +179,11 @@ function handlePass() {
   &.secondary {
     background: #e0e0e0;
     color: #333;
+    border: 2px solid #999;
 
     &:hover {
       background: #d0d0d0;
+      border-color: #777;
     }
   }
 
@@ -207,16 +213,16 @@ function handlePass() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
   background: white;
   border: 2px solid #ddd;
   cursor: pointer;
   transition: all 0.15s ease;
 
   .suit-symbol {
-    font-size: 2rem;
+    font-size: 1.5rem;
     line-height: 1;
   }
 

@@ -5,31 +5,48 @@ import { getSameColorSuit } from './deck.js'
 /**
  * Evaluate if a player should order up the turn card (round 1)
  * Returns true if AI should order up
+ *
+ * Key consideration: Who benefits from the turn card?
+ * - If dealer is on your team, ordering up helps your team
+ * - If dealer is opponent, ordering up gives them the card
  */
 export function shouldOrderUp(
   hand: Card[],
   turnCard: Card,
-  _playerPosition: number,
-  _dealerPosition: number,
+  playerPosition: number,
+  dealerPosition: number,
   isDealer: boolean
 ): boolean {
   const trumpSuit = turnCard.suit
   const trumpCount = countTrumpCards(hand, trumpSuit)
   const hasBower = hasRightOrLeftBower(hand, trumpSuit)
 
-  // Dealer has advantage (gets the turn card)
+  // Check if dealer is on the same team (partners are positions 0&2 or 1&3)
+  const dealerIsTeammate = playerPosition % 2 === dealerPosition % 2
+
+  // Dealer picking up for themselves - most favorable
   if (isDealer) {
     // Pick up with 2+ trump or any bower
     return trumpCount >= 2 || hasBower
   }
 
-  // Non-dealer needs stronger hand to order up
-  // Need 3+ trump or 2 trump with a bower
-  if (hasBower && trumpCount >= 2) {
-    return true
+  // Ordering up your partner (dealer is teammate) - favorable
+  // Your team gets the turn card, so be somewhat willing
+  if (dealerIsTeammate) {
+    // Need 2+ trump with a bower, or 3+ trump
+    if (hasBower && trumpCount >= 2) {
+      return true
+    }
+    return trumpCount >= 3
   }
 
-  return trumpCount >= 3
+  // Ordering up an opponent - least favorable
+  // You're giving the opponent the turn card, need a strong hand
+  // Need 3+ trump with a bower, or 4+ trump
+  if (hasBower && trumpCount >= 3) {
+    return true
+  }
+  return trumpCount >= 4
 }
 
 /**

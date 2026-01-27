@@ -54,7 +54,8 @@ defineEmits<{
 }
 
 .modal-content {
-  background: #f5f5f5;
+  background: rgba(245, 245, 245, 0.85);
+  backdrop-filter: blur(8px);
   border-radius: 12px;
   padding: $spacing-lg;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -62,18 +63,37 @@ defineEmits<{
 }
 
 // Transition styles
-.modal-enter-active,
-.modal-leave-active {
+.modal-enter-active {
+  transition: opacity 0.25s ease-out;
+
   .modal-content {
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease-out;
   }
 }
 
-.modal-enter-from,
-.modal-leave-to {
+.modal-leave-active {
+  transition: opacity 0.2s ease-in;
+
+  .modal-content {
+    transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+  }
+}
+
+.modal-enter-from {
+  opacity: 0;
+
   .modal-content {
     opacity: 0;
-    transform: scale(0.85) translateY(10px);
+    transform: scale(0.9) translateY(15px);
+  }
+}
+
+.modal-leave-to {
+  opacity: 0;
+
+  .modal-content {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
   }
 }
 </style>
