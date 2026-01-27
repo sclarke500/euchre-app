@@ -1,9 +1,13 @@
 <template>
+  <Teleport to="body">
+    <button class="back-button" @click="showLeaveConfirm = true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+  </Teleport>
   <div class="game-board">
-    <!-- Top row: back button | partner plaque | scoreboard -->
-    <div class="cell-back">
-      <button class="back-button" @click="showLeaveConfirm = true">←</button>
-    </div>
+    <!-- Top row: partner plaque | scoreboard -->
     <div class="cell-partner">
       <UnifiedOpponentHand
         :player="getPlayerAtPosition(2)"
@@ -187,24 +191,20 @@ onUnmounted(() => {
   
   display: grid;
   // Use 12 columns for flexible splits
-  // Original proportions: back(1) partner(2) score(1) = 3:6:3, left(1) play(2) right(1) = 3:6:3
-  // Bottom: plaque(1/3) hand(2/3) = 4:8
+  // Top row: empty(3) partner(6) score(3), left(3) play(6) right(3) middle, plaque(4) hand(8) bottom
   grid-template-columns: repeat(12, 1fr);
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
-    "back back back partner partner partner partner partner partner score score score"
+    ". . . partner partner partner partner partner partner score score score"
     "left left left play play play play play play right right right"
     "plaque plaque plaque plaque hand hand hand hand hand hand hand hand";
 }
 
-.cell-back {
-  grid-area: back;
-  display: flex;
-  align-items: flex-start;
-  padding: $spacing-md;
-}
-
 .back-button {
+  position: fixed;
+  top: $spacing-md;
+  left: $spacing-md;
+  z-index: 10100;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
@@ -212,7 +212,6 @@ onUnmounted(() => {
   height: 32px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;

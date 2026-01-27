@@ -207,18 +207,22 @@ function handleCardClick(card: CardType) {
 
 <style scoped lang="scss">
 .hand-container {
+  position: relative;
   display: flex;
   align-items: flex-end;
-  gap: $spacing-lg;
   width: 100%;
   justify-content: center;
 }
 
 .picked-up-section {
+  position: absolute;
+  left: $spacing-md;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: $spacing-xs;
+  animation: picked-up-appear 0.4s ease-out;
 
   .picked-up-label {
     font-size: 0.7rem;
@@ -238,6 +242,17 @@ function handleCardClick(card: CardType) {
 
   :deep(.card.selectable:hover) {
     transform: translateY(-8px);
+  }
+}
+
+@keyframes picked-up-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 

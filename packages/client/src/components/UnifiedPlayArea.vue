@@ -157,6 +157,7 @@ function getCardPosition(playerId: number): number {
   flex-direction: column;
   align-items: center;
   gap: $spacing-xs;
+  animation: turn-up-reveal 0.5s ease-out;
 
   .turn-up-label {
     font-size: 0.75rem;
@@ -164,10 +165,37 @@ function getCardPosition(playerId: number): number {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: bold;
+    animation: label-fade-in 0.4s ease-out 0.3s both;
 
     @media (max-height: 500px) {
       font-size: 0.625rem;
     }
+  }
+}
+
+@keyframes turn-up-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotateY(-90deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05) rotateY(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes label-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

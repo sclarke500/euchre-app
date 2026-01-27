@@ -42,7 +42,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background-color: transparent;
 
   &.non-blocking {
     pointer-events: none;
@@ -64,22 +64,16 @@ defineEmits<{
 // Transition styles
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-active .modal-content,
-.modal-leave-active .modal-content {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  .modal-content {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
 }
 
 .modal-enter-from,
 .modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-content,
-.modal-leave-to .modal-content {
-  opacity: 0;
-  transform: scale(0.9);
+  .modal-content {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+  }
 }
 </style>
