@@ -11,16 +11,12 @@ $spacing-md: 1rem;
 $spacing-lg: 1.5rem;
 $spacing-xl: 2rem;
 
-// Breakpoints
+// Breakpoints (kept for reference but not used for cards)
 $breakpoint-sm: 576px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 992px;
 $breakpoint-xl: 1200px;
 
-// Card dimensions (desktop)
-$card-width: 70px;
-$card-height: 98px;
-
-// Card dimensions (mobile) - larger cards, only top half visible
-$card-width-mobile: 60px;
-$card-height-mobile: 84px;
+// Card dimensions - mobile only, larger for readability
+$card-width: 90px;
+$card-height: 126px;

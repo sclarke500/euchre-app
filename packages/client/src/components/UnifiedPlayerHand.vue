@@ -6,7 +6,7 @@
       :card="card"
       :selectable="isCardSelectable(card)"
       :style="getCardStyle(index, sortedHand.length)"
-      :class="{ 'card-playable': isCardSelectable(card), 'card-selected': selectedCard === card.id }"
+      :class="{ 'card-selected': selectedCard === card.id }"
       @click="handleCardClick(card)"
     />
   </div>
@@ -59,9 +59,9 @@ function isCardSelectable(card: CardType): boolean {
 }
 
 function getCardStyle(index: number, totalCards: number) {
-  const cardOffset = 50
-  const maxRotation = 6
-  const arcDepth = 10
+  const cardOffset = 55
+  const maxRotation = 5
+  const arcDepth = 8
 
   const position = totalCards > 1 ? index / (totalCards - 1) : 0.5
   const rotation = (position - 0.5) * maxRotation * 2
@@ -94,29 +94,27 @@ function handleCardClick(card: CardType) {
 .player-hand {
   position: relative;
   display: flex;
-  align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
+  height: 95px; // Show ~75% of 126px card height
+  overflow: hidden;
 }
 
 :deep(.card) {
   position: absolute;
-  transition: all 0.15s ease;
-  transform-origin: center center;
-  cursor: default;
+  top: 0;
+  transition: transform 0.15s ease;
 }
 
 :deep(.card.selectable) {
   cursor: pointer;
 }
 
-:deep(.card-playable) {
-  margin-top: -10px;
+:deep(.card.selectable:hover) {
+  transform: translateY(-8px);
 }
 
 :deep(.card-selected) {
-  margin-top: -15px;
-  box-shadow: 0 0 15px $secondary-color;
+  box-shadow: 0 0 12px $secondary-color;
 }
 </style>

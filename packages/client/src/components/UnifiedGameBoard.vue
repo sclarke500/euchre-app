@@ -34,13 +34,12 @@
       />
     </div>
 
-    <!-- Bottom row: empty | user hand | user plaque -->
-    <div class="cell-empty"></div>
-    <div class="cell-hand">
-      <UnifiedPlayerHand />
-    </div>
+    <!-- Bottom row: user plaque | user hand (spans 2 columns on mobile) -->
     <div class="cell-user-plaque">
       <UnifiedPlayerPlaque />
+    </div>
+    <div class="cell-hand">
+      <UnifiedPlayerHand />
     </div>
 
     <TrumpSelection v-if="showBidding" />
@@ -125,11 +124,11 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
   display: grid;
   grid-template-columns: 1fr 2fr 1fr;
-  grid-template-rows: auto 1fr 40%;
+  grid-template-rows: auto 1fr auto;
   grid-template-areas:
     "back partner score"
     "left play right"
-    "empty hand plaque";
+    "plaque hand hand";
 }
 
 .cell-back {
@@ -190,16 +189,11 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.cell-empty {
-  grid-area: empty;
-}
-
 .cell-hand {
   grid-area: hand;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: visible;
 }
 
 .cell-user-plaque {
@@ -207,5 +201,6 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: $spacing-xs;
 }
 </style>

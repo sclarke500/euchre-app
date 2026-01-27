@@ -1,20 +1,14 @@
 <template>
   <div
-    :class="['card', { selectable, disabled: !selectable }]"
+    :class="['card', { selectable }]"
     @click="handleClick"
   >
-    <div class="card-content">
-      <div :class="['card-corner', 'top-left', suitColorClass]">
-        <div class="rank">{{ displayRank }}</div>
-        <div class="suit">{{ suitSymbol }}</div>
-      </div>
-      <div :class="['card-center', suitColorClass]">
-        <div class="suit-large">{{ suitSymbol }}</div>
-      </div>
-      <div :class="['card-corner', 'bottom-right', suitColorClass]">
-        <div class="rank">{{ displayRank }}</div>
-        <div class="suit">{{ suitSymbol }}</div>
-      </div>
+    <div class="card-corner top-left" :class="suitColorClass">
+      <div class="rank">{{ displayRank }}</div>
+      <div class="suit">{{ suitSymbol }}</div>
+    </div>
+    <div class="card-center" :class="suitColorClass">
+      <div class="suit-large">{{ suitSymbol }}</div>
     </div>
   </div>
 </template>
@@ -78,20 +72,11 @@ function handleClick() {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   position: relative;
   user-select: none;
+  flex-shrink: 0;
 
   &.selectable {
     cursor: pointer;
   }
-
-  &.disabled {
-    cursor: not-allowed;
-  }
-}
-
-.card-content {
-  padding: $spacing-xs;
-  height: 100%;
-  position: relative;
 }
 
 .card-corner {
@@ -102,23 +87,17 @@ function handleClick() {
   font-weight: bold;
 
   &.top-left {
-    top: $spacing-xs;
-    left: $spacing-xs;
-  }
-
-  &.bottom-right {
-    bottom: $spacing-xs;
-    right: $spacing-xs;
-    transform: rotate(180deg);
+    top: 6px;
+    left: 8px;
   }
 
   .rank {
-    font-size: 0.75rem;
+    font-size: 1.5rem;
     line-height: 1;
   }
 
   .suit {
-    font-size: 0.625rem;
+    font-size: 1.25rem;
     line-height: 1;
   }
 
@@ -138,7 +117,7 @@ function handleClick() {
   transform: translate(-50%, -50%);
 
   .suit-large {
-    font-size: 1.5rem;
+    font-size: 3rem;
   }
 
   &.red {

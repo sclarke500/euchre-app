@@ -1,44 +1,50 @@
 <template>
-  <div class="trump-selection-overlay">
-    <div class="trump-selection">
-      <template v-if="phase === GamePhase.BiddingRound1">
+  <div class="trump-selection">
+    <template v-if="phase === GamePhase.BiddingRound1">
+      <div class="round1-content">
+        <div class="kitty-stack">
+          <div class="kitty-back"></div>
+          <Card v-if="turnUpCard" :card="turnUpCard" class="turn-up-card" />
+        </div>
         <div class="round1-actions">
-          <div class="alone-option">
-            <label>
-              <input v-model="goingAlone" type="checkbox" />
-              <span>Alone</span>
-            </label>
-          </div>
-          <ActionButtons
-            :actions="round1Actions"
-            @action="handleBidAction"
-          />
-        </div>
-      </template>
-      <template v-else-if="phase === GamePhase.BiddingRound2">
-        <div class="round2-header">Call Trump</div>
-        <div class="suit-selection">
-          <button
-            v-for="suit in allSuits"
-            :key="suit"
-            :class="['suit-btn', getSuitColor(suit), { disabled: !isSuitSelectable(suit) }]"
-            :disabled="!isSuitSelectable(suit)"
-            @click="handleSuitSelect(suit)"
-          >
-            <span class="suit-symbol">{{ getSuitSymbol(suit) }}</span>
+          <button class="action-btn primary" @click="handleOrderUp">
+            {{ isDealer ? 'Pick Up' : 'Order Up' }}
           </button>
-        </div>
-        <div class="round2-footer">
+          <button class="action-btn secondary" @click="handlePass">
+            Pass
+          </button>
           <div class="alone-option">
             <label>
               <input v-model="goingAlone" type="checkbox" />
-              <span>Alone</span>
+              <span>Go Alone</span>
             </label>
           </div>
-          <button class="pass-btn" @click="handleBidAction(BidAction.Pass)">Pass</button>
         </div>
-      </template>
-    </div>
+      </div>
+    </template>
+    <template v-else-if="phase === GamePhase.BiddingRound2">
+      <div class="round2-header">Call Trump</div>
+      <div class="suit-selection">
+        <button
+          v-for="suit in allSuits"
+          :key="suit"
+          :class="['suit-btn', getSuitColor(suit), { disabled: !isSuitSelectable(suit) }]"
+          :disabled="!isSuitSelectable(suit)"
+          @click="handleSuitSelect(suit)"
+        >
+          <span class="suit-symbol">{{ getSuitSymbol(suit) }}</span>
+        </button>
+      </div>
+      <div class="round2-footer">
+        <button class="action-btn secondary" @click="handlePass">Pass</button>
+        <div class="alone-option">
+          <label>
+            <input v-model="goingAlone" type="checkbox" />
+            <span>Go Alone</span>
+          </label>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -46,7 +52,7 @@
 import { computed, ref, inject } from 'vue'
 import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase, BidAction, Suit } from '@euchre/shared'
-import ActionButtons from './ActionButtons.vue'
+import Card from './Card.vue'
 
 const game = inject<GameAdapter>('game')!
 
@@ -55,26 +61,11 @@ const dealer = computed(() => game.dealer.value)
 const myPlayerId = computed(() => game.myPlayerId.value)
 const turnUpCard = computed(() => game.turnUpCard.value)
 
-// Go alone checkbox state
 const goingAlone = ref(false)
 
-// All suits in display order
 const allSuits = [Suit.Hearts, Suit.Diamonds, Suit.Clubs, Suit.Spades]
 
 const isDealer = computed(() => myPlayerId.value === dealer.value)
-
-const round1Actions = computed(() => {
-  return [
-    {
-      label: isDealer.value ? 'Pick Up' : 'Order Up',
-      value: isDealer.value ? BidAction.PickUp : BidAction.OrderUp,
-    },
-    {
-      label: 'Pass',
-      value: BidAction.Pass,
-    },
-  ]
-})
 
 const turnCardSuit = computed(() => turnUpCard.value?.suit)
 
@@ -82,7 +73,7 @@ function isSuitSelectable(suit: Suit): boolean {
   return suit !== turnCardSuit.value
 }
 
-function getSuitSymbol(suit: Suit): string {
+function getSuitSymbol(suit: Suit | undefined): string {
   switch (suit) {
     case Suit.Hearts:
       return '♥'
@@ -97,7 +88,7 @@ function getSuitSymbol(suit: Suit): string {
   }
 }
 
-function getSuitColor(suit: Suit): string {
+function getSuitColor(suit: Suit | undefined): string {
   return suit === Suit.Hearts || suit === Suit.Diamonds ? 'red' : 'black'
 }
 
@@ -107,112 +98,133 @@ function handleSuitSelect(suit: Suit) {
   goingAlone.value = false
 }
 
-function handleBidAction(action: string) {
-  if (phase.value === GamePhase.BiddingRound1) {
-    if (action === BidAction.OrderUp || action === BidAction.PickUp) {
-      game.makeBid(action as BidAction, undefined, goingAlone.value)
-    } else {
-      game.makeBid(BidAction.Pass)
-    }
-  } else if (phase.value === GamePhase.BiddingRound2) {
-    game.makeBid(BidAction.Pass)
-  }
+function handleOrderUp() {
+  const action = isDealer.value ? BidAction.PickUp : BidAction.OrderUp
+  game.makeBid(action, undefined, goingAlone.value)
+  goingAlone.value = false
+}
+
+function handlePass() {
+  game.makeBid(BidAction.Pass)
   goingAlone.value = false
 }
 </script>
 
 <style scoped lang="scss">
-.trump-selection-overlay {
+.trump-selection {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: $spacing-md;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   z-index: 1000;
-  pointer-events: none;
+  animation: scaleIn 0.2s ease-out;
 }
 
-.trump-selection {
-  background: linear-gradient(135deg, #2d5f3f 0%, #1a3d28 100%);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  padding: $spacing-sm $spacing-md;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  text-align: center;
-  color: white;
-  backdrop-filter: blur(10px);
-  pointer-events: auto;
+.round1-content {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+}
 
-  @media (max-height: 500px) {
-    padding: $spacing-xs $spacing-sm;
-    border-radius: 8px;
-  }
+.kitty-stack {
+  position: relative;
+  width: 90px;
+  height: 126px;
+}
+
+.kitty-back {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 90px;
+  height: 126px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #4a69bd 0%, #6a89cc 50%, #4a69bd 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.turn-up-card {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .round1-actions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: $spacing-sm;
+}
 
-  @media (max-height: 500px) {
-    gap: $spacing-xs;
+.action-btn {
+  padding: $spacing-sm $spacing-lg;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 120px;
+  border: none;
+
+  &.primary {
+    background: #2d5f3f;
+    color: white;
+
+    &:hover {
+      background: #3d7f52;
+    }
+  }
+
+  &.secondary {
+    background: #e0e0e0;
+    color: #333;
+
+    &:hover {
+      background: #d0d0d0;
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 }
 
 .round2-header {
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: $spacing-xs;
-  opacity: 0.9;
-
-  @media (max-height: 500px) {
-    font-size: 0.75rem;
-    margin-bottom: 2px;
-  }
+  letter-spacing: 1px;
+  margin-bottom: $spacing-md;
+  color: #333;
+  text-align: center;
 }
 
 .suit-selection {
   display: flex;
-  gap: $spacing-xs;
-  margin-bottom: $spacing-xs;
-
-  @media (max-height: 500px) {
-    gap: 4px;
-    margin-bottom: 4px;
-  }
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  justify-content: center;
 }
 
 .suit-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
   background: white;
-  border: 2px solid white;
+  border: 2px solid #ddd;
   cursor: pointer;
   transition: all 0.15s ease;
 
-  @media (max-height: 500px) {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-  }
-
   .suit-symbol {
-    font-size: 1.5rem;
+    font-size: 2rem;
     line-height: 1;
-
-    @media (max-height: 500px) {
-      font-size: 1.25rem;
-    }
   }
 
   &.red .suit-symbol {
@@ -225,26 +237,25 @@ function handleBidAction(action: string) {
 
   &:hover:not(.disabled) {
     transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border-color: #999;
+  }
+
+  &:active:not(.disabled) {
+    transform: scale(0.95);
   }
 
   &.disabled {
     opacity: 0.35;
     cursor: not-allowed;
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(255, 255, 255, 0.5);
   }
 }
 
 .round2-footer {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: $spacing-sm;
-
-  @media (max-height: 500px) {
-    gap: $spacing-xs;
-  }
 }
 
 .alone-option {
@@ -253,63 +264,38 @@ function handleBidAction(action: string) {
     align-items: center;
     gap: $spacing-xs;
     cursor: pointer;
-    padding: 4px $spacing-sm;
-    background: rgba(255, 255, 255, 0.1);
+    padding: $spacing-xs $spacing-sm;
+    background: #e8e8e8;
     border-radius: 6px;
     transition: background 0.15s ease;
-
-    @media (max-height: 500px) {
-      padding: 2px $spacing-xs;
-      border-radius: 4px;
-    }
+    font-size: 0.85rem;
+    color: #333;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: #ddd;
     }
   }
 
   input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     cursor: pointer;
-    accent-color: $secondary-color;
-
-    @media (max-height: 500px) {
-      width: 12px;
-      height: 12px;
-    }
+    accent-color: #2d5f3f;
   }
 
   span {
-    font-size: 0.8rem;
-    font-weight: bold;
-
-    @media (max-height: 500px) {
-      font-size: 0.7rem;
-    }
+    font-weight: 500;
   }
 }
 
-.pass-btn {
-  padding: 4px $spacing-md;
-  font-size: 0.8rem;
-  font-weight: bold;
-  background: transparent;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  @media (max-height: 500px) {
-    padding: 2px $spacing-sm;
-    font-size: 0.7rem;
-    border-radius: 4px;
+@keyframes scaleIn {
+  from {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
   }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.8);
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
   }
 }
 </style>

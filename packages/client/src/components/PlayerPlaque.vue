@@ -48,51 +48,33 @@ defineProps<Props>()
   background: rgba(255, 255, 255, 0.15);
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 16px;
-  padding: 2px $spacing-sm;
+  padding: 3px $spacing-sm;
   backdrop-filter: blur(10px);
 
-  @media (max-height: 500px) {
-    padding: 1px $spacing-xs;
-    border-radius: 12px;
-  }
-
   .trump-symbol {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     font-weight: bold;
     line-height: 1;
-
-    @media (max-height: 500px) {
-      font-size: 1rem;
-    }
   }
 
   .trump-label {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: bold;
     color: white;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-
-    @media (max-height: 500px) {
-      font-size: 0.625rem;
-    }
   }
 
   .alone-badge {
-    font-size: 0.625rem;
+    font-size: 0.7rem;
     font-weight: bold;
     color: #ffd700;
     background: rgba(255, 215, 0, 0.2);
     border: 1px solid rgba(255, 215, 0, 0.5);
     border-radius: 4px;
-    padding: 1px 4px;
+    padding: 2px 5px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-
-    @media (max-height: 500px) {
-      font-size: 0.5rem;
-      padding: 0 3px;
-    }
   }
 
   &.going-alone {
@@ -107,34 +89,22 @@ defineProps<Props>()
   gap: $spacing-sm;
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: $spacing-xs $spacing-sm;
+  border-radius: 10px;
+  padding: $spacing-xs $spacing-md;
   backdrop-filter: blur(10px);
-
-  @media (max-height: 500px) {
-    gap: $spacing-xs;
-    padding: 2px $spacing-xs;
-    border-radius: 5px;
-  }
 }
 
 .tricks-won {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  border-radius: 5px;
   font-weight: bold;
-  font-size: 0.875rem;
+  font-size: 1.1rem;
   color: white;
-
-  @media (max-height: 500px) {
-    width: 18px;
-    height: 18px;
-    font-size: 0.75rem;
-  }
 }
 
 .player-name-container {
@@ -142,27 +112,19 @@ defineProps<Props>()
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 60px;
-
-  @media (max-height: 500px) {
-    min-width: 45px;
-  }
+  min-width: 75px;
 }
 
 .player-name {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: bold;
   color: white;
   white-space: nowrap;
-
-  @media (max-height: 500px) {
-    font-size: 0.75rem;
-  }
 }
 
 .dealer-indicator {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -170,22 +132,11 @@ defineProps<Props>()
   border: 2px solid rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   font-weight: bold;
-  font-size: 0.875rem;
+  font-size: 1.1rem;
   color: white;
-
-  @media (max-height: 500px) {
-    width: 18px;
-    height: 18px;
-    font-size: 0.625rem;
-    border-width: 1px;
-  }
 }
 
 .indicator-spacer {
-  width: 24px;
-
-  @media (max-height: 500px) {
-    width: 18px;
-  }
+  width: 30px;
 }
 </style>

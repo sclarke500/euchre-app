@@ -1,13 +1,13 @@
 <template>
   <div class="score-board">
     <div class="team-score">
-      <h3>Your Team</h3>
-      <div class="score">{{ teamScore(0) }}</div>
+      <span class="label">Your Team</span>
+      <span class="score">{{ teamScore(0) }}</span>
     </div>
     <div class="divider">-</div>
     <div class="team-score">
-      <h3>Opponents</h3>
-      <div class="score">{{ teamScore(1) }}</div>
+      <span class="label">Opponents</span>
+      <span class="score">{{ teamScore(1) }}</span>
     </div>
   </div>
 </template>
@@ -30,44 +30,34 @@ function teamScore(teamId: number): number {
 .score-board {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-  background: rgba(0, 0, 0, 0.7);
-  padding: $spacing-xs $spacing-md;
-  border-radius: 8px;
+  gap: $spacing-xs;
+  background: rgba(0, 0, 0, 0.6);
+  padding: $spacing-xs $spacing-sm;
+  border-radius: 6px;
   color: white;
   font-family: 'Courier New', monospace;
 }
 
 .team-score {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
 
-  h3 {
-    font-size: 0.75rem;
-    margin-bottom: 2px;
-    opacity: 0.8;
-
-    @media (min-width: 768px) {
-      font-size: 0.875rem;
-      margin-bottom: $spacing-xs;
-    }
+  .label {
+    font-size: 0.6rem;
+    opacity: 0.7;
   }
 
   .score {
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: bold;
-
-    @media (min-width: 768px) {
-      font-size: 2rem;
-    }
   }
 }
 
 .divider {
-  font-size: 1rem;
+  font-size: 0.875rem;
   opacity: 0.5;
-
-  @media (min-width: 768px) {
-    font-size: 1.5rem;
-  }
+  margin: 0 2px;
 }
 </style>

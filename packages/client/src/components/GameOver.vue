@@ -1,12 +1,10 @@
 <template>
-  <div class="game-over-overlay">
-    <div class="game-over">
-      <h1>🎉 Game Over! 🎉</h1>
-      <h2>{{ winnerText }}</h2>
-      <button class="new-game-btn" @click="startNewGame">
-        Play Again
-      </button>
-    </div>
+  <div class="game-over">
+    <h1>Game Over!</h1>
+    <h2>{{ winnerText }}</h2>
+    <button class="action-btn" @click="startNewGame">
+      Play Again
+    </button>
   </div>
 </template>
 
@@ -36,81 +34,62 @@ function startNewGame() {
 </script>
 
 <style scoped lang="scss">
-.game-over-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.5s ease-out;
-}
-
 .game-over {
-  background: linear-gradient(135deg, #2d5f3f 0%, #1a3d28 100%);
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  padding: $spacing-xl;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: $spacing-lg $spacing-xl;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
-  color: white;
-  backdrop-filter: blur(10px);
-  animation: scaleIn 0.5s ease-out;
+  z-index: 1000;
+  animation: scaleIn 0.3s ease-out;
+  min-width: 220px;
 
   h1 {
-    font-size: 2.5rem;
-    margin-bottom: $spacing-md;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    font-size: 1.5rem;
+    margin-bottom: $spacing-sm;
+    color: #333;
   }
 
   h2 {
-    font-size: 1.75rem;
-    margin-bottom: $spacing-lg;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    font-size: 1.1rem;
+    margin-bottom: $spacing-md;
+    color: #555;
   }
 }
 
-.new-game-btn {
-  padding: $spacing-md $spacing-xl;
-  font-size: 1.25rem;
+.action-btn {
+  padding: $spacing-sm $spacing-lg;
+  font-size: 1rem;
   font-weight: bold;
-  background: white;
-  color: #f5576c;
+  background: #2d5f3f;
+  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.15s ease;
+  min-width: 120px;
 
   &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: #3d7f52;
   }
 
   &:active {
-    transform: scale(0.95);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+    transform: scale(0.97);
   }
 }
 
 @keyframes scaleIn {
   from {
-    transform: scale(0.8);
+    transform: translate(-50%, -50%) scale(0.9);
     opacity: 0;
   }
   to {
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
 }
