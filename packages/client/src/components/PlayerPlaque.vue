@@ -7,7 +7,7 @@
       <span v-if="goingAlone" class="alone-badge">ALONE</span>
     </div>
 
-    <div class="player-plaque">
+    <div class="player-plaque" :class="{ 'current-turn': isCurrentTurn }">
       <div class="tricks-won">{{ tricksWon }}</div>
       <div class="player-name-container">
         <span class="player-name">{{ playerName }}</span>
@@ -25,6 +25,7 @@ interface Props {
   playerName: string
   tricksWon: number
   isDealer: boolean
+  isCurrentTurn?: boolean
   trumpSymbol?: string
   trumpColor?: string
   goingAlone?: boolean
@@ -92,6 +93,12 @@ defineProps<Props>()
   border-radius: 10px;
   padding: $spacing-xs $spacing-md;
   backdrop-filter: blur(10px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &.current-turn {
+    border-color: #f4d03f;
+    box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
+  }
 }
 
 .tricks-won {

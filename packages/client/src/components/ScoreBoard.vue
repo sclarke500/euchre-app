@@ -1,12 +1,12 @@
 <template>
   <div class="score-board">
     <div class="team-score">
-      <span class="label">Your Team</span>
+      <span class="label">Us</span>
       <span class="score">{{ teamScore(0) }}</span>
     </div>
     <div class="divider">-</div>
     <div class="team-score">
-      <span class="label">Opponents</span>
+      <span class="label">Them</span>
       <span class="score">{{ teamScore(1) }}</span>
     </div>
   </div>
@@ -30,11 +30,11 @@ function teamScore(teamId: number): number {
 .score-board {
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
-  background: rgba(0, 0, 0, 0.6);
-  padding: $spacing-xs $spacing-sm;
-  border-radius: 6px;
-  color: white;
+  gap: $spacing-sm;
+  background: #f0f0f0;
+  padding: $spacing-xs $spacing-md;
+  border-radius: 8px;
+  color: #333;
   font-family: 'Courier New', monospace;
 }
 
@@ -42,22 +42,22 @@ function teamScore(teamId: number): number {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
 
   .label {
-    font-size: 0.6rem;
+    font-size: 0.85rem;
     opacity: 0.7;
   }
 
   .score {
-    font-size: 1rem;
+    font-size: 1.7rem;
     font-weight: bold;
   }
 }
 
 .divider {
-  font-size: 0.875rem;
-  opacity: 0.5;
-  margin: 0 2px;
+  font-size: 1.25rem;
+  opacity: 0.4;
+  margin: 0 4px;
 }
 </style>

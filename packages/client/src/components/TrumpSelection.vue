@@ -264,16 +264,8 @@ function handlePass() {
     align-items: center;
     gap: $spacing-xs;
     cursor: pointer;
-    padding: $spacing-xs $spacing-sm;
-    background: #e8e8e8;
-    border-radius: 6px;
-    transition: background 0.15s ease;
     font-size: 0.85rem;
-    color: #333;
-
-    &:hover {
-      background: #ddd;
-    }
+    color: #555;
   }
 
   input[type="checkbox"] {

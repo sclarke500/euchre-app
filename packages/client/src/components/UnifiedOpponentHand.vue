@@ -5,11 +5,11 @@
         :player-name="player?.name || 'Empty'"
         :tricks-won="tricksWon"
         :is-dealer="isDealer"
+        :is-current-turn="isCurrent"
         :trump-symbol="showTrumpIndicator ? trumpSymbol : undefined"
         :trump-color="showTrumpIndicator ? trumpColor : undefined"
         :going-alone="showTrumpIndicator ? game.trump.value?.goingAlone : undefined"
       />
-      <span v-if="isCurrent && !bidActionMessage" class="current-turn">Turn</span>
       <span v-if="bidActionMessage" class="bid-action">{{ bidActionMessage }}</span>
     </div>
   </div>
@@ -95,16 +95,6 @@ const trumpColor = computed(() => {
   position: relative;
   min-height: 35px;
 
-  .current-turn {
-    position: absolute;
-    top: 100%;
-    margin-top: $spacing-xs;
-    font-size: 0.625rem;
-    color: $secondary-color;
-    font-weight: bold;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
   .bid-action {
     position: absolute;
     top: 100%;
@@ -116,16 +106,6 @@ const trumpColor = computed(() => {
     padding: 2px $spacing-xs;
     border-radius: 4px;
     animation: fadeInOut 1s ease-in-out;
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
   }
 }
 

@@ -4,12 +4,12 @@
       :player-name="myPlayer?.name || 'You'"
       :tricks-won="tricksWon"
       :is-dealer="isDealer"
+      :is-current-turn="isMyTurn"
       :trump-symbol="showTrumpIndicator ? trumpSymbol : undefined"
       :trump-color="showTrumpIndicator ? trumpColor : undefined"
       :going-alone="showTrumpIndicator ? trump?.goingAlone : undefined"
     />
     <span v-if="isDiscardPhase" class="status-message discard-prompt">Select a card to discard</span>
-    <span v-else-if="isMyTurn" class="status-message">Your Turn</span>
   </div>
 </template>
 
@@ -85,25 +85,13 @@ const trumpColor = computed(() => {
 
 .status-message {
   font-size: 0.75rem;
-  color: $secondary-color;
   font-weight: bold;
-  animation: pulse 1.5s ease-in-out infinite;
 
   &.discard-prompt {
     color: #f39c12;
     background: rgba(0, 0, 0, 0.8);
     padding: $spacing-xs $spacing-sm;
     border-radius: 4px;
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
   }
 }
 </style>
