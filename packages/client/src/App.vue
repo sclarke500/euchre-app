@@ -19,35 +19,74 @@ const phase = computed(() => gameStore.phase)
 // PWA install prompt
 const deferredPrompt = ref<Event | null>(null)
 const showInstallPrompt = ref(false)
+const showOpenInAppPrompt = ref(false)
 const isIOS = ref(false)
 const isStandalone = ref(false)
+const isAppInstalled = ref(false)
 
-onMounted(() => {
-  // Check if already installed as PWA
+onMounted(async () => {
+  // Check if running as installed PWA
   isStandalone.value = window.matchMedia('(display-mode: standalone)').matches
     || (window.navigator as any).standalone === true
+
+  // If running standalone, mark as installed for future browser visits
+  if (isStandalone.value) {
+    localStorage.setItem('pwa-installed', 'true')
+    return // Don't show any prompts when running as PWA
+  }
 
   // Detect iOS
   isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent)
 
-  // Don't show if already installed or dismissed recently
+  // Check if app was previously installed
+  const wasInstalled = localStorage.getItem('pwa-installed') === 'true'
+
+  // Also check using getInstalledRelatedApps API (Chrome on Android)
+  if ('getInstalledRelatedApps' in navigator) {
+    try {
+      const relatedApps = await (navigator as any).getInstalledRelatedApps()
+      if (relatedApps.length > 0) {
+        isAppInstalled.value = true
+      }
+    } catch {
+      // API not supported or failed
+    }
+  }
+
+  // If we know it's installed, show "open in app" prompt
+  if (wasInstalled || isAppInstalled.value) {
+    const openDismissed = localStorage.getItem('pwa-open-dismissed')
+    const openDismissedTime = openDismissed ? parseInt(openDismissed, 10) : 0
+    const hoursSinceDismissed = (Date.now() - openDismissedTime) / (1000 * 60 * 60)
+
+    // Show again after 24 hours
+    if (hoursSinceDismissed > 24) {
+      showOpenInAppPrompt.value = true
+    }
+    return // Don't show install prompt if already installed
+  }
+
+  // For users who haven't installed - show install prompt
   const dismissed = localStorage.getItem('pwa-install-dismissed')
   const dismissedTime = dismissed ? parseInt(dismissed, 10) : 0
   const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
 
-  if (!isStandalone.value && daysSinceDismissed > 7) {
+  if (daysSinceDismissed > 7) {
     // For Android/Chrome - capture the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault()
       deferredPrompt.value = e
-      showInstallPrompt.value = true
+      // Show prompt after a brief delay (user engagement)
+      setTimeout(() => {
+        showInstallPrompt.value = true
+      }, 3000)
     })
 
     // For iOS - show manual instructions after a delay
     if (isIOS.value) {
       setTimeout(() => {
         showInstallPrompt.value = true
-      }, 2000)
+      }, 3000)
     }
   }
 })
@@ -74,6 +113,11 @@ async function installPWA() {
 function dismissInstallPrompt() {
   showInstallPrompt.value = false
   localStorage.setItem('pwa-install-dismissed', Date.now().toString())
+}
+
+function dismissOpenInAppPrompt() {
+  showOpenInAppPrompt.value = false
+  localStorage.setItem('pwa-open-dismissed', Date.now().toString())
 }
 
 function startSinglePlayer() {
@@ -111,6 +155,29 @@ function backToMenu() {
         <p>Please rotate your device to landscape mode</p>
       </div>
     </div>
+
+    <!-- Open in installed app prompt -->
+    <Transition name="slide-up">
+      <div v-if="showOpenInAppPrompt" class="install-prompt open-in-app">
+        <div class="install-content">
+          <div class="install-icon app-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M9 12h6M12 9v6" />
+            </svg>
+          </div>
+          <div class="install-text">
+            <strong>Open in App</strong>
+            <span>You have Euchre installed! Open from your home screen for the best experience.</span>
+          </div>
+          <button class="dismiss-btn" @click="dismissOpenInAppPrompt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Add to Home Screen prompt -->
     <Transition name="slide-up">
@@ -307,6 +374,10 @@ function backToMenu() {
     height: 20px;
     color: white;
     transform: rotate(180deg);
+  }
+
+  &.app-icon svg {
+    transform: none;
   }
 }
 
