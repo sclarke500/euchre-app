@@ -1,8 +1,8 @@
 // Main SCSS entry point
-@import './variables';
-@import './reset';
-@import './layout';
-@import './cards';
+@use './variables' as *;
+@use './reset';
+@use './layout';
+@use './cards';
 
 // Global clanker class for AI player names and clanker text
 .clanker {

@@ -149,6 +149,7 @@ function backToMenu() {
     <UnifiedGameBoard
       v-else-if="currentView === 'singlePlayer'"
       mode="singleplayer"
+      @leave-game="currentView = 'menu'"
     />
 
     <!-- Multiplayer Lobby -->
@@ -345,7 +346,7 @@ function backToMenu() {
   transition: all 0.2s ease;
 
   &:hover {
-    background: lighten($secondary-color, 10%);
+    background: color-mix(in srgb, $secondary-color 90%, white 10%);
   }
 }
 

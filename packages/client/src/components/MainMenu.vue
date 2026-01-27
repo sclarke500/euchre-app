@@ -299,7 +299,7 @@ function handleMultiplayer() {
     transition: background 0.2s;
 
     &:hover:not(:disabled) {
-      background: lighten($secondary-color, 10%);
+      background: color-mix(in srgb, $secondary-color 90%, white 10%);
     }
 
     &:disabled {

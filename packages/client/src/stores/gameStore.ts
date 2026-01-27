@@ -171,11 +171,12 @@ export const useGameStore = defineStore('game', () => {
     biddingStartPlayer.value = (currentDealer.value + 1) % 4
     passCount.value = 0
 
-    // Start bidding phase
+    // Start bidding phase after dealing animation completes
+    // Animation takes: 500ms delay + 600ms animation = 1100ms, add buffer = 1200ms
     setTimeout(() => {
       phase.value = GamePhase.BiddingRound1
       processAITurn()
-    }, 500)
+    }, 1200)
   }
 
   function makeBid(bid: Bid) {

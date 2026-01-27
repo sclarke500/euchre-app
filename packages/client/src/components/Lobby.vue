@@ -203,7 +203,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   color: white;
 
   &:hover {
-    background: lighten($secondary-color, 10%);
+    background: color-mix(in srgb, $secondary-color 90%, white 10%);
     transform: scale(1.05);
   }
 }

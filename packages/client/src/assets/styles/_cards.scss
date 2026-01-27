@@ -1,3 +1,5 @@
+@use './variables' as *;
+
 // Card back styling (for opponent hands)
 .card-back {
   width: $card-width;

@@ -10,7 +10,7 @@
       <span class="picked-up-label">Picked Up</span>
     </div>
 
-    <div class="player-hand" :style="handContainerStyle">
+    <div class="player-hand" :class="{ 'dealing': isDealing, 'hidden': !showHand }" :style="handContainerStyle">
       <Card
         v-for="(card, index) in displayHand"
         :key="card.id"
@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase } from '@euchre/shared'
 import type { Card as CardType } from '@euchre/shared'
@@ -42,6 +42,68 @@ const trump = computed(() => game.trump.value)
 const dealer = computed(() => game.dealer.value)
 const myPlayerId = computed(() => game.myPlayerId.value)
 const turnUpCard = computed(() => game.turnUpCard.value)
+
+const isDealing = ref(false)
+const showHand = ref(false)
+let dealingTimeout: number | null = null
+
+// Watch for Dealing phase and trigger slide-up animation
+watch(phase, (newPhase, oldPhase) => {
+  if (newPhase === GamePhase.Dealing && oldPhase !== GamePhase.Dealing) {
+    // Hide hand initially, then show with animation
+    showHand.value = false
+    isDealing.value = false
+    
+    // Wait half a second before starting animation
+    dealingTimeout = window.setTimeout(() => {
+      showHand.value = true
+      // Trigger animation on next frame
+      requestAnimationFrame(() => {
+        isDealing.value = true
+        // Animation completes after 0.6s
+        setTimeout(() => {
+          isDealing.value = false
+        }, 600)
+      })
+    }, 500)
+  } else if (newPhase !== GamePhase.Dealing) {
+    // Show hand normally when not dealing
+    showHand.value = true
+    isDealing.value = false
+    if (dealingTimeout !== null) {
+      clearTimeout(dealingTimeout)
+      dealingTimeout = null
+    }
+  }
+})
+
+// Also check on mount if we're already in Dealing phase (for first hand)
+onMounted(() => {
+  if (phase.value === GamePhase.Dealing && displayHand.value.length > 0) {
+    // Hide hand initially
+    showHand.value = false
+    isDealing.value = false
+    
+    dealingTimeout = window.setTimeout(() => {
+      showHand.value = true
+      requestAnimationFrame(() => {
+        isDealing.value = true
+        setTimeout(() => {
+          isDealing.value = false
+        }, 600)
+      })
+    }, 500)
+  } else {
+    // Show hand normally if not in Dealing phase
+    showHand.value = true
+  }
+})
+
+onUnmounted(() => {
+  if (dealingTimeout !== null) {
+    clearTimeout(dealingTimeout)
+  }
+})
 
 const isDealer = computed(() => {
   return myPlayerId.value === dealer.value
@@ -97,17 +159,31 @@ function isCardDimmed(card: CardType): boolean {
 }
 
 function getCardStyle(index: number, totalCards: number) {
+  const FULL_HAND_SIZE = 5 // Euchre hand size
   const cardOffset = 45
   const maxRotation = 12
   const arcRadius = 400 // Cards arranged on arc of this radius
 
-  const position = totalCards > 1 ? index / (totalCards - 1) : 0.5
+  // Map current card index to position in a full hand (0-4)
+  // Cards should occupy the center positions to maintain constant spacing
+  // Example: 3 cards → positions 1, 2, 3 (not 0, 2, 4)
+  let positionInFullHand: number
+  if (totalCards === 1) {
+    positionInFullHand = (FULL_HAND_SIZE - 1) / 2 // Center position (2)
+  } else {
+    // Calculate the start position to center the cards
+    const startPosition = (FULL_HAND_SIZE - totalCards) / 2
+    positionInFullHand = startPosition + index
+  }
+
+  // Calculate angle offset based on position in full hand
+  const position = positionInFullHand / (FULL_HAND_SIZE - 1)
   const angleOffset = (position - 0.5) * maxRotation * 2 // degrees from center
   const rotation = angleOffset
 
   // Calculate position on arc - middle cards higher, edge cards lower
   const angleRad = (angleOffset * Math.PI) / 180
-  const x = (index - (totalCards - 1) / 2) * cardOffset
+  const x = (positionInFullHand - (FULL_HAND_SIZE - 1) / 2) * cardOffset
   const y = arcRadius * (1 - Math.cos(angleRad)) // 0 at center, positive at edges
 
   return {
@@ -116,6 +192,7 @@ function getCardStyle(index: number, totalCards: number) {
     zIndex: index,
   }
 }
+
 
 function handleCardClick(card: CardType) {
   if (isDiscardPhase.value) {
@@ -172,6 +249,14 @@ function handleCardClick(card: CardType) {
   min-width: 300px;
   height: 95px; // Show ~75% of 126px card height
   overflow: hidden;
+
+  &.hidden {
+    visibility: hidden;
+  }
+
+  &.dealing {
+    animation: slide-up-hand 0.6s ease-out;
+  }
 }
 
 :deep(.player-hand .card) {
@@ -186,5 +271,16 @@ function handleCardClick(card: CardType) {
 
 :deep(.player-hand .card.selectable:hover) {
   transform: translateY(-8px);
+}
+
+@keyframes slide-up-hand {
+  from {
+    transform: translateY(150px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 </style>

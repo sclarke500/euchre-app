@@ -6,7 +6,7 @@
       <span class="turn-up-label">Turn Up</span>
     </div>
     <!-- Played cards during trick -->
-    <div v-else-if="currentTrickCards.length > 0" class="played-cards">
+    <div v-else-if="currentTrickCards.length > 0" class="played-cards" :class="{ 'sweeping-away': isSweepingAway }">
       <div
         v-for="playedCard in currentTrickCards"
         :key="`${playedCard.playerId}-${playedCard.card.id}`"
@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase } from '@euchre/shared'
 import Card from './Card.vue'
@@ -30,6 +30,28 @@ const phase = computed(() => game.phase.value)
 const turnUpCard = computed(() => game.turnUpCard.value)
 const currentTrick = computed(() => game.currentTrick.value)
 const myPlayerId = computed(() => game.myPlayerId.value)
+
+const isSweepingAway = ref(false)
+let sweepTimeout: number | null = null
+
+// Watch for RoundComplete phase and trigger sweep animation halfway through
+watch(phase, (newPhase) => {
+  // Clear any existing timeout
+  if (sweepTimeout !== null) {
+    clearTimeout(sweepTimeout)
+    sweepTimeout = null
+  }
+
+  if (newPhase === GamePhase.RoundComplete) {
+    // Trigger sweep animation halfway through the 3000ms pause (at 1500ms)
+    sweepTimeout = window.setTimeout(() => {
+      isSweepingAway.value = true
+    }, 1500)
+  } else {
+    // Reset sweep state when phase changes away from RoundComplete
+    isSweepingAway.value = false
+  }
+})
 
 const showTurnUpCard = computed(() => {
   return (phase.value === GamePhase.BiddingRound1 || phase.value === GamePhase.BiddingRound2) && turnUpCard.value
@@ -67,6 +89,24 @@ function getCardPosition(playerId: number): number {
   position: relative;
   width: 100%;
   height: 100%;
+
+  &.sweeping-away .played-card {
+    &.position-0 {
+      animation: sweep-away-bottom 0.8s ease-in forwards;
+    }
+
+    &.position-1 {
+      animation: sweep-away-left 0.8s ease-in forwards;
+    }
+
+    &.position-2 {
+      animation: sweep-away-top 0.8s ease-in forwards;
+    }
+
+    &.position-3 {
+      animation: sweep-away-right 0.8s ease-in forwards;
+    }
+  }
 }
 
 .played-card {
@@ -172,6 +212,50 @@ function getCardPosition(playerId: number): number {
   to {
     opacity: 1;
     transform: translateY(-50%) translateX(0) scale(1);
+  }
+}
+
+@keyframes sweep-away-bottom {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(150px) translateY(-150px) rotate(45deg) scale(0.3);
+  }
+}
+
+@keyframes sweep-away-left {
+  from {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-150px) translateX(150px) rotate(45deg) scale(0.3);
+  }
+}
+
+@keyframes sweep-away-top {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(150px) translateY(-150px) rotate(45deg) scale(0.3);
+  }
+}
+
+@keyframes sweep-away-right {
+  from {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-150px) translateX(150px) rotate(45deg) scale(0.3);
   }
 }
 </style>
