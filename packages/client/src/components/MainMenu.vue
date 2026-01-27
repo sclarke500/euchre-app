@@ -40,7 +40,7 @@ function handleMultiplayer() {
 <template>
   <div class="main-menu">
     <div class="logo-section">
-      <img src="@/assets/ChatGPTLogoSquare.png" alt="Euchre Logo" class="logo" />
+      <img src="@/assets/AppLogo.png" alt="Euchre Logo" class="logo" />
       <span class="stamp-text">67CardGames.com</span>
     </div>
 

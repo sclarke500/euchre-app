@@ -151,7 +151,7 @@ onUnmounted(() => {
   height: 100%;
   background: 
     linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%),
-    url('@/assets/ChatGPTLogoSquare.png');
+    url('@/assets/AppLogo.png');
   background-size: 
     cover,
     contain;
@@ -173,7 +173,7 @@ onUnmounted(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: url('@/assets/ChatGPTLogo.png');
+    background-image: url('@/assets/AppLogo.png');
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;

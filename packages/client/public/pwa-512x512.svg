@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="64" fill="#1e4d2b"/>
-  <text x="256" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="200" font-weight="bold" fill="white">E</text>
-  <rect x="50" y="390" width="80" height="60" rx="8" fill="white" opacity="0.8"/>
-  <rect x="145" y="390" width="80" height="60" rx="8" fill="#e74c3c" opacity="0.8"/>
-  <rect x="287" y="390" width="80" height="60" rx="8" fill="white" opacity="0.8"/>
-  <rect x="382" y="390" width="80" height="60" rx="8" fill="#e74c3c" opacity="0.8"/>
-</svg>
