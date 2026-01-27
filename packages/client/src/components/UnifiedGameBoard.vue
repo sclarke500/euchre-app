@@ -2,7 +2,7 @@
   <div class="game-board">
     <!-- Top row: back button | partner plaque | scoreboard -->
     <div class="cell-back">
-      <button class="back-button" @click="$emit('leaveGame')">← Back</button>
+      <button class="back-button" @click="showLeaveConfirm = true">←</button>
     </div>
     <div class="cell-partner">
       <UnifiedOpponentHand
@@ -42,20 +42,25 @@
       <UnifiedPlayerHand />
     </div>
 
-    <Teleport to="body">
-      <TrumpSelection v-if="showBidding" />
-      <GameOver v-if="gameOver" :winner="winner" @leave-game="$emit('leaveGame')" />
-      <div v-if="showDiscardPrompt" class="discard-modal-overlay">
-        <div class="discard-modal">
-          <span class="discard-text">Select a card to discard</span>
-        </div>
+    <TrumpSelection v-if="showBidding" />
+    <GameOver v-if="gameOver" :winner="winner" @leave-game="emit('leaveGame')" />
+
+    <Modal :show="showDiscardPrompt" non-blocking>
+      <span class="discard-text">Select a card to discard</span>
+    </Modal>
+
+    <Modal :show="showLeaveConfirm" :priority="10" @close="showLeaveConfirm = false">
+      <p class="leave-text">Leave this game?</p>
+      <div class="leave-buttons">
+        <button class="leave-btn cancel" @click="showLeaveConfirm = false">Cancel</button>
+        <button class="leave-btn confirm" @click="confirmLeave">Leave</button>
       </div>
-    </Teleport>
+    </Modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, provide, onMounted, onUnmounted } from 'vue'
+import { ref, computed, provide, onMounted, onUnmounted } from 'vue'
 import { useGameAdapter, type GameAdapter, type UnifiedPlayer } from '@/composables/useGameAdapter'
 import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
 import { GamePhase } from '@euchre/shared'
@@ -66,14 +71,22 @@ import UnifiedPlayerPlaque from './UnifiedPlayerPlaque.vue'
 import UnifiedPlayArea from './UnifiedPlayArea.vue'
 import TrumpSelection from './TrumpSelection.vue'
 import GameOver from './GameOver.vue'
+import Modal from './Modal.vue'
 
 const props = defineProps<{
   mode: 'singleplayer' | 'multiplayer'
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   leaveGame: []
 }>()
+
+const showLeaveConfirm = ref(false)
+
+function confirmLeave() {
+  showLeaveConfirm.value = false
+  emit('leaveGame')
+}
 
 // Create the appropriate adapter based on mode
 const game = useGameAdapter(props.mode)
@@ -134,7 +147,7 @@ onUnmounted(() => {
   height: 100%;
   background: 
     linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%),
-    url('@/assets/ChatGPTLogo.png');
+    url('@/assets/ChatGPTLogoSquare.png');
   background-size: 
     cover,
     contain;
@@ -187,20 +200,22 @@ onUnmounted(() => {
 .cell-back {
   grid-area: back;
   display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm;
+  align-items: flex-start;
+  padding: $spacing-md;
 }
-
 
 .back-button {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background: rgba(255, 255, 255, 0.2);
@@ -260,29 +275,6 @@ onUnmounted(() => {
   padding-bottom: 20px;
 }
 
-.discard-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10000;
-  pointer-events: none;
-}
-
-.discard-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: $spacing-md $spacing-lg;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  animation: discard-modal-appear 0.2s ease-out;
-}
-
 .discard-text {
   color: #333;
   font-size: 1rem;
@@ -291,14 +283,44 @@ onUnmounted(() => {
   letter-spacing: 1px;
 }
 
-@keyframes discard-modal-appear {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
+.leave-text {
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0 0 $spacing-lg 0;
+}
+
+.leave-buttons {
+  display: flex;
+  gap: $spacing-md;
+  justify-content: center;
+}
+
+.leave-btn {
+  padding: $spacing-sm $spacing-lg;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &.cancel {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+
+    &:hover {
+      background: #d0d0d0;
+    }
   }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+
+  &.confirm {
+    background: #e74c3c;
+    color: white;
+    border: none;
+
+    &:hover {
+      background: #c0392b;
+    }
   }
 }
 </style>

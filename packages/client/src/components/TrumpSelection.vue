@@ -1,6 +1,7 @@
 <template>
-  <div class="trump-selection">
-    <template v-if="phase === GamePhase.BiddingRound1">
+  <Modal :show="true">
+    <div class="trump-selection">
+      <template v-if="phase === GamePhase.BiddingRound1">
       <div class="round1-content">
         <div class="kitty-stack">
           <div class="kitty-back"></div>
@@ -45,7 +46,8 @@
         </div>
       </div>
     </template>
-  </div>
+    </div>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -53,6 +55,7 @@ import { computed, ref, inject } from 'vue'
 import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase, BidAction, Suit } from '@euchre/shared'
 import Card from './Card.vue'
+import Modal from './Modal.vue'
 
 const game = inject<GameAdapter>('game')!
 
@@ -112,19 +115,7 @@ function handlePass() {
 
 <style scoped lang="scss">
 .trump-selection {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  padding: $spacing-md;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  z-index: 10000;
-  animation: scaleIn 0.2s ease-out;
-  // Ensure it's positioned relative to viewport, not parent
-  margin: 0;
+  padding: $spacing-sm;
 }
 
 .round1-content {
@@ -282,14 +273,4 @@ function handlePass() {
   }
 }
 
-@keyframes scaleIn {
-  from {
-    transform: translate(-50%, -50%) scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-}
 </style>

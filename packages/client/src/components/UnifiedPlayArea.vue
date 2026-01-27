@@ -73,7 +73,7 @@ function getCardPosition(playerId: number): number {
   position: absolute;
 
   &.position-0 {
-    bottom: -20px;
+    bottom: -25px;
     left: 50%;
     transform: translateX(-50%);
     animation: play-card-bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -87,7 +87,7 @@ function getCardPosition(playerId: number): number {
   }
 
   &.position-2 {
-    top: -20px;
+    top: -25px;
     left: 50%;
     transform: translateX(-50%);
     animation: play-card-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -101,16 +101,9 @@ function getCardPosition(playerId: number): number {
   }
 
   @media (max-height: 500px) {
-    &.position-0 {
-      bottom: -15px;
-    }
 
     &.position-1 {
       left: -20px;
-    }
-
-    &.position-2 {
-      top: -15px;
     }
 
     &.position-3 {

@@ -1,16 +1,19 @@
 <template>
-  <div class="game-over">
-    <h1>Game Over!</h1>
-    <h2>{{ winnerText }}</h2>
-    <button class="action-btn" @click="startNewGame">
-      Play Again
-    </button>
-  </div>
+  <Modal :show="true">
+    <div class="game-over">
+      <h1>Game Over!</h1>
+      <h2>{{ winnerText }}</h2>
+      <button class="action-btn" @click="startNewGame">
+        Play Again
+      </button>
+    </div>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import Modal from './Modal.vue'
 
 interface Props {
   winner: number | null
@@ -35,21 +38,9 @@ function startNewGame() {
 
 <style scoped lang="scss">
 .game-over {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  padding: $spacing-lg $spacing-xl;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  // Content styles only - Modal handles positioning
   text-align: center;
-  z-index: 10000;
-  animation: scaleIn 0.3s ease-out;
   min-width: 220px;
-  // Ensure it's positioned relative to viewport, not parent
-  margin: 0;
 
   h1 {
     font-size: 1.5rem;
@@ -85,14 +76,4 @@ function startNewGame() {
   }
 }
 
-@keyframes scaleIn {
-  from {
-    transform: translate(-50%, -50%) scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-}
 </style>

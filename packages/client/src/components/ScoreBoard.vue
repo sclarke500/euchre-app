@@ -47,10 +47,9 @@ function teamScore(teamId: number): number {
 }
 
 .team-score {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0; // Allow equal width distribution
+  width: 50px; // Fixed width for equal sizing
 
   &:first-child {
     border-right: 2px solid rgba(255, 255, 255, 0.3);
@@ -58,14 +57,14 @@ function teamScore(teamId: number): number {
 
   .label-section {
     background: rgba(255, 255, 255, 0.2);
-    padding: $spacing-xs $spacing-sm;
+    padding: 2px $spacing-xs;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .label {
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -74,7 +73,7 @@ function teamScore(teamId: number): number {
 
   .score-section {
     background: rgba(255, 255, 255, 0.1);
-    padding: $spacing-sm;
+    padding: $spacing-xs;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -82,7 +81,7 @@ function teamScore(teamId: number): number {
   }
 
   .score {
-    font-size: 1.7rem;
+    font-size: 1.4rem;
     font-weight: bold;
     color: white;
   }
