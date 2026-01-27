@@ -1,21 +1,20 @@
 <template>
   <div class="player-plaque-container">
-    <!-- Trump caller badge above the plaque -->
-    <div v-if="trumpSymbol" class="trump-caller-badge" :class="{ 'going-alone': goingAlone }">
-      <span class="trump-symbol" :style="{ color: trumpColor }">{{ trumpSymbol }}</span>
-      <span class="trump-label">Trump</span>
-      <span v-if="goingAlone" class="alone-badge">ALONE</span>
-    </div>
-
     <div class="player-plaque" :class="{ 'current-turn': isCurrentTurn }">
       <div class="tricks-won">{{ tricksWon }}</div>
       <div class="player-name-container">
-        <span class="player-name">{{ playerName }}</span>
+        <span class="player-name" :class="{ 'clanker': !isHuman }">{{ playerName }}</span>
       </div>
-      <div v-if="isDealer" class="dealer-indicator">
+    </div>
+
+    <!-- Chip indicators below the plaque -->
+    <div v-if="isDealer || trumpSymbol" class="chip-indicators">
+      <div v-if="isDealer" class="poker-chip dealer-chip">
         <span>D</span>
       </div>
-      <div v-else class="indicator-spacer"></div>
+      <div v-if="trumpSymbol" class="poker-chip trump-chip" :class="{ 'going-alone': goingAlone }">
+        <span class="suit-icon" :style="{ color: trumpColor }">{{ trumpSymbol }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -29,6 +28,7 @@ interface Props {
   trumpSymbol?: string
   trumpColor?: string
   goingAlone?: boolean
+  isHuman?: boolean
 }
 
 defineProps<Props>()
@@ -39,49 +39,7 @@ defineProps<Props>()
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: $spacing-xs;
-}
-
-.trump-caller-badge {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 16px;
-  padding: 3px $spacing-sm;
-  backdrop-filter: blur(10px);
-
-  .trump-symbol {
-    font-size: 1.4rem;
-    font-weight: bold;
-    line-height: 1;
-  }
-
-  .trump-label {
-    font-size: 0.85rem;
-    font-weight: bold;
-    color: white;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .alone-badge {
-    font-size: 0.7rem;
-    font-weight: bold;
-    color: #ffd700;
-    background: rgba(255, 215, 0, 0.2);
-    border: 1px solid rgba(255, 215, 0, 0.5);
-    border-radius: 4px;
-    padding: 2px 5px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  &.going-alone {
-    border-color: rgba(255, 215, 0, 0.6);
-    background: rgba(255, 215, 0, 0.1);
-  }
+  position: relative;
 }
 
 .player-plaque {
@@ -127,23 +85,88 @@ defineProps<Props>()
   font-weight: bold;
   color: white;
   white-space: nowrap;
+
+  &.clanker {
+    font-family: 'Audiowide', cursive;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+  }
 }
 
-.dealer-indicator {
-  width: 30px;
-  height: 30px;
+.chip-indicators {
+  position: absolute;
+  top: 100%;
+  right: -10px;
+  margin-top: -5px;
+  display: flex;
+  gap: $spacing-xs;
+}
+
+.poker-chip {
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   font-weight: bold;
-  font-size: 1.1rem;
-  color: white;
+  font-size: 1rem;
+  position: relative;
+  // 3D chip effect with shadows
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.2),
+    inset 0 2px 3px rgba(255, 255, 255, 0.6),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+
+  // Inner ring for chip detail
+  &::before {
+    content: '';
+    position: absolute;
+    width: 27px;
+    height: 27px;
+    border: 2px dashed currentColor;
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+
+  span {
+    position: relative;
+    z-index: 1;
+  }
 }
 
-.indicator-spacer {
-  width: 30px;
+.dealer-chip {
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #ffffff 100%);
+  color: #2c3e50;
+
+  &::before {
+    border-color: #2c3e50;
+  }
+}
+
+.trump-chip {
+  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 50%, #f8f8f8 100%);
+
+  &::before {
+    border-color: #4a5568;
+  }
+
+  .suit-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  &.going-alone {
+    box-shadow:
+      0 3px 6px rgba(0, 0, 0, 0.4),
+      0 0 10px rgba(255, 215, 0, 0.6),
+      inset 0 2px 3px rgba(255, 255, 255, 0.6),
+      inset 0 -2px 3px rgba(0, 0, 0, 0.3);
+
+    &::before {
+      border-color: #ffd700;
+    }
+  }
 }
 </style>

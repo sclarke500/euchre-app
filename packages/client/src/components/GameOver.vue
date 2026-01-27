@@ -45,9 +45,11 @@ function startNewGame() {
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
-  z-index: 1000;
+  z-index: 10000;
   animation: scaleIn 0.3s ease-out;
   min-width: 220px;
+  // Ensure it's positioned relative to viewport, not parent
+  margin: 0;
 
   h1 {
     font-size: 1.5rem;

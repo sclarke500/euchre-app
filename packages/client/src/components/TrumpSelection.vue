@@ -121,8 +121,10 @@ function handlePass() {
   padding: $spacing-md;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
+  z-index: 10000;
   animation: scaleIn 0.2s ease-out;
+  // Ensure it's positioned relative to viewport, not parent
+  margin: 0;
 }
 
 .round1-content {

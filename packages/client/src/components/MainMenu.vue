@@ -39,53 +39,60 @@ function handleMultiplayer() {
 
 <template>
   <div class="main-menu">
-    <h1>Euchre</h1>
-
-    <div class="menu-options">
-      <button class="menu-btn single-player" @click="$emit('startSinglePlayer')">
-        Single Player
-        <span class="btn-subtitle">Play against 3 AI opponents</span>
-      </button>
-
-      <button
-        class="menu-btn multiplayer"
-        :disabled="!canEnterMultiplayer && !isEditingNickname"
-        @click="handleMultiplayer"
-      >
-        Multiplayer
-        <span class="btn-subtitle">Play with friends online</span>
-      </button>
+    <div class="logo-section">
+      <img src="@/assets/ChatGPTLogo.png" alt="Euchre Logo" class="logo" />
+      <span class="stamp-text">67CardGames.com</span>
     </div>
 
-    <div class="nickname-section">
-      <template v-if="isEditingNickname">
-        <label for="nickname">Your Nickname</label>
-        <div class="nickname-input-row">
-          <input
-            id="nickname"
-            v-model="nicknameInput"
-            type="text"
-            placeholder="Enter nickname..."
-            maxlength="20"
-            @keyup.enter="saveNickname"
-          />
-          <button
-            class="save-btn"
-            :disabled="!canEnterMultiplayer"
-            @click="saveNickname"
-          >
-            Save
-          </button>
-        </div>
-        <p class="nickname-hint">Required for multiplayer (min 2 characters)</p>
-      </template>
-      <template v-else>
-        <div class="nickname-display">
-          <span class="nickname-label">Playing as:</span>
-          <span class="nickname-value">{{ lobbyStore.nickname }}</span>
-          <button class="edit-btn" @click="editNickname">Edit</button>
-        </div>
-      </template>
+    <div class="content-section">
+      <h1>Euchre</h1>
+
+      <div class="menu-options">
+        <button class="menu-btn single-player" @click="$emit('startSinglePlayer')">
+          Single Player
+          <span class="btn-subtitle">Play against 3 <span class="clanker">clankers</span></span>
+        </button>
+
+        <button
+          class="menu-btn multiplayer"
+          :disabled="!canEnterMultiplayer && !isEditingNickname"
+          @click="handleMultiplayer"
+        >
+          Multiplayer
+          <span class="btn-subtitle">Play with friends online</span>
+        </button>
+      </div>
+
+      <div class="nickname-section">
+        <template v-if="isEditingNickname">
+          <label for="nickname">Your Nickname</label>
+          <div class="nickname-input-row">
+            <input
+              id="nickname"
+              v-model="nicknameInput"
+              type="text"
+              placeholder="Enter nickname..."
+              maxlength="20"
+              @keyup.enter="saveNickname"
+            />
+            <button
+              class="save-btn"
+              :disabled="!canEnterMultiplayer"
+              @click="saveNickname"
+            >
+              Save
+            </button>
+          </div>
+          <p class="nickname-hint">Required for multiplayer (min 2 characters)</p>
+        </template>
+        <template v-else>
+          <div class="nickname-display">
+            <span class="nickname-label">Playing as:</span>
+            <span class="nickname-value">{{ lobbyStore.nickname }}</span>
+            <button class="edit-btn" @click="editNickname">Edit</button>
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -95,19 +102,88 @@ function handleMultiplayer() {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: row;
+  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+  color: white;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.logo-section {
+  flex: 0 0 40%;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
-  color: white;
+  padding: $spacing-xl;
+  background: rgba(0, 0, 0, 0.1);
+  gap: $spacing-lg;
+
+  @media (max-width: 768px) {
+    flex: 0 0 auto;
+    padding: $spacing-lg;
+    gap: $spacing-md;
+  }
+
+  .logo {
+    width: 80%;
+    height: 60vh;
+    object-fit: cover;
+    object-position: center;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+
+    @media (max-width: 768px) {
+      width: 100%;
+      height: 40vh;
+    }
+  }
+
+  .stamp-text {
+    font-family: 'Courier Prime', monospace;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 1px;
+    padding: $spacing-xs $spacing-sm;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 3px;
+    transform: rotate(-3deg);
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+      2px 2px 4px rgba(0, 0, 0, 0.2);
+    margin-top: calc(-#{$spacing-xl} - 15px);
+
+    @media (max-width: 768px) {
+      font-size: 0.85rem;
+      padding: 2px $spacing-xs;
+      margin-top: calc(-#{$spacing-lg} - 15px);
+    }
+  }
+}
+
+.content-section {
+  flex: 0 0 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: $spacing-lg;
 
+  @media (max-width: 768px) {
+    flex: 1;
+  }
+
   h1 {
+    font-family: 'Rock Salt', cursive;
     font-size: 4rem;
+    font-weight: 400;
     margin-bottom: $spacing-xl * 2;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 
-    @media (max-height: 500px) {
+    @media (max-width: 768px), (max-height: 500px) {
       font-size: 2.5rem;
       margin-bottom: $spacing-lg;
     }
@@ -167,6 +243,12 @@ function handleMultiplayer() {
     font-weight: normal;
     opacity: 0.7;
     margin-top: $spacing-xs;
+
+    .clanker {
+      font-family: 'Audiowide', cursive;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+    }
   }
 }
 

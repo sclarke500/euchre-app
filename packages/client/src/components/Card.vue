@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="['card', { selectable }]"
+    :class="['card', { selectable, dimmed }]"
     @click="handleClick"
   >
     <div class="card-corner top-left" :class="suitColorClass">
@@ -21,10 +21,12 @@ import { Suit } from '@euchre/shared'
 interface Props {
   card: Card
   selectable?: boolean
+  dimmed?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selectable: false,
+  dimmed: false,
 })
 
 const emit = defineEmits<{
@@ -76,6 +78,10 @@ function handleClick() {
 
   &.selectable {
     cursor: pointer;
+  }
+
+  &.dimmed {
+    filter: brightness(0.85);
   }
 }
 

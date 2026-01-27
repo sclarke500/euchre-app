@@ -15,9 +15,6 @@
         <Card :card="playedCard.card" :selectable="false" />
       </div>
     </div>
-    <div v-else class="empty-message">
-      <p>Waiting for cards...</p>
-    </div>
   </div>
 </template>
 
@@ -76,31 +73,49 @@ function getCardPosition(playerId: number): number {
   position: absolute;
 
   &.position-0 {
-    bottom: 0;
+    bottom: -20px;
     left: 50%;
     transform: translateX(-50%);
     animation: play-card-bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   &.position-1 {
-    left: 0;
+    left: -25px;
     top: 50%;
     transform: translateY(-50%);
     animation: play-card-left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   &.position-2 {
-    top: 0;
+    top: -20px;
     left: 50%;
     transform: translateX(-50%);
     animation: play-card-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   &.position-3 {
-    right: 0;
+    right: -25px;
     top: 50%;
     transform: translateY(-50%);
     animation: play-card-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @media (max-height: 500px) {
+    &.position-0 {
+      bottom: -15px;
+    }
+
+    &.position-1 {
+      left: -20px;
+    }
+
+    &.position-2 {
+      top: -15px;
+    }
+
+    &.position-3 {
+      right: -20px;
+    }
   }
 }
 
@@ -121,12 +136,6 @@ function getCardPosition(playerId: number): number {
       font-size: 0.625rem;
     }
   }
-}
-
-.empty-message {
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 1.125rem;
-  text-align: center;
 }
 
 @keyframes play-card-bottom {

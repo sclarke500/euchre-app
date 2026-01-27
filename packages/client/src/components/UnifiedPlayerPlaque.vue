@@ -8,15 +8,15 @@
       :trump-symbol="showTrumpIndicator ? trumpSymbol : undefined"
       :trump-color="showTrumpIndicator ? trumpColor : undefined"
       :going-alone="showTrumpIndicator ? trump?.goingAlone : undefined"
+      :is-human="true"
     />
-    <span v-if="isDiscardPhase" class="status-message discard-prompt">Select a card to discard</span>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import type { GameAdapter } from '@/composables/useGameAdapter'
-import { GamePhase, Suit } from '@euchre/shared'
+import { Suit } from '@euchre/shared'
 import PlayerPlaque from './PlayerPlaque.vue'
 
 const game = inject<GameAdapter>('game')!
@@ -27,7 +27,6 @@ const myPlayer = computed(() => {
 })
 
 const isMyTurn = computed(() => game.isMyTurn.value)
-const phase = computed(() => game.phase.value)
 const trump = computed(() => game.trump.value)
 const dealer = computed(() => game.dealer.value)
 const myPlayerId = computed(() => game.myPlayerId.value)
@@ -39,10 +38,6 @@ const isDealer = computed(() => {
 const tricksWon = computed(() => {
   const playerId = myPlayerId.value
   return game.tricksWonByPlayer.value[playerId] ?? 0
-})
-
-const isDiscardPhase = computed(() => {
-  return phase.value === GamePhase.DealerDiscard && isDealer.value
 })
 
 const showTrumpIndicator = computed(() => {
@@ -71,7 +66,7 @@ const trumpColor = computed(() => {
   if (!suit) return 'white'
   return suit === Suit.Hearts || suit === Suit.Diamonds
     ? '#e74c3c'
-    : 'white'
+    : '#2c3e50' // Black for clubs and spades
 })
 </script>
 
@@ -80,18 +75,5 @@ const trumpColor = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: $spacing-sm;
-}
-
-.status-message {
-  font-size: 0.75rem;
-  font-weight: bold;
-
-  &.discard-prompt {
-    color: #f39c12;
-    background: rgba(0, 0, 0, 0.8);
-    padding: $spacing-xs $spacing-sm;
-    border-radius: 4px;
-  }
 }
 </style>

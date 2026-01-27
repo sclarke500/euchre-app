@@ -6,3 +6,4 @@ export * from './trick.js'
 export * from './scoring.js'
 export * from './trump.js'
 export * from './ai.js'
+export * from "./aiNames.js"

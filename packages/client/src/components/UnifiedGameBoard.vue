@@ -42,9 +42,15 @@
       <UnifiedPlayerHand />
     </div>
 
-    <TrumpSelection v-if="showBidding" />
-
-    <GameOver v-if="gameOver" :winner="winner" @leave-game="$emit('leaveGame')" />
+    <Teleport to="body">
+      <TrumpSelection v-if="showBidding" />
+      <GameOver v-if="gameOver" :winner="winner" @leave-game="$emit('leaveGame')" />
+      <div v-if="showDiscardPrompt" class="discard-modal-overlay">
+        <div class="discard-modal">
+          <span class="discard-text">Select a card to discard</span>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -101,6 +107,11 @@ const showBidding = computed(() => {
   return isBiddingPhase && isMyTurn.value
 })
 
+const showDiscardPrompt = computed(() => {
+  const isDealer = myPlayerId.value === game.dealer.value
+  return phase.value === GamePhase.DealerDiscard && isDealer
+})
+
 // Multiplayer-specific lifecycle
 onMounted(() => {
   if (props.mode === 'multiplayer') {
@@ -121,22 +132,66 @@ onUnmounted(() => {
 .game-board {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+  background: 
+    linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%),
+    url('@/assets/ChatGPTLogo.png');
+  background-size: 
+    cover,
+    contain;
+  background-position: 
+    center,
+    center;
+  background-repeat: 
+    no-repeat,
+    no-repeat;
+  background-blend-mode: normal;
+  // Logo opacity overlay
+  position: relative;
+  
+  // Add pseudo-element for logo opacity
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('@/assets/ChatGPTLogo.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.15;
+    pointer-events: none; // Allow clicks to pass through
+    z-index: 0;
+  }
+  
+  // Ensure content is above the background logo
+  // But modals should be positioned relative to viewport, not this container
+  > *:not(.trump-selection):not(.game-over) {
+    position: relative;
+    z-index: 1;
+  }
+  
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
+  // Use 12 columns for flexible splits
+  // Original proportions: back(1) partner(2) score(1) = 3:6:3, left(1) play(2) right(1) = 3:6:3
+  // Bottom: plaque(1/3) hand(2/3) = 4:8
+  grid-template-columns: repeat(12, 1fr);
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
-    "back partner score"
-    "left play right"
-    "plaque hand hand";
+    "back back back partner partner partner partner partner partner score score score"
+    "left left left play play play play play play right right right"
+    "plaque plaque plaque plaque hand hand hand hand hand hand hand hand";
 }
 
 .cell-back {
   grid-area: back;
   display: flex;
   align-items: center;
+  gap: $spacing-sm;
   padding: $spacing-sm;
 }
+
 
 .back-button {
   background: rgba(255, 255, 255, 0.1);
@@ -200,7 +255,50 @@ onUnmounted(() => {
   grid-area: plaque;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: $spacing-xs;
+  padding-bottom: 20px;
+}
+
+.discard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.discard-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: $spacing-md $spacing-lg;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: discard-modal-appear 0.2s ease-out;
+}
+
+.discard-text {
+  color: #333;
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@keyframes discard-modal-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 </style>

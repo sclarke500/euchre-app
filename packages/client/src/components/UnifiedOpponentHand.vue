@@ -9,6 +9,7 @@
         :trump-symbol="showTrumpIndicator ? trumpSymbol : undefined"
         :trump-color="showTrumpIndicator ? trumpColor : undefined"
         :going-alone="showTrumpIndicator ? game.trump.value?.goingAlone : undefined"
+        :is-human="player?.isHuman ?? false"
       />
       <span v-if="bidActionMessage" class="bid-action">{{ bidActionMessage }}</span>
     </div>
@@ -75,7 +76,7 @@ const trumpColor = computed(() => {
   if (!suit) return 'white'
   return suit === Suit.Hearts || suit === Suit.Diamonds
     ? '#e74c3c'
-    : 'white'
+    : '#2c3e50' // Black for clubs and spades
 })
 </script>
 

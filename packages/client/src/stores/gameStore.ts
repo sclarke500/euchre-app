@@ -31,6 +31,7 @@ import {
   chooseCardToPlay,
   isPartnerWinning,
   chooseDealerDiscard,
+  getRandomAINames,
 } from '@euchre/shared'
 
 export const useGameStore = defineStore('game', () => {
@@ -87,6 +88,9 @@ export const useGameStore = defineStore('game', () => {
 
   // Actions
   function startNewGame() {
+    // Get random AI names for this game
+    const aiNames = getRandomAINames(3)
+    
     // Initialize 4 players (0 = human, 1-3 = AI)
     players.value = [
       {
@@ -98,21 +102,21 @@ export const useGameStore = defineStore('game', () => {
       },
       {
         id: 1,
-        name: 'AI 1',
+        name: aiNames[0] ?? 'Tron',
         hand: [],
         isHuman: false,
         teamId: 1,
       },
       {
         id: 2,
-        name: 'AI 2',
+        name: aiNames[1] ?? 'Data',
         hand: [],
         isHuman: false,
         teamId: 0,
       },
       {
         id: 3,
-        name: 'AI 3',
+        name: aiNames[2] ?? 'Neon',
         hand: [],
         isHuman: false,
         teamId: 1,

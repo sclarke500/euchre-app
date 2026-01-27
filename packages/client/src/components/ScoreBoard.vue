@@ -1,13 +1,20 @@
 <template>
   <div class="score-board">
     <div class="team-score">
-      <span class="label">Us</span>
-      <span class="score">{{ teamScore(0) }}</span>
+      <div class="label-section">
+        <span class="label">Us</span>
+      </div>
+      <div class="score-section">
+        <span class="score">{{ teamScore(0) }}</span>
+      </div>
     </div>
-    <div class="divider">-</div>
     <div class="team-score">
-      <span class="label">Them</span>
-      <span class="score">{{ teamScore(1) }}</span>
+      <div class="label-section">
+        <span class="label">Them</span>
+      </div>
+      <div class="score-section">
+        <span class="score">{{ teamScore(1) }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -29,35 +36,55 @@ function teamScore(teamId: number): number {
 <style scoped lang="scss">
 .score-board {
   display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  background: #f0f0f0;
-  padding: $spacing-xs $spacing-md;
+  align-items: stretch;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0;
   border-radius: 8px;
-  color: #333;
+  color: white;
   font-family: 'Courier New', monospace;
+  overflow: hidden;
 }
 
 .team-score {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  min-width: 0; // Allow equal width distribution
+
+  &:first-child {
+    border-right: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .label-section {
+    background: rgba(255, 255, 255, 0.2);
+    padding: $spacing-xs $spacing-sm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
   .label {
-    font-size: 0.85rem;
-    opacity: 0.7;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: white;
+  }
+
+  .score-section {
+    background: rgba(255, 255, 255, 0.1);
+    padding: $spacing-sm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
   }
 
   .score {
     font-size: 1.7rem;
     font-weight: bold;
+    color: white;
   }
-}
-
-.divider {
-  font-size: 1.25rem;
-  opacity: 0.4;
-  margin: 0 4px;
 }
 </style>

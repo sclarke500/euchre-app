@@ -3,3 +3,10 @@
 @import './reset';
 @import './layout';
 @import './cards';
+
+// Global clanker class for AI player names and clanker text
+.clanker {
+  font-family: 'Audiowide', cursive;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}

@@ -65,7 +65,10 @@ function handleSeatClick(seatIndex: number) {
             <span v-if="seat.isHost" class="host-badge">Host</span>
           </template>
           <template v-else>
-            <span class="empty-label">{{ isCurrent ? '(AI)' : 'Join' }}</span>
+            <span class="empty-label">
+              <template v-if="isCurrent">(<span class="clanker">clanker</span>)</template>
+              <template v-else>Join</template>
+            </span>
           </template>
         </div>
         <span class="team-label">{{ seat.team }}</span>

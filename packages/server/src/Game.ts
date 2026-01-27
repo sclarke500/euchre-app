@@ -32,6 +32,7 @@ import {
   chooseDealerDiscard,
   isPartnerWinning,
 } from '@euchre/shared'
+import { getRandomAINames } from '@euchre/shared'
 
 export interface GamePlayer {
   odusId: string | null // null for AI players
@@ -76,6 +77,11 @@ export class Game {
    * Initialize the game with players
    */
   initializePlayers(humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }>): void {
+    // Count how many AI players we need
+    const aiCount = 4 - humanPlayers.length
+    const aiNames = getRandomAINames(aiCount)
+    let aiNameIndex = 0
+
     // Create all 4 players (fill empty seats with AI)
     for (let i = 0; i < 4; i++) {
       const humanPlayer = humanPlayers.find((p) => p.seatIndex === i)
@@ -93,7 +99,7 @@ export class Game {
         this.players.push({
           odusId: null,
           seatIndex: i,
-          name: `AI ${i + 1}`,
+          name: aiNames[aiNameIndex++] ?? 'Tron',
           isHuman: false,
           hand: [],
           teamId: i % 2,

@@ -9,7 +9,7 @@
 import { computed, type ComputedRef, type Ref } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
-import { GamePhase, Suit, BidAction } from '@euchre/shared'
+import { GamePhase, Suit, BidAction, getLegalPlays } from '@euchre/shared'
 import type { Card, Trick, TeamScore, Bid } from '@euchre/shared'
 
 // Unified player interface that works for both modes
@@ -134,15 +134,18 @@ function createSinglePlayerAdapter(): GameAdapter {
 
   const isMyTurn = computed(() => store.currentPlayer === 0)
 
-  // In single-player, all cards are valid if it's your turn (validation happens in store)
+  const currentTrick = computed(() => store.currentTrick ?? createEmptyTrick())
+
+  // Compute valid cards based on the current trick and trump
   const validCards = computed(() => {
     if (!isMyTurn.value) return []
-    return myHand.value.map(c => c.id)
+    const trumpSuit = trump.value?.suit
+    if (!trumpSuit) return myHand.value.map(c => c.id) // No trump yet, all cards valid
+    const legalCards = getLegalPlays(myHand.value, currentTrick.value, trumpSuit)
+    return legalCards.map(c => c.id)
   })
 
   const lastBidAction = computed(() => store.lastAIBidAction)
-
-  const currentTrick = computed(() => store.currentTrick ?? createEmptyTrick())
 
   return {
     phase: computed(() => store.phase),
