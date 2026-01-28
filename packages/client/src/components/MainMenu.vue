@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 
 export type GameType = 'euchre' | 'president'
@@ -22,6 +22,8 @@ const lobbyStore = useLobbyStore()
 
 const nicknameInput = ref(lobbyStore.nickname)
 const isEditingNickname = ref(!lobbyStore.hasNickname)
+const nicknameInputRef = ref<HTMLInputElement | null>(null)
+const highlightNickname = ref(false)
 
 const canEnterMultiplayer = computed(() => {
   return nicknameInput.value.trim().length >= 2
@@ -41,6 +43,13 @@ function editNickname() {
 function handleMultiplayer() {
   if (!canEnterMultiplayer.value) {
     isEditingNickname.value = true
+    highlightNickname.value = true
+    nextTick(() => {
+      nicknameInputRef.value?.focus()
+    })
+    setTimeout(() => {
+      highlightNickname.value = false
+    }, 600)
     return
   }
   saveNickname()
@@ -89,7 +98,7 @@ const gameTitle = computed(() => {
 
         <button
           class="menu-btn multiplayer"
-          :disabled="(!canEnterMultiplayer && !isEditingNickname) || selectedGame === 'president'"
+          :disabled="selectedGame === 'president'"
           @click="handleMultiplayer"
         >
           Multiplayer
@@ -98,12 +107,13 @@ const gameTitle = computed(() => {
         </button>
       </div>
 
-      <div class="nickname-section">
+      <div :class="['nickname-section', { highlight: highlightNickname }]">
         <template v-if="isEditingNickname">
           <label for="nickname">Your Nickname</label>
           <div class="nickname-input-row">
             <input
               id="nickname"
+              ref="nicknameInputRef"
               v-model="nicknameInput"
               type="text"
               placeholder="Enter nickname..."
@@ -140,10 +150,6 @@ const gameTitle = computed(() => {
   flex-direction: row;
   background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
   color: white;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
 }
 
 .logo-section {
@@ -156,23 +162,17 @@ const gameTitle = computed(() => {
   background: rgba(0, 0, 0, 0.1);
   gap: $spacing-lg;
 
-  @media (max-width: 768px) {
-    flex: 0 0 auto;
-    padding: $spacing-lg;
-    gap: $spacing-md;
+  @media (max-height: 500px) {
+    padding: $spacing-md;
+    gap: $spacing-sm;
   }
 
   .logo {
     width: 80%;
-    height: 60vh;
-    object-fit: cover;
+    max-height: 70%;
+    object-fit: contain;
     object-position: center;
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-
-    @media (max-width: 768px) {
-      width: 100%;
-      height: 40vh;
-    }
   }
 
   .stamp-text {
@@ -191,10 +191,10 @@ const gameTitle = computed(() => {
       2px 2px 4px rgba(0, 0, 0, 0.2);
     margin-top: calc(-#{$spacing-xl} - 15px);
 
-    @media (max-width: 768px) {
+    @media (max-height: 500px) {
       font-size: 0.85rem;
       padding: 2px $spacing-xs;
-      margin-top: calc(-#{$spacing-lg} - 15px);
+      margin-top: calc(-#{$spacing-md} - 10px);
     }
   }
 }
@@ -207,8 +207,8 @@ const gameTitle = computed(() => {
   justify-content: center;
   padding: $spacing-lg;
 
-  @media (max-width: 768px) {
-    flex: 1;
+  @media (max-height: 500px) {
+    padding: $spacing-sm;
   }
 
   h1 {
@@ -218,9 +218,9 @@ const gameTitle = computed(() => {
     margin-bottom: $spacing-xl * 2;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 
-    @media (max-width: 768px), (max-height: 500px) {
-      font-size: 2.5rem;
-      margin-bottom: $spacing-lg;
+    @media (max-height: 500px) {
+      font-size: 2rem;
+      margin-bottom: $spacing-md;
     }
   }
 }
@@ -327,10 +327,18 @@ const gameTitle = computed(() => {
   padding: $spacing-lg;
   border-radius: 12px;
   min-width: 320px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   @media (max-height: 500px) {
     padding: $spacing-md;
     min-width: 280px;
+  }
+
+  &.highlight {
+    border-color: #f4d03f;
+    box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
+    animation: pulse-highlight 0.3s ease-in-out 2;
   }
 
   label {
@@ -338,6 +346,15 @@ const gameTitle = computed(() => {
     font-size: 0.875rem;
     margin-bottom: $spacing-sm;
     opacity: 0.9;
+  }
+}
+
+@keyframes pulse-highlight {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
   }
 }
 

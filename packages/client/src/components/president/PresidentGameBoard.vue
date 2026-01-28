@@ -238,56 +238,53 @@ const showRoundComplete = computed(() =>
       </div>
     </div>
 
-    <!-- Right action panel -->
-    <div class="action-panel">
-      <!-- Top section: Game name and round -->
-      <div class="panel-top">
-        <h1 class="game-title">President</h1>
-        <div class="round-info">Round {{ roundNumber }}</div>
+    <!-- Top right info (game name, round, waiting status) -->
+    <div class="top-right-info">
+      <h1 class="game-title">President</h1>
+      <div class="round-info">Round {{ roundNumber }}</div>
+      <div v-if="!isHumanTurn && !humanPlayer?.finishOrder" class="waiting-message">
+        Waiting for {{ players[currentPlayer]?.name }}...
+      </div>
+    </div>
+
+    <!-- Floating action panel -->
+    <div :class="['floating-action-panel', { active: isHumanTurn }]">
+      <div class="player-info-panel">
+        <div class="player-name-panel">{{ humanPlayer?.name || 'You' }}</div>
+        <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
+          {{ store.getPlayerRankDisplay(humanPlayer.id) }}
+        </span>
       </div>
 
-      <!-- Bottom section: Player info and actions -->
-      <div class="panel-bottom">
-        <div :class="['player-info-panel', { active: isHumanTurn }]">
-          <div class="player-name-panel">{{ humanPlayer?.name || 'You' }}</div>
-          <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
-            {{ store.getPlayerRankDisplay(humanPlayer.id) }}
-          </span>
+      <!-- Selection feedback -->
+      <div v-if="isHumanTurn" class="selection-feedback">
+        <div v-if="selectedCards.length > 0" class="selection-count">
+          {{ selectedCards.length }} card{{ selectedCards.length !== 1 ? 's' : '' }} selected
         </div>
+        <div v-if="!canPlaySelection && selectedCards.length > 0" class="invalid-hint">
+          Invalid play
+        </div>
+        <div v-if="selectedCards.length === 0" class="hint-text">
+          Tap cards to select
+        </div>
+      </div>
 
-        <!-- Selection feedback -->
-        <div v-if="isHumanTurn" class="selection-feedback">
-          <div v-if="selectedCards.length > 0" class="selection-count">
-            {{ selectedCards.length }} card{{ selectedCards.length !== 1 ? 's' : '' }} selected
-          </div>
-          <div v-if="!canPlaySelection && selectedCards.length > 0" class="invalid-hint">
-            Invalid play
-          </div>
-          <div v-if="selectedCards.length === 0" class="hint-text">
-            Tap cards to select
-          </div>
-        </div>
-        <div v-else-if="!humanPlayer?.finishOrder" class="waiting-message">
-          Waiting for {{ players[currentPlayer]?.name }}...
-        </div>
-
-        <!-- Action buttons -->
-        <div v-if="isHumanTurn" class="action-buttons">
-          <button
-            class="action-btn play-btn"
-            :disabled="!canPlaySelection"
-            @click="playSelectedCards"
-          >
-            Play {{ selectedCards.length > 0 ? `(${selectedCards.length})` : '' }}
-          </button>
-          <button
-            class="action-btn pass-btn"
-            :disabled="currentPile.currentRank === null"
-            @click="passTurn"
-          >
-            Pass
-          </button>
-        </div>
+      <!-- Action buttons -->
+      <div v-if="isHumanTurn" class="action-buttons">
+        <button
+          class="action-btn play-btn"
+          :disabled="!canPlaySelection"
+          @click="playSelectedCards"
+        >
+          Play {{ selectedCards.length > 0 ? `(${selectedCards.length})` : '' }}
+        </button>
+        <button
+          class="action-btn pass-btn"
+          :disabled="currentPile.currentRank === null"
+          @click="passTurn"
+        >
+          Pass
+        </button>
       </div>
     </div>
 
@@ -374,6 +371,7 @@ const showRoundComplete = computed(() =>
   overflow: hidden;
   height: 100%;
   min-height: 0;
+  width: 100%;
 }
 
 .back-button {
@@ -420,15 +418,16 @@ const showRoundComplete = computed(() =>
   align-items: center;
   padding: $spacing-sm;
   border-radius: 8px;
-  transition: background 0.2s;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   @media (max-height: 500px) {
     padding: $spacing-xs;
   }
 
   &.active {
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+    border-color: #f4d03f;
+    box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
   }
 }
 
@@ -580,55 +579,29 @@ const showRoundComplete = computed(() =>
   }
 }
 
-// Right action panel
-.action-panel {
-  width: 200px;
-  flex: 0 0 200px;
-  background: rgba(0, 0, 0, 0.3);
-  border-left: 2px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;
-
-  // Smaller screens in landscape: narrower panel
-  @media (max-height: 500px) {
-    width: 150px;
-    flex: 0 0 150px;
-  }
-
-  // Mobile portrait: full width at bottom
-  @media (max-width: 768px) and (orientation: portrait) {
-    width: 100%;
-    flex: 0 0 auto;
-    border-left: none;
-    border-top: 2px solid rgba(255, 255, 255, 0.1);
-    max-height: 200px;
-  }
-}
-
-.panel-top {
-  padding: $spacing-lg $spacing-md;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  text-align: center;
-  flex-shrink: 0;
+// Top right info (game name, round, waiting status)
+.top-right-info {
+  position: fixed;
+  top: $spacing-md;
+  right: $spacing-md;
+  text-align: right;
+  z-index: 100;
 
   @media (max-height: 500px) {
-    padding: $spacing-sm $spacing-xs;
+    top: $spacing-sm;
+    right: $spacing-sm;
   }
 
   .game-title {
     font-family: 'Rock Salt', cursive;
     font-size: 1.4rem;
     font-weight: 400;
-    margin: 0 0 $spacing-sm 0;
+    margin: 0 0 $spacing-xs 0;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     color: white;
 
     @media (max-height: 500px) {
       font-size: 1rem;
-      margin: 0 0 $spacing-xs 0;
     }
   }
 
@@ -641,19 +614,46 @@ const showRoundComplete = computed(() =>
       font-size: 0.85rem;
     }
   }
+
+  .waiting-message {
+    margin-top: $spacing-sm;
+    font-size: 0.85rem;
+    opacity: 0.8;
+    font-style: italic;
+
+    @media (max-height: 500px) {
+      font-size: 0.75rem;
+      margin-top: $spacing-xs;
+    }
+  }
 }
 
-.panel-bottom {
-  flex: 1;
+// Floating action panel
+.floating-action-panel {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  width: 180px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: $spacing-md;
   display: flex;
   flex-direction: column;
-  padding: $spacing-md;
-  gap: $spacing-md;
-  overflow-y: auto;
+  gap: $spacing-sm;
+  z-index: 100;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   @media (max-height: 500px) {
+    width: 150px;
     padding: $spacing-sm;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
+  }
+
+  &.active {
+    border-color: #f4d03f;
+    box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
   }
 }
 
@@ -662,26 +662,14 @@ const showRoundComplete = computed(() =>
   flex-direction: column;
   align-items: center;
   gap: $spacing-xs;
-  padding: $spacing-sm;
-  border-radius: 8px;
-  transition: background 0.2s;
-
-  @media (max-height: 500px) {
-    padding: $spacing-xs;
-  }
-
-  &.active {
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-  }
 }
 
 .player-name-panel {
   font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 1rem;
 
   @media (max-height: 500px) {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -693,41 +681,32 @@ const showRoundComplete = computed(() =>
 }
 
 .selection-feedback {
-  padding: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
   color: white;
   text-align: center;
 
   @media (max-height: 500px) {
     padding: $spacing-xs;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .selection-count {
     font-weight: bold;
-    margin-bottom: $spacing-xs;
   }
 
   .invalid-hint {
     color: #ff6b6b;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-style: italic;
-
-    @media (max-height: 500px) {
-      font-size: 0.75rem;
-    }
   }
 
   .hint-text {
     opacity: 0.8;
     font-style: italic;
-    font-size: 0.85rem;
-
-    @media (max-height: 500px) {
-      font-size: 0.75rem;
-    }
+    font-size: 0.75rem;
   }
 }
 
@@ -735,13 +714,11 @@ const showRoundComplete = computed(() =>
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  flex: 1;
-  justify-content: flex-end;
 }
 
 .action-btn {
-  padding: $spacing-md;
-  font-size: 1.1rem;
+  padding: $spacing-sm $spacing-md;
+  font-size: 0.95rem;
   font-weight: bold;
   border-radius: 8px;
   transition: all 0.2s;
@@ -756,10 +733,9 @@ const showRoundComplete = computed(() =>
     box-shadow: none;
   }
 
-  // Small landscape screens: compact buttons
   @media (max-height: 500px) {
-    padding: $spacing-sm;
-    font-size: 0.95rem;
+    padding: $spacing-xs $spacing-sm;
+    font-size: 0.85rem;
   }
 }
 
@@ -788,15 +764,6 @@ const showRoundComplete = computed(() =>
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.02);
   }
-}
-
-.waiting-message {
-  text-align: center;
-  opacity: 0.8;
-  font-style: italic;
-  padding: $spacing-sm;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
 }
 
 // Modal styles

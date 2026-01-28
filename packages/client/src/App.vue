@@ -270,6 +270,16 @@ function backToMenu() {
   width: 100%;
   height: 100%;
   overflow: hidden;
+
+  // Scale down for very small landscape screens (iPhone SE, etc.)
+  // Design target: ~850px width (iPhone 15 landscape)
+  // iPhone SE landscape: 667px width = ~78% of target
+  @media (max-height: 400px) and (orientation: landscape) {
+    transform: scale(0.85);
+    transform-origin: top left;
+    width: calc(100% / 0.85);
+    height: calc(100% / 0.85);
+  }
 }
 
 // Portrait orientation overlay - only shows on mobile portrait

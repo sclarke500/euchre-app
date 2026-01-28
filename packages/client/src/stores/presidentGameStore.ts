@@ -60,7 +60,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
   const isHumanTurn = computed(() => {
     const human = humanPlayer.value
-    return human && currentPlayer.value === human.id && phase.value === PresidentPhase.Playing
+    return human && currentPlayer.value === human.id && phase.value === PresidentPhase.Playing && human.finishOrder === null
   })
 
   const validPlays = computed(() => {
@@ -269,15 +269,15 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const player = players.value[currentPlayer.value]
     if (!player) return
 
-    // Human player - wait for input
-    if (player.isHuman) {
-      return
-    }
-
-    // Skip if player is finished
+    // Skip if player is finished (applies to both human and AI)
     if (player.finishOrder !== null) {
       currentPlayer.value = getNextActivePlayer(gameState.value, currentPlayer.value)
       processAITurn()
+      return
+    }
+
+    // Human player - wait for input
+    if (player.isHuman) {
       return
     }
 
