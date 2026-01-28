@@ -31,6 +31,14 @@ const validPlays = computed(() => store.validPlays)
 const canHumanPlay = computed(() => store.canHumanPlay)
 const lastPlayedCards = computed(() => store.lastPlayedCards)
 const roundNumber = computed(() => store.roundNumber)
+
+// Get the cards currently on the pile that need to be beaten
+const pileCards = computed(() => {
+  const plays = currentPile.value.plays
+  if (plays.length === 0) return null
+  // Return the most recent play's cards
+  return plays[plays.length - 1]?.cards || null
+})
 const gameOver = computed(() => store.gameOver)
 const finishedPlayers = computed(() => store.finishedPlayers)
 
@@ -194,15 +202,15 @@ const showRoundComplete = computed(() =>
           <div class="pile-status">{{ pileStatus }}</div>
           <div class="pile-cards">
             <div
-              v-for="(card, index) in (lastPlayedCards || [])"
+              v-for="(card, index) in (pileCards || [])"
               :key="card.id"
               class="pile-card"
               :style="{ transform: `translateX(${index * 20}px)` }"
             >
               <Card :card="toCard(card)" />
             </div>
-            <div v-if="!lastPlayedCards || lastPlayedCards.length === 0" class="empty-pile">
-              {{ currentPile.currentRank ? 'Passed' : 'Empty' }}
+            <div v-if="!pileCards" class="empty-pile">
+              Empty
             </div>
           </div>
         </div>
@@ -240,7 +248,7 @@ const showRoundComplete = computed(() =>
 
       <!-- Bottom section: Player info and actions -->
       <div class="panel-bottom">
-        <div class="player-info-panel">
+        <div :class="['player-info-panel', { active: isHumanTurn }]">
           <div class="player-name-panel">{{ humanPlayer?.name || 'You' }}</div>
           <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
             {{ store.getPlayerRankDisplay(humanPlayer.id) }}
@@ -490,14 +498,42 @@ const showRoundComplete = computed(() =>
 
 .player-area {
   flex: 0 0 auto;
-  padding: $spacing-md;
+  height: 105px; // Full card height
+  overflow: visible;
+  position: relative;
 }
 
 .hand-container {
   display: flex;
+  justify-content: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 $spacing-md;
 }
 
 .hand-card {
+  margin-left: -25px;
+  transform: translateY(50px); // Push cards down, showing only top ~55px
+  transition: transform 0.15s ease-out;
+
+  &:first-child {
+    margin-left: 0;
+  }
+
+  &.selectable {
+    cursor: pointer;
+  }
+
+  &.selected {
+    transform: translateY(25px); // Pop up when selected
+  }
+
+  // Use filter instead of opacity to avoid stacking/striping effect
+  &.dimmed :deep(.card) {
+    filter: brightness(0.7) saturate(0.5);
+  }
 }
 
 // Right action panel
@@ -568,8 +604,14 @@ const showRoundComplete = computed(() =>
   flex-direction: column;
   align-items: center;
   gap: $spacing-xs;
-  padding-bottom: $spacing-sm;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: $spacing-sm;
+  border-radius: 8px;
+  transition: background 0.2s;
+
+  &.active {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  }
 }
 
 .player-name-panel {
