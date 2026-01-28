@@ -55,17 +55,18 @@ const turnUpCard = computed(() => game.turnUpCard.value)
 const isDealing = ref(false)
 const showHand = ref(false)
 const discardingCardId = ref<string | null>(null)
-let dealingTimeout: number | null = null
+const dealAnimationInProgress = ref(false)
 
 // Watch for Dealing phase and trigger slide-up animation
 watch(phase, (newPhase, oldPhase) => {
   if (newPhase === GamePhase.Dealing && oldPhase !== GamePhase.Dealing) {
-    // Hide hand initially, then show with animation
+    // Start deal animation sequence
+    dealAnimationInProgress.value = true
     showHand.value = false
     isDealing.value = false
-    
+
     // Wait half a second before starting animation
-    dealingTimeout = window.setTimeout(() => {
+    setTimeout(() => {
       showHand.value = true
       // Trigger animation on next frame
       requestAnimationFrame(() => {
@@ -73,45 +74,38 @@ watch(phase, (newPhase, oldPhase) => {
         // Animation completes after 0.6s
         setTimeout(() => {
           isDealing.value = false
+          dealAnimationInProgress.value = false
         }, 600)
       })
     }, 500)
-  } else if (newPhase !== GamePhase.Dealing) {
-    // Show hand normally when not dealing
+  } else if (newPhase !== GamePhase.Dealing && !dealAnimationInProgress.value) {
+    // Show hand normally when not dealing (and no animation in progress)
     showHand.value = true
     isDealing.value = false
-    if (dealingTimeout !== null) {
-      clearTimeout(dealingTimeout)
-      dealingTimeout = null
-    }
   }
 })
 
 // Also check on mount if we're already in Dealing phase (for first hand)
 onMounted(() => {
   if (phase.value === GamePhase.Dealing && displayHand.value.length > 0) {
-    // Hide hand initially
+    // Start deal animation sequence
+    dealAnimationInProgress.value = true
     showHand.value = false
     isDealing.value = false
-    
-    dealingTimeout = window.setTimeout(() => {
+
+    setTimeout(() => {
       showHand.value = true
       requestAnimationFrame(() => {
         isDealing.value = true
         setTimeout(() => {
           isDealing.value = false
+          dealAnimationInProgress.value = false
         }, 600)
       })
     }, 500)
   } else {
     // Show hand normally if not in Dealing phase
     showHand.value = true
-  }
-})
-
-onUnmounted(() => {
-  if (dealingTimeout !== null) {
-    clearTimeout(dealingTimeout)
   }
 })
 

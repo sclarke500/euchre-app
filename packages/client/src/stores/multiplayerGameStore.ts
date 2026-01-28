@@ -23,6 +23,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   // Local UI state
   const lastBidAction = ref<{ playerId: number; message: string } | null>(null)
   const lastCardPlayed = ref<{ playerId: number; card: Card } | null>(null)
+  const lastTrickWinnerId = ref<number | null>(null)
 
   // Computed getters for easy access
   const phase = computed(() => gameState.value?.phase ?? GamePhase.Setup)
@@ -56,6 +57,10 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     switch (message.type) {
       case 'game_state':
         console.log('MP game_state received - trump:', message.state.trump, 'trumpCalledBy:', message.state.trumpCalledBy)
+        // Clear lastTrickWinnerId when a new round starts (dealing phase)
+        if (message.state.phase === GamePhase.Dealing) {
+          lastTrickWinnerId.value = null
+        }
         gameState.value = message.state
         break
 
@@ -84,7 +89,8 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
         break
 
       case 'trick_complete':
-        // Trick complete event - UI can show animation
+        // Store the winner ID for sweep animation
+        lastTrickWinnerId.value = message.winnerId
         break
 
       case 'round_complete':
@@ -186,6 +192,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     isMyTurn,
     lastBidAction,
     lastCardPlayed,
+    lastTrickWinnerId,
 
     // Computed
     phase,

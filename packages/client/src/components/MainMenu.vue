@@ -1,8 +1,73 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
+import { getPlatformInfo } from '@/utils/platform'
 
 export type GameType = 'euchre' | 'president'
+
+// Platform detection
+const showIOSInstallHint = ref(false)
+const showIOSSafariWarning = ref(false)
+const showAndroidInstall = ref(false)
+let deferredPrompt: BeforeInstallPromptEvent | null = null
+
+// Type for the install prompt event
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+function handleBeforeInstallPrompt(e: Event) {
+  // Prevent the mini-infobar from appearing on mobile
+  e.preventDefault()
+  // Save the event so it can be triggered later
+  deferredPrompt = e as BeforeInstallPromptEvent
+  showAndroidInstall.value = true
+}
+
+async function installPWA() {
+  if (!deferredPrompt) return
+
+  // Show the install prompt
+  deferredPrompt.prompt()
+
+  // Wait for the user to respond
+  await deferredPrompt.userChoice
+
+  // Clear the deferred prompt
+  deferredPrompt = null
+  showAndroidInstall.value = false
+}
+
+onMounted(() => {
+  const platform = getPlatformInfo()
+
+  if (platform.isStandalone) {
+    // Already running as PWA, no hints needed
+    return
+  }
+
+  if (platform.isIOS) {
+    if (platform.isSafari) {
+      showIOSInstallHint.value = true
+    } else {
+      showIOSSafariWarning.value = true
+    }
+  } else {
+    // Android/Desktop - listen for install prompt
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+})
+
+function dismissInstallHint() {
+  showIOSInstallHint.value = false
+  showIOSSafariWarning.value = false
+  showAndroidInstall.value = false
+}
 
 const emit = defineEmits<{
   startSinglePlayer: [game: GameType]
@@ -137,6 +202,21 @@ const gameTitle = computed(() => {
             <button class="edit-btn" @click="editNickname">Edit</button>
           </div>
         </template>
+      </div>
+
+      <!-- Install hints -->
+      <div v-if="showIOSInstallHint" class="install-hint">
+        <span>For fullscreen: tap <strong>Share</strong> → <strong>Add to Home Screen</strong></span>
+        <button class="dismiss-btn" @click="dismissInstallHint">×</button>
+      </div>
+      <div v-if="showIOSSafariWarning" class="install-hint warning">
+        <span>Open in <strong>Safari</strong> to install as an app</span>
+        <button class="dismiss-btn" @click="dismissInstallHint">×</button>
+      </div>
+      <div v-if="showAndroidInstall" class="install-hint">
+        <span>Install app for fullscreen</span>
+        <button class="install-btn" @click="installPWA">Install</button>
+        <button class="dismiss-btn" @click="dismissInstallHint">×</button>
       </div>
     </div>
   </div>
@@ -425,6 +505,58 @@ const gameTitle = computed(() => {
     color: white;
     border-radius: 4px;
     transition: background 0.2s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.install-hint {
+  margin-top: $spacing-lg;
+  padding: $spacing-sm $spacing-md;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  @media (max-height: 500px) {
+    margin-top: $spacing-md;
+    font-size: 0.75rem;
+  }
+
+  &.warning {
+    background: rgba(231, 76, 60, 0.3);
+  }
+
+  strong {
+    font-weight: bold;
+  }
+
+  .install-btn {
+    margin-left: auto;
+    padding: $spacing-xs $spacing-sm;
+    font-size: 0.8rem;
+    font-weight: bold;
+    background: $secondary-color;
+    color: white;
+    border-radius: 6px;
+    transition: background 0.2s;
+
+    &:hover {
+      background: color-mix(in srgb, $secondary-color 85%, white 15%);
+    }
+  }
+
+  .dismiss-btn {
+    padding: 2px 6px;
+    font-size: 1rem;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 4px;
 
     &:hover {
       background: rgba(255, 255, 255, 0.3);

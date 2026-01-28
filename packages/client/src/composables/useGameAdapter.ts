@@ -242,9 +242,9 @@ function createMultiplayerAdapter(): GameAdapter {
 
   const currentTrick = computed(() => store.currentTrick ?? createEmptyTrick())
 
-  // For multiplayer, get winnerId from currentTrick (server sets this)
+  // For multiplayer, get winnerId from the stored value (set when trick_complete message arrives)
   const lastTrickWinnerId = computed<number | null>(() => {
-    return store.currentTrick?.winnerId ?? null
+    return store.lastTrickWinnerId ?? null
   })
 
   return {

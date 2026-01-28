@@ -7,6 +7,10 @@
       <div class="rank">{{ displayRank }}</div>
       <div class="suit">{{ suitSymbol }}</div>
     </div>
+    <div class="card-corner bottom-right" :class="suitColorClass">
+      <div class="rank">{{ displayRank }}</div>
+      <div class="suit">{{ suitSymbol }}</div>
+    </div>
     <div class="card-center" :class="suitColorClass">
       <div class="suit-large">{{ suitSymbol }}</div>
     </div>
@@ -95,6 +99,12 @@ function handleClick() {
   &.top-left {
     top: 5px;
     left: 6px;
+  }
+
+  &.bottom-right {
+    bottom: 5px;
+    right: 6px;
+    transform: rotate(180deg);
   }
 
   .rank {
