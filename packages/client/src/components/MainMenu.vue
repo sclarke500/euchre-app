@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 
 export type GameType = 'euchre' | 'president'
@@ -9,7 +9,14 @@ const emit = defineEmits<{
   enterMultiplayer: [game: GameType]
 }>()
 
-const selectedGame = ref<GameType>('euchre')
+// Load saved game selection from localStorage, default to 'euchre'
+const savedGame = localStorage.getItem('selectedGame') as GameType | null
+const selectedGame = ref<GameType>(savedGame === 'president' ? 'president' : 'euchre')
+
+// Save game selection when it changes
+watch(selectedGame, (newGame) => {
+  localStorage.setItem('selectedGame', newGame)
+})
 
 const lobbyStore = useLobbyStore()
 

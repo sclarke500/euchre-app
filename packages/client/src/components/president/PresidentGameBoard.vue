@@ -408,6 +408,10 @@ const showRoundComplete = computed(() =>
   justify-content: space-around;
   padding: calc(#{$spacing-md} / 2 + 20px) $spacing-md $spacing-md;
   flex: 0 0 auto;
+
+  @media (max-height: 500px) {
+    padding: $spacing-xs $spacing-sm;
+  }
 }
 
 .opponent {
@@ -418,6 +422,10 @@ const showRoundComplete = computed(() =>
   border-radius: 8px;
   transition: background 0.2s;
 
+  @media (max-height: 500px) {
+    padding: $spacing-xs;
+  }
+
   &.active {
     background: rgba(255, 255, 255, 0.15);
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
@@ -427,11 +435,20 @@ const showRoundComplete = computed(() =>
 .opponent-name {
   font-weight: bold;
   margin-bottom: $spacing-xs;
+
+  @media (max-height: 500px) {
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+  }
 }
 
 .opponent-cards {
   display: flex;
   margin-bottom: $spacing-xs;
+
+  @media (max-height: 500px) {
+    margin-bottom: 2px;
+  }
 }
 
 .card-back {
@@ -442,6 +459,13 @@ const showRoundComplete = computed(() =>
   margin-left: -20px;
   border: 1px solid rgba(255, 255, 255, 0.3);
 
+  @media (max-height: 500px) {
+    width: 22px;
+    height: 32px;
+    margin-left: -15px;
+    border-radius: 3px;
+  }
+
   &:first-child {
     margin-left: 0;
   }
@@ -450,6 +474,10 @@ const showRoundComplete = computed(() =>
 .opponent-status {
   font-size: 0.75rem;
   opacity: 0.8;
+
+  @media (max-height: 500px) {
+    font-size: 0.65rem;
+  }
 }
 
 .center-area {
@@ -471,12 +499,23 @@ const showRoundComplete = computed(() =>
   min-width: 200px;
   min-height: 150px;
   border: 2px solid rgba(255, 255, 255, 0.2);
+
+  @media (max-height: 500px) {
+    padding: $spacing-sm;
+    min-width: 150px;
+    min-height: 100px;
+  }
 }
 
 .pile-status {
   font-size: 0.875rem;
   opacity: 0.8;
   margin-bottom: $spacing-sm;
+
+  @media (max-height: 500px) {
+    font-size: 0.75rem;
+    margin-bottom: $spacing-xs;
+  }
 }
 
 .pile-cards {
@@ -518,6 +557,11 @@ const showRoundComplete = computed(() =>
   transform: translateY(50px); // Push cards down, showing only top ~55px
   transition: transform 0.15s ease-out;
 
+  // Tighter overlap on small screens
+  @media (max-height: 500px) {
+    margin-left: -35px;
+  }
+
   &:first-child {
     margin-left: 0;
   }
@@ -548,6 +592,12 @@ const showRoundComplete = computed(() =>
   height: 100%;
   overflow: hidden;
 
+  // Smaller screens in landscape: narrower panel
+  @media (max-height: 500px) {
+    width: 150px;
+    flex: 0 0 150px;
+  }
+
   // Mobile portrait: full width at bottom
   @media (max-width: 768px) and (orientation: portrait) {
     width: 100%;
@@ -555,12 +605,6 @@ const showRoundComplete = computed(() =>
     border-left: none;
     border-top: 2px solid rgba(255, 255, 255, 0.1);
     max-height: 200px;
-  }
-
-  // Very small screens: make panel narrower
-  @media (max-width: 480px) {
-    width: 100%;
-    flex: 0 0 auto;
   }
 }
 
@@ -570,16 +614,21 @@ const showRoundComplete = computed(() =>
   text-align: center;
   flex-shrink: 0;
 
+  @media (max-height: 500px) {
+    padding: $spacing-sm $spacing-xs;
+  }
+
   .game-title {
     font-family: 'Rock Salt', cursive;
-    font-size: 1.4rem; // Reduced by 30% from 2rem
+    font-size: 1.4rem;
     font-weight: 400;
     margin: 0 0 $spacing-sm 0;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     color: white;
 
-    @media (max-width: 768px) {
-      font-size: 1.05rem; // Reduced by 30% from 1.5rem
+    @media (max-height: 500px) {
+      font-size: 1rem;
+      margin: 0 0 $spacing-xs 0;
     }
   }
 
@@ -587,6 +636,10 @@ const showRoundComplete = computed(() =>
     font-weight: bold;
     font-size: 1rem;
     opacity: 0.9;
+
+    @media (max-height: 500px) {
+      font-size: 0.85rem;
+    }
   }
 }
 
@@ -597,6 +650,11 @@ const showRoundComplete = computed(() =>
   padding: $spacing-md;
   gap: $spacing-md;
   overflow-y: auto;
+
+  @media (max-height: 500px) {
+    padding: $spacing-sm;
+    gap: $spacing-sm;
+  }
 }
 
 .player-info-panel {
@@ -608,6 +666,10 @@ const showRoundComplete = computed(() =>
   border-radius: 8px;
   transition: background 0.2s;
 
+  @media (max-height: 500px) {
+    padding: $spacing-xs;
+  }
+
   &.active {
     background: rgba(255, 255, 255, 0.15);
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
@@ -617,6 +679,10 @@ const showRoundComplete = computed(() =>
 .player-name-panel {
   font-weight: bold;
   font-size: 1.1rem;
+
+  @media (max-height: 500px) {
+    font-size: 0.95rem;
+  }
 }
 
 .player-rank-panel {
@@ -634,6 +700,11 @@ const showRoundComplete = computed(() =>
   color: white;
   text-align: center;
 
+  @media (max-height: 500px) {
+    padding: $spacing-xs;
+    font-size: 0.8rem;
+  }
+
   .selection-count {
     font-weight: bold;
     margin-bottom: $spacing-xs;
@@ -643,12 +714,20 @@ const showRoundComplete = computed(() =>
     color: #ff6b6b;
     font-size: 0.85rem;
     font-style: italic;
+
+    @media (max-height: 500px) {
+      font-size: 0.75rem;
+    }
   }
 
   .hint-text {
     opacity: 0.8;
     font-style: italic;
     font-size: 0.85rem;
+
+    @media (max-height: 500px) {
+      font-size: 0.75rem;
+    }
   }
 }
 
@@ -677,10 +756,10 @@ const showRoundComplete = computed(() =>
     box-shadow: none;
   }
 
-  // Mobile: larger touch targets
-  @media (max-width: 768px) {
-    padding: $spacing-lg;
-    font-size: 1.2rem;
+  // Small landscape screens: compact buttons
+  @media (max-height: 500px) {
+    padding: $spacing-sm;
+    font-size: 0.95rem;
   }
 }
 
