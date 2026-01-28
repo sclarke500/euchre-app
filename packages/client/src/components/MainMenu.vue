@@ -230,6 +230,12 @@ const gameTitle = computed(() => {
   flex-direction: row;
   background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
   color: white;
+
+  // Portrait mode - stack vertically
+  @media (orientation: portrait) {
+    flex-direction: column;
+    overflow-y: auto;
+  }
 }
 
 .logo-section {
@@ -247,12 +253,26 @@ const gameTitle = computed(() => {
     gap: $spacing-sm;
   }
 
+  // Portrait mode - smaller logo section at top
+  @media (orientation: portrait) {
+    flex: 0 0 auto;
+    padding: $spacing-lg $spacing-md;
+    gap: $spacing-sm;
+  }
+
   .logo {
     width: 80%;
     max-height: 70%;
     object-fit: contain;
     object-position: center;
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+
+    // Portrait mode - limit logo size
+    @media (orientation: portrait) {
+      width: 50%;
+      max-width: 200px;
+      max-height: 150px;
+    }
   }
 
   .stamp-text {
@@ -276,6 +296,12 @@ const gameTitle = computed(() => {
       padding: 2px $spacing-xs;
       margin-top: calc(-#{$spacing-md} - 10px);
     }
+
+    // Portrait mode - smaller stamp
+    @media (orientation: portrait) {
+      font-size: 0.9rem;
+      margin-top: calc(-#{$spacing-md} - 8px);
+    }
   }
 }
 
@@ -291,6 +317,14 @@ const gameTitle = computed(() => {
     padding: $spacing-sm;
   }
 
+  // Portrait mode - flex grow to fill remaining space
+  @media (orientation: portrait) {
+    flex: 1;
+    justify-content: flex-start;
+    padding: $spacing-md;
+    padding-bottom: $spacing-xl;
+  }
+
   h1 {
     font-family: 'Rock Salt', cursive;
     font-size: 4rem;
@@ -301,6 +335,12 @@ const gameTitle = computed(() => {
     @media (max-height: 500px) {
       font-size: 2rem;
       margin-bottom: $spacing-md;
+    }
+
+    // Portrait mode - smaller title
+    @media (orientation: portrait) {
+      font-size: 2.5rem;
+      margin-bottom: $spacing-lg;
     }
   }
 }
@@ -316,6 +356,10 @@ const gameTitle = computed(() => {
   @media (max-height: 500px) {
     margin-bottom: $spacing-md;
   }
+
+  @media (orientation: portrait) {
+    margin-bottom: $spacing-lg;
+  }
 }
 
 .game-tab {
@@ -327,12 +371,6 @@ const gameTitle = computed(() => {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
 
   &.active {
     background: white;
@@ -350,6 +388,13 @@ const gameTitle = computed(() => {
     flex-direction: row;
     margin-bottom: $spacing-lg;
   }
+
+  @media (orientation: portrait) {
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+    width: 100%;
+    max-width: 320px;
+  }
 }
 
 .menu-btn {
@@ -361,7 +406,6 @@ const gameTitle = computed(() => {
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
@@ -374,9 +418,11 @@ const gameTitle = computed(() => {
     min-width: 200px;
   }
 
-  &:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  @media (orientation: portrait) {
+    padding: $spacing-md $spacing-lg;
+    font-size: 1.25rem;
+    min-width: unset;
+    width: 100%;
   }
 
   &:active:not(:disabled) {
@@ -413,6 +459,12 @@ const gameTitle = computed(() => {
   @media (max-height: 500px) {
     padding: $spacing-md;
     min-width: 280px;
+  }
+
+  @media (orientation: portrait) {
+    min-width: unset;
+    width: 100%;
+    max-width: 320px;
   }
 
   &.highlight {
@@ -463,11 +515,6 @@ const gameTitle = computed(() => {
     color: white;
     font-weight: bold;
     border-radius: 8px;
-    transition: background 0.2s;
-
-    &:hover:not(:disabled) {
-      background: color-mix(in srgb, $secondary-color 90%, white 10%);
-    }
 
     &:disabled {
       opacity: 0.5;
@@ -501,34 +548,37 @@ const gameTitle = computed(() => {
     margin-left: auto;
     padding: $spacing-xs $spacing-sm;
     font-size: 0.75rem;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     color: white;
     border-radius: 4px;
-    transition: background 0.2s;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
   }
 }
 
 .install-hint {
-  margin-top: $spacing-lg;
-  padding: $spacing-sm $spacing-md;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  font-size: 0.8rem;
+  margin-top: $spacing-xl;
+  padding: $spacing-md $spacing-lg;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  font-size: 1rem;
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: $spacing-md;
+  max-width: 400px;
 
   @media (max-height: 500px) {
     margin-top: $spacing-md;
-    font-size: 0.75rem;
+    padding: $spacing-sm $spacing-md;
+    font-size: 0.875rem;
+  }
+
+  @media (orientation: portrait) {
+    max-width: 320px;
   }
 
   &.warning {
-    background: rgba(231, 76, 60, 0.3);
+    background: rgba(231, 76, 60, 0.25);
+    border-color: rgba(231, 76, 60, 0.4);
   }
 
   strong {
@@ -536,31 +586,24 @@ const gameTitle = computed(() => {
   }
 
   .install-btn {
+    flex-shrink: 0;
     margin-left: auto;
-    padding: $spacing-xs $spacing-sm;
-    font-size: 0.8rem;
+    padding: $spacing-sm $spacing-md;
+    font-size: 1rem;
     font-weight: bold;
     background: $secondary-color;
     color: white;
-    border-radius: 6px;
-    transition: background 0.2s;
-
-    &:hover {
-      background: color-mix(in srgb, $secondary-color 85%, white 15%);
-    }
+    border-radius: 8px;
   }
 
   .dismiss-btn {
-    padding: 2px 6px;
-    font-size: 1rem;
+    flex-shrink: 0;
+    padding: $spacing-xs $spacing-sm;
+    font-size: 1.25rem;
     line-height: 1;
     background: rgba(255, 255, 255, 0.2);
     color: white;
-    border-radius: 4px;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
+    border-radius: 6px;
   }
 }
 </style>

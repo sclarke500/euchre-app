@@ -168,28 +168,18 @@ function handlePass() {
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
   min-width: 100px;
   border: none;
 
   &.primary {
     background: #2d5f3f;
     color: white;
-
-    &:hover {
-      background: #3d7f52;
-    }
   }
 
   &.secondary {
     background: #e0e0e0;
     color: #333;
     border: 2px solid #999;
-
-    &:hover {
-      background: #d0d0d0;
-      border-color: #777;
-    }
   }
 
   &:active {
@@ -224,7 +214,6 @@ function handlePass() {
   background: white;
   border: 2px solid #ddd;
   cursor: pointer;
-  transition: all 0.15s ease;
 
   .suit-symbol {
     font-size: 1.5rem;
@@ -237,12 +226,6 @@ function handlePass() {
 
   &.black .suit-symbol {
     color: #2c3e50;
-  }
-
-  &:hover:not(.disabled) {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border-color: #999;
   }
 
   &:active:not(.disabled) {

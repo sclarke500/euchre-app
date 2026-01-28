@@ -20,6 +20,11 @@ const currentGame = ref<GameType>('euchre')
 
 const phase = computed(() => gameStore.phase)
 
+// Only show landscape blocker on game boards, not menu/lobby
+const showLandscapeBlocker = computed(() => {
+  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'multiplayerGame'].includes(currentView.value)
+})
+
 // PWA install prompt
 const deferredPrompt = ref<Event | null>(null)
 const showInstallPrompt = ref(false)
@@ -162,8 +167,8 @@ function backToMenu() {
 
 <template>
   <div id="app">
-    <!-- Portrait orientation overlay for mobile -->
-    <div class="rotate-device-overlay">
+    <!-- Portrait orientation overlay for mobile - only on game boards -->
+    <div v-if="showLandscapeBlocker" class="rotate-device-overlay">
       <div class="rotate-content">
         <div class="rotate-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -367,10 +372,6 @@ function backToMenu() {
     font-weight: bold;
     border-radius: 8px;
     cursor: pointer;
-
-    &:hover {
-      transform: scale(1.05);
-    }
   }
 }
 
@@ -455,11 +456,6 @@ function backToMenu() {
   padding: $spacing-xs $spacing-md;
   border-radius: 8px;
   font-size: 0.875rem;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: color-mix(in srgb, $secondary-color 90%, white 10%);
-  }
 }
 
 .dismiss-btn {
@@ -470,16 +466,11 @@ function backToMenu() {
   align-items: center;
   justify-content: center;
   color: white;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
+  opacity: 0.8;
 
   svg {
     width: 20px;
     height: 20px;
-  }
-
-  &:hover {
-    opacity: 1;
   }
 }
 

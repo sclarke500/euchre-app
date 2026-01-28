@@ -49,7 +49,6 @@ function handleClick(value: string) {
   border: 2px solid white;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
   min-width: 100px;
 
   @media (max-height: 500px) {
@@ -57,12 +56,6 @@ function handleClick(value: string) {
     font-size: 0.875rem;
     border-radius: 6px;
     min-width: 80px;
-  }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.9);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   &:active {

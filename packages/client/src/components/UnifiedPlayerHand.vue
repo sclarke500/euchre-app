@@ -250,16 +250,8 @@ function handleCardClick(card: CardType) {
     font-weight: bold;
   }
 
-  :deep(.card) {
-    transition: transform 0.15s ease;
-  }
-
   :deep(.card.selectable) {
     cursor: pointer;
-  }
-
-  :deep(.card.selectable:hover) {
-    transform: translateY(-8px);
   }
 }
 
@@ -306,16 +298,8 @@ function handleCardClick(card: CardType) {
   }
 }
 
-:deep(.player-hand .card) {
-  transition: transform 0.15s ease;
-}
-
 :deep(.player-hand .card.selectable) {
   cursor: pointer;
-}
-
-:deep(.player-hand .card.selectable:hover) {
-  transform: translateY(-8px);
 }
 
 @keyframes discard-fly-away {

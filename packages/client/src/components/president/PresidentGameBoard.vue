@@ -426,11 +426,6 @@ const showRoundComplete = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
 
   svg {
     width: 16px;
@@ -793,11 +788,8 @@ const showRoundComplete = computed(() =>
   background: $secondary-color;
   color: white;
 
-  &:hover:not(:disabled),
   &:active:not(:disabled) {
-    background: color-mix(in srgb, $secondary-color 90%, white 10%);
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: scale(0.98);
   }
 
   &:disabled {
@@ -809,10 +801,8 @@ const showRoundComplete = computed(() =>
   background: rgba(255, 255, 255, 0.2);
   color: white;
 
-  &:hover:not(:disabled),
   &:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.02);
+    transform: scale(0.98);
   }
 }
 
@@ -843,7 +833,6 @@ const showRoundComplete = computed(() =>
   padding: $spacing-sm $spacing-lg;
   font-weight: bold;
   border-radius: 8px;
-  transition: all 0.2s;
 
   &.cancel {
     background: rgba(255, 255, 255, 0.2);
@@ -855,8 +844,8 @@ const showRoundComplete = computed(() =>
     color: white;
   }
 
-  &:hover {
-    transform: scale(1.05);
+  &:active {
+    transform: scale(0.97);
   }
 }
 

@@ -155,18 +155,13 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   align-items: center;
   gap: $spacing-xs;
   padding: $spacing-sm $spacing-md;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
   border-radius: 8px;
-  transition: background 0.2s;
 
   svg {
     width: 20px;
     height: 20px;
-  }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -186,26 +181,16 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   padding: $spacing-sm $spacing-lg;
   font-weight: bold;
   border-radius: 8px;
-  transition: all 0.2s;
 }
 
 .create-btn {
   background: white;
   color: #1e4d2b;
-
-  &:hover {
-    transform: scale(1.05);
-  }
 }
 
 .start-btn {
   background: $secondary-color;
   color: white;
-
-  &:hover {
-    background: color-mix(in srgb, $secondary-color 90%, white 10%);
-    transform: scale(1.05);
-  }
 }
 
 .status-banner {

@@ -89,12 +89,6 @@ function handleSeatClick(seatIndex: number) {
   padding: $spacing-lg;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:not(.current):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  }
 
   &.current {
     background: rgba(255, 255, 255, 0.15);
@@ -152,11 +146,6 @@ function handleSeatClick(seatIndex: number) {
 
   &.empty.clickable {
     cursor: pointer;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
   }
 }
 

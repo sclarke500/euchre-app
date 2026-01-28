@@ -205,7 +205,7 @@ onUnmounted(() => {
   top: $spacing-md;
   left: $spacing-md;
   z-index: 10100;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
   width: 32px;
@@ -215,10 +215,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
 }
 
 .cell-partner {
@@ -300,26 +296,17 @@ onUnmounted(() => {
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s ease;
 
   &.cancel {
     background: #e0e0e0;
     color: #333;
     border: none;
-
-    &:hover {
-      background: #d0d0d0;
-    }
   }
 
   &.confirm {
     background: #e74c3c;
     color: white;
     border: none;
-
-    &:hover {
-      background: #c0392b;
-    }
   }
 }
 </style>

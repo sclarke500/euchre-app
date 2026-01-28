@@ -64,12 +64,7 @@ function startNewGame() {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
   min-width: 120px;
-
-  &:hover {
-    background: #3d7f52;
-  }
 
   &:active {
     transform: scale(0.97);
