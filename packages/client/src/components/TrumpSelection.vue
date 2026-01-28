@@ -8,11 +8,12 @@
           <Card v-if="turnUpCard" :card="turnUpCard" class="turn-up-card" />
         </div>
         <div class="round1-actions">
-          <button class="action-btn primary" @click="handleOrderUp">
-            {{ isDealer ? 'Pick Up' : 'Order Up' }}
-          </button>
           <button class="action-btn secondary" @click="handlePass">
             Pass
+          </button>
+          <div class="action-spacer"></div>
+          <button class="action-btn primary" @click="handleOrderUp">
+            {{ isDealer ? 'Pick Up' : 'Order Up' }}
           </button>
           <div class="alone-option">
             <label>
@@ -155,6 +156,10 @@ function handlePass() {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+}
+
+.action-spacer {
+  height: $spacing-md;
 }
 
 .action-btn {
