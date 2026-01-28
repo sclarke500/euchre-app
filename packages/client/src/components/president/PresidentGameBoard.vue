@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { usePresidentGameStore } from '@/stores/presidentGameStore'
-import { PresidentPhase, sortHandByRank, type StandardCard, type Card as EuchreCard } from '@euchre/shared'
+import { PresidentPhase, sortHandByRank, isValidPlay, type StandardCard, type Card as EuchreCard } from '@euchre/shared'
 import Card from '../Card.vue'
 import Modal from '../Modal.vue'
 
@@ -98,10 +98,9 @@ const selectedCards = computed(() => {
 // Check if current selection is a valid play
 const canPlaySelection = computed(() => {
   if (selectedCards.value.length === 0) return false
-  return validPlays.value.some(play =>
-    play.length === selectedCards.value.length &&
-    play.every(c => selectedCardIds.value.has(c.id))
-  )
+  // Validate directly using isValidPlay instead of checking against pre-generated valid plays
+  // This allows any valid combination of same-rank cards, not just the first N cards
+  return isValidPlay(selectedCards.value, currentPile.value)
 })
 
 // Play selected cards
@@ -161,101 +160,126 @@ const showRoundComplete = computed(() =>
 
 <template>
   <div class="president-game-board">
-    <!-- Header -->
-    <div class="header">
-      <button class="leave-btn" @click="showLeaveConfirm = true">
-        ← Leave
-      </button>
-      <div class="round-info">
-        Round {{ roundNumber }}
-      </div>
-    </div>
+    <!-- Floating back button -->
+    <button class="back-button" @click="showLeaveConfirm = true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
 
-    <!-- Opponents row -->
-    <div class="opponents-row">
-      <div
-        v-for="opponent in opponents"
-        :key="opponent.id"
-        :class="['opponent', { active: currentPlayer === opponent.id }]"
-      >
-        <div class="opponent-name">{{ opponent.name }}</div>
-        <div class="opponent-cards">
-          <div
-            v-for="i in opponent.hand.length"
-            :key="i"
-            class="card-back"
-          />
-        </div>
-        <div class="opponent-status">{{ getPlayerStatus(opponent.id) }}</div>
-      </div>
-    </div>
-
-    <!-- Center pile -->
-    <div class="center-area">
-      <div class="pile-container">
-        <div class="pile-status">{{ pileStatus }}</div>
-        <div class="pile-cards">
-          <div
-            v-for="(card, index) in (lastPlayedCards || [])"
-            :key="card.id"
-            class="pile-card"
-            :style="{ transform: `translateX(${index * 20}px)` }"
-          >
-            <Card :card="toCard(card)" />
-          </div>
-          <div v-if="!lastPlayedCards || lastPlayedCards.length === 0" class="empty-pile">
-            {{ currentPile.currentRank ? 'Passed' : 'Empty' }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Player hand -->
-    <div class="player-area">
-      <div class="player-info">
-        <span class="player-name">{{ humanPlayer?.name || 'You' }}</span>
-        <span v-if="humanPlayer?.finishOrder" class="player-rank">
-          {{ store.getPlayerRankDisplay(humanPlayer.id) }}
-        </span>
-      </div>
-
-      <div class="hand-container">
+    <!-- Main game area -->
+    <div class="game-main">
+      <!-- Opponents row -->
+      <div class="opponents-row">
         <div
-          v-for="card in sortedHand"
-          :key="card.id"
-          :class="['hand-card', {
-            selectable: isCardSelectable(card),
-            selected: isCardSelected(card),
-            dimmed: isHumanTurn && !isCardSelectable(card)
-          }]"
-          @click="toggleCardSelection(card)"
+          v-for="opponent in opponents"
+          :key="opponent.id"
+          :class="['opponent', { active: currentPlayer === opponent.id }]"
         >
-          <Card
-            :card="toCard(card)"
-            :selectable="isCardSelectable(card)"
-          />
+          <div class="opponent-name">{{ opponent.name }}</div>
+          <div class="opponent-cards">
+            <div
+              v-for="i in opponent.hand.length"
+              :key="i"
+              class="card-back"
+            />
+          </div>
+          <div class="opponent-status">{{ getPlayerStatus(opponent.id) }}</div>
         </div>
       </div>
 
-      <!-- Action buttons -->
-      <div v-if="isHumanTurn" class="action-buttons">
-        <button
-          class="action-btn play-btn"
-          :disabled="!canPlaySelection"
-          @click="playSelectedCards"
-        >
-          Play {{ selectedCards.length > 0 ? `(${selectedCards.length})` : '' }}
-        </button>
-        <button
-          class="action-btn pass-btn"
-          :disabled="currentPile.currentRank === null"
-          @click="passTurn"
-        >
-          Pass
-        </button>
+      <!-- Center pile -->
+      <div class="center-area">
+        <div class="pile-container">
+          <div class="pile-status">{{ pileStatus }}</div>
+          <div class="pile-cards">
+            <div
+              v-for="(card, index) in (lastPlayedCards || [])"
+              :key="card.id"
+              class="pile-card"
+              :style="{ transform: `translateX(${index * 20}px)` }"
+            >
+              <Card :card="toCard(card)" />
+            </div>
+            <div v-if="!lastPlayedCards || lastPlayedCards.length === 0" class="empty-pile">
+              {{ currentPile.currentRank ? 'Passed' : 'Empty' }}
+            </div>
+          </div>
+        </div>
       </div>
-      <div v-else-if="!humanPlayer?.finishOrder" class="waiting-message">
-        Waiting for {{ players[currentPlayer]?.name }}...
+
+      <!-- Player hand -->
+      <div class="player-area">
+        <div class="hand-container">
+          <div
+            v-for="card in sortedHand"
+            :key="card.id"
+            :class="['hand-card', {
+              selectable: isCardSelectable(card),
+              selected: isCardSelected(card),
+              dimmed: isHumanTurn && !isCardSelectable(card)
+            }]"
+            @click="toggleCardSelection(card)"
+          >
+            <Card
+              :card="toCard(card)"
+              :selectable="isCardSelectable(card)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right action panel -->
+    <div class="action-panel">
+      <!-- Top section: Game name and round -->
+      <div class="panel-top">
+        <h1 class="game-title">President</h1>
+        <div class="round-info">Round {{ roundNumber }}</div>
+      </div>
+
+      <!-- Bottom section: Player info and actions -->
+      <div class="panel-bottom">
+        <div class="player-info-panel">
+          <div class="player-name-panel">{{ humanPlayer?.name || 'You' }}</div>
+          <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
+            {{ store.getPlayerRankDisplay(humanPlayer.id) }}
+          </span>
+        </div>
+
+        <!-- Selection feedback -->
+        <div v-if="isHumanTurn" class="selection-feedback">
+          <div v-if="selectedCards.length > 0" class="selection-count">
+            {{ selectedCards.length }} card{{ selectedCards.length !== 1 ? 's' : '' }} selected
+          </div>
+          <div v-if="!canPlaySelection && selectedCards.length > 0" class="invalid-hint">
+            Invalid play
+          </div>
+          <div v-if="selectedCards.length === 0" class="hint-text">
+            Tap cards to select
+          </div>
+        </div>
+        <div v-else-if="!humanPlayer?.finishOrder" class="waiting-message">
+          Waiting for {{ players[currentPlayer]?.name }}...
+        </div>
+
+        <!-- Action buttons -->
+        <div v-if="isHumanTurn" class="action-buttons">
+          <button
+            class="action-btn play-btn"
+            :disabled="!canPlaySelection"
+            @click="playSelectedCards"
+          >
+            Play {{ selectedCards.length > 0 ? `(${selectedCards.length})` : '' }}
+          </button>
+          <button
+            class="action-btn pass-btn"
+            :disabled="currentPile.currentRank === null"
+            @click="passTurn"
+          >
+            Pass
+          </button>
+        </div>
       </div>
     </div>
 
@@ -322,42 +346,59 @@ const showRoundComplete = computed(() =>
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
   color: white;
   overflow: hidden;
+  position: relative;
+
+  // Mobile portrait: stack vertically
+  @media (max-width: 768px) and (orientation: portrait) {
+    flex-direction: column;
+  }
 }
 
-.header {
+.game-main {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: $spacing-sm $spacing-md;
-  background: rgba(0, 0, 0, 0.2);
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
 }
 
-.leave-btn {
-  padding: $spacing-xs $spacing-sm;
+.back-button {
+  position: fixed;
+  top: $spacing-md;
+  left: $spacing-md;
+  z-index: 10100;
   background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.2s;
 
   &:hover {
     background: rgba(255, 255, 255, 0.2);
   }
-}
 
-.round-info {
-  font-weight: bold;
-  font-size: 1.1rem;
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .opponents-row {
   display: flex;
   justify-content: space-around;
-  padding: $spacing-md;
+  padding: calc(#{$spacing-md} / 2 + 20px) $spacing-md $spacing-md;
   flex: 0 0 auto;
 }
 
@@ -370,7 +411,8 @@ const showRoundComplete = computed(() =>
   transition: background 0.2s;
 
   &.active {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -403,10 +445,12 @@ const showRoundComplete = computed(() =>
 }
 
 .center-area {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pile-container {
@@ -414,10 +458,11 @@ const showRoundComplete = computed(() =>
   flex-direction: column;
   align-items: center;
   padding: $spacing-lg;
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
   border-radius: 12px;
   min-width: 200px;
   min-height: 150px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .pile-status {
@@ -444,78 +489,156 @@ const showRoundComplete = computed(() =>
 }
 
 .player-area {
+  flex: 0 0 auto;
   padding: $spacing-md;
-  background: rgba(0, 0, 0, 0.2);
 }
 
-.player-info {
+.hand-container {
   display: flex;
+}
+
+.hand-card {
+}
+
+// Right action panel
+.action-panel {
+  width: 200px;
+  flex: 0 0 200px;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+
+  // Mobile portrait: full width at bottom
+  @media (max-width: 768px) and (orientation: portrait) {
+    width: 100%;
+    flex: 0 0 auto;
+    border-left: none;
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
+    max-height: 200px;
+  }
+
+  // Very small screens: make panel narrower
+  @media (max-width: 480px) {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+}
+
+.panel-top {
+  padding: $spacing-lg $spacing-md;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  flex-shrink: 0;
+
+  .game-title {
+    font-family: 'Rock Salt', cursive;
+    font-size: 1.4rem; // Reduced by 30% from 2rem
+    font-weight: 400;
+    margin: 0 0 $spacing-sm 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    color: white;
+
+    @media (max-width: 768px) {
+      font-size: 1.05rem; // Reduced by 30% from 1.5rem
+    }
+  }
+
+  .round-info {
+    font-weight: bold;
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+}
+
+.panel-bottom {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-md;
+  gap: $spacing-md;
+  overflow-y: auto;
+}
+
+.player-info-panel {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-sm;
+  gap: $spacing-xs;
+  padding-bottom: $spacing-sm;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.player-name {
+.player-name-panel {
   font-weight: bold;
+  font-size: 1.1rem;
 }
 
-.player-rank {
+.player-rank-panel {
   background: $secondary-color;
   padding: 2px $spacing-xs;
   border-radius: 4px;
   font-size: 0.75rem;
 }
 
-.hand-container {
-  display: flex;
-  justify-content: center;
-  gap: -10px;
-  margin-bottom: $spacing-md;
-  flex-wrap: wrap;
-}
+.selection-feedback {
+  padding: $spacing-sm;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: white;
+  text-align: center;
 
-.hand-card {
-  margin-left: -15px;
-  transition: transform 0.2s, filter 0.2s;
-
-  &:first-child {
-    margin-left: 0;
+  .selection-count {
+    font-weight: bold;
+    margin-bottom: $spacing-xs;
   }
 
-  &.selectable {
-    cursor: pointer;
-
-    &:hover {
-      transform: translateY(-8px);
-    }
+  .invalid-hint {
+    color: #ff6b6b;
+    font-size: 0.85rem;
+    font-style: italic;
   }
 
-  &.selected {
-    transform: translateY(-15px);
-    filter: brightness(1.1);
-  }
-
-  &.dimmed {
-    filter: brightness(0.7);
+  .hint-text {
+    opacity: 0.8;
+    font-style: italic;
+    font-size: 0.85rem;
   }
 }
 
 .action-buttons {
   display: flex;
-  justify-content: center;
-  gap: $spacing-md;
+  flex-direction: column;
+  gap: $spacing-sm;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .action-btn {
-  padding: $spacing-sm $spacing-xl;
+  padding: $spacing-md;
   font-size: 1.1rem;
   font-weight: bold;
   border-radius: 8px;
   transition: all 0.2s;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: none;
+  cursor: pointer;
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  // Mobile: larger touch targets
+  @media (max-width: 768px) {
+    padding: $spacing-lg;
+    font-size: 1.2rem;
   }
 }
 
@@ -523,9 +646,15 @@ const showRoundComplete = computed(() =>
   background: $secondary-color;
   color: white;
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled),
+  &:active:not(:disabled) {
     background: color-mix(in srgb, $secondary-color 90%, white 10%);
-    transform: scale(1.05);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  &:disabled {
+    background: rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -533,15 +662,20 @@ const showRoundComplete = computed(() =>
   background: rgba(255, 255, 255, 0.2);
   color: white;
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled),
+  &:active:not(:disabled) {
     background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.02);
   }
 }
 
 .waiting-message {
   text-align: center;
-  opacity: 0.7;
+  opacity: 0.8;
   font-style: italic;
+  padding: $spacing-sm;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
 }
 
 // Modal styles
