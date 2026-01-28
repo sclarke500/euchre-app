@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { useGameStore } from './stores/gameStore'
+import { usePresidentGameStore } from './stores/presidentGameStore'
 import { useLobbyStore } from './stores/lobbyStore'
 import { GamePhase } from '@euchre/shared'
 import UnifiedGameBoard from './components/UnifiedGameBoard.vue'
-import MainMenu from './components/MainMenu.vue'
+import PresidentGameBoard from './components/president/PresidentGameBoard.vue'
+import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
 
 const gameStore = useGameStore()
+const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
 
 // App view state
-type AppView = 'menu' | 'singlePlayer' | 'lobby' | 'multiplayerGame'
+type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'lobby' | 'multiplayerGame'
 const currentView = ref<AppView>('menu')
+const currentGame = ref<GameType>('euchre')
 
 const phase = computed(() => gameStore.phase)
 
@@ -134,12 +138,19 @@ function dismissOpenInAppPrompt() {
   localStorage.setItem('pwa-open-dismissed', Date.now().toString())
 }
 
-function startSinglePlayer() {
-  currentView.value = 'singlePlayer'
-  gameStore.startNewGame()
+function startSinglePlayer(game: GameType) {
+  currentGame.value = game
+  if (game === 'president') {
+    currentView.value = 'presidentSinglePlayer'
+    presidentStore.startNewGame(4)
+  } else {
+    currentView.value = 'euchreSinglePlayer'
+    gameStore.startNewGame()
+  }
 }
 
-function enterMultiplayer() {
+function enterMultiplayer(game: GameType) {
+  currentGame.value = game
   currentView.value = 'lobby'
 }
 
@@ -226,10 +237,16 @@ function backToMenu() {
       @enter-multiplayer="enterMultiplayer"
     />
 
-    <!-- Single Player Game -->
+    <!-- Euchre Single Player Game -->
     <UnifiedGameBoard
-      v-else-if="currentView === 'singlePlayer'"
+      v-else-if="currentView === 'euchreSinglePlayer'"
       mode="singleplayer"
+      @leave-game="currentView = 'menu'"
+    />
+
+    <!-- President Single Player Game -->
+    <PresidentGameBoard
+      v-else-if="currentView === 'presidentSinglePlayer'"
       @leave-game="currentView = 'menu'"
     />
 

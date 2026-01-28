@@ -2,10 +2,14 @@
 import { ref, computed } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 
+export type GameType = 'euchre' | 'president'
+
 const emit = defineEmits<{
-  startSinglePlayer: []
-  enterMultiplayer: []
+  startSinglePlayer: [game: GameType]
+  enterMultiplayer: [game: GameType]
 }>()
+
+const selectedGame = ref<GameType>('euchre')
 
 const lobbyStore = useLobbyStore()
 
@@ -33,8 +37,16 @@ function handleMultiplayer() {
     return
   }
   saveNickname()
-  emit('enterMultiplayer')
+  emit('enterMultiplayer', selectedGame.value)
 }
+
+function handleSinglePlayer() {
+  emit('startSinglePlayer', selectedGame.value)
+}
+
+const gameTitle = computed(() => {
+  return selectedGame.value === 'euchre' ? 'Euchre' : 'President'
+})
 </script>
 
 <template>
@@ -45,21 +57,37 @@ function handleMultiplayer() {
     </div>
 
     <div class="content-section">
-      <h1>Euchre</h1>
+      <h1>{{ gameTitle }}</h1>
+
+      <div class="game-selector">
+        <button
+          :class="['game-tab', { active: selectedGame === 'euchre' }]"
+          @click="selectedGame = 'euchre'"
+        >
+          Euchre
+        </button>
+        <button
+          :class="['game-tab', { active: selectedGame === 'president' }]"
+          @click="selectedGame = 'president'"
+        >
+          President
+        </button>
+      </div>
 
       <div class="menu-options">
-        <button class="menu-btn single-player" @click="$emit('startSinglePlayer')">
+        <button class="menu-btn single-player" @click="handleSinglePlayer">
           Single Player
           <span class="btn-subtitle">Play against 3 <span class="clanker">clankers</span></span>
         </button>
 
         <button
           class="menu-btn multiplayer"
-          :disabled="!canEnterMultiplayer && !isEditingNickname"
+          :disabled="(!canEnterMultiplayer && !isEditingNickname) || selectedGame === 'president'"
           @click="handleMultiplayer"
         >
           Multiplayer
-          <span class="btn-subtitle">Play with friends online</span>
+          <span v-if="selectedGame === 'president'" class="btn-subtitle">Coming soon!</span>
+          <span v-else class="btn-subtitle">Play with friends online</span>
         </button>
       </div>
 
@@ -187,6 +215,41 @@ function handleMultiplayer() {
       font-size: 2.5rem;
       margin-bottom: $spacing-lg;
     }
+  }
+}
+
+.game-selector {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-xl;
+  background: rgba(0, 0, 0, 0.2);
+  padding: $spacing-xs;
+  border-radius: 12px;
+
+  @media (max-height: 500px) {
+    margin-bottom: $spacing-md;
+  }
+}
+
+.game-tab {
+  padding: $spacing-sm $spacing-lg;
+  font-size: 1rem;
+  font-weight: bold;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  &.active {
+    background: white;
+    color: #1e4d2b;
   }
 }
 
