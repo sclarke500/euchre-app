@@ -36,6 +36,17 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const lastPlayerId = ref<number | null>(null)
   const lastPlayedCards = ref<StandardCard[] | null>(null)
 
+  // Card exchange state - only for human player's exchange
+  const exchangeInfo = ref<{
+    youGive: StandardCard[]
+    youReceive: StandardCard[]
+    otherPlayerName: string
+    yourRole: string
+  } | null>(null)
+
+  // Track if we're waiting for user to acknowledge exchange
+  const waitingForExchangeAck = ref(false)
+
   // Computed
   const gameState = computed<PresidentGameState>(() => ({
     gameType: 'president',
@@ -150,52 +161,132 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
 
   function processCardExchange() {
-    // Auto-process card exchange for AI players
-    // Scum gives best cards to President, President gives worst to Scum
+    // Process card exchanges:
+    // - President ↔ Scum: 2 cards each
+    // - VP ↔ Vice Scum: 1 card each (4+ players only)
 
     const president = players.value.find(p => p.rank === PlayerRank.President)
     const scum = players.value.find(p => p.rank === PlayerRank.Scum)
+    const vp = players.value.find(p => p.rank === PlayerRank.VicePresident)
+    // Vice Scum is a Citizen with cardsToGive = 1
+    const viceScum = players.value.find(p => p.cardsToGive === 1 && p.rank === PlayerRank.Citizen)
 
-    if (president && scum) {
-      // Scum gives 2 best cards to President
-      const scumCards = chooseCardsToGive(scum, 2)
-      const scumCardIds = new Set(scumCards.map(c => c.id))
+    const human = humanPlayer.value
 
-      // President gives 2 worst cards to Scum
-      // (simplified - just give lowest)
-      const presidentCards = president.hand
+    // Helper to get lowest cards (worst to give away)
+    const getLowestCards = (hand: StandardCard[], count: number) => {
+      const rankValues: Record<string, number> = {
+        '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6,
+        '9': 7, '10': 8, 'J': 9, 'Q': 10, 'K': 11, 'A': 12, '2': 13
+      }
+      return hand
         .slice()
-        .sort((a, b) => {
-          const rankValues: Record<string, number> = {
-            '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6,
-            '9': 7, '10': 8, 'J': 9, 'Q': 10, 'K': 11, 'A': 12, '2': 13
-          }
-          return (rankValues[a.rank] ?? 0) - (rankValues[b.rank] ?? 0)
-        })
-        .slice(0, 2)
+        .sort((a, b) => (rankValues[a.rank] ?? 0) - (rankValues[b.rank] ?? 0))
+        .slice(0, count)
+    }
+
+    let updatedPlayers = [...players.value]
+
+    // Track what the human gives/receives for the modal
+    let humanGives: StandardCard[] = []
+    let humanReceives: StandardCard[] = []
+    let otherPlayerName = ''
+    let humanRole = ''
+
+    // Process President ↔ Scum exchange (2 cards)
+    if (president && scum) {
+      const scumCards = chooseCardsToGive(scum, 2)
+      const presidentCards = getLowestCards(president.hand, 2)
+      const scumCardIds = new Set(scumCards.map(c => c.id))
       const presidentCardIds = new Set(presidentCards.map(c => c.id))
 
-      // Update hands
-      players.value = players.value.map(p => {
+      updatedPlayers = updatedPlayers.map(p => {
         if (p.id === president.id) {
-          const newHand = [
-            ...p.hand.filter(c => !presidentCardIds.has(c.id)),
-            ...scumCards
-          ]
-          return { ...p, hand: newHand }
+          return { ...p, hand: [...p.hand.filter(c => !presidentCardIds.has(c.id)), ...scumCards] }
         }
         if (p.id === scum.id) {
-          const newHand = [
-            ...p.hand.filter(c => !scumCardIds.has(c.id)),
-            ...presidentCards
-          ]
-          return { ...p, hand: newHand }
+          return { ...p, hand: [...p.hand.filter(c => !scumCardIds.has(c.id)), ...presidentCards] }
         }
         return p
       })
+
+      // Check if human is involved
+      if (human?.id === president.id) {
+        humanGives = presidentCards
+        humanReceives = scumCards
+        otherPlayerName = scum.name
+        humanRole = 'President'
+      } else if (human?.id === scum.id) {
+        humanGives = scumCards
+        humanReceives = presidentCards
+        otherPlayerName = president.name
+        humanRole = 'Scum'
+      }
     }
 
-    // President leads
+    // Process VP ↔ Vice Scum exchange (1 card) for 4+ players
+    if (vp && viceScum) {
+      const viceScumCards = chooseCardsToGive(viceScum, 1)
+      const vpCards = getLowestCards(
+        updatedPlayers.find(p => p.id === vp.id)!.hand,
+        1
+      )
+      const viceScumCardIds = new Set(viceScumCards.map(c => c.id))
+      const vpCardIds = new Set(vpCards.map(c => c.id))
+
+      updatedPlayers = updatedPlayers.map(p => {
+        if (p.id === vp.id) {
+          return { ...p, hand: [...p.hand.filter(c => !vpCardIds.has(c.id)), ...viceScumCards] }
+        }
+        if (p.id === viceScum.id) {
+          return { ...p, hand: [...p.hand.filter(c => !viceScumCardIds.has(c.id)), ...vpCards] }
+        }
+        return p
+      })
+
+      // Check if human is involved (only set if not already set by President/Scum)
+      if (!humanRole && human?.id === vp.id) {
+        humanGives = vpCards
+        humanReceives = viceScumCards
+        otherPlayerName = viceScum.name
+        humanRole = 'Vice President'
+      } else if (!humanRole && human?.id === viceScum.id) {
+        humanGives = viceScumCards
+        humanReceives = vpCards
+        otherPlayerName = vp.name
+        humanRole = 'Vice Scum'
+      }
+    }
+
+    players.value = updatedPlayers
+
+    // Only show modal if human is involved in an exchange
+    if (humanRole) {
+      exchangeInfo.value = {
+        youGive: humanGives,
+        youReceive: humanReceives,
+        otherPlayerName,
+        yourRole: humanRole,
+      }
+      waitingForExchangeAck.value = true
+      // Wait for user to acknowledge
+    } else {
+      // Human is a citizen, no exchange - start playing immediately
+      const startingPlayer = president?.id ?? 0
+      currentPlayer.value = startingPlayer
+      phase.value = PresidentPhase.Playing
+      processAITurn()
+    }
+  }
+
+  function acknowledgeExchange() {
+    if (!waitingForExchangeAck.value) return
+
+    waitingForExchangeAck.value = false
+    exchangeInfo.value = null
+
+    // Find president to start
+    const president = players.value.find(p => p.rank === PlayerRank.President)
     currentPlayer.value = president?.id ?? 0
     phase.value = PresidentPhase.Playing
     processAITurn()
@@ -313,6 +404,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     gameOver,
     lastPlayerId,
     lastPlayedCards,
+    exchangeInfo,
+    waitingForExchangeAck,
     gameState,
 
     // Computed
@@ -328,5 +421,6 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     playCards,
     pass,
     getPlayerRankDisplay,
+    acknowledgeExchange,
   }
 })

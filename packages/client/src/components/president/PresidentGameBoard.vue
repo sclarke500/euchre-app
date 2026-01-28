@@ -41,6 +41,7 @@ const pileCards = computed(() => {
 })
 const gameOver = computed(() => store.gameOver)
 const finishedPlayers = computed(() => store.finishedPlayers)
+const exchangeInfo = computed(() => store.exchangeInfo)
 
 // Sort human hand by rank
 const sortedHand = computed(() => {
@@ -269,24 +270,60 @@ const showRoundComplete = computed(() =>
         </div>
       </div>
 
-      <!-- Action buttons -->
-      <div v-if="isHumanTurn" class="action-buttons">
+      <!-- Spacer to push buttons to bottom -->
+      <div class="panel-spacer"></div>
+
+      <!-- Action buttons - always visible, disabled when not applicable -->
+      <div class="action-buttons">
         <button
           class="action-btn play-btn"
-          :disabled="!canPlaySelection"
+          :disabled="!isHumanTurn || !canPlaySelection"
           @click="playSelectedCards"
         >
           Play {{ selectedCards.length > 0 ? `(${selectedCards.length})` : '' }}
         </button>
         <button
           class="action-btn pass-btn"
-          :disabled="currentPile.currentRank === null"
+          :disabled="!isHumanTurn || currentPile.currentRank === null"
           @click="passTurn"
         >
           Pass
         </button>
       </div>
     </div>
+
+    <!-- Card exchange modal -->
+    <Modal :show="!!exchangeInfo" @close="() => {}">
+      <div v-if="exchangeInfo" class="exchange-modal">
+        <h3>Card Exchange</h3>
+        <p class="exchange-role">You are <strong>{{ exchangeInfo.yourRole }}</strong></p>
+        <div class="exchange-sections">
+          <div class="exchange-section give">
+            <div class="exchange-label">You give:</div>
+            <div class="exchange-cards-wrapper">
+              <div class="exchange-cards">
+                <div v-for="card in exchangeInfo.youGive" :key="card.id" class="small-card-wrapper">
+                  <Card :card="toCard(card)" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="exchange-section receive">
+            <div class="exchange-label">You receive:</div>
+            <div class="exchange-cards-wrapper">
+              <div class="exchange-cards">
+                <div v-for="card in exchangeInfo.youReceive" :key="card.id" class="small-card-wrapper">
+                  <Card :card="toCard(card)" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="modal-btn confirm" @click="store.acknowledgeExchange()">
+          OK
+        </button>
+      </div>
+    </Modal>
 
     <!-- Leave confirmation modal -->
     <Modal :show="showLeaveConfirm" @close="showLeaveConfirm = false">
@@ -405,10 +442,12 @@ const showRoundComplete = computed(() =>
   display: flex;
   justify-content: space-around;
   padding: calc(#{$spacing-md} / 2 + 20px) $spacing-md $spacing-md;
+  padding-right: 200px; // Reserve space for top-right info
   flex: 0 0 auto;
 
   @media (max-height: 500px) {
     padding: $spacing-xs $spacing-sm;
+    padding-right: 160px;
   }
 }
 
@@ -547,8 +586,12 @@ const showRoundComplete = computed(() =>
   position: absolute;
   bottom: 0;
   left: 0;
-  right: 0;
+  right: 200px; // Reserve space for floating action panel
   padding: 0 $spacing-md;
+
+  @media (max-height: 500px) {
+    right: 160px;
+  }
 }
 
 .hand-card {
@@ -583,13 +626,14 @@ const showRoundComplete = computed(() =>
 .top-right-info {
   position: fixed;
   top: $spacing-md;
-  right: $spacing-md;
-  text-align: right;
+  right: 10px;
+  width: 180px;
+  text-align: center;
   z-index: 100;
 
   @media (max-height: 500px) {
     top: $spacing-sm;
-    right: $spacing-sm;
+    width: 150px;
   }
 
   .game-title {
@@ -634,6 +678,7 @@ const showRoundComplete = computed(() =>
   bottom: 10px;
   right: 10px;
   width: 180px;
+  min-height: 180px;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -647,6 +692,7 @@ const showRoundComplete = computed(() =>
 
   @media (max-height: 500px) {
     width: 150px;
+    min-height: 150px;
     padding: $spacing-sm;
     gap: $spacing-xs;
   }
@@ -708,6 +754,10 @@ const showRoundComplete = computed(() =>
     font-style: italic;
     font-size: 0.75rem;
   }
+}
+
+.panel-spacer {
+  flex: 1;
 }
 
 .action-buttons {
@@ -843,5 +893,80 @@ const showRoundComplete = computed(() =>
 .next-round-msg {
   font-style: italic;
   opacity: 0.7;
+}
+
+// Card exchange modal
+.exchange-modal {
+  padding: $spacing-md;
+  text-align: center;
+  color: #333;
+
+  h3 {
+    margin-bottom: $spacing-xs;
+    font-size: 1.1rem;
+  }
+
+  .exchange-role {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-bottom: $spacing-sm;
+
+    strong {
+      color: $secondary-color;
+    }
+  }
+
+  .modal-btn {
+    margin-top: $spacing-sm;
+  }
+}
+
+.exchange-sections {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.exchange-section {
+  flex: 1;
+  padding: $spacing-sm;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+
+  &.give {
+    border-top: 3px solid #e74c3c;
+  }
+
+  &.receive {
+    border-top: 3px solid #27ae60;
+  }
+
+  .exchange-label {
+    font-size: 0.75rem;
+    font-weight: bold;
+    opacity: 0.8;
+    margin-bottom: $spacing-xs;
+    text-align: center;
+  }
+}
+
+.exchange-cards-wrapper {
+  overflow: visible;
+}
+
+.exchange-cards {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-xs;
+}
+
+.small-card-wrapper {
+  // Scale the card down while maintaining proper spacing
+  width: calc(#{$card-width} * 0.6);
+  height: calc(#{$card-height} * 0.6);
+
+  :deep(.card) {
+    transform: scale(0.6);
+    transform-origin: top left;
+  }
 }
 </style>
