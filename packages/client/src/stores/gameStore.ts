@@ -222,10 +222,12 @@ export const useGameStore = defineStore('game', () => {
           currentRound.value.currentPlayer = (currentRound.value.currentPlayer + 1) % 4
         }
       } else {
-        // Round 2 - continue or dealer must call (stick the dealer)
+        // Round 2 - if all 4 players pass, throw in the hand and redeal
         if (passCount.value >= 4) {
-          // Dealer is stuck - they must call trump (AI handles this in makeAIBidRound2)
-          // This shouldn't normally happen as dealer is forced to call
+          // Everyone passed - throw in the hand, rotate dealer, redeal
+          currentDealer.value = (currentDealer.value + 1) % 4
+          startNewRound()
+          return
         } else {
           currentRound.value.currentPlayer = (currentRound.value.currentPlayer + 1) % 4
         }

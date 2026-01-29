@@ -66,18 +66,7 @@ export function makeAIBidRound2(
     }
   }
 
-  // If dealer, must call (stick the dealer)
-  if (isDealer) {
-    // Pick the best available suit even if weak
-    const bestSuit = chooseBestSuit(player.hand, turnCardSuit)
-    return {
-      playerId: player.id,
-      action: BidAction.CallTrump,
-      suit: bestSuit,
-      goingAlone: false,
-    }
-  }
-
+  // No good suit - pass (hand will be thrown in if all pass)
   return {
     playerId: player.id,
     action: BidAction.Pass,
