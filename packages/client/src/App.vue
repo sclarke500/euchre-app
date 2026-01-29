@@ -6,6 +6,7 @@ import { useLobbyStore } from './stores/lobbyStore'
 import { GamePhase } from '@euchre/shared'
 import UnifiedGameBoard from './components/UnifiedGameBoard.vue'
 import PresidentGameBoard from './components/president/PresidentGameBoard.vue'
+import KlondikeGameBoard from './components/klondike/KlondikeGameBoard.vue'
 import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
 
@@ -14,7 +15,7 @@ const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
 
 // App view state
-type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'lobby' | 'multiplayerGame'
+type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame'
 const currentView = ref<AppView>('menu')
 const currentGame = ref<GameType>('euchre')
 
@@ -148,6 +149,9 @@ function startSinglePlayer(game: GameType) {
   if (game === 'president') {
     currentView.value = 'presidentSinglePlayer'
     presidentStore.startNewGame(4)
+  } else if (game === 'klondike') {
+    currentView.value = 'klondikeSinglePlayer'
+    // KlondikeGameBoard initializes the game in onMounted
   } else {
     currentView.value = 'euchreSinglePlayer'
     gameStore.startNewGame()
@@ -252,6 +256,12 @@ function backToMenu() {
     <!-- President Single Player Game -->
     <PresidentGameBoard
       v-else-if="currentView === 'presidentSinglePlayer'"
+      @leave-game="currentView = 'menu'"
+    />
+
+    <!-- Klondike Single Player Game -->
+    <KlondikeGameBoard
+      v-else-if="currentView === 'klondikeSinglePlayer'"
       @leave-game="currentView = 'menu'"
     />
 

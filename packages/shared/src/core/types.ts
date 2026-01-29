@@ -61,7 +61,7 @@ export interface PlayedCard<R extends string = string> {
 }
 
 // Game type discriminator
-export type GameType = 'euchre' | 'president'
+export type GameType = 'euchre' | 'president' | 'klondike'
 
 // Team score (shared structure)
 export interface TeamScore {

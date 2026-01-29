@@ -366,9 +366,10 @@ export const useGameStore = defineStore('game', () => {
       gameOver.value = true
       phase.value = GamePhase.GameOver
     } else {
-      // Next round
+      // Rotate dealer immediately so chip moves during the pause
+      currentDealer.value = (currentDealer.value + 1) % 4
+      // Then start next round after the pause
       setTimeout(() => {
-        currentDealer.value = (currentDealer.value + 1) % 4
         startNewRound()
       }, 2000)
     }

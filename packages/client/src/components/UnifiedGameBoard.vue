@@ -47,7 +47,7 @@
     </div>
 
     <TrumpSelection :show="showBidding" />
-    <GameOver v-if="gameOver" :winner="winner" @leave-game="emit('leaveGame')" />
+    <GameOver v-if="gameOver" :winner="winner" @exit="emit('leaveGame')" />
 
     <Modal :show="showDiscardPrompt" non-blocking>
       <span class="discard-text">Select a card to discard</span>
@@ -149,22 +149,22 @@ onUnmounted(() => {
 .game-board {
   width: 100%;
   height: 100%;
-  background: 
+  background:
     linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%),
     url('@/assets/AppLogo.png');
-  background-size: 
+  background-size:
     cover,
     contain;
-  background-position: 
+  background-position:
     center,
     center;
-  background-repeat: 
+  background-repeat:
     no-repeat,
     no-repeat;
   background-blend-mode: normal;
   // Logo opacity overlay
   position: relative;
-  
+
   // Add pseudo-element for logo opacity
   &::before {
     content: '';
@@ -181,14 +181,14 @@ onUnmounted(() => {
     pointer-events: none; // Allow clicks to pass through
     z-index: 0;
   }
-  
+
   // Ensure content is above the background logo
   // But modals should be positioned relative to viewport, not this container
   > *:not(.trump-selection):not(.game-over) {
     position: relative;
     z-index: 1;
   }
-  
+
   display: grid;
   // Use 12 columns for flexible splits
   // Top row: empty(3) partner(6) score(3), left(3) play(6) right(3) middle, plaque(4) hand(8) bottom

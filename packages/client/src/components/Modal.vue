@@ -56,10 +56,11 @@ defineEmits<{
 .modal-content {
   background: rgba(245, 245, 245, 0.85);
   backdrop-filter: blur(8px);
-  border-radius: 12px;
-  padding: $spacing-lg;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: $spacing-md;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
   text-align: center;
+  transform: scale(0.85);
 }
 
 // Transition styles
@@ -84,7 +85,7 @@ defineEmits<{
 
   .modal-content {
     opacity: 0;
-    transform: scale(0.9) translateY(15px);
+    transform: scale(0.75) translateY(15px);
   }
 }
 
@@ -93,7 +94,7 @@ defineEmits<{
 
   .modal-content {
     opacity: 0;
-    transform: scale(0.95) translateY(-10px);
+    transform: scale(0.8) translateY(-10px);
   }
 }
 </style>

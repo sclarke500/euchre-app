@@ -19,11 +19,17 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Card } from '@euchre/shared'
 import { Suit } from '@euchre/shared'
 
+// Generic card interface that works with Euchre, President, and Klondike cards
+interface GenericCard {
+  suit: Suit
+  rank: string
+  id: string
+}
+
 interface Props {
-  card: Card
+  card: GenericCard
   selectable?: boolean
   dimmed?: boolean
 }
@@ -97,23 +103,23 @@ function handleClick() {
   font-weight: bold;
 
   &.top-left {
-    top: 5px;
-    left: 6px;
+    top: 2px;
+    left: 4px;
   }
 
   &.bottom-right {
-    bottom: 5px;
-    right: 6px;
+    bottom: 2px;
+    right: 4px;
     transform: rotate(180deg);
   }
 
   .rank {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     line-height: 1;
   }
 
   .suit {
-    font-size: 1rem;
+    font-size: 1.1rem;
     line-height: 1;
   }
 

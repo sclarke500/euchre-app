@@ -8,8 +8,8 @@
     </div>
 
     <!-- Chip indicators below the plaque -->
-    <div v-if="isDealer || trumpSymbol" class="chip-indicators">
-      <div v-if="isDealer" class="poker-chip dealer-chip">
+    <div v-if="showDealerChip || trumpSymbol" class="chip-indicators">
+      <div v-if="showDealerChip" class="poker-chip dealer-chip">
         <span>D</span>
       </div>
       <div v-if="trumpSymbol" class="poker-chip trump-chip" :class="{ 'going-alone': goingAlone }">
@@ -20,6 +20,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface Props {
   playerName: string
   tricksWon: number
@@ -29,9 +31,14 @@ interface Props {
   trumpColor?: string
   goingAlone?: boolean
   isHuman?: boolean
+  hideDealer?: boolean
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  hideDealer: false
+})
+
+const showDealerChip = computed(() => props.isDealer && !props.hideDealer)
 </script>
 
 <style scoped lang="scss">

@@ -3,9 +3,14 @@
     <div class="game-over">
       <h1>Game Over!</h1>
       <h2>{{ winnerText }}</h2>
-      <button class="action-btn" @click="startNewGame">
-        Play Again
-      </button>
+      <div class="button-row">
+        <button class="action-btn primary" @click="startNewGame">
+          Play Again
+        </button>
+        <button class="action-btn secondary" @click="exitGame">
+          Exit
+        </button>
+      </div>
     </div>
   </Modal>
 </template>
@@ -22,6 +27,10 @@ interface Props {
 const props = defineProps<Props>()
 const gameStore = useGameStore()
 
+const emit = defineEmits<{
+  exit: []
+}>()
+
 const winnerText = computed(() => {
   if (props.winner === 0) {
     return 'Your Team Wins!'
@@ -33,6 +42,10 @@ const winnerText = computed(() => {
 
 function startNewGame() {
   gameStore.startNewGame()
+}
+
+function exitGame() {
+  emit('exit')
 }
 </script>
 
@@ -55,20 +68,33 @@ function startNewGame() {
   }
 }
 
+.button-row {
+  display: flex;
+  gap: $spacing-sm;
+  justify-content: center;
+}
+
 .action-btn {
   padding: $spacing-sm $spacing-lg;
   font-size: 1rem;
   font-weight: bold;
-  background: #2d5f3f;
-  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  min-width: 120px;
+  min-width: 100px;
+
+  &.primary {
+    background: #2d5f3f;
+    color: white;
+  }
+
+  &.secondary {
+    background: #e0e0e0;
+    color: #333;
+  }
 
   &:active {
     transform: scale(0.97);
   }
 }
-
 </style>

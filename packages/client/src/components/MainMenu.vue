@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { getPlatformInfo } from '@/utils/platform'
 
-export type GameType = 'euchre' | 'president'
+export type GameType = 'euchre' | 'president' | 'klondike'
 
 // Platform detection
 const showIOSInstallHint = ref(false)
@@ -76,7 +76,10 @@ const emit = defineEmits<{
 
 // Load saved game selection from localStorage, default to 'euchre'
 const savedGame = localStorage.getItem('selectedGame') as GameType | null
-const selectedGame = ref<GameType>(savedGame === 'president' ? 'president' : 'euchre')
+const selectedGame = ref<GameType>(
+  savedGame === 'president' ? 'president' :
+  savedGame === 'klondike' ? 'klondike' : 'euchre'
+)
 
 // Save game selection when it changes
 watch(selectedGame, (newGame) => {
@@ -126,7 +129,12 @@ function handleSinglePlayer() {
 }
 
 const gameTitle = computed(() => {
-  return selectedGame.value === 'euchre' ? 'Euchre' : 'President'
+  switch (selectedGame.value) {
+    case 'euchre': return 'Euchre'
+    case 'president': return 'President'
+    case 'klondike': return 'Klondike'
+    default: return 'Euchre'
+  }
 })
 </script>
 
@@ -153,21 +161,29 @@ const gameTitle = computed(() => {
         >
           President
         </button>
+        <button
+          :class="['game-tab', { active: selectedGame === 'klondike' }]"
+          @click="selectedGame = 'klondike'"
+        >
+          Klondike
+        </button>
       </div>
 
       <div class="menu-options">
         <button class="menu-btn single-player" @click="handleSinglePlayer">
           Single Player
-          <span class="btn-subtitle">Play against 3 <span class="clanker">clankers</span></span>
+          <span v-if="selectedGame === 'klondike'" class="btn-subtitle">Classic solitaire</span>
+          <span v-else class="btn-subtitle">Play against 3 <span class="clanker">clankers</span></span>
         </button>
 
         <button
           class="menu-btn multiplayer"
-          :disabled="selectedGame === 'president'"
+          :disabled="selectedGame === 'president' || selectedGame === 'klondike'"
           @click="handleMultiplayer"
         >
           Multiplayer
           <span v-if="selectedGame === 'president'" class="btn-subtitle">Coming soon!</span>
+          <span v-else-if="selectedGame === 'klondike'" class="btn-subtitle">Solitaire is solo!</span>
           <span v-else class="btn-subtitle">Play with friends online</span>
         </button>
       </div>

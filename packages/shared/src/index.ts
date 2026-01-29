@@ -17,3 +17,6 @@ export { createStandardDeck, createEuchreDeck, dealAllCards } from './core/deck.
 
 // President game (new)
 export * from './president/index.js'
+
+// Klondike Solitaire
+export * from './klondike/index.js'

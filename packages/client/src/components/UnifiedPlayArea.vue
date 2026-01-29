@@ -143,42 +143,46 @@ function getCardPosition(playerId: number): number {
 .played-card {
   position: absolute;
 
+  // Bottom player (human) - no rotation
   &.position-0 {
-    bottom: -20px;
+    bottom: -35px;
     left: 50%;
     transform: translateX(-50%);
     animation: play-card-bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
+  // Left player - rotate 90deg so bottom faces left
   &.position-1 {
-    left: -20px;
+    left: -40px;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) rotate(90deg);
     animation: play-card-left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
+  // Top player (partner) - rotate 180deg so bottom faces up
   &.position-2 {
-    top: -20px;
+    top: -35px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) rotate(180deg);
     animation: play-card-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
+  // Right player - rotate -90deg so bottom faces right
   &.position-3 {
-    right: -20px;
+    right: -40px;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) rotate(-90deg);
     animation: play-card-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @media (max-height: 500px) {
 
     &.position-1 {
-      left: -15px;
+      left: -30px;
     }
 
     &.position-3 {
-      right: -15px;
+      right: -30px;
     }
   }
 }
@@ -244,33 +248,33 @@ function getCardPosition(playerId: number): number {
 @keyframes play-card-left {
   from {
     opacity: 0;
-    transform: translateY(-50%) translateX(-100px) scale(0.8);
+    transform: translateY(-50%) translateX(-100px) rotate(90deg) scale(0.8);
   }
   to {
     opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
+    transform: translateY(-50%) translateX(0) rotate(90deg) scale(1);
   }
 }
 
 @keyframes play-card-top {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-100px) scale(0.8);
+    transform: translateX(-50%) translateY(-100px) rotate(180deg) scale(0.8);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) rotate(180deg) scale(1);
   }
 }
 
 @keyframes play-card-right {
   from {
     opacity: 0;
-    transform: translateY(-50%) translateX(100px) scale(0.8);
+    transform: translateY(-50%) translateX(100px) rotate(-90deg) scale(0.8);
   }
   to {
     opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
+    transform: translateY(-50%) translateX(0) rotate(-90deg) scale(1);
   }
 }
 
@@ -280,16 +284,16 @@ function getCardPosition(playerId: number): number {
   to { opacity: 0; transform: translateX(-50%) translateY(80px) scale(0.5); }
 }
 @keyframes sweep-1-to-0 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(60px) translateY(80px) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(90deg); }
+  to { opacity: 0; transform: translateX(60px) translateY(80px) rotate(90deg) scale(0.5); }
 }
 @keyframes sweep-2-to-0 {
-  from { opacity: 1; transform: translateX(-50%); }
-  to { opacity: 0; transform: translateX(-50%) translateY(120px) scale(0.5); }
+  from { opacity: 1; transform: translateX(-50%) rotate(180deg); }
+  to { opacity: 0; transform: translateX(-50%) translateY(120px) rotate(180deg) scale(0.5); }
 }
 @keyframes sweep-3-to-0 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(-60px) translateY(80px) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(-90deg); }
+  to { opacity: 0; transform: translateX(-60px) translateY(80px) rotate(-90deg) scale(0.5); }
 }
 
 // Sweep animations from each position to winner position 1 (left)
@@ -298,16 +302,16 @@ function getCardPosition(playerId: number): number {
   to { opacity: 0; transform: translateX(-120px) translateY(-60px) scale(0.5); }
 }
 @keyframes sweep-1-to-1 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(-80px) translateY(-50%) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(90deg); }
+  to { opacity: 0; transform: translateX(-80px) translateY(-50%) rotate(90deg) scale(0.5); }
 }
 @keyframes sweep-2-to-1 {
-  from { opacity: 1; transform: translateX(-50%); }
-  to { opacity: 0; transform: translateX(-120px) translateY(60px) scale(0.5); }
+  from { opacity: 1; transform: translateX(-50%) rotate(180deg); }
+  to { opacity: 0; transform: translateX(-120px) translateY(60px) rotate(180deg) scale(0.5); }
 }
 @keyframes sweep-3-to-1 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(-120px) translateY(-50%) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(-90deg); }
+  to { opacity: 0; transform: translateX(-120px) translateY(-50%) rotate(-90deg) scale(0.5); }
 }
 
 // Sweep animations from each position to winner position 2 (top)
@@ -316,16 +320,16 @@ function getCardPosition(playerId: number): number {
   to { opacity: 0; transform: translateX(-50%) translateY(-120px) scale(0.5); }
 }
 @keyframes sweep-1-to-2 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(60px) translateY(-80px) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(90deg); }
+  to { opacity: 0; transform: translateX(60px) translateY(-80px) rotate(90deg) scale(0.5); }
 }
 @keyframes sweep-2-to-2 {
-  from { opacity: 1; transform: translateX(-50%); }
-  to { opacity: 0; transform: translateX(-50%) translateY(-80px) scale(0.5); }
+  from { opacity: 1; transform: translateX(-50%) rotate(180deg); }
+  to { opacity: 0; transform: translateX(-50%) translateY(-80px) rotate(180deg) scale(0.5); }
 }
 @keyframes sweep-3-to-2 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(-60px) translateY(-80px) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(-90deg); }
+  to { opacity: 0; transform: translateX(-60px) translateY(-80px) rotate(-90deg) scale(0.5); }
 }
 
 // Sweep animations from each position to winner position 3 (right)
@@ -334,15 +338,15 @@ function getCardPosition(playerId: number): number {
   to { opacity: 0; transform: translateX(60px) translateY(-60px) scale(0.5); }
 }
 @keyframes sweep-1-to-3 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(120px) translateY(-50%) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(90deg); }
+  to { opacity: 0; transform: translateX(120px) translateY(-50%) rotate(90deg) scale(0.5); }
 }
 @keyframes sweep-2-to-3 {
-  from { opacity: 1; transform: translateX(-50%); }
-  to { opacity: 0; transform: translateX(60px) translateY(60px) scale(0.5); }
+  from { opacity: 1; transform: translateX(-50%) rotate(180deg); }
+  to { opacity: 0; transform: translateX(60px) translateY(60px) rotate(180deg) scale(0.5); }
 }
 @keyframes sweep-3-to-3 {
-  from { opacity: 1; transform: translateY(-50%); }
-  to { opacity: 0; transform: translateX(80px) translateY(-50%) scale(0.5); }
+  from { opacity: 1; transform: translateY(-50%) rotate(-90deg); }
+  to { opacity: 0; transform: translateX(80px) translateY(-50%) rotate(-90deg) scale(0.5); }
 }
 </style>
