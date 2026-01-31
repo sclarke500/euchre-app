@@ -19,10 +19,13 @@
         v-for="(card, index) in displayHand"
         :key="card.id"
         class="card-wrapper"
-        :class="{ 'discarding': isCardDiscarding(card), 'playing': isCardPlaying(card) }"
+        :class="{ 'discarding': isCardDiscarding(card) }"
         :style="getCardStyle(index, displayHand.length)"
       >
+        <!-- Render placeholder for playing card, actual Card otherwise -->
+        <div v-if="isCardPlaying(card)" class="card-placeholder" />
         <Card
+          v-else
           :card="card"
           :selectable="isCardSelectable(card) && !isCardDiscarding(card)"
           :dimmed="isCardDimmed(card)"
@@ -346,11 +349,12 @@ function handleCardClick(card: CardType) {
     pointer-events: none;
   }
 
-  &.playing {
-    opacity: 0;
-    pointer-events: none;
-    transition: none; // Hide instantly so play-area animation is the only visual
-  }
+}
+
+.card-placeholder {
+  width: var(--card-width, $card-width);
+  height: var(--card-height, $card-height);
+  visibility: hidden;
 }
 
 :deep(.player-hand .card.selectable) {
