@@ -19,7 +19,7 @@
         v-for="(card, index) in displayHand"
         :key="card.id"
         class="card-wrapper"
-        :class="{ 'discarding': isCardDiscarding(card), 'playing': isCardPlaying(card) }"
+        :class="{ 'discarding': isCardDiscarding(card) }"
         :style="getCardStyle(index, displayHand.length)"
       >
         <Card
@@ -55,7 +55,6 @@ const turnUpCard = computed(() => game.turnUpCard.value)
 const isDealing = ref(false)
 const showHand = ref(false)
 const discardingCardId = ref<string | null>(null)
-const recentlyPlayedCard = ref<CardType | null>(null)
 const dealAnimationInProgress = ref(false)
 const isSlidingAway = ref(false)
 
@@ -157,14 +156,7 @@ const sortedHand = computed(() => {
 })
 
 // Display hand: during discard phase, exclude the picked-up card
-// Include recently played card temporarily so it doesn't disappear instantly
 const displayHand = computed(() => {
-  if (recentlyPlayedCard.value) {
-    // Keep the played card in the visual hand until animation completes
-    const trumpSuit = trump.value?.suit ?? null
-    const handWithPlayedCard = [...handWithoutPickedUp.value, recentlyPlayedCard.value]
-    return sortCards(handWithPlayedCard, trumpSuit)
-  }
   return sortedHand.value
 })
 
@@ -193,10 +185,6 @@ function isCardDimmed(card: CardType): boolean {
 
 function isCardDiscarding(card: CardType): boolean {
   return discardingCardId.value === card.id
-}
-
-function isCardPlaying(card: CardType): boolean {
-  return recentlyPlayedCard.value?.id === card.id
 }
 
 function getCardStyle(index: number, totalCards: number) {
@@ -248,16 +236,8 @@ function handleCardClick(card: CardType) {
 
   if (!isCardPlayable(card)) return
 
-  // Store the card so it stays visible during animation
-  recentlyPlayedCard.value = card
-
-  // Play card immediately so it appears in the trick area
+  // Play card - it will appear in the trick area via play-area animation
   game.playCard(card)
-
-  // Delay removing from visual hand so it doesn't rearrange immediately
-  setTimeout(() => {
-    recentlyPlayedCard.value = null
-  }, 400)
 }
 </script>
 
@@ -344,12 +324,6 @@ function handleCardClick(card: CardType) {
   &.discarding {
     animation: discard-fly-away 0.4s ease-in forwards;
     pointer-events: none;
-  }
-
-  &.playing {
-    opacity: 0;
-    pointer-events: none;
-    transition: none; // Hide instantly so play-area animation is the only visual
   }
 }
 

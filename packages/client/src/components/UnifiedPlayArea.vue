@@ -68,14 +68,13 @@ watch(phase, (newPhase, oldPhase) => {
     isFlipping.value = true
     isDismissingKitty.value = true
 
-    // After flip completes, slide off
+    // After flip completes (600ms), slide off (800ms), then reset
     setTimeout(() => {
-      // Animation will complete via CSS, then reset
       setTimeout(() => {
         isDismissingKitty.value = false
         isFlipping.value = false
-      }, 500) // Slide-off duration
-    }, 400) // Flip duration
+      }, 800) // Slide-off duration
+    }, 600) // Flip duration
   }
 
   if (newPhase === GamePhase.TrickComplete || newPhase === GamePhase.RoundComplete) {
@@ -96,8 +95,9 @@ watch(phase, (newPhase, oldPhase) => {
   }
 })
 
+// Only show turn-up card in round 1 - in round 2 it's been turned over and removed
 const showTurnUpCard = computed(() => {
-  return (phase.value === GamePhase.BiddingRound1 || phase.value === GamePhase.BiddingRound2) && turnUpCard.value
+  return phase.value === GamePhase.BiddingRound1 && turnUpCard.value
 })
 
 const currentTrickCards = computed(() => {
@@ -225,7 +225,7 @@ function getCardPosition(playerId: number): number {
   }
 
   &.dismissing {
-    animation: kitty-slide-off 0.5s ease-in 0.4s forwards;
+    animation: kitty-slide-off 0.8s ease-in 0.6s forwards;
   }
 
   .card-flipper {
@@ -233,7 +233,7 @@ function getCardPosition(playerId: number): number {
     width: 70px;
     height: 105px;
     transform-style: preserve-3d;
-    transition: transform 0.4s ease-in-out;
+    transition: transform 0.6s ease-in-out;
 
     @media (max-height: 500px) {
       width: 52px;
