@@ -1,9 +1,16 @@
 <template>
   <div class="play-area-container">
     <!-- Turn-up card during bidding -->
-    <div v-if="showTurnUpCard" class="turn-up-card">
-      <Card :card="turnUpCard!" :selectable="false" />
-      <span class="turn-up-label">Turn Up</span>
+    <div v-if="showTurnUpCard || isDismissingKitty" class="turn-up-card" :class="{ 'dismissing': isDismissingKitty, 'flipping': isFlipping }">
+      <div class="card-flipper">
+        <div class="card-front">
+          <Card v-if="turnUpCard" :card="turnUpCard" :selectable="false" />
+        </div>
+        <div class="card-back">
+          <div class="card-back-pattern"></div>
+        </div>
+      </div>
+      <span v-if="!isDismissingKitty" class="turn-up-label">Turn Up</span>
     </div>
     <!-- Played cards during trick -->
     <div v-else-if="currentTrickCards.length > 0" class="played-cards" :class="sweepClass">
@@ -33,6 +40,8 @@ const myPlayerId = computed(() => game.myPlayerId.value)
 
 const isSweepingAway = ref(false)
 const winnerPosition = ref<number | null>(null)
+const isDismissingKitty = ref(false)
+const isFlipping = ref(false)
 let sweepTimeout: number | null = null
 
 // Compute the sweep class based on winner position
@@ -45,11 +54,28 @@ const sweepClass = computed(() => {
 })
 
 // Watch for TrickComplete or RoundComplete phase and trigger sweep animation
-watch(phase, (newPhase) => {
+// Also watch for transition from BiddingRound1 to BiddingRound2 for kitty dismiss animation
+watch(phase, (newPhase, oldPhase) => {
   // Clear any existing timeout
   if (sweepTimeout !== null) {
     clearTimeout(sweepTimeout)
     sweepTimeout = null
+  }
+
+  // Detect transition from bidding round 1 to round 2
+  if (oldPhase === GamePhase.BiddingRound1 && newPhase === GamePhase.BiddingRound2) {
+    // Start the flip animation
+    isFlipping.value = true
+    isDismissingKitty.value = true
+
+    // After flip completes, slide off
+    setTimeout(() => {
+      // Animation will complete via CSS, then reset
+      setTimeout(() => {
+        isDismissingKitty.value = false
+        isFlipping.value = false
+      }, 500) // Slide-off duration
+    }, 400) // Flip duration
   }
 
   if (newPhase === GamePhase.TrickComplete || newPhase === GamePhase.RoundComplete) {
@@ -192,7 +218,78 @@ function getCardPosition(playerId: number): number {
   flex-direction: column;
   align-items: center;
   gap: $spacing-xs;
-  animation: turn-up-reveal 0.5s ease-out;
+  perspective: 600px;
+
+  &:not(.dismissing):not(.flipping) {
+    animation: turn-up-reveal 0.5s ease-out;
+  }
+
+  &.dismissing {
+    animation: kitty-slide-off 0.5s ease-in 0.4s forwards;
+  }
+
+  .card-flipper {
+    position: relative;
+    width: 70px;
+    height: 105px;
+    transform-style: preserve-3d;
+    transition: transform 0.4s ease-in-out;
+
+    @media (max-height: 500px) {
+      width: 52px;
+      height: 78px;
+    }
+  }
+
+  &.flipping .card-flipper {
+    transform: rotateY(180deg);
+  }
+
+  .card-front,
+  .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 6px;
+  }
+
+  .card-front {
+    z-index: 2;
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  .card-back-pattern {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 4px,
+        rgba(255, 255, 255, 0.05) 4px,
+        rgba(255, 255, 255, 0.05) 8px
+      );
+    }
+  }
 
   .turn-up-label {
     font-size: 0.75rem;
@@ -205,6 +302,17 @@ function getCardPosition(playerId: number): number {
     @media (max-height: 500px) {
       font-size: 0.625rem;
     }
+  }
+}
+
+@keyframes kitty-slide-off {
+  from {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(150px) translateY(-50px) rotate(15deg);
   }
 }
 

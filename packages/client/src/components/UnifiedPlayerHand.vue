@@ -349,6 +349,7 @@ function handleCardClick(card: CardType) {
   &.playing {
     opacity: 0;
     pointer-events: none;
+    transition: none; // Hide instantly so play-area animation is the only visual
   }
 }
 
