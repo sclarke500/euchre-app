@@ -112,6 +112,8 @@ export class Game {
    * Start the game
    */
   start(): void {
+    // Random starting dealer (0-3)
+    this.currentDealer = Math.floor(Math.random() * 4)
     this.startNewRound()
   }
 

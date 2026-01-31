@@ -14,12 +14,12 @@
       <span class="picked-up-label">Picked Up</span>
     </div>
 
-    <div class="player-hand" :class="{ 'dealing': isDealing, 'hidden': !showHand, 'discard-phase': isDiscardPhase }" :style="handContainerStyle">
+    <div class="player-hand" :class="{ 'dealing': isDealing, 'hidden': !showHand, 'discard-phase': isDiscardPhase, 'sliding-away': isSlidingAway }" :style="handContainerStyle">
       <div
         v-for="(card, index) in displayHand"
         :key="card.id"
         class="card-wrapper"
-        :class="{ 'discarding': isCardDiscarding(card) }"
+        :class="{ 'discarding': isCardDiscarding(card), 'playing': isCardPlaying(card) }"
         :style="getCardStyle(index, displayHand.length)"
       >
         <Card
@@ -55,7 +55,29 @@ const turnUpCard = computed(() => game.turnUpCard.value)
 const isDealing = ref(false)
 const showHand = ref(false)
 const discardingCardId = ref<string | null>(null)
+const recentlyPlayedCard = ref<CardType | null>(null)
 const dealAnimationInProgress = ref(false)
+const isSlidingAway = ref(false)
+
+// Check if user is sitting out (partner is going alone)
+const isUserSittingOut = computed(() => {
+  if (!trump.value?.goingAlone) return false
+  const alonePlayer = trump.value.calledBy
+  const partnerId = (alonePlayer + 2) % 4
+  return myPlayerId.value === partnerId
+})
+
+// Watch for partner going alone and trigger slide-away animation
+watch(isUserSittingOut, (sittingOut) => {
+  if (sittingOut) {
+    // Delay slightly so the trump announcement is visible first
+    setTimeout(() => {
+      isSlidingAway.value = true
+    }, 500)
+  } else {
+    isSlidingAway.value = false
+  }
+})
 
 // Watch for Dealing phase and trigger slide-up animation
 watch(phase, (newPhase, oldPhase) => {
@@ -135,7 +157,14 @@ const sortedHand = computed(() => {
 })
 
 // Display hand: during discard phase, exclude the picked-up card
+// Include recently played card temporarily so it doesn't disappear instantly
 const displayHand = computed(() => {
+  if (recentlyPlayedCard.value) {
+    // Keep the played card in the visual hand until animation completes
+    const trumpSuit = trump.value?.suit ?? null
+    const handWithPlayedCard = [...handWithoutPickedUp.value, recentlyPlayedCard.value]
+    return sortCards(handWithPlayedCard, trumpSuit)
+  }
   return sortedHand.value
 })
 
@@ -164,6 +193,10 @@ function isCardDimmed(card: CardType): boolean {
 
 function isCardDiscarding(card: CardType): boolean {
   return discardingCardId.value === card.id
+}
+
+function isCardPlaying(card: CardType): boolean {
+  return recentlyPlayedCard.value?.id === card.id
 }
 
 function getCardStyle(index: number, totalCards: number) {
@@ -214,7 +247,17 @@ function handleCardClick(card: CardType) {
   }
 
   if (!isCardPlayable(card)) return
+
+  // Store the card so it stays visible during animation
+  recentlyPlayedCard.value = card
+
+  // Play card immediately so it appears in the trick area
   game.playCard(card)
+
+  // Delay removing from visual hand so it doesn't rearrange immediately
+  setTimeout(() => {
+    recentlyPlayedCard.value = null
+  }, 400)
 }
 </script>
 
@@ -283,6 +326,11 @@ function handleCardClick(card: CardType) {
     animation: slide-up-hand 0.6s ease-out;
   }
 
+  &.sliding-away {
+    animation: slide-down-hand 0.5s ease-in forwards;
+    pointer-events: none;
+  }
+
   &.discard-phase {
     overflow: visible; // Allow discard animation to extend beyond bounds
   }
@@ -291,9 +339,15 @@ function handleCardClick(card: CardType) {
 .card-wrapper {
   position: absolute;
   top: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 
   &.discarding {
     animation: discard-fly-away 0.4s ease-in forwards;
+    pointer-events: none;
+  }
+
+  &.playing {
+    opacity: 0;
     pointer-events: none;
   }
 }
@@ -320,6 +374,17 @@ function handleCardClick(card: CardType) {
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes slide-down-hand {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(150px);
+    opacity: 0;
   }
 }
 </style>

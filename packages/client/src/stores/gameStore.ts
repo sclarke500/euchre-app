@@ -133,7 +133,8 @@ export const useGameStore = defineStore('game', () => {
 
     gameOver.value = false
     winner.value = null
-    currentDealer.value = 0
+    // Random starting dealer (0-3)
+    currentDealer.value = Math.floor(Math.random() * 4)
 
     // Start first round
     startNewRound()
@@ -192,13 +193,16 @@ export const useGameStore = defineStore('game', () => {
       currentRound.value.goingAlone = newTrump.goingAlone
       currentRound.value.alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
 
-      // If dealer picked up, they need to discard
+      // If dealer picked up, they need to discard (unless sitting out because partner is going alone)
       if (bid.action === BidAction.PickUp || bid.action === BidAction.OrderUp) {
-        const needsHumanDiscard = handleDealerPickup()
-        if (needsHumanDiscard) {
-          // Wait for human dealer to discard before starting play
-          phase.value = GamePhase.DealerDiscard
-          return
+        const dealerSittingOut = isPlayerSittingOut(currentDealer.value, currentRound.value.alonePlayer)
+        if (!dealerSittingOut) {
+          const needsHumanDiscard = handleDealerPickup()
+          if (needsHumanDiscard) {
+            // Wait for human dealer to discard before starting play
+            phase.value = GamePhase.DealerDiscard
+            return
+          }
         }
       }
 
