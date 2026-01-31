@@ -51,6 +51,7 @@ export interface GameEvents {
   onRoundComplete: (scores: TeamScore[], tricksTaken: [number, number], pointsAwarded: [number, number]) => void
   onGameOver: (winningTeam: number, finalScores: TeamScore[]) => void
   onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => void
+  onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => void
 }
 
 export class Game {
@@ -67,6 +68,9 @@ export class Game {
   private currentDealer = 0
   private passCount = 0
   private events: GameEvents
+  private stateSeq = 0 // Incrementing sequence number for drift detection
+  private turnReminderTimeout: ReturnType<typeof setTimeout> | null = null
+  private readonly TURN_REMINDER_DELAY = 15000 // 15 seconds
 
   constructor(id: string, events: GameEvents) {
     this.id = id
@@ -174,6 +178,24 @@ export class Game {
       winner: this.winner,
       tricksTaken: [team0Tricks, team1Tricks] as [number, number],
       tricksWonByPlayer,
+      stateSeq: this.stateSeq,
+    }
+  }
+
+  /**
+   * Force resend state to a specific player (for resync requests)
+   */
+  resendStateToPlayer(odusId: string): void {
+    const state = this.getStateForPlayer(odusId)
+    this.events.onStateChange(odusId, state)
+
+    // Also resend your_turn if it's this player's turn
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
+    if (playerIndex !== -1 && this.currentRound?.currentPlayer === playerIndex) {
+      const player = this.players[playerIndex]!
+      if (player.isHuman) {
+        this.notifyPlayerTurn(odusId)
+      }
     }
   }
 
@@ -191,6 +213,9 @@ export class Game {
     if (this.phase !== GamePhase.BiddingRound1 && this.phase !== GamePhase.BiddingRound2) {
       return false
     }
+
+    // Clear turn reminder since player acted
+    this.clearTurnReminderTimeout()
 
     const bid: Bid = {
       playerId: playerIndex,
@@ -228,6 +253,9 @@ export class Game {
       return false
     }
 
+    // Clear turn reminder since player acted
+    this.clearTurnReminderTimeout()
+
     this.playCardInternal(playerIndex, card)
     return true
   }
@@ -245,6 +273,9 @@ export class Game {
     const player = this.players[playerIndex]!
     const cardIndex = player.hand.findIndex((c) => c.id === cardId)
     if (cardIndex === -1) return false
+
+    // Clear turn reminder since player acted
+    this.clearTurnReminderTimeout()
 
     player.hand.splice(cardIndex, 1)
     this.startPlayingPhase()
@@ -574,6 +605,9 @@ export class Game {
   }
 
   private broadcastState(): void {
+    // Increment state sequence number
+    this.stateSeq++
+
     // Send filtered state to each human player
     for (const player of this.players) {
       if (player.isHuman && player.odusId) {
@@ -587,6 +621,21 @@ export class Game {
     const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
     if (playerIndex === -1) return
 
+    const player = this.players[playerIndex]!
+    const { validActions, validCards } = this.getValidActionsForPlayer(playerIndex)
+
+    // Clear any existing reminder timeout
+    this.clearTurnReminderTimeout()
+
+    this.events.onYourTurn(odusId, validActions, validCards)
+
+    // Set up a reminder if they don't act
+    this.turnReminderTimeout = setTimeout(() => {
+      this.sendTurnReminder(odusId, playerIndex)
+    }, this.TURN_REMINDER_DELAY)
+  }
+
+  private getValidActionsForPlayer(playerIndex: number): { validActions: string[]; validCards: string[] | undefined } {
     const player = this.players[playerIndex]!
     let validActions: string[] = []
     let validCards: string[] | undefined
@@ -611,6 +660,29 @@ export class Game {
       validCards = player.hand.map((c) => c.id)
     }
 
-    this.events.onYourTurn(odusId, validActions, validCards)
+    return { validActions, validCards }
+  }
+
+  private sendTurnReminder(odusId: string, playerIndex: number): void {
+    // Verify it's still this player's turn
+    if (!this.currentRound || this.currentRound.currentPlayer !== playerIndex) {
+      return
+    }
+
+    const { validActions, validCards } = this.getValidActionsForPlayer(playerIndex)
+    console.log(`Sending turn reminder to player ${playerIndex}`)
+    this.events.onTurnReminder(odusId, validActions, validCards)
+
+    // Set up another reminder
+    this.turnReminderTimeout = setTimeout(() => {
+      this.sendTurnReminder(odusId, playerIndex)
+    }, this.TURN_REMINDER_DELAY)
+  }
+
+  private clearTurnReminderTimeout(): void {
+    if (this.turnReminderTimeout) {
+      clearTimeout(this.turnReminderTimeout)
+      this.turnReminderTimeout = null
+    }
   }
 }

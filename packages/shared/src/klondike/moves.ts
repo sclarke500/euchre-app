@@ -72,7 +72,8 @@ export function findValidFoundation(card: KlondikeCard, foundations: FoundationP
 }
 
 /**
- * Draw a card from stock to waste
+ * Draw card(s) from stock to waste
+ * Respects the drawCount setting (1 or 3 cards at a time)
  */
 export function drawCard(state: KlondikeState): MoveResult {
   const newState = cloneState(state)
@@ -92,10 +93,13 @@ export function drawCard(state: KlondikeState): MoveResult {
     return { success: true, state: newState, moveType: 'recycle' }
   }
 
-  // Draw top card from stock to waste
-  const card = newState.stock.pop()!
-  card.faceUp = true
-  newState.waste.push(card)
+  // Draw cards from stock to waste (1 or 3 based on drawCount)
+  const cardsToDraw = Math.min(newState.drawCount, newState.stock.length)
+  for (let i = 0; i < cardsToDraw; i++) {
+    const card = newState.stock.pop()!
+    card.faceUp = true
+    newState.waste.push(card)
+  }
   newState.selection = null
   newState.moveCount++
 

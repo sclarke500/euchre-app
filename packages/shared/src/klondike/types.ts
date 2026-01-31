@@ -38,6 +38,7 @@ export interface KlondikeState {
   selection: Selection | null   // currently selected card(s)
   moveCount: number             // number of moves made
   isWon: boolean                // all cards in foundations
+  drawCount: 1 | 3              // how many cards to draw at once (default 3)
 }
 
 // Move types for tracking

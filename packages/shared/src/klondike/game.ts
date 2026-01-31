@@ -13,8 +13,9 @@ function toKlondikeCard(card: StandardCard, faceUp: boolean): KlondikeCard {
 
 /**
  * Create a new shuffled Klondike game state
+ * @param drawCount - How many cards to draw at once (1 or 3, default 3)
  */
-export function createNewGame(): KlondikeState {
+export function createNewGame(drawCount: 1 | 3 = 3): KlondikeState {
   // Create and shuffle deck
   const deck = shuffleDeck(createStandardDeck())
 
@@ -57,6 +58,7 @@ export function createNewGame(): KlondikeState {
     selection: null,
     moveCount: 0,
     isWon: false,
+    drawCount,
   }
 }
 
@@ -88,5 +90,6 @@ export function cloneState(state: KlondikeState): KlondikeState {
     selection: state.selection ? { ...state.selection } : null,
     moveCount: state.moveCount,
     isWon: state.isWon,
+    drawCount: state.drawCount,
   }
 }

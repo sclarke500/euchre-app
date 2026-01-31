@@ -359,6 +359,13 @@ function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
         validCards,
       })
     },
+    onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
+      sendToPlayer(playerId, {
+        type: 'turn_reminder',
+        validActions,
+        validCards,
+      })
+    },
   })
 
   game.initializePlayers(humanPlayers)
@@ -441,6 +448,23 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
   if (!success) {
     send(ws, { type: 'error', message: 'Invalid discard' })
   }
+}
+
+function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  const game = games.get(client.gameId)
+  if (!game) {
+    send(ws, { type: 'error', message: 'Game not found' })
+    return
+  }
+
+  // Resend the current game state to this player
+  game.resendStateToPlayer(client.player.odusId)
+  console.log(`Resent state to ${client.player.nickname} (requested resync)`)
 }
 
 function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
@@ -545,6 +569,13 @@ function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
         validCards,
       })
     },
+    onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
+      sendToPlayer(playerId, {
+        type: 'turn_reminder',
+        validActions,
+        validCards,
+      })
+    },
   })
 
   newGame.initializePlayers(humanPlayers)
@@ -602,6 +633,9 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       break
     case 'discard_card':
       handleDiscardCard(ws, client, message.cardId)
+      break
+    case 'request_state':
+      handleRequestState(ws, client)
       break
     default:
       send(ws, { type: 'error', message: 'Unknown message type' })

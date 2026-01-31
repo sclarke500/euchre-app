@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import type { TableauColumn, KlondikeCard } from '@euchre/shared'
 import Card from '../Card.vue'
 
@@ -16,30 +16,34 @@ const emit = defineEmits<{
 
 const isEmpty = computed(() => props.column.cards.length === 0)
 
-// Offset amounts for card stacking
-const FACE_DOWN_OFFSET = 20 // px to show for face-down cards
-const FACE_UP_OFFSET = 32 // px to show for face-up cards
+// Use CSS custom property values or defaults
+// These are percentages of card height
+const FACE_DOWN_OFFSET_RATIO = 0.19 // ~20px for 105px card
+const FACE_UP_OFFSET_RATIO = 0.30 // ~32px for 105px card
 
-// Calculate position for each card
+// Calculate position for each card (as percentage of card height)
 function getCardStyle(index: number) {
-  let top = 0
+  let offset = 0
   for (let i = 0; i < index; i++) {
     const card = props.column.cards[i]
-    top += card?.faceUp ? FACE_UP_OFFSET : FACE_DOWN_OFFSET
+    offset += card?.faceUp ? FACE_UP_OFFSET_RATIO : FACE_DOWN_OFFSET_RATIO
   }
-  return { top: `${top}px` }
+  // Use calc with CSS custom property
+  return {
+    top: `calc(var(--klondike-card-height, 105px) * ${offset})`
+  }
 }
 
 // Calculate total column height
-const columnHeight = computed(() => {
-  if (isEmpty.value) return `${105}px` // card height
+const columnHeightMultiplier = computed(() => {
+  if (isEmpty.value) return 1
 
-  let height = 105 // last card full height
+  let multiplier = 1 // last card full height
   for (let i = 0; i < props.column.cards.length - 1; i++) {
     const card = props.column.cards[i]
-    height += card?.faceUp ? FACE_UP_OFFSET : FACE_DOWN_OFFSET
+    multiplier += card?.faceUp ? FACE_UP_OFFSET_RATIO : FACE_DOWN_OFFSET_RATIO
   }
-  return `${height}px`
+  return multiplier
 })
 
 function isSelected(cardIndex: number): boolean {
@@ -59,7 +63,7 @@ function handleEmptyClick() {
 </script>
 
 <template>
-  <div class="tableau-column" :style="{ height: columnHeight }">
+  <div class="tableau-column" :style="{ height: `calc(var(--klondike-card-height, 105px) * ${columnHeightMultiplier})` }">
     <!-- Empty column placeholder -->
     <div v-if="isEmpty" class="empty-column" @click="handleEmptyClick">
       <span class="king-hint">K</span>
@@ -89,13 +93,13 @@ function handleEmptyClick() {
 <style scoped lang="scss">
 .tableau-column {
   position: relative;
-  width: $card-width;
-  min-height: $card-height;
+  width: var(--klondike-card-width, $card-width);
+  min-height: var(--klondike-card-height, $card-height);
 }
 
 .empty-column {
   width: 100%;
-  height: $card-height;
+  height: var(--klondike-card-height, $card-height);
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: 6px;
@@ -106,7 +110,7 @@ function handleEmptyClick() {
 }
 
 .king-hint {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: rgba(255, 255, 255, 0.2);
   font-weight: bold;
 }
@@ -114,8 +118,8 @@ function handleEmptyClick() {
 .stacked-card {
   position: absolute;
   left: 0;
-  width: $card-width;
-  height: $card-height;
+  width: var(--klondike-card-width, $card-width);
+  height: var(--klondike-card-height, $card-height);
 
   &.selected :deep(.card) {
     box-shadow: 0 0 0 3px $secondary-color, 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -134,20 +138,20 @@ function handleEmptyClick() {
 
 .card-back-pattern {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 
   &::before {
     content: '';
     position: absolute;
-    top: 4px;
-    left: 4px;
-    right: 4px;
-    bottom: 4px;
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    bottom: 3px;
     background: repeating-linear-gradient(
       45deg,
       transparent,

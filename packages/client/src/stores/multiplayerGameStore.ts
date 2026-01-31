@@ -25,6 +25,11 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   const lastCardPlayed = ref<{ playerId: number; card: Card } | null>(null)
   const lastTrickWinnerId = ref<number | null>(null)
 
+  // Sync tracking
+  const lastStateSeq = ref<number>(0)
+  let syncCheckInterval: ReturnType<typeof setInterval> | null = null
+  let lastStateReceivedAt = 0
+
   // Computed getters for easy access
   const phase = computed(() => gameState.value?.phase ?? GamePhase.Setup)
   const players = computed(() => gameState.value?.players ?? [])
@@ -56,12 +61,14 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   function handleMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'game_state':
-        console.log('MP game_state received - trump:', message.state.trump, 'trumpCalledBy:', message.state.trumpCalledBy)
+        console.log('MP game_state received - trump:', message.state.trump, 'trumpCalledBy:', message.state.trumpCalledBy, 'seq:', message.state.stateSeq)
         // Clear lastTrickWinnerId when a new round starts (dealing phase)
         if (message.state.phase === GamePhase.Dealing) {
           lastTrickWinnerId.value = null
         }
         gameState.value = message.state
+        lastStateSeq.value = message.state.stateSeq
+        lastStateReceivedAt = Date.now()
         break
 
       case 'your_turn':
@@ -99,6 +106,14 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
       case 'game_over':
         // Game over - winner info in game_state
+        break
+
+      case 'turn_reminder':
+        // Server reminder that it's still our turn - re-enable turn indicators
+        isMyTurn.value = true
+        validActions.value = message.validActions
+        validCards.value = message.validCards ?? []
+        console.log('Turn reminder received - valid actions:', message.validActions)
         break
     }
   }
@@ -165,12 +180,34 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     validCards.value = []
   }
 
+  function requestStateResync(): void {
+    console.log('Requesting state resync from server')
+    websocket.send({
+      type: 'request_state',
+    })
+  }
+
   // Initialize - set up WebSocket listener
   let unsubscribe: (() => void) | null = null
 
   function initialize(): void {
     if (unsubscribe) return
     unsubscribe = websocket.onMessage(handleMessage)
+
+    // Set up periodic sync check - if we haven't received state updates for too long
+    // while it's supposed to be our turn, request a resync
+    syncCheckInterval = setInterval(() => {
+      // Only check if we're in a game and it's our turn
+      if (!gameState.value || !isMyTurn.value) return
+
+      // If no state update in 10 seconds while it's our turn, something might be wrong
+      const timeSinceLastUpdate = Date.now() - lastStateReceivedAt
+      if (timeSinceLastUpdate > 10000) {
+        console.log('No state update for 10s while waiting for turn - requesting resync')
+        requestStateResync()
+        lastStateReceivedAt = Date.now() // Reset to avoid spamming
+      }
+    }, 5000) // Check every 5 seconds
   }
 
   function cleanup(): void {
@@ -178,10 +215,16 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
       unsubscribe()
       unsubscribe = null
     }
+    if (syncCheckInterval) {
+      clearInterval(syncCheckInterval)
+      syncCheckInterval = null
+    }
     gameState.value = null
     isMyTurn.value = false
     validActions.value = []
     validCards.value = []
+    lastStateSeq.value = 0
+    lastStateReceivedAt = 0
   }
 
   return {

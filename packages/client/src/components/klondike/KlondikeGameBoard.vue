@@ -22,6 +22,7 @@ const tableau = computed(() => store.tableau)
 const foundations = computed(() => store.foundations)
 const stock = computed(() => store.stock)
 const waste = computed(() => store.waste)
+const visibleWasteCards = computed(() => store.visibleWasteCards)
 const selection = computed(() => store.selection)
 const moveCount = computed(() => store.moveCount)
 const isWon = computed(() => store.isWon)
@@ -90,39 +91,84 @@ function handleLeaveGame() {
       </button>
     </div>
 
-    <!-- Main game area -->
+    <!-- Main game area - different layouts for portrait/landscape -->
     <div class="game-area">
-      <!-- Top row: Stock/Waste and Foundations -->
-      <div class="top-row">
-        <KlondikeStockWaste
-          :stock="stock"
-          :waste="waste"
-          :is-waste-selected="isWasteSelected"
-          @draw-card="handleDrawCard"
-          @tap-waste="handleWasteTap"
-        />
-        <div class="foundations">
-          <KlondikeFoundation
-            v-for="(foundation, index) in foundations"
+      <!-- PORTRAIT: Foundations at top, tableau below, stock/waste at bottom -->
+      <div class="portrait-layout">
+        <div class="portrait-top">
+          <div class="foundations-row">
+            <KlondikeFoundation
+              v-for="(foundation, index) in foundations"
+              :key="index"
+              :foundation="foundation"
+              :index="index"
+              @tap="handleFoundationTap"
+            />
+          </div>
+        </div>
+
+        <div class="portrait-tableau">
+          <KlondikeTableauColumn
+            v-for="(column, index) in tableau"
             :key="index"
-            :foundation="foundation"
-            :index="index"
-            @tap="handleFoundationTap"
+            :column="column"
+            :column-index="index"
+            :selected-card-index="getSelectedCardIndex(index)"
+            @tap-card="handleTableauCardTap"
+            @tap-empty="handleEmptyTableauTap"
+          />
+        </div>
+
+        <div class="portrait-bottom">
+          <KlondikeStockWaste
+            :stock="stock"
+            :waste="waste"
+            :visible-waste-cards="visibleWasteCards"
+            :is-waste-selected="isWasteSelected"
+            @draw-card="handleDrawCard"
+            @tap-waste="handleWasteTap"
           />
         </div>
       </div>
 
-      <!-- Tableau columns -->
-      <div class="tableau">
-        <KlondikeTableauColumn
-          v-for="(column, index) in tableau"
-          :key="index"
-          :column="column"
-          :column-index="index"
-          :selected-card-index="getSelectedCardIndex(index)"
-          @tap-card="handleTableauCardTap"
-          @tap-empty="handleEmptyTableauTap"
-        />
+      <!-- LANDSCAPE: Tableau in center, foundations on right, stock/waste at bottom left -->
+      <div class="landscape-layout">
+        <div class="landscape-main">
+          <div class="landscape-tableau">
+            <KlondikeTableauColumn
+              v-for="(column, index) in tableau"
+              :key="index"
+              :column="column"
+              :column-index="index"
+              :selected-card-index="getSelectedCardIndex(index)"
+              @tap-card="handleTableauCardTap"
+              @tap-empty="handleEmptyTableauTap"
+            />
+          </div>
+        </div>
+
+        <div class="landscape-sidebar">
+          <div class="foundations-column">
+            <KlondikeFoundation
+              v-for="(foundation, index) in foundations"
+              :key="index"
+              :foundation="foundation"
+              :index="index"
+              @tap="handleFoundationTap"
+            />
+          </div>
+        </div>
+
+        <div class="landscape-stock-waste">
+          <KlondikeStockWaste
+            :stock="stock"
+            :waste="waste"
+            :visible-waste-cards="visibleWasteCards"
+            :is-waste-selected="isWasteSelected"
+            @draw-card="handleDrawCard"
+            @tap-waste="handleWasteTap"
+          />
+        </div>
       </div>
     </div>
 
@@ -198,38 +244,128 @@ function handleLeaveGame() {
 
 .game-area {
   flex: 1;
-  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+// ============================================
+// PORTRAIT LAYOUT
+// ============================================
+.portrait-layout {
+  display: none;
   flex-direction: column;
-  gap: $spacing-md;
-  overflow: auto;
-  padding: $spacing-sm 0;
+  height: 100%;
+  gap: $spacing-sm;
+
+  // Smaller card sizes for portrait
+  --klondike-card-width: 48px;
+  --klondike-card-height: 67px;
 }
 
-.top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.portrait-top {
   flex-shrink: 0;
-}
-
-.foundations {
   display: flex;
-  gap: $spacing-xs;
+  justify-content: flex-start;
+  padding-left: $spacing-sm;
 }
 
-.tableau {
+.foundations-row {
+  display: flex;
+  gap: 4px;
+}
+
+.portrait-tableau {
+  flex: 1;
   display: flex;
   justify-content: center;
-  gap: $spacing-xs;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: $spacing-xs;
+}
+
+.portrait-bottom {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: $spacing-sm;
+}
+
+// ============================================
+// LANDSCAPE LAYOUT
+// ============================================
+.landscape-layout {
+  display: none;
+  height: 100%;
+
+  // Standard card sizes for landscape
+  --klondike-card-width: 70px;
+  --klondike-card-height: 98px;
+}
+
+.landscape-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.landscape-tableau {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-sm;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  padding: $spacing-sm;
+}
 
-  @media (orientation: landscape) {
-    gap: $spacing-sm;
+.landscape-sidebar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: $spacing-sm;
+}
+
+.foundations-column {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.landscape-stock-waste {
+  position: absolute;
+  bottom: $spacing-sm;
+  left: $spacing-sm;
+}
+
+// ============================================
+// ORIENTATION MEDIA QUERIES
+// ============================================
+@media (orientation: portrait) {
+  .portrait-layout {
+    display: flex;
+  }
+
+  .landscape-layout {
+    display: none;
   }
 }
 
+@media (orientation: landscape) {
+  .portrait-layout {
+    display: none;
+  }
+
+  .landscape-layout {
+    display: flex;
+  }
+}
+
+// ============================================
 // Win modal styles
+// ============================================
 .win-modal {
   text-align: center;
   padding: $spacing-md;
@@ -265,43 +401,6 @@ function handleLeaveGame() {
   &.primary {
     background: $secondary-color;
     color: white;
-  }
-}
-
-// Portrait mode adjustments
-@media (orientation: portrait) {
-  .klondike-board {
-    padding: $spacing-xs;
-  }
-
-  .game-header {
-    padding: $spacing-xs;
-  }
-
-  .top-row {
-    flex-wrap: wrap;
-    gap: $spacing-sm;
-    justify-content: center;
-  }
-
-  .foundations {
-    gap: 4px;
-  }
-
-  .tableau {
-    gap: 4px;
-    padding: 0 $spacing-xs;
-  }
-}
-
-// Small screen adjustments
-@media (max-width: 400px) {
-  .foundations {
-    gap: 2px;
-  }
-
-  .tableau {
-    gap: 2px;
   }
 }
 </style>

@@ -30,6 +30,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
   const moveCount = ref(0)
   const isWon = ref(false)
   const isAutoCompleting = ref(false)
+  const drawCount = ref<1 | 3>(3) // Default to draw 3
 
   // Computed game state for operations
   const gameState = computed<KlondikeState>(() => ({
@@ -40,6 +41,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     selection: selection.value,
     moveCount: moveCount.value,
     isWon: isWon.value,
+    drawCount: drawCount.value,
   }))
 
   // Top card of waste (the one player can interact with)
@@ -59,14 +61,24 @@ export const useKlondikeStore = defineStore('klondike', () => {
     selection.value = state.selection
     moveCount.value = state.moveCount
     isWon.value = state.isWon
+    drawCount.value = state.drawCount
   }
 
   // Start a new game
   function startNewGame() {
-    const state = createNewGame()
+    const state = createNewGame(drawCount.value)
     updateState(state)
     isAutoCompleting.value = false
   }
+
+  // Get visible waste cards (up to drawCount from the top)
+  const visibleWasteCards = computed(() => {
+    const len = waste.value.length
+    if (len === 0) return []
+    // Show up to drawCount cards from the top of waste
+    const start = Math.max(0, len - drawCount.value)
+    return waste.value.slice(start)
+  })
 
   // Draw a card from stock to waste (or recycle waste)
   function handleDrawCard() {
@@ -223,10 +235,12 @@ export const useKlondikeStore = defineStore('klondike', () => {
     moveCount,
     isWon,
     isAutoCompleting,
+    drawCount,
 
     // Computed
     gameState,
     wasteTopCard,
+    visibleWasteCards,
     canRunAutoComplete,
 
     // Actions

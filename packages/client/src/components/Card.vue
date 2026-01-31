@@ -77,8 +77,9 @@ function handleClick() {
 
 <style scoped lang="scss">
 .card {
-  width: $card-width;
-  height: $card-height;
+  // Use CSS custom property with fallback to SCSS variable
+  width: var(--klondike-card-width, $card-width);
+  height: var(--klondike-card-height, $card-height);
   background: $card-background;
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -114,12 +115,13 @@ function handleClick() {
   }
 
   .rank {
-    font-size: 1.5rem;
+    // Scale font size with card width
+    font-size: min(1.5rem, calc(var(--klondike-card-width, $card-width) * 0.21));
     line-height: 1;
   }
 
   .suit {
-    font-size: 1.1rem;
+    font-size: min(1.1rem, calc(var(--klondike-card-width, $card-width) * 0.15));
     line-height: 1;
   }
 
@@ -139,7 +141,8 @@ function handleClick() {
   transform: translate(-50%, -50%);
 
   .suit-large {
-    font-size: 2.5rem;
+    // Scale center suit with card width
+    font-size: min(2.5rem, calc(var(--klondike-card-width, $card-width) * 0.36));
   }
 
   &.red {

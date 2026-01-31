@@ -45,6 +45,7 @@ export type ClientMessage =
   | MakeBidMessage
   | PlayCardMessage
   | DiscardCardMessage
+  | RequestStateMessage
 
 export interface JoinLobbyMessage {
   type: 'join_lobby'
@@ -92,6 +93,10 @@ export interface DiscardCardMessage {
   cardId: string
 }
 
+export interface RequestStateMessage {
+  type: 'request_state'
+}
+
 // ============================================
 // Server -> Client Messages
 // ============================================
@@ -107,6 +112,7 @@ export type ServerMessage =
   | GameRestartingMessage
   | GameStateMessage
   | YourTurnMessage
+  | TurnReminderMessage
   | BidMadeMessage
   | CardPlayedMessage
   | TrickCompleteMessage
@@ -174,6 +180,7 @@ export interface ClientGameState {
   winner: number | null
   tricksTaken: [number, number] // [team0, team1] tricks in current round
   tricksWonByPlayer: Record<number, number> // playerId -> tricks won this round
+  stateSeq: number // Incrementing sequence number for drift detection
 }
 
 export interface ClientPlayer {
@@ -194,6 +201,12 @@ export interface YourTurnMessage {
   type: 'your_turn'
   validActions: string[] // List of valid action types
   validCards?: string[] // Card IDs that can be played
+}
+
+export interface TurnReminderMessage {
+  type: 'turn_reminder'
+  validActions: string[]
+  validCards?: string[]
 }
 
 export interface BidMadeMessage {

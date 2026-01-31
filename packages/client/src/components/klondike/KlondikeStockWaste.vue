@@ -6,6 +6,7 @@ import Card from '../Card.vue'
 const props = defineProps<{
   stock: KlondikeCard[]
   waste: KlondikeCard[]
+  visibleWasteCards: KlondikeCard[]
   isWasteSelected: boolean
 }>()
 
@@ -13,10 +14,6 @@ const emit = defineEmits<{
   drawCard: []
   tapWaste: []
 }>()
-
-const wasteTopCard = computed(() =>
-  props.waste.length > 0 ? props.waste[props.waste.length - 1] : null
-)
 
 const hasStock = computed(() => props.stock.length > 0)
 const hasWaste = computed(() => props.waste.length > 0)
@@ -45,10 +42,19 @@ function handleWasteClick() {
       </div>
     </div>
 
-    <!-- Waste pile (drawn cards) -->
-    <div class="waste" :class="{ selected: isWasteSelected }" @click="handleWasteClick">
-      <div v-if="!wasteTopCard" class="waste-placeholder"></div>
-      <Card v-else :card="wasteTopCard" selectable />
+    <!-- Waste pile (drawn cards) - fanned display -->
+    <div class="waste-area" :class="{ selected: isWasteSelected }" @click="handleWasteClick">
+      <div v-if="!hasWaste" class="waste-placeholder"></div>
+      <div v-else class="waste-fan">
+        <div
+          v-for="(card, index) in visibleWasteCards"
+          :key="card.id"
+          class="waste-card"
+          :style="{ '--fan-index': index }"
+        >
+          <Card :card="card" :selectable="index === visibleWasteCards.length - 1" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -59,15 +65,13 @@ function handleWasteClick() {
   gap: $spacing-sm;
 }
 
-.stock,
-.waste {
-  width: $card-width;
-  height: $card-height;
+.stock {
+  width: var(--klondike-card-width, $card-width);
+  height: var(--klondike-card-height, $card-height);
   border-radius: 6px;
   cursor: pointer;
-}
+  flex-shrink: 0;
 
-.stock {
   &.empty {
     background: rgba(255, 255, 255, 0.1);
     border: 2px dashed rgba(255, 255, 255, 0.3);
@@ -122,19 +126,37 @@ function handleWasteClick() {
   }
 }
 
-.waste {
+.waste-area {
   position: relative;
+  // Width to accommodate fanned cards (card width + 2 * fan offset)
+  width: calc(var(--klondike-card-width, $card-width) + 40px);
+  height: var(--klondike-card-height, $card-height);
+  cursor: pointer;
+  flex-shrink: 0;
 
-  &.selected :deep(.card) {
+  &.selected .waste-card:last-child :deep(.card) {
     box-shadow: 0 0 0 3px $secondary-color, 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 }
 
 .waste-placeholder {
-  width: 100%;
+  width: var(--klondike-card-width, $card-width);
   height: 100%;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 6px;
   border: 2px dashed rgba(255, 255, 255, 0.1);
+}
+
+.waste-fan {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.waste-card {
+  position: absolute;
+  top: 0;
+  left: calc(var(--fan-index, 0) * 20px);
+  transition: left 0.2s ease-out;
 }
 </style>
