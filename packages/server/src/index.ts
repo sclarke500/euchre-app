@@ -32,6 +32,7 @@ interface ConnectedClient {
 const clients = new Map<WebSocket, ConnectedClient>()
 const tables = new Map<string, Table>()
 const games = new Map<string, Game>()
+const gameHosts = new Map<string, string>() // gameId -> hostOdusId
 
 // ============================================
 // Helpers
@@ -362,6 +363,7 @@ function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
 
   game.initializePlayers(humanPlayers)
   games.set(gameId, game)
+  gameHosts.set(gameId, table.hostId) // Track who the host is
 
   // Update all clients at table to be in game
   for (const [clientWs, c] of clients) {
@@ -441,6 +443,137 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
   }
 }
 
+function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  const oldGameId = client.gameId
+  const hostId = gameHosts.get(oldGameId)
+
+  if (!hostId) {
+    send(ws, { type: 'error', message: 'Game host not found' })
+    return
+  }
+
+  // Only host can restart
+  if (client.player.odusId !== hostId) {
+    send(ws, { type: 'error', message: 'Only host can restart game' })
+    return
+  }
+
+  const oldGame = games.get(oldGameId)
+  if (!oldGame) {
+    send(ws, { type: 'error', message: 'Game not found' })
+    return
+  }
+
+  // Collect all human players currently in the game
+  const humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }> = []
+  for (const [, c] of clients) {
+    if (c.gameId === oldGameId && c.player) {
+      // Find their seat index from the old game
+      const playerInfo = oldGame.getPlayerInfo(c.player.odusId)
+      if (playerInfo) {
+        humanPlayers.push({
+          odusId: c.player.odusId,
+          name: c.player.nickname,
+          seatIndex: playerInfo.seatIndex,
+        })
+      }
+    }
+  }
+
+  // Notify all players that game is restarting
+  broadcastToGame(oldGameId, { type: 'game_restarting' })
+
+  // Create new game
+  const newGameId = generateId()
+
+  const newGame = new Game(newGameId, {
+    onStateChange: (playerId: string | null, state: ClientGameState) => {
+      if (playerId) {
+        sendToPlayer(playerId, { type: 'game_state', state })
+      }
+    },
+    onBidMade: (playerId: number, bid: Bid, playerName: string) => {
+      broadcastToGame(newGameId, {
+        type: 'bid_made',
+        playerId,
+        action: bid.action,
+        suit: bid.suit,
+        goingAlone: bid.goingAlone,
+        playerName,
+      })
+    },
+    onCardPlayed: (playerId: number, card: Card, playerName: string) => {
+      broadcastToGame(newGameId, {
+        type: 'card_played',
+        playerId,
+        card,
+        playerName,
+      })
+    },
+    onTrickComplete: (winnerId: number, winnerName: string, cards: Array<{ playerId: number; card: Card }>) => {
+      broadcastToGame(newGameId, {
+        type: 'trick_complete',
+        winnerId,
+        winnerName,
+        cards,
+      })
+    },
+    onRoundComplete: (scores: TeamScore[], tricksTaken: [number, number], pointsAwarded: [number, number]) => {
+      broadcastToGame(newGameId, {
+        type: 'round_complete',
+        scores,
+        tricksTaken,
+        pointsAwarded,
+      })
+    },
+    onGameOver: (winningTeam: number, finalScores: TeamScore[]) => {
+      broadcastToGame(newGameId, {
+        type: 'game_over',
+        winningTeam,
+        finalScores,
+      })
+    },
+    onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => {
+      sendToPlayer(playerId, {
+        type: 'your_turn',
+        validActions,
+        validCards,
+      })
+    },
+  })
+
+  newGame.initializePlayers(humanPlayers)
+  games.set(newGameId, newGame)
+  gameHosts.set(newGameId, hostId)
+
+  // Update all clients to the new game
+  for (const [, c] of clients) {
+    if (c.gameId === oldGameId) {
+      c.gameId = newGameId
+    }
+  }
+
+  // Clean up old game
+  games.delete(oldGameId)
+  gameHosts.delete(oldGameId)
+
+  console.log(`Game restarted: ${oldGameId} -> ${newGameId}`)
+
+  // Send game_started to all players
+  broadcastToGame(newGameId, {
+    type: 'game_started',
+    gameId: newGameId,
+  })
+
+  // Start the new game
+  newGame.start()
+}
+
 function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMessage): void {
   switch (message.type) {
     case 'join_lobby':
@@ -457,6 +590,9 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       break
     case 'start_game':
       handleStartGame(ws, client)
+      break
+    case 'restart_game':
+      handleRestartGame(ws, client)
       break
     case 'make_bid':
       handleMakeBid(ws, client, message.action, message.suit, message.goingAlone)

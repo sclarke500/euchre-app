@@ -32,12 +32,16 @@ export const useLobbyStore = defineStore('lobby', () => {
   const currentSeat = ref<number | null>(null)
 
   const gameId = ref<string | null>(null)
+  const wasHostWhenGameStarted = ref(false)
 
   // Computed
   const isInLobby = computed(() => isConnected.value && !currentTable.value && !gameId.value)
   const isAtTable = computed(() => isConnected.value && currentTable.value !== null && !gameId.value)
   const isInGame = computed(() => gameId.value !== null)
   const isHost = computed(() => {
+    // During a game, use the preserved host status
+    if (gameId.value) return wasHostWhenGameStarted.value
+    // At a table, check the current table's hostId
     if (!currentTable.value || !odusId.value) return false
     return currentTable.value.hostId === odusId.value
   })
@@ -94,7 +98,13 @@ export const useLobbyStore = defineStore('lobby', () => {
         break
 
       case 'game_started':
+        // Preserve host status before currentTable is cleared
+        wasHostWhenGameStarted.value = currentTable.value?.hostId === odusId.value
         gameId.value = message.gameId
+        break
+
+      case 'game_restarting':
+        // Game is restarting - will receive new game_started message
         break
 
       case 'error':
@@ -206,6 +216,13 @@ export const useLobbyStore = defineStore('lobby', () => {
     gameId.value = null
     currentTable.value = null
     currentSeat.value = null
+    wasHostWhenGameStarted.value = false
+  }
+
+  function restartGame(): void {
+    websocket.send({
+      type: 'restart_game',
+    })
   }
 
   return {
@@ -238,5 +255,6 @@ export const useLobbyStore = defineStore('lobby', () => {
     leaveTable,
     startGame,
     leaveGame,
+    restartGame,
   }
 })

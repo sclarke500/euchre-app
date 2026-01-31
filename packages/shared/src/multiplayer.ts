@@ -41,6 +41,7 @@ export type ClientMessage =
   | JoinTableMessage
   | LeaveTableMessage
   | StartGameMessage
+  | RestartGameMessage
   | MakeBidMessage
   | PlayCardMessage
   | DiscardCardMessage
@@ -68,6 +69,10 @@ export interface LeaveTableMessage {
 
 export interface StartGameMessage {
   type: 'start_game'
+}
+
+export interface RestartGameMessage {
+  type: 'restart_game'
 }
 
 export interface MakeBidMessage {
@@ -99,6 +104,7 @@ export type ServerMessage =
   | JoinedTableMessage
   | LeftTableMessage
   | GameStartedMessage
+  | GameRestartingMessage
   | GameStateMessage
   | YourTurnMessage
   | BidMadeMessage
@@ -144,6 +150,10 @@ export interface LeftTableMessage {
 export interface GameStartedMessage {
   type: 'game_started'
   gameId: string
+}
+
+export interface GameRestartingMessage {
+  type: 'game_restarting'
 }
 
 // Filtered game state - player only sees their own cards

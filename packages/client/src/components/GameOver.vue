@@ -3,10 +3,20 @@
     <div class="game-over">
       <h1>Game Over!</h1>
       <h2>{{ winnerText }}</h2>
-      <div class="button-row">
+
+      <!-- Single player or multiplayer host -->
+      <div v-if="mode === 'singlePlayer' || isHost" class="button-row">
         <button class="action-btn primary" @click="startNewGame">
           Play Again
         </button>
+        <button class="action-btn secondary" @click="exitGame">
+          Exit
+        </button>
+      </div>
+
+      <!-- Multiplayer non-host -->
+      <div v-else class="waiting-section">
+        <p class="waiting-message">Waiting for host to start new game...</p>
         <button class="action-btn secondary" @click="exitGame">
           Exit
         </button>
@@ -18,14 +28,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { useLobbyStore } from '@/stores/lobbyStore'
 import Modal from './Modal.vue'
 
 interface Props {
   winner: number | null
+  mode: 'singlePlayer' | 'multiplayer'
+  isHost?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isHost: false,
+})
+
 const gameStore = useGameStore()
+const lobbyStore = useLobbyStore()
 
 const emit = defineEmits<{
   exit: []
@@ -41,7 +58,11 @@ const winnerText = computed(() => {
 })
 
 function startNewGame() {
-  gameStore.startNewGame()
+  if (props.mode === 'singlePlayer') {
+    gameStore.startNewGame()
+  } else {
+    lobbyStore.restartGame()
+  }
 }
 
 function exitGame() {
@@ -72,6 +93,19 @@ function exitGame() {
   display: flex;
   gap: $spacing-sm;
   justify-content: center;
+}
+
+.waiting-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.waiting-message {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 .action-btn {

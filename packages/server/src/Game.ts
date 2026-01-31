@@ -118,6 +118,15 @@ export class Game {
   }
 
   /**
+   * Get player info by odusId
+   */
+  getPlayerInfo(odusId: string): { seatIndex: number; name: string } | null {
+    const player = this.players.find((p) => p.odusId === odusId)
+    if (!player) return null
+    return { seatIndex: player.seatIndex, name: player.name }
+  }
+
+  /**
    * Get the current game state filtered for a specific player
    */
   getStateForPlayer(odusId: string | null): ClientGameState {

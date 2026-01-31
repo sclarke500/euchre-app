@@ -47,7 +47,7 @@
     </div>
 
     <TrumpSelection :show="showBidding" />
-    <GameOver v-if="gameOver" :winner="winner" @exit="emit('leaveGame')" />
+    <GameOver v-if="gameOver" :winner="winner" :mode="props.mode === 'singleplayer' ? 'singlePlayer' : 'multiplayer'" :is-host="isHost" @exit="emit('leaveGame')" />
 
     <Modal :show="showDiscardPrompt" non-blocking>
       <span class="discard-text">Select a card to discard</span>
@@ -74,6 +74,7 @@
 import { ref, computed, provide, onMounted, onUnmounted } from 'vue'
 import { useGameAdapter, type GameAdapter, type UnifiedPlayer } from '@/composables/useGameAdapter'
 import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
+import { useLobbyStore } from '@/stores/lobbyStore'
 import { GamePhase } from '@euchre/shared'
 import ScoreBoard from './ScoreBoard.vue'
 import UnifiedPlayerHand from './UnifiedPlayerHand.vue'
@@ -117,6 +118,10 @@ function dismissResumeOverlay() {
 
 // Create the appropriate adapter based on mode
 const game = useGameAdapter(props.mode)
+const lobbyStore = useLobbyStore()
+
+// Host status for multiplayer games
+const isHost = computed(() => lobbyStore.isHost)
 
 // Provide the adapter to all child components
 provide<GameAdapter>('game', game)
