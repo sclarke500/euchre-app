@@ -46,8 +46,8 @@ function handleTap() {
 
 <style scoped lang="scss">
 .foundation {
-  width: var(--klondike-card-width, $card-width);
-  height: var(--klondike-card-height, $card-height);
+  width: var(--card-width, $card-width);
+  height: var(--card-height, $card-height);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
   border: 2px dashed rgba(255, 255, 255, 0.3);

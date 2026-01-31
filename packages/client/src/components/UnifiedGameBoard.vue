@@ -61,12 +61,6 @@
       </div>
     </Modal>
 
-    <!-- Resume overlay after returning from background -->
-    <div v-if="showResumeOverlay" class="resume-overlay" @click="dismissResumeOverlay">
-      <div class="resume-content">
-        <p>Tap to continue</p>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -94,26 +88,10 @@ const emit = defineEmits<{
 }>()
 
 const showLeaveConfirm = ref(false)
-const showResumeOverlay = ref(false)
-let wasHidden = false
 
 function confirmLeave() {
   showLeaveConfirm.value = false
   emit('leaveGame')
-}
-
-function handleVisibilityChange() {
-  if (document.hidden) {
-    wasHidden = true
-  } else if (wasHidden) {
-    // Returning from background - show resume overlay
-    wasHidden = false
-    showResumeOverlay.value = true
-  }
-}
-
-function dismissResumeOverlay() {
-  showResumeOverlay.value = false
 }
 
 // Create the appropriate adapter based on mode
@@ -163,8 +141,6 @@ onMounted(() => {
     const mpStore = useMultiplayerGameStore()
     mpStore.initialize()
   }
-  // Listen for visibility changes (app backgrounded/foregrounded)
-  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
@@ -172,7 +148,6 @@ onUnmounted(() => {
     const mpStore = useMultiplayerGameStore()
     mpStore.cleanup()
   }
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
@@ -338,34 +313,6 @@ onUnmounted(() => {
     background: #e74c3c;
     color: white;
     border: none;
-  }
-}
-
-.resume-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  cursor: pointer;
-}
-
-.resume-content {
-  background: rgba(255, 255, 255, 0.95);
-  padding: $spacing-lg $spacing-xl;
-  border-radius: 12px;
-  text-align: center;
-
-  p {
-    margin: 0;
-    color: #333;
-    font-size: 1.2rem;
-    font-weight: bold;
   }
 }
 </style>

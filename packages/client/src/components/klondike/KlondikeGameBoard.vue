@@ -258,8 +258,8 @@ function handleLeaveGame() {
   gap: $spacing-sm;
 
   // Smaller card sizes for portrait
-  --klondike-card-width: 48px;
-  --klondike-card-height: 67px;
+  --card-width: 48px;
+  --card-height: 67px;
 }
 
 .portrait-top {
@@ -299,8 +299,8 @@ function handleLeaveGame() {
   height: 100%;
 
   // Standard card sizes for landscape
-  --klondike-card-width: 70px;
-  --klondike-card-height: 98px;
+  --card-width: 70px;
+  --card-height: 98px;
 }
 
 .landscape-main {

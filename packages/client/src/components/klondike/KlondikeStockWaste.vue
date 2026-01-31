@@ -66,8 +66,8 @@ function handleWasteClick() {
 }
 
 .stock {
-  width: var(--klondike-card-width, $card-width);
-  height: var(--klondike-card-height, $card-height);
+  width: var(--card-width, $card-width);
+  height: var(--card-height, $card-height);
   border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
@@ -129,8 +129,8 @@ function handleWasteClick() {
 .waste-area {
   position: relative;
   // Width to accommodate fanned cards (card width + 2 * fan offset)
-  width: calc(var(--klondike-card-width, $card-width) + 40px);
-  height: var(--klondike-card-height, $card-height);
+  width: calc(var(--card-width, $card-width) + 40px);
+  height: var(--card-height, $card-height);
   cursor: pointer;
   flex-shrink: 0;
 
@@ -140,7 +140,7 @@ function handleWasteClick() {
 }
 
 .waste-placeholder {
-  width: var(--klondike-card-width, $card-width);
+  width: var(--card-width, $card-width);
   height: 100%;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 6px;

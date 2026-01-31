@@ -52,6 +52,8 @@ export interface GameEvents {
   onGameOver: (winningTeam: number, finalScores: TeamScore[]) => void
   onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => void
   onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => void
+  onPlayerTimedOut: (playerId: number, playerName: string) => void
+  onPlayerBooted: (playerId: number, playerName: string) => void
 }
 
 export class Game {
@@ -71,6 +73,9 @@ export class Game {
   private stateSeq = 0 // Incrementing sequence number for drift detection
   private turnReminderTimeout: ReturnType<typeof setTimeout> | null = null
   private readonly TURN_REMINDER_DELAY = 15000 // 15 seconds
+  private turnReminderCount = 0 // Count reminders sent to current player
+  private readonly TIMEOUT_AFTER_REMINDERS = 4 // Mark as timed out after 4 reminders (60 seconds)
+  private timedOutPlayer: number | null = null // Seat index of player who timed out
 
   constructor(id: string, events: GameEvents) {
     this.id = id
@@ -179,6 +184,7 @@ export class Game {
       tricksTaken: [team0Tricks, team1Tricks] as [number, number],
       tricksWonByPlayer,
       stateSeq: this.stateSeq,
+      timedOutPlayer: this.timedOutPlayer,
     }
   }
 
@@ -627,6 +633,10 @@ export class Game {
     // Clear any existing reminder timeout
     this.clearTurnReminderTimeout()
 
+    // Reset timeout tracking for new turn
+    this.turnReminderCount = 0
+    this.timedOutPlayer = null
+
     this.events.onYourTurn(odusId, validActions, validCards)
 
     // Set up a reminder if they don't act
@@ -669,8 +679,19 @@ export class Game {
       return
     }
 
+    this.turnReminderCount++
+    const player = this.players[playerIndex]!
+
+    // Check if player has timed out (exceeded reminder limit)
+    if (this.turnReminderCount >= this.TIMEOUT_AFTER_REMINDERS && this.timedOutPlayer === null) {
+      console.log(`Player ${playerIndex} (${player.name}) has timed out`)
+      this.timedOutPlayer = playerIndex
+      this.events.onPlayerTimedOut(playerIndex, player.name)
+      // Continue sending reminders but player is now marked as timed out
+    }
+
     const { validActions, validCards } = this.getValidActionsForPlayer(playerIndex)
-    console.log(`Sending turn reminder to player ${playerIndex}`)
+    console.log(`Sending turn reminder ${this.turnReminderCount} to player ${playerIndex}`)
     this.events.onTurnReminder(odusId, validActions, validCards)
 
     // Set up another reminder
@@ -684,5 +705,53 @@ export class Game {
       clearTimeout(this.turnReminderTimeout)
       this.turnReminderTimeout = null
     }
+  }
+
+  /**
+   * Boot a timed-out player and replace with AI
+   */
+  bootPlayer(playerIndex: number): boolean {
+    // Can only boot the player who has timed out
+    if (this.timedOutPlayer !== playerIndex) {
+      return false
+    }
+
+    const player = this.players[playerIndex]
+    if (!player || !player.isHuman) {
+      return false
+    }
+
+    console.log(`Booting player ${playerIndex} (${player.name}) and replacing with AI`)
+
+    // Clear timeout state
+    this.clearTurnReminderTimeout()
+    this.turnReminderCount = 0
+    this.timedOutPlayer = null
+
+    // Convert player to AI
+    const aiNames = getRandomAINames(1)
+    player.isHuman = false
+    player.name = aiNames[0] ?? 'Bot'
+    player.odusId = null
+
+    // Notify about the boot
+    this.events.onPlayerBooted(playerIndex, player.name)
+
+    // Broadcast updated state
+    this.broadcastState()
+
+    // If it was this player's turn, have the AI take over
+    if (this.currentRound && this.currentRound.currentPlayer === playerIndex) {
+      this.processCurrentTurn()
+    }
+
+    return true
+  }
+
+  /**
+   * Check if a player is timed out (for external queries)
+   */
+  isPlayerTimedOut(playerIndex: number): boolean {
+    return this.timedOutPlayer === playerIndex
   }
 }

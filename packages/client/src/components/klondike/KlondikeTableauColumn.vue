@@ -30,7 +30,7 @@ function getCardStyle(index: number) {
   }
   // Use calc with CSS custom property
   return {
-    top: `calc(var(--klondike-card-height, 105px) * ${offset})`
+    top: `calc(var(--card-height, 105px) * ${offset})`
   }
 }
 
@@ -63,7 +63,7 @@ function handleEmptyClick() {
 </script>
 
 <template>
-  <div class="tableau-column" :style="{ height: `calc(var(--klondike-card-height, 105px) * ${columnHeightMultiplier})` }">
+  <div class="tableau-column" :style="{ height: `calc(var(--card-height, 105px) * ${columnHeightMultiplier})` }">
     <!-- Empty column placeholder -->
     <div v-if="isEmpty" class="empty-column" @click="handleEmptyClick">
       <span class="king-hint">K</span>
@@ -93,13 +93,13 @@ function handleEmptyClick() {
 <style scoped lang="scss">
 .tableau-column {
   position: relative;
-  width: var(--klondike-card-width, $card-width);
-  min-height: var(--klondike-card-height, $card-height);
+  width: var(--card-width, $card-width);
+  min-height: var(--card-height, $card-height);
 }
 
 .empty-column {
   width: 100%;
-  height: var(--klondike-card-height, $card-height);
+  height: var(--card-height, $card-height);
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: 6px;
@@ -118,8 +118,8 @@ function handleEmptyClick() {
 .stacked-card {
   position: absolute;
   left: 0;
-  width: var(--klondike-card-width, $card-width);
-  height: var(--klondike-card-height, $card-height);
+  width: var(--card-width, $card-width);
+  height: var(--card-height, $card-height);
 
   &.selected :deep(.card) {
     box-shadow: 0 0 0 3px $secondary-color, 0 4px 12px rgba(0, 0, 0, 0.4);

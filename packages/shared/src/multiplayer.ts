@@ -46,6 +46,7 @@ export type ClientMessage =
   | PlayCardMessage
   | DiscardCardMessage
   | RequestStateMessage
+  | BootPlayerMessage
 
 export interface JoinLobbyMessage {
   type: 'join_lobby'
@@ -97,6 +98,11 @@ export interface RequestStateMessage {
   type: 'request_state'
 }
 
+export interface BootPlayerMessage {
+  type: 'boot_player'
+  playerId: number // Seat index of player to boot
+}
+
 // ============================================
 // Server -> Client Messages
 // ============================================
@@ -113,6 +119,8 @@ export type ServerMessage =
   | GameStateMessage
   | YourTurnMessage
   | TurnReminderMessage
+  | PlayerTimedOutMessage
+  | PlayerBootedMessage
   | BidMadeMessage
   | CardPlayedMessage
   | TrickCompleteMessage
@@ -181,6 +189,7 @@ export interface ClientGameState {
   tricksTaken: [number, number] // [team0, team1] tricks in current round
   tricksWonByPlayer: Record<number, number> // playerId -> tricks won this round
   stateSeq: number // Incrementing sequence number for drift detection
+  timedOutPlayer: number | null // Seat index of player who has timed out (waiting to be booted)
 }
 
 export interface ClientPlayer {
@@ -207,6 +216,19 @@ export interface TurnReminderMessage {
   type: 'turn_reminder'
   validActions: string[]
   validCards?: string[]
+}
+
+export interface PlayerTimedOutMessage {
+  type: 'player_timed_out'
+  playerId: number // Seat index of player who timed out
+  playerName: string
+}
+
+export interface PlayerBootedMessage {
+  type: 'player_booted'
+  playerId: number // Seat index of booted player
+  playerName: string
+  replacedWithAI: boolean
 }
 
 export interface BidMadeMessage {

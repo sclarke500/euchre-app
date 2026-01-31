@@ -366,6 +366,21 @@ function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
         validCards,
       })
     },
+    onPlayerTimedOut: (playerId: number, playerName: string) => {
+      broadcastToGame(gameId, {
+        type: 'player_timed_out',
+        playerId,
+        playerName,
+      })
+    },
+    onPlayerBooted: (playerId: number, playerName: string) => {
+      broadcastToGame(gameId, {
+        type: 'player_booted',
+        playerId,
+        playerName,
+        replacedWithAI: true,
+      })
+    },
   })
 
   game.initializePlayers(humanPlayers)
@@ -465,6 +480,27 @@ function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
   // Resend the current game state to this player
   game.resendStateToPlayer(client.player.odusId)
   console.log(`Resent state to ${client.player.nickname} (requested resync)`)
+}
+
+function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: number): void {
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  const game = games.get(client.gameId)
+  if (!game) {
+    send(ws, { type: 'error', message: 'Game not found' })
+    return
+  }
+
+  // Any player can boot a timed-out player
+  // bootPlayer() returns false if player isn't timed out or already booted
+  const success = game.bootPlayer(playerId)
+  if (!success) {
+    // Silently ignore - likely a race condition where another player already booted them
+    console.log(`Boot request for player ${playerId} ignored (not timed out or already booted)`)
+  }
 }
 
 function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
@@ -576,6 +612,21 @@ function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
         validCards,
       })
     },
+    onPlayerTimedOut: (playerId: number, playerName: string) => {
+      broadcastToGame(newGameId, {
+        type: 'player_timed_out',
+        playerId,
+        playerName,
+      })
+    },
+    onPlayerBooted: (playerId: number, playerName: string) => {
+      broadcastToGame(newGameId, {
+        type: 'player_booted',
+        playerId,
+        playerName,
+        replacedWithAI: true,
+      })
+    },
   })
 
   newGame.initializePlayers(humanPlayers)
@@ -636,6 +687,9 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       break
     case 'request_state':
       handleRequestState(ws, client)
+      break
+    case 'boot_player':
+      handleBootPlayer(ws, client, message.playerId)
       break
     default:
       send(ws, { type: 'error', message: 'Unknown message type' })
