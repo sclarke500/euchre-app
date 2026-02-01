@@ -2,8 +2,11 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { getPlatformInfo } from '@/utils/platform'
+import SettingsModal from './SettingsModal.vue'
 
 export type GameType = 'euchre' | 'president' | 'klondike'
+
+const showSettings = ref(false)
 
 // Platform detection
 const showIOSInstallHint = ref(false)
@@ -140,6 +143,15 @@ const gameTitle = computed(() => {
 
 <template>
   <div class="main-menu">
+    <button class="settings-btn" @click="showSettings = true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    </button>
+
+    <SettingsModal :show="showSettings" @close="showSettings = false" />
+
     <div class="logo-section">
       <img src="@/assets/AppLogo.png" alt="Euchre Logo" class="logo" />
       <span class="stamp-text">67CardGames.com</span>
@@ -239,6 +251,34 @@ const gameTitle = computed(() => {
 </template>
 
 <style scoped lang="scss">
+.settings-btn {
+  position: absolute;
+  top: $spacing-md;
+  right: $spacing-md;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: white;
+  z-index: 10;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
 .main-menu {
   width: 100%;
   height: 100%;

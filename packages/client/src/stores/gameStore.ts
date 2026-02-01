@@ -31,9 +31,20 @@ import {
   isPartnerWinning,
   chooseDealerDiscard,
   getRandomAINames,
+  // Hard AI
+  GameTracker,
+  chooseCardToPlayHard,
+  isPartnerWinningHard,
 } from '@euchre/shared'
+import { useSettingsStore } from './settingsStore'
 
 export const useGameStore = defineStore('game', () => {
+  // Get settings
+  const settingsStore = useSettingsStore()
+
+  // Game tracker for hard AI (tracks cards played, voids, etc.)
+  const gameTracker = new GameTracker()
+
   // State
   const players = ref<Player[]>([])
   const currentRound = ref<Round | null>(null)
@@ -143,6 +154,9 @@ export const useGameStore = defineStore('game', () => {
   function startNewRound() {
     phase.value = GamePhase.Dealing
 
+    // Reset game tracker for hard AI
+    gameTracker.reset()
+
     // Create and deal deck
     const deck = createDeck()
     const [hand0, hand1, hand2, hand3, kitty] = dealCards(deck)
@@ -192,6 +206,9 @@ export const useGameStore = defineStore('game', () => {
       currentRound.value.trump = newTrump
       currentRound.value.goingAlone = newTrump.goingAlone
       currentRound.value.alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
+
+      // Set trump on game tracker for hard AI
+      gameTracker.setTrump(newTrump.suit)
 
       // If dealer picked up, they need to discard (unless sitting out because partner is going alone)
       if (bid.action === BidAction.PickUp || bid.action === BidAction.OrderUp) {
@@ -324,6 +341,9 @@ export const useGameStore = defineStore('game', () => {
     const completedTrick = completeTrick(currentRound.value.currentTrick, currentRound.value.trump.suit)
     currentRound.value.tricks.push(completedTrick)
 
+    // Record trick for hard AI tracking
+    gameTracker.recordTrick(completedTrick)
+
     console.log(`Trick ${currentRound.value.tricks.length} complete. Winner: Player ${completedTrick.winnerId}`)
 
     phase.value = GamePhase.TrickComplete
@@ -431,7 +451,8 @@ export const useGameStore = defineStore('game', () => {
         const bid = makeAIBidRound2(
           player,
           currentRound.value.turnUpCard.suit,
-          currentRound.value.dealer
+          currentRound.value.dealer,
+          settingsStore.isStickTheDealer()
         )
         const isDealer = player.id === currentRound.value.dealer
         const message = getBidMessage(bid, isDealer)
@@ -445,8 +466,35 @@ export const useGameStore = defineStore('game', () => {
           makeBid(bid)
         }, 1000)
       } else if (phase.value === GamePhase.Playing && currentRound.value.trump) {
-        const partnerWinning = isPartnerWinning(currentRound.value.currentTrick, player.id, currentRound.value.trump.suit)
-        const card = chooseCardToPlay(player, currentRound.value.currentTrick, currentRound.value.trump.suit, partnerWinning)
+        let card: Card
+        if (settingsStore.isHardAI()) {
+          // Hard AI with card tracking
+          const partnerWinning = isPartnerWinningHard(
+            currentRound.value.currentTrick,
+            player.id,
+            currentRound.value.trump.suit
+          )
+          card = chooseCardToPlayHard(
+            player,
+            currentRound.value.currentTrick,
+            currentRound.value.trump.suit,
+            partnerWinning,
+            gameTracker
+          )
+        } else {
+          // Easy AI (basic strategy)
+          const partnerWinning = isPartnerWinning(
+            currentRound.value.currentTrick,
+            player.id,
+            currentRound.value.trump.suit
+          )
+          card = chooseCardToPlay(
+            player,
+            currentRound.value.currentTrick,
+            currentRound.value.trump.suit,
+            partnerWinning
+          )
+        }
         playCard(card, player.id)
       }
     }, 800)

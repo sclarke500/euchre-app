@@ -46,14 +46,17 @@ export function makeAIBidRound1(
 
 /**
  * AI makes a bidding decision for round 2 (call any suit)
+ * @param stickTheDealer - If true and player is dealer, must call a suit
  */
 export function makeAIBidRound2(
   player: Player,
   turnCardSuit: Suit,
-  dealerPosition: number
+  dealerPosition: number,
+  stickTheDealer: boolean = false
 ): Bid {
   const isDealer = player.id === dealerPosition
-  const chosenSuit = chooseSuitRound2(player.hand, turnCardSuit, isDealer)
+  const mustCall = stickTheDealer && isDealer
+  const chosenSuit = chooseSuitRound2(player.hand, turnCardSuit, isDealer, mustCall)
 
   if (chosenSuit) {
     const goingAlone = shouldGoAlone(player.hand, chosenSuit)

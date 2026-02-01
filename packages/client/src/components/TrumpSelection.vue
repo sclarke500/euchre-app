@@ -38,7 +38,13 @@
         </button>
       </div>
       <div class="round2-footer">
-        <button class="action-btn secondary" @click="handlePass">Pass</button>
+        <button
+          class="action-btn secondary"
+          :disabled="!canPassRound2"
+          @click="handlePass"
+        >
+          {{ canPassRound2 ? 'Pass' : 'Must Call' }}
+        </button>
         <div class="alone-option">
           <label>
             <input v-model="goingAlone" type="checkbox" />
@@ -55,12 +61,15 @@
 import { computed, ref, inject } from 'vue'
 import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase, BidAction, Suit } from '@euchre/shared'
+import { useSettingsStore } from '@/stores/settingsStore'
 import Card from './Card.vue'
 import Modal from './Modal.vue'
 
 defineProps<{
   show: boolean
 }>()
+
+const settingsStore = useSettingsStore()
 
 const game = inject<GameAdapter>('game')!
 
@@ -76,6 +85,12 @@ const allSuits = [Suit.Hearts, Suit.Diamonds, Suit.Clubs, Suit.Spades]
 const isDealer = computed(() => myPlayerId.value === dealer.value)
 
 const turnCardSuit = computed(() => turnUpCard.value?.suit)
+
+// In round 2, dealer cannot pass if stick-the-dealer is enabled
+const canPassRound2 = computed(() => {
+  if (!isDealer.value) return true
+  return !settingsStore.isStickTheDealer()
+})
 
 function isSuitSelectable(suit: Suit): boolean {
   return suit !== turnCardSuit.value

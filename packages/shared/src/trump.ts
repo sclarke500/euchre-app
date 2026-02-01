@@ -61,11 +61,13 @@ export function shouldPickUp(hand: Card[], turnCard: Card): boolean {
 /**
  * Choose best suit to call in round 2 (after turn card is rejected)
  * Returns the suit to call, or null to pass
+ * @param mustCall - If true (stick the dealer), will return a suit even if weak hand
  */
 export function chooseSuitRound2(
   hand: Card[],
   turnCardSuit: Suit,
-  isDealer: boolean
+  isDealer: boolean,
+  mustCall: boolean = false
 ): Suit | null {
   // Count trump in each suit (excluding the turned down suit)
   const suitScores = new Map<Suit, number>()
@@ -83,12 +85,23 @@ export function chooseSuitRound2(
 
   // Find suit with highest score
   let bestSuit: Suit | null = null
-  let bestScore = isDealer ? 1 : 2 // Dealer must call with lower threshold (stick the dealer)
+  let bestScore = isDealer ? 1 : 2 // Dealer has lower threshold
 
   for (const [suit, score] of suitScores) {
     if (score > bestScore) {
       bestScore = score
       bestSuit = suit
+    }
+  }
+
+  // If must call (stick the dealer) and no suit met threshold, pick the best available
+  if (mustCall && !bestSuit && availableSuits.length > 0) {
+    let highestScore = -1
+    for (const [suit, score] of suitScores) {
+      if (score > highestScore) {
+        highestScore = score
+        bestSuit = suit
+      }
     }
   }
 
