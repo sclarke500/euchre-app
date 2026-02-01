@@ -6,7 +6,7 @@ import type { PresidentPile, PresidentPlay, PlayType } from './types.js'
 
 /**
  * Get the value of a rank in President
- * 3 is lowest (1), 2 is highest (13)
+ * 3 is lowest (1), 2 is highest (13), Joker is highest (14)
  */
 export function getPresidentRankValue(rank: FullRank): number {
   const values: Record<FullRank, number> = {
@@ -22,9 +22,19 @@ export function getPresidentRankValue(rank: FullRank): number {
     [FullRank.Queen]: 10,
     [FullRank.King]: 11,
     [FullRank.Ace]: 12,
-    [FullRank.Two]: 13,  // Highest!
+    [FullRank.Two]: 13,
+    [FullRank.Joker]: 14, // Highest in super 2s mode
   }
   return values[rank]
+}
+
+/**
+ * Check if a rank is a "super" card (2 or Joker)
+ * - Jokers: 1 joker beats anything except another joker
+ * - 2s: Need one less card to beat (e.g., 2 twos beat 3 aces)
+ */
+export function isSuperCard(rank: FullRank): boolean {
+  return rank === FullRank.Two || rank === FullRank.Joker
 }
 
 /**
@@ -71,8 +81,13 @@ export function allSameRank(cards: StandardCard[]): boolean {
 
 /**
  * Validate a play against the current pile
+ * @param superTwosMode - If true, 2s and Jokers can beat with one less card
  */
-export function isValidPlay(cards: StandardCard[], pile: PresidentPile): boolean {
+export function isValidPlay(
+  cards: StandardCard[],
+  pile: PresidentPile,
+  superTwosMode: boolean = false
+): boolean {
   // Must have 1-4 cards
   if (cards.length === 0 || cards.length > 4) {
     return false
@@ -93,13 +108,46 @@ export function isValidPlay(cards: StandardCard[], pile: PresidentPile): boolean
     return true
   }
 
-  // Must match pile's play type
+  const playRank = cards[0]!.rank
+
+  // In super 2s mode, Jokers and 2s have special rules
+  if (superTwosMode && pile.currentPlayType) {
+    const requiredCount = getPlayTypeCount(pile.currentPlayType)
+
+    // Jokers beat everything with just 1 card (except need more jokers to beat jokers)
+    if (playRank === FullRank.Joker) {
+      if (pile.currentRank === FullRank.Joker) {
+        // Joker vs joker - need more jokers to beat
+        return cards.length > requiredCount
+      }
+      // Single joker beats any non-joker play
+      return true
+    }
+
+    // 2s need one less card to beat non-super cards
+    if (playRank === FullRank.Two) {
+      const minNeeded = Math.max(1, requiredCount - 1)
+      if (cards.length >= minNeeded) {
+        // 2s can't beat jokers
+        if (pile.currentRank === FullRank.Joker) {
+          return false
+        }
+        // 2s vs 2s - need same count and higher value (but 2s are same, so can't beat)
+        if (pile.currentRank === FullRank.Two) {
+          return false // Can't beat 2s with 2s
+        }
+        return true // 2s beat non-super with one less
+      }
+      return false
+    }
+  }
+
+  // Standard rules: Must match pile's play type
   if (pile.currentPlayType && playType !== pile.currentPlayType) {
     return false
   }
 
   // Must beat current rank
-  const playRank = cards[0]!.rank
   return compareRanks(playRank, pile.currentRank) > 0
 }
 
@@ -121,8 +169,13 @@ export function groupCardsByRank(hand: StandardCard[]): Map<FullRank, StandardCa
 
 /**
  * Find all valid plays from a hand given the current pile
+ * @param superTwosMode - If true, 2s and Jokers can beat with one less card
  */
-export function findValidPlays(hand: StandardCard[], pile: PresidentPile): StandardCard[][] {
+export function findValidPlays(
+  hand: StandardCard[],
+  pile: PresidentPile,
+  superTwosMode: boolean = false
+): StandardCard[][] {
   const validPlays: StandardCard[][] = []
   const groups = groupCardsByRank(hand)
 
@@ -132,7 +185,48 @@ export function findValidPlays(hand: StandardCard[], pile: PresidentPile): Stand
     : null
 
   for (const [rank, cards] of groups) {
-    // Skip if we can't beat current rank
+    // In super 2s mode, Jokers and 2s have special rules
+    if (superTwosMode && requiredCount !== null) {
+      // Jokers beat anything with just 1 card
+      if (rank === FullRank.Joker) {
+        if (pile.currentRank === FullRank.Joker) {
+          // Need more jokers to beat jokers
+          if (cards.length > requiredCount) {
+            validPlays.push(cards.slice(0, requiredCount + 1))
+          }
+        } else {
+          // Single joker beats any non-joker play
+          validPlays.push([cards[0]!])
+          // Can also play multiple jokers if we have them
+          if (cards.length > 1) {
+            validPlays.push(cards.slice(0, 2))
+          }
+        }
+        continue
+      }
+
+      // 2s need one less card to beat
+      if (rank === FullRank.Two) {
+        // 2s can't beat jokers
+        if (pile.currentRank === FullRank.Joker) {
+          continue
+        }
+        // 2s can't beat other 2s
+        if (pile.currentRank === FullRank.Two) {
+          continue
+        }
+        // 2s beat non-super with one less
+        const minNeeded = Math.max(1, requiredCount - 1)
+        if (cards.length >= minNeeded) {
+          for (let size = minNeeded; size <= Math.min(cards.length, requiredCount); size++) {
+            validPlays.push(cards.slice(0, size))
+          }
+        }
+        continue
+      }
+    }
+
+    // Standard rules: Skip if we can't beat current rank
     if (pile.currentRank !== null && compareRanks(rank, pile.currentRank) <= 0) {
       continue
     }
@@ -156,9 +250,14 @@ export function findValidPlays(hand: StandardCard[], pile: PresidentPile): Stand
 
 /**
  * Check if player can make any valid play
+ * @param superTwosMode - If true, 2s and Jokers can beat with one less card
  */
-export function canPlay(hand: StandardCard[], pile: PresidentPile): boolean {
-  return findValidPlays(hand, pile).length > 0
+export function canPlay(
+  hand: StandardCard[],
+  pile: PresidentPile,
+  superTwosMode: boolean = false
+): boolean {
+  return findValidPlays(hand, pile, superTwosMode).length > 0
 }
 
 /**

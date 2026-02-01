@@ -22,8 +22,12 @@ import {
   getRankDisplayName,
   getRandomAINames,
 } from '@euchre/shared'
+import { useSettingsStore } from './settingsStore'
 
 export const usePresidentGameStore = defineStore('presidentGame', () => {
+  // Settings
+  const settings = useSettingsStore()
+
   // State
   const players = ref<PresidentPlayer[]>([])
   const phase = ref<PresidentPhase>(PresidentPhase.Setup)
@@ -35,6 +39,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const gameOver = ref(false)
   const lastPlayerId = ref<number | null>(null)
   const lastPlayedCards = ref<StandardCard[] | null>(null)
+  const superTwosMode = ref(false)
 
   // Card exchange state - only for human player's exchange
   const exchangeInfo = ref<{
@@ -59,6 +64,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     roundNumber: roundNumber.value,
     gameOver: gameOver.value,
     lastPlayerId: lastPlayerId.value,
+    superTwosMode: superTwosMode.value,
   }))
 
   const activePlayers = computed(() =>
@@ -77,13 +83,13 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const validPlays = computed(() => {
     const human = humanPlayer.value
     if (!human || !isHumanTurn.value) return []
-    return findValidPlays(human.hand, currentPile.value)
+    return findValidPlays(human.hand, currentPile.value, superTwosMode.value)
   })
 
   const canHumanPlay = computed(() => {
     const human = humanPlayer.value
     if (!human) return false
-    return canPlay(human.hand, currentPile.value)
+    return canPlay(human.hand, currentPile.value, superTwosMode.value)
   })
 
   // Actions
@@ -97,8 +103,11 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     // Create player names array
     const playerNames = [playerName, ...aiNames]
 
-    // Create game
-    const state = createPresidentGame(playerNames, 0)
+    // Read super 2s mode from settings (use getter to ensure we get the boolean value)
+    superTwosMode.value = settings.isSuperTwosAndJokers()
+
+    // Create game with super 2s mode
+    const state = createPresidentGame(playerNames, 0, superTwosMode.value)
 
     // Initialize state
     players.value = state.players
@@ -177,7 +186,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const getLowestCards = (hand: StandardCard[], count: number) => {
       const rankValues: Record<string, number> = {
         '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6,
-        '9': 7, '10': 8, 'J': 9, 'Q': 10, 'K': 11, 'A': 12, '2': 13
+        '9': 7, '10': 8, 'J': 9, 'Q': 10, 'K': 11, 'A': 12, '2': 13, 'Joker': 14
       }
       return hand
         .slice()
@@ -407,6 +416,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     exchangeInfo,
     waitingForExchangeAck,
     gameState,
+    superTwosMode,
 
     // Computed
     activePlayers,

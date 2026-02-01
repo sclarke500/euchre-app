@@ -1,18 +1,18 @@
 <template>
   <div
-    :class="['card', { selectable, dimmed }]"
+    :class="['card', { selectable, dimmed, joker: isJoker }]"
     @click="handleClick"
   >
     <div class="card-corner top-left" :class="suitColorClass">
       <div class="rank">{{ displayRank }}</div>
-      <div class="suit">{{ suitSymbol }}</div>
+      <div class="suit" v-if="!isJoker">{{ suitSymbol }}</div>
     </div>
     <div class="card-corner bottom-right" :class="suitColorClass">
       <div class="rank">{{ displayRank }}</div>
-      <div class="suit">{{ suitSymbol }}</div>
+      <div class="suit" v-if="!isJoker">{{ suitSymbol }}</div>
     </div>
     <div class="card-center" :class="suitColorClass">
-      <div class="suit-large">{{ suitSymbol }}</div>
+      <div class="suit-large">{{ isJoker ? '🃏' : suitSymbol }}</div>
     </div>
   </div>
 </template>
@@ -58,13 +58,19 @@ const suitSymbol = computed(() => {
   }
 })
 
+const isJoker = computed(() => {
+  return props.card.rank === 'Joker'
+})
+
 const suitColorClass = computed(() => {
+  if (isJoker.value) return 'joker-color'
   return props.card.suit === Suit.Hearts || props.card.suit === Suit.Diamonds
     ? 'red'
     : 'black'
 })
 
 const displayRank = computed(() => {
+  if (isJoker.value) return '★'
   return props.card.rank
 })
 
@@ -133,6 +139,10 @@ function handleClick() {
   &.black {
     color: #2c3e50;
   }
+
+  &.joker-color {
+    color: #9b59b6;
+  }
 }
 
 .card-center {
@@ -152,6 +162,10 @@ function handleClick() {
 
   &.black {
     color: #2c3e50;
+  }
+
+  &.joker-color {
+    color: #9b59b6;
   }
 }
 </style>

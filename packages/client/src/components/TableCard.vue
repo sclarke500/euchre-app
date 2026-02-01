@@ -12,13 +12,18 @@ const emit = defineEmits<{
   joinSeat: [seatIndex: number]
 }>()
 
-// Team labels for seats
+// Game type detection
+const gameType = computed(() => props.table.gameType || 'euchre')
+const isEuchre = computed(() => gameType.value === 'euchre')
+const isPresident = computed(() => gameType.value === 'president')
+
+// Team labels for Euchre seats
 const seatTeams = ['Team A', 'Team B', 'Team A', 'Team B']
 
 const seats = computed(() => {
   return props.table.seats.map((seat, index) => ({
     ...seat,
-    team: seatTeams[index],
+    team: isEuchre.value ? seatTeams[index] : `Seat ${index + 1}`,
     isCurrentUser: seat.player?.odusId === props.currentUserId,
     isEmpty: seat.player === null,
   }))
@@ -26,6 +31,17 @@ const seats = computed(() => {
 
 const filledSeats = computed(() => {
   return props.table.seats.filter((s) => s.player !== null).length
+})
+
+const maxPlayers = computed(() => props.table.maxPlayers || 4)
+
+const gameTypeLabel = computed(() => {
+  if (isEuchre.value) return 'Euchre'
+  if (isPresident.value) {
+    const settings = props.table.settings
+    return settings?.superTwosMode ? 'President (Super 2s)' : 'President'
+  }
+  return 'Game'
 })
 
 function handleSeatClick(seatIndex: number) {
@@ -39,11 +55,14 @@ function handleSeatClick(seatIndex: number) {
 <template>
   <div class="table-card" :class="{ current: isCurrent }">
     <div class="table-header">
-      <h3>{{ table.name }}</h3>
-      <span class="seat-count">{{ filledSeats }}/4 players</span>
+      <div class="table-title">
+        <h3>{{ table.name }}</h3>
+        <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
+      </div>
+      <span class="seat-count">{{ filledSeats }}/{{ maxPlayers }} players</span>
     </div>
 
-    <div class="seats-grid">
+    <div class="seats-grid" :class="{ 'president-grid': isPresident, [`players-${maxPlayers}`]: isPresident }">
       <div
         v-for="(seat, index) in seats"
         :key="index"
@@ -75,7 +94,7 @@ function handleSeatClick(seatIndex: number) {
       </div>
     </div>
 
-    <div class="partnership-hint">
+    <div v-if="isEuchre" class="partnership-hint">
       <span>Seats 1 & 3 are partners</span>
       <span>Seats 2 & 4 are partners</span>
     </div>
@@ -115,10 +134,49 @@ function handleSeatClick(seatIndex: number) {
   }
 }
 
+.table-title {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.game-type-badge {
+  font-size: 0.625rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: bold;
+
+  &.euchre {
+    background: rgba(66, 133, 244, 0.3);
+    color: #82b1ff;
+  }
+
+  &.president {
+    background: rgba(156, 39, 176, 0.3);
+    color: #ce93d8;
+  }
+}
+
 .seats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: $spacing-sm;
+
+  &.president-grid {
+    &.players-5 {
+      grid-template-columns: repeat(5, 1fr);
+    }
+    &.players-6 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    &.players-7 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    &.players-8 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
 }
 
 .seat {

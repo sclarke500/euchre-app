@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import TableCard from '@/components/TableCard.vue'
+import type { GameType } from '@euchre/shared'
 
 const emit = defineEmits<{
   back: []
@@ -9,6 +10,7 @@ const emit = defineEmits<{
 }>()
 
 const lobbyStore = useLobbyStore()
+const showCreateOptions = ref(false)
 
 const sortedTables = computed(() => {
   return [...lobbyStore.tables].sort((a, b) => b.createdAt - a.createdAt)
@@ -29,6 +31,7 @@ onUnmounted(() => {
 
 function handleCreateTable() {
   lobbyStore.createTable()
+  showCreateOptions.value = false
 }
 
 function handleBack() {
@@ -42,6 +45,14 @@ function handleBack() {
 
 function handleStartGame() {
   lobbyStore.startGame()
+}
+
+function toggleCreateOptions() {
+  showCreateOptions.value = !showCreateOptions.value
+}
+
+function selectGameType(gameType: GameType) {
+  lobbyStore.setGameType(gameType)
 }
 
 // Watch for game start
@@ -65,7 +76,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
         <button
           v-if="!lobbyStore.isAtTable"
           class="create-btn"
-          @click="handleCreateTable"
+          @click="toggleCreateOptions"
         >
           Create Table
         </button>
@@ -78,6 +89,59 @@ const checkGameStart = computed(() => lobbyStore.gameId)
         </button>
       </div>
     </header>
+
+    <!-- Create Table Options -->
+    <div v-if="showCreateOptions && !lobbyStore.isAtTable" class="create-options">
+      <div class="create-options-content">
+        <h3>Create Table</h3>
+
+        <div class="game-type-selector">
+          <button
+            :class="['game-type-btn', { active: lobbyStore.selectedGameType === 'euchre' }]"
+            @click="selectGameType('euchre')"
+          >
+            Euchre
+          </button>
+          <button
+            :class="['game-type-btn', { active: lobbyStore.selectedGameType === 'president' }]"
+            @click="selectGameType('president')"
+          >
+            President
+          </button>
+        </div>
+
+        <div v-if="lobbyStore.selectedGameType === 'president'" class="president-options">
+          <div class="option-row">
+            <label>Players:</label>
+            <div class="player-count-selector">
+              <button
+                v-for="n in [4, 5, 6, 7, 8]"
+                :key="n"
+                :class="['count-btn', { active: lobbyStore.selectedMaxPlayers === n }]"
+                @click="lobbyStore.setMaxPlayers(n)"
+              >
+                {{ n }}
+              </button>
+            </div>
+          </div>
+          <div class="option-row">
+            <label>
+              <input
+                type="checkbox"
+                :checked="lobbyStore.selectedSuperTwosMode"
+                @change="lobbyStore.setSuperTwosMode(($event.target as HTMLInputElement).checked)"
+              >
+              Super 2s & Jokers
+            </label>
+          </div>
+        </div>
+
+        <div class="create-actions">
+          <button class="cancel-btn" @click="showCreateOptions = false">Cancel</button>
+          <button class="confirm-create-btn" @click="handleCreateTable">Create</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Connection status -->
     <div v-if="lobbyStore.isConnecting" class="status-banner connecting">
@@ -268,5 +332,134 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   justify-content: center;
   font-size: 2rem;
   z-index: 100;
+}
+
+.create-options {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.create-options-content {
+  background: #1e4d2b;
+  border-radius: 12px;
+  padding: $spacing-lg;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  h3 {
+    margin: 0 0 $spacing-md 0;
+    text-align: center;
+    font-size: 1.25rem;
+  }
+}
+
+.game-type-selector {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.game-type-btn {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  &.active {
+    background: white;
+    color: #1e4d2b;
+  }
+}
+
+.president-options {
+  margin-bottom: $spacing-md;
+  padding: $spacing-md;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-bottom: $spacing-sm;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  label {
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+.player-count-selector {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+.count-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-weight: 500;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  &.active {
+    background: white;
+    color: #1e4d2b;
+  }
+}
+
+.create-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.confirm-create-btn {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border-radius: 8px;
+  background: $secondary-color;
+  color: white;
+  font-weight: bold;
 }
 </style>

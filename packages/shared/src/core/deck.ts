@@ -21,12 +21,12 @@ export function shuffleDeck<T>(deck: T[]): T[] {
 }
 
 /**
- * Create a standard 52-card deck
+ * Create a standard 52-card deck (excludes jokers)
  */
 export function createStandardDeck(): StandardCard[] {
   const deck: StandardCard[] = []
   const suits = Object.values(Suit)
-  const ranks = Object.values(FullRank)
+  const ranks = Object.values(FullRank).filter(r => r !== FullRank.Joker)
 
   for (const suit of suits) {
     for (const rank of ranks) {
@@ -36,6 +36,29 @@ export function createStandardDeck(): StandardCard[] {
         id: `${suit}-${rank}`,
       })
     }
+  }
+
+  return deck
+}
+
+/**
+ * Create a President deck (52 cards, optionally with 2 jokers = 54 cards)
+ */
+export function createPresidentDeck(withJokers: boolean = false): StandardCard[] {
+  const deck = createStandardDeck()
+
+  if (withJokers) {
+    // Add 2 jokers (suit is arbitrary, doesn't affect President gameplay)
+    deck.push({
+      suit: Suit.Spades,
+      rank: FullRank.Joker,
+      id: 'joker-1',
+    })
+    deck.push({
+      suit: Suit.Hearts,
+      rank: FullRank.Joker,
+      id: 'joker-2',
+    })
   }
 
   return deck

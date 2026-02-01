@@ -9,8 +9,15 @@ import type {
   TeamScore,
   Card,
   Bid,
+  GameType,
+  TableSettings,
+  PresidentClientGameState,
+  StandardCard,
+  PlayerRank,
+  PlayType,
 } from '@euchre/shared'
 import { Game } from './Game.js'
+import { PresidentGame } from './PresidentGame.js'
 
 const PORT = parseInt(process.env.PORT || '3001', 10)
 
@@ -32,7 +39,9 @@ interface ConnectedClient {
 const clients = new Map<WebSocket, ConnectedClient>()
 const tables = new Map<string, Table>()
 const games = new Map<string, Game>()
+const presidentGames = new Map<string, PresidentGame>()
 const gameHosts = new Map<string, string>() // gameId -> hostOdusId
+const gameTypes = new Map<string, GameType>() // gameId -> 'euchre' | 'president'
 
 // ============================================
 // Helpers
@@ -117,7 +126,14 @@ function handleJoinLobby(ws: WebSocket, client: ConnectedClient, nickname: strin
   console.log(`Player joined lobby: ${nickname} (${playerId})`)
 }
 
-function handleCreateTable(ws: WebSocket, client: ConnectedClient, tableName?: string): void {
+function handleCreateTable(
+  ws: WebSocket,
+  client: ConnectedClient,
+  tableName?: string,
+  gameType: GameType = 'euchre',
+  maxPlayers?: number,
+  settings?: TableSettings
+): void {
   if (!client.player) {
     send(ws, { type: 'error', message: 'Must join lobby first' })
     return
@@ -128,18 +144,35 @@ function handleCreateTable(ws: WebSocket, client: ConnectedClient, tableName?: s
     return
   }
 
+  // Determine max players based on game type
+  let actualMaxPlayers: number
+  if (gameType === 'president') {
+    actualMaxPlayers = maxPlayers ? Math.min(Math.max(maxPlayers, 4), 8) : 4
+  } else {
+    actualMaxPlayers = 4 // Euchre is always 4 players
+  }
+
   const tableId = generateId()
+
+  // Create seats based on max players
+  const seats = []
+  for (let i = 0; i < actualMaxPlayers; i++) {
+    seats.push({
+      odusIndex: i,
+      player: i === 0 ? client.player : null,
+      isHost: i === 0,
+    })
+  }
+
   const table: Table = {
     odusId: tableId,
     name: tableName || `Table ${tableId}`,
-    seats: [
-      { odusIndex: 0, player: client.player, isHost: true },
-      { odusIndex: 1, player: null, isHost: false },
-      { odusIndex: 2, player: null, isHost: false },
-      { odusIndex: 3, player: null, isHost: false },
-    ],
+    seats,
     hostId: client.player.odusId,
     createdAt: Date.now(),
+    gameType,
+    maxPlayers: actualMaxPlayers,
+    settings,
   }
 
   tables.set(tableId, table)
@@ -175,7 +208,7 @@ function handleJoinTable(ws: WebSocket, client: ConnectedClient, tableId: string
     return
   }
 
-  if (seatIndex < 0 || seatIndex > 3) {
+  if (seatIndex < 0 || seatIndex >= table.maxPlayers) {
     send(ws, { type: 'error', message: 'Invalid seat index' })
     return
   }
@@ -291,6 +324,7 @@ function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
 
   const gameId = generateId()
   const tableId = client.tableId
+  const gameType = table.gameType || 'euchre'
 
   // Collect human players from the table
   const humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }> = []
@@ -304,111 +338,235 @@ function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
     }
   }
 
-  // Create game with event handlers
-  const game = new Game(gameId, {
-    onStateChange: (playerId: string | null, state: ClientGameState) => {
-      if (playerId) {
-        sendToPlayer(playerId, { type: 'game_state', state })
+  // Track game type
+  gameTypes.set(gameId, gameType)
+  gameHosts.set(gameId, table.hostId)
+
+  if (gameType === 'president') {
+    // Create President game
+    const superTwosMode = table.settings?.superTwosMode ?? false
+    const presidentGame = new PresidentGame(gameId, {
+      onStateChange: (playerId: string | null, state: PresidentClientGameState) => {
+        if (playerId) {
+          sendToPlayer(playerId, { type: 'president_game_state', state })
+        }
+      },
+      onPlayMade: (playerId: number, cards: StandardCard[], playType: PlayType, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'president_play_made',
+          playerId,
+          cards,
+          playType,
+          playerName,
+        })
+      },
+      onPassed: (playerId: number, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'president_passed',
+          playerId,
+          playerName,
+        })
+      },
+      onPileCleared: (nextPlayerId: number) => {
+        broadcastToGame(gameId, {
+          type: 'president_pile_cleared',
+          nextPlayerId,
+        })
+      },
+      onPlayerFinished: (playerId: number, playerName: string, finishPosition: number, rank: PlayerRank) => {
+        broadcastToGame(gameId, {
+          type: 'president_player_finished',
+          playerId,
+          playerName,
+          finishPosition,
+          rank,
+        })
+      },
+      onRoundComplete: (rankings: Array<{ playerId: number; rank: PlayerRank; name: string }>, roundNumber: number) => {
+        broadcastToGame(gameId, {
+          type: 'president_round_complete',
+          rankings,
+          roundNumber,
+        })
+      },
+      onGameOver: (finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>) => {
+        broadcastToGame(gameId, {
+          type: 'president_game_over',
+          finalRankings,
+        })
+      },
+      onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => {
+        sendToPlayer(playerId, {
+          type: 'president_card_exchange_info',
+          youGive,
+          youReceive,
+          otherPlayerName,
+          yourRole,
+        })
+      },
+      onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => {
+        sendToPlayer(playerId, {
+          type: 'president_your_turn',
+          validActions,
+          validPlays,
+        })
+      },
+      onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => {
+        // Use the same message type for reminders
+        sendToPlayer(playerId, {
+          type: 'president_your_turn',
+          validActions,
+          validPlays,
+        })
+      },
+      onPlayerTimedOut: (playerId: number, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'player_timed_out',
+          playerId,
+          playerName,
+        })
+      },
+      onPlayerBooted: (playerId: number, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'player_booted',
+          playerId,
+          playerName,
+          replacedWithAI: true,
+        })
+      },
+    }, table.maxPlayers, superTwosMode)
+
+    presidentGame.initializePlayers(humanPlayers)
+    presidentGames.set(gameId, presidentGame)
+
+    // Update all clients at table to be in game
+    for (const [, c] of clients) {
+      if (c.tableId === tableId) {
+        c.gameId = gameId
+        c.tableId = null
       }
-    },
-    onBidMade: (playerId: number, bid: Bid, playerName: string) => {
-      broadcastToGame(gameId, {
-        type: 'bid_made',
-        playerId,
-        action: bid.action,
-        suit: bid.suit,
-        goingAlone: bid.goingAlone,
-        playerName,
-      })
-    },
-    onCardPlayed: (playerId: number, card: Card, playerName: string) => {
-      broadcastToGame(gameId, {
-        type: 'card_played',
-        playerId,
-        card,
-        playerName,
-      })
-    },
-    onTrickComplete: (winnerId: number, winnerName: string, cards: Array<{ playerId: number; card: Card }>) => {
-      broadcastToGame(gameId, {
-        type: 'trick_complete',
-        winnerId,
-        winnerName,
-        cards,
-      })
-    },
-    onRoundComplete: (scores: TeamScore[], tricksTaken: [number, number], pointsAwarded: [number, number]) => {
-      broadcastToGame(gameId, {
-        type: 'round_complete',
-        scores,
-        tricksTaken,
-        pointsAwarded,
-      })
-    },
-    onGameOver: (winningTeam: number, finalScores: TeamScore[]) => {
-      broadcastToGame(gameId, {
-        type: 'game_over',
-        winningTeam,
-        finalScores,
-      })
-    },
-    onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => {
-      sendToPlayer(playerId, {
-        type: 'your_turn',
-        validActions,
-        validCards,
-      })
-    },
-    onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
-      sendToPlayer(playerId, {
-        type: 'turn_reminder',
-        validActions,
-        validCards,
-      })
-    },
-    onPlayerTimedOut: (playerId: number, playerName: string) => {
-      broadcastToGame(gameId, {
-        type: 'player_timed_out',
-        playerId,
-        playerName,
-      })
-    },
-    onPlayerBooted: (playerId: number, playerName: string) => {
-      broadcastToGame(gameId, {
-        type: 'player_booted',
-        playerId,
-        playerName,
-        replacedWithAI: true,
-      })
-    },
-  })
-
-  game.initializePlayers(humanPlayers)
-  games.set(gameId, game)
-  gameHosts.set(gameId, table.hostId) // Track who the host is
-
-  // Update all clients at table to be in game
-  for (const [clientWs, c] of clients) {
-    if (c.tableId === tableId) {
-      c.gameId = gameId
-      c.tableId = null
     }
+
+    console.log(`Starting President game ${gameId} at table ${table.name}`)
+
+    // Send game_started to all players
+    broadcastToGame(gameId, {
+      type: 'game_started',
+      gameId,
+    })
+
+    // Remove table from lobby
+    tables.delete(tableId)
+    broadcast({ type: 'table_removed', tableId })
+
+    // Start the game
+    presidentGame.start()
+  } else {
+    // Create Euchre game with event handlers
+    const game = new Game(gameId, {
+      onStateChange: (playerId: string | null, state: ClientGameState) => {
+        if (playerId) {
+          sendToPlayer(playerId, { type: 'game_state', state })
+        }
+      },
+      onBidMade: (playerId: number, bid: Bid, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'bid_made',
+          playerId,
+          action: bid.action,
+          suit: bid.suit,
+          goingAlone: bid.goingAlone,
+          playerName,
+        })
+      },
+      onCardPlayed: (playerId: number, card: Card, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'card_played',
+          playerId,
+          card,
+          playerName,
+        })
+      },
+      onTrickComplete: (winnerId: number, winnerName: string, cards: Array<{ playerId: number; card: Card }>) => {
+        broadcastToGame(gameId, {
+          type: 'trick_complete',
+          winnerId,
+          winnerName,
+          cards,
+        })
+      },
+      onRoundComplete: (scores: TeamScore[], tricksTaken: [number, number], pointsAwarded: [number, number]) => {
+        broadcastToGame(gameId, {
+          type: 'round_complete',
+          scores,
+          tricksTaken,
+          pointsAwarded,
+        })
+      },
+      onGameOver: (winningTeam: number, finalScores: TeamScore[]) => {
+        broadcastToGame(gameId, {
+          type: 'game_over',
+          winningTeam,
+          finalScores,
+        })
+      },
+      onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => {
+        sendToPlayer(playerId, {
+          type: 'your_turn',
+          validActions,
+          validCards,
+        })
+      },
+      onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
+        sendToPlayer(playerId, {
+          type: 'turn_reminder',
+          validActions,
+          validCards,
+        })
+      },
+      onPlayerTimedOut: (playerId: number, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'player_timed_out',
+          playerId,
+          playerName,
+        })
+      },
+      onPlayerBooted: (playerId: number, playerName: string) => {
+        broadcastToGame(gameId, {
+          type: 'player_booted',
+          playerId,
+          playerName,
+          replacedWithAI: true,
+        })
+      },
+    })
+
+    game.initializePlayers(humanPlayers)
+    games.set(gameId, game)
+
+    // Update all clients at table to be in game
+    for (const [, c] of clients) {
+      if (c.tableId === tableId) {
+        c.gameId = gameId
+        c.tableId = null
+      }
+    }
+
+    console.log(`Starting Euchre game ${gameId} at table ${table.name}`)
+
+    // Send game_started to all players
+    broadcastToGame(gameId, {
+      type: 'game_started',
+      gameId,
+    })
+
+    // Remove table from lobby
+    tables.delete(tableId)
+    broadcast({ type: 'table_removed', tableId })
+
+    // Start the game
+    game.start()
   }
-
-  console.log(`Starting game ${gameId} at table ${table.name}`)
-
-  // Send game_started to all players
-  broadcastToGame(gameId, {
-    type: 'game_started',
-    gameId,
-  })
-
-  // Remove table from lobby
-  tables.delete(tableId)
-  broadcast({ type: 'table_removed', tableId })
-
-  // Start the game
-  game.start()
 }
 
 function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Bid['suit'], goingAlone?: boolean): void {
@@ -471,14 +629,24 @@ function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
     return
   }
 
-  const game = games.get(client.gameId)
-  if (!game) {
-    send(ws, { type: 'error', message: 'Game not found' })
-    return
+  const gameType = gameTypes.get(client.gameId)
+
+  if (gameType === 'president') {
+    const presidentGame = presidentGames.get(client.gameId)
+    if (!presidentGame) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+    presidentGame.resendStateToPlayer(client.player.odusId)
+  } else {
+    const game = games.get(client.gameId)
+    if (!game) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+    game.resendStateToPlayer(client.player.odusId)
   }
 
-  // Resend the current game state to this player
-  game.resendStateToPlayer(client.player.odusId)
   console.log(`Resent state to ${client.player.nickname} (requested resync)`)
 }
 
@@ -488,18 +656,66 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
     return
   }
 
-  const game = games.get(client.gameId)
-  if (!game) {
-    send(ws, { type: 'error', message: 'Game not found' })
-    return
+  const gameType = gameTypes.get(client.gameId)
+  let success = false
+
+  if (gameType === 'president') {
+    const presidentGame = presidentGames.get(client.gameId)
+    if (!presidentGame) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+    success = presidentGame.bootPlayer(playerId)
+  } else {
+    const game = games.get(client.gameId)
+    if (!game) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+    success = game.bootPlayer(playerId)
   }
 
   // Any player can boot a timed-out player
   // bootPlayer() returns false if player isn't timed out or already booted
-  const success = game.bootPlayer(playerId)
   if (!success) {
     // Silently ignore - likely a race condition where another player already booted them
     console.log(`Boot request for player ${playerId} ignored (not timed out or already booted)`)
+  }
+}
+
+function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  const presidentGame = presidentGames.get(client.gameId)
+  if (!presidentGame) {
+    send(ws, { type: 'error', message: 'President game not found' })
+    return
+  }
+
+  const success = presidentGame.handlePlayCards(client.player.odusId, cardIds)
+  if (!success) {
+    send(ws, { type: 'error', message: 'Invalid card play' })
+  }
+}
+
+function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  const presidentGame = presidentGames.get(client.gameId)
+  if (!presidentGame) {
+    send(ws, { type: 'error', message: 'President game not found' })
+    return
+  }
+
+  const success = presidentGame.handlePass(client.player.odusId)
+  if (!success) {
+    send(ws, { type: 'error', message: 'Cannot pass right now' })
   }
 }
 
@@ -511,6 +727,7 @@ function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
 
   const oldGameId = client.gameId
   const hostId = gameHosts.get(oldGameId)
+  const gameType = gameTypes.get(oldGameId) || 'euchre'
 
   if (!hostId) {
     send(ws, { type: 'error', message: 'Game host not found' })
@@ -523,8 +740,11 @@ function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
     return
   }
 
-  const oldGame = games.get(oldGameId)
-  if (!oldGame) {
+  // Get old game to find player info
+  const oldEuchreGame = games.get(oldGameId)
+  const oldPresidentGame = presidentGames.get(oldGameId)
+
+  if (!oldEuchreGame && !oldPresidentGame) {
     send(ws, { type: 'error', message: 'Game not found' })
     return
   }
@@ -534,7 +754,8 @@ function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
   for (const [, c] of clients) {
     if (c.gameId === oldGameId && c.player) {
       // Find their seat index from the old game
-      const playerInfo = oldGame.getPlayerInfo(c.player.odusId)
+      const playerInfo = oldEuchreGame?.getPlayerInfo(c.player.odusId) ||
+                         oldPresidentGame?.getPlayerInfo(c.player.odusId)
       if (playerInfo) {
         humanPlayers.push({
           odusId: c.player.odusId,
@@ -550,110 +771,232 @@ function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
 
   // Create new game
   const newGameId = generateId()
-
-  const newGame = new Game(newGameId, {
-    onStateChange: (playerId: string | null, state: ClientGameState) => {
-      if (playerId) {
-        sendToPlayer(playerId, { type: 'game_state', state })
-      }
-    },
-    onBidMade: (playerId: number, bid: Bid, playerName: string) => {
-      broadcastToGame(newGameId, {
-        type: 'bid_made',
-        playerId,
-        action: bid.action,
-        suit: bid.suit,
-        goingAlone: bid.goingAlone,
-        playerName,
-      })
-    },
-    onCardPlayed: (playerId: number, card: Card, playerName: string) => {
-      broadcastToGame(newGameId, {
-        type: 'card_played',
-        playerId,
-        card,
-        playerName,
-      })
-    },
-    onTrickComplete: (winnerId: number, winnerName: string, cards: Array<{ playerId: number; card: Card }>) => {
-      broadcastToGame(newGameId, {
-        type: 'trick_complete',
-        winnerId,
-        winnerName,
-        cards,
-      })
-    },
-    onRoundComplete: (scores: TeamScore[], tricksTaken: [number, number], pointsAwarded: [number, number]) => {
-      broadcastToGame(newGameId, {
-        type: 'round_complete',
-        scores,
-        tricksTaken,
-        pointsAwarded,
-      })
-    },
-    onGameOver: (winningTeam: number, finalScores: TeamScore[]) => {
-      broadcastToGame(newGameId, {
-        type: 'game_over',
-        winningTeam,
-        finalScores,
-      })
-    },
-    onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => {
-      sendToPlayer(playerId, {
-        type: 'your_turn',
-        validActions,
-        validCards,
-      })
-    },
-    onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
-      sendToPlayer(playerId, {
-        type: 'turn_reminder',
-        validActions,
-        validCards,
-      })
-    },
-    onPlayerTimedOut: (playerId: number, playerName: string) => {
-      broadcastToGame(newGameId, {
-        type: 'player_timed_out',
-        playerId,
-        playerName,
-      })
-    },
-    onPlayerBooted: (playerId: number, playerName: string) => {
-      broadcastToGame(newGameId, {
-        type: 'player_booted',
-        playerId,
-        playerName,
-        replacedWithAI: true,
-      })
-    },
-  })
-
-  newGame.initializePlayers(humanPlayers)
-  games.set(newGameId, newGame)
+  gameTypes.set(newGameId, gameType)
   gameHosts.set(newGameId, hostId)
 
-  // Update all clients to the new game
-  for (const [, c] of clients) {
-    if (c.gameId === oldGameId) {
-      c.gameId = newGameId
+  if (gameType === 'president') {
+    // Create new President game
+    const newPresidentGame = new PresidentGame(newGameId, {
+      onStateChange: (playerId: string | null, state: PresidentClientGameState) => {
+        if (playerId) {
+          sendToPlayer(playerId, { type: 'president_game_state', state })
+        }
+      },
+      onPlayMade: (playerId: number, cards: StandardCard[], playType: PlayType, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'president_play_made',
+          playerId,
+          cards,
+          playType,
+          playerName,
+        })
+      },
+      onPassed: (playerId: number, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'president_passed',
+          playerId,
+          playerName,
+        })
+      },
+      onPileCleared: (nextPlayerId: number) => {
+        broadcastToGame(newGameId, {
+          type: 'president_pile_cleared',
+          nextPlayerId,
+        })
+      },
+      onPlayerFinished: (playerId: number, playerName: string, finishPosition: number, rank: PlayerRank) => {
+        broadcastToGame(newGameId, {
+          type: 'president_player_finished',
+          playerId,
+          playerName,
+          finishPosition,
+          rank,
+        })
+      },
+      onRoundComplete: (rankings: Array<{ playerId: number; rank: PlayerRank; name: string }>, roundNumber: number) => {
+        broadcastToGame(newGameId, {
+          type: 'president_round_complete',
+          rankings,
+          roundNumber,
+        })
+      },
+      onGameOver: (finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>) => {
+        broadcastToGame(newGameId, {
+          type: 'president_game_over',
+          finalRankings,
+        })
+      },
+      onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => {
+        sendToPlayer(playerId, {
+          type: 'president_card_exchange_info',
+          youGive,
+          youReceive,
+          otherPlayerName,
+          yourRole,
+        })
+      },
+      onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => {
+        sendToPlayer(playerId, {
+          type: 'president_your_turn',
+          validActions,
+          validPlays,
+        })
+      },
+      onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => {
+        sendToPlayer(playerId, {
+          type: 'president_your_turn',
+          validActions,
+          validPlays,
+        })
+      },
+      onPlayerTimedOut: (playerId: number, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'player_timed_out',
+          playerId,
+          playerName,
+        })
+      },
+      onPlayerBooted: (playerId: number, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'player_booted',
+          playerId,
+          playerName,
+          replacedWithAI: true,
+        })
+      },
+    }, humanPlayers.length || 4, false) // Use same player count, default superTwos off for restart
+
+    newPresidentGame.initializePlayers(humanPlayers)
+    presidentGames.set(newGameId, newPresidentGame)
+
+    // Update all clients to the new game
+    for (const [, c] of clients) {
+      if (c.gameId === oldGameId) {
+        c.gameId = newGameId
+      }
     }
+
+    // Clean up old game
+    presidentGames.delete(oldGameId)
+    gameHosts.delete(oldGameId)
+    gameTypes.delete(oldGameId)
+
+    console.log(`President game restarted: ${oldGameId} -> ${newGameId}`)
+
+    // Send game_started to all players
+    broadcastToGame(newGameId, {
+      type: 'game_started',
+      gameId: newGameId,
+    })
+
+    // Start the new game
+    newPresidentGame.start()
+  } else {
+    // Create new Euchre game
+    const newGame = new Game(newGameId, {
+      onStateChange: (playerId: string | null, state: ClientGameState) => {
+        if (playerId) {
+          sendToPlayer(playerId, { type: 'game_state', state })
+        }
+      },
+      onBidMade: (playerId: number, bid: Bid, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'bid_made',
+          playerId,
+          action: bid.action,
+          suit: bid.suit,
+          goingAlone: bid.goingAlone,
+          playerName,
+        })
+      },
+      onCardPlayed: (playerId: number, card: Card, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'card_played',
+          playerId,
+          card,
+          playerName,
+        })
+      },
+      onTrickComplete: (winnerId: number, winnerName: string, cards: Array<{ playerId: number; card: Card }>) => {
+        broadcastToGame(newGameId, {
+          type: 'trick_complete',
+          winnerId,
+          winnerName,
+          cards,
+        })
+      },
+      onRoundComplete: (scores: TeamScore[], tricksTaken: [number, number], pointsAwarded: [number, number]) => {
+        broadcastToGame(newGameId, {
+          type: 'round_complete',
+          scores,
+          tricksTaken,
+          pointsAwarded,
+        })
+      },
+      onGameOver: (winningTeam: number, finalScores: TeamScore[]) => {
+        broadcastToGame(newGameId, {
+          type: 'game_over',
+          winningTeam,
+          finalScores,
+        })
+      },
+      onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => {
+        sendToPlayer(playerId, {
+          type: 'your_turn',
+          validActions,
+          validCards,
+        })
+      },
+      onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
+        sendToPlayer(playerId, {
+          type: 'turn_reminder',
+          validActions,
+          validCards,
+        })
+      },
+      onPlayerTimedOut: (playerId: number, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'player_timed_out',
+          playerId,
+          playerName,
+        })
+      },
+      onPlayerBooted: (playerId: number, playerName: string) => {
+        broadcastToGame(newGameId, {
+          type: 'player_booted',
+          playerId,
+          playerName,
+          replacedWithAI: true,
+        })
+      },
+    })
+
+    newGame.initializePlayers(humanPlayers)
+    games.set(newGameId, newGame)
+
+    // Update all clients to the new game
+    for (const [, c] of clients) {
+      if (c.gameId === oldGameId) {
+        c.gameId = newGameId
+      }
+    }
+
+    // Clean up old game
+    games.delete(oldGameId)
+    gameHosts.delete(oldGameId)
+    gameTypes.delete(oldGameId)
+
+    console.log(`Euchre game restarted: ${oldGameId} -> ${newGameId}`)
+
+    // Send game_started to all players
+    broadcastToGame(newGameId, {
+      type: 'game_started',
+      gameId: newGameId,
+    })
+
+    // Start the new game
+    newGame.start()
   }
-
-  // Clean up old game
-  games.delete(oldGameId)
-  gameHosts.delete(oldGameId)
-
-  console.log(`Game restarted: ${oldGameId} -> ${newGameId}`)
-
-  // Send game_started to all players
-  broadcastToGame(newGameId, {
-    type: 'game_started',
-    gameId: newGameId,
-  })
-
-  // Start the new game
-  newGame.start()
 }
 
 function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMessage): void {
@@ -662,7 +1005,7 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       handleJoinLobby(ws, client, message.nickname, message.odusId)
       break
     case 'create_table':
-      handleCreateTable(ws, client, message.tableName)
+      handleCreateTable(ws, client, message.tableName, message.gameType, message.maxPlayers, message.settings)
       break
     case 'join_table':
       handleJoinTable(ws, client, message.tableId, message.seatIndex)
@@ -687,6 +1030,12 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       break
     case 'request_state':
       handleRequestState(ws, client)
+      break
+    case 'president_play_cards':
+      handlePresidentPlayCards(ws, client, message.cardIds)
+      break
+    case 'president_pass':
+      handlePresidentPass(ws, client)
       break
     case 'boot_player':
       handleBootPlayer(ws, client, message.playerId)
@@ -738,4 +1087,4 @@ wss.on('connection', (ws: WebSocket) => {
   })
 })
 
-console.log(`Euchre WebSocket server running on port ${PORT}`)
+console.log(`Euchre/President WebSocket server running on port ${PORT}`)

@@ -271,9 +271,16 @@ function backToMenu() {
       @back="backToMenu"
     />
 
-    <!-- Multiplayer Game -->
+    <!-- Multiplayer Euchre Game -->
     <UnifiedGameBoard
-      v-else-if="currentView === 'multiplayerGame'"
+      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'euchre'"
+      mode="multiplayer"
+      @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
+    />
+
+    <!-- Multiplayer President Game -->
+    <PresidentGameBoard
+      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'president'"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
     />

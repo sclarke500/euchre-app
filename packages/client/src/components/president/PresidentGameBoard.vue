@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { usePresidentGameStore } from '@/stores/presidentGameStore'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { usePresidentGameAdapter } from '@/composables/usePresidentGameAdapter'
 import { PresidentPhase, sortHandByRank, isValidPlay, type StandardCard, type Card as EuchreCard } from '@euchre/shared'
 import Card from '../Card.vue'
 import Modal from '../Modal.vue'
@@ -11,26 +11,44 @@ function toCard(card: StandardCard): EuchreCard {
   return card as unknown as EuchreCard
 }
 
+const props = withDefaults(defineProps<{
+  mode?: 'singleplayer' | 'multiplayer'
+}>(), {
+  mode: 'singleplayer'
+})
+
 const emit = defineEmits<{
   leaveGame: []
 }>()
 
-const store = usePresidentGameStore()
+const adapter = usePresidentGameAdapter(props.mode)
+
+// Initialize/cleanup for multiplayer
+onMounted(() => {
+  if (adapter.isMultiplayer && adapter.initialize) {
+    adapter.initialize()
+  }
+})
+
+onUnmounted(() => {
+  if (adapter.isMultiplayer && adapter.cleanup) {
+    adapter.cleanup()
+  }
+})
 
 // Selected cards for multi-select
 const selectedCardIds = ref<Set<string>>(new Set())
 
-// Computed
-const phase = computed(() => store.phase)
-const players = computed(() => store.players)
-const currentPlayer = computed(() => store.currentPlayer)
-const humanPlayer = computed(() => store.humanPlayer)
-const currentPile = computed(() => store.currentPile)
-const isHumanTurn = computed(() => store.isHumanTurn)
-const validPlays = computed(() => store.validPlays)
-const canHumanPlay = computed(() => store.canHumanPlay)
-const lastPlayedCards = computed(() => store.lastPlayedCards)
-const roundNumber = computed(() => store.roundNumber)
+// Computed - use adapter for both single-player and multiplayer
+const phase = computed(() => adapter.phase.value)
+const players = computed(() => adapter.players.value)
+const currentPlayer = computed(() => adapter.currentPlayer.value)
+const humanPlayer = computed(() => adapter.humanPlayer.value)
+const currentPile = computed(() => adapter.currentPile.value)
+const isHumanTurn = computed(() => adapter.isHumanTurn.value)
+const validPlays = computed(() => adapter.validPlays.value)
+const lastPlayedCards = computed(() => adapter.lastPlayedCards.value)
+const roundNumber = computed(() => adapter.roundNumber.value)
 
 // Get the cards currently on the pile that need to be beaten
 const pileCards = computed(() => {
@@ -39,9 +57,9 @@ const pileCards = computed(() => {
   // Return the most recent play's cards
   return plays[plays.length - 1]?.cards || null
 })
-const gameOver = computed(() => store.gameOver)
-const finishedPlayers = computed(() => store.finishedPlayers)
-const exchangeInfo = computed(() => store.exchangeInfo)
+const gameOver = computed(() => adapter.gameOver.value)
+const finishedPlayers = computed(() => adapter.finishedPlayers.value)
+const exchangeInfo = computed(() => adapter.exchangeInfo.value)
 
 // Sort human hand by rank
 const sortedHand = computed(() => {
@@ -109,19 +127,19 @@ const canPlaySelection = computed(() => {
   if (selectedCards.value.length === 0) return false
   // Validate directly using isValidPlay instead of checking against pre-generated valid plays
   // This allows any valid combination of same-rank cards, not just the first N cards
-  return isValidPlay(selectedCards.value, currentPile.value)
+  return isValidPlay(selectedCards.value, currentPile.value, adapter.superTwosMode.value)
 })
 
 // Play selected cards
 function playSelectedCards() {
   if (!canPlaySelection.value) return
-  store.playCards(selectedCards.value)
+  adapter.playCards(selectedCards.value)
   selectedCardIds.value = new Set()
 }
 
 // Pass turn
 function passTurn() {
-  store.pass()
+  adapter.pass()
   selectedCardIds.value = new Set()
 }
 
@@ -151,7 +169,7 @@ function getPlayerStatus(playerId: number): string {
   if (!player) return ''
 
   if (player.finishOrder !== null) {
-    return store.getPlayerRankDisplay(playerId) || `#${player.finishOrder}`
+    return adapter.getPlayerRankDisplay(playerId) || `#${player.finishOrder}`
   }
 
   if (playerId === currentPlayer.value) {
@@ -253,7 +271,7 @@ const showRoundComplete = computed(() =>
       <div class="player-info-panel">
         <div class="player-name-panel">{{ humanPlayer?.name || 'You' }}</div>
         <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
-          {{ store.getPlayerRankDisplay(humanPlayer.id) }}
+          {{ adapter.getPlayerRankDisplay(humanPlayer.id) }}
         </span>
       </div>
 
@@ -319,7 +337,7 @@ const showRoundComplete = computed(() =>
             </div>
           </div>
         </div>
-        <button class="modal-btn confirm" @click="store.acknowledgeExchange()">
+        <button class="modal-btn confirm" @click="adapter.acknowledgeExchange()">
           OK
         </button>
       </div>
@@ -353,7 +371,7 @@ const showRoundComplete = computed(() =>
           >
             <span class="position">#{{ index + 1 }}</span>
             <span class="name">{{ players[playerId]?.name }}</span>
-            <span class="title">{{ store.getPlayerRankDisplay(playerId) }}</span>
+            <span class="title">{{ adapter.getPlayerRankDisplay(playerId) }}</span>
           </div>
         </div>
         <p v-if="!gameOver" class="next-round-msg">Next round starting...</p>

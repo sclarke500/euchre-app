@@ -5,6 +5,8 @@ import type {
   LobbyState,
   LobbyPlayer,
   ServerMessage,
+  GameType,
+  TableSettings,
 } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
 
@@ -34,6 +36,11 @@ export const useLobbyStore = defineStore('lobby', () => {
   const gameId = ref<string | null>(null)
   const wasHostWhenGameStarted = ref(false)
 
+  // Game type selection (for creating tables)
+  const selectedGameType = ref<GameType>('euchre')
+  const selectedMaxPlayers = ref<number>(4) // For President: 4-8
+  const selectedSuperTwosMode = ref<boolean>(false)
+
   // Computed
   const isInLobby = computed(() => isConnected.value && !currentTable.value && !gameId.value)
   const isAtTable = computed(() => isConnected.value && currentTable.value !== null && !gameId.value)
@@ -47,6 +54,9 @@ export const useLobbyStore = defineStore('lobby', () => {
   })
 
   const hasNickname = computed(() => nickname.value.trim().length > 0)
+
+  // Get game type from current table
+  const currentGameType = computed<GameType>(() => currentTable.value?.gameType ?? 'euchre')
 
   // Message handler
   function handleMessage(message: ServerMessage): void {
@@ -186,10 +196,34 @@ export const useLobbyStore = defineStore('lobby', () => {
   }
 
   function createTable(tableName?: string): void {
+    const settings: TableSettings | undefined = selectedGameType.value === 'president'
+      ? { superTwosMode: selectedSuperTwosMode.value }
+      : undefined
+
     websocket.send({
       type: 'create_table',
       tableName,
+      gameType: selectedGameType.value,
+      maxPlayers: selectedGameType.value === 'president' ? selectedMaxPlayers.value : undefined,
+      settings,
     })
+  }
+
+  function setGameType(gameType: GameType): void {
+    selectedGameType.value = gameType
+    // Reset to defaults when switching game type
+    if (gameType === 'euchre') {
+      selectedMaxPlayers.value = 4
+      selectedSuperTwosMode.value = false
+    }
+  }
+
+  function setMaxPlayers(count: number): void {
+    selectedMaxPlayers.value = Math.min(Math.max(count, 4), 8)
+  }
+
+  function setSuperTwosMode(enabled: boolean): void {
+    selectedSuperTwosMode.value = enabled
   }
 
   function joinTable(tableId: string, seatIndex: number): void {
@@ -237,6 +271,9 @@ export const useLobbyStore = defineStore('lobby', () => {
     currentTable,
     currentSeat,
     gameId,
+    selectedGameType,
+    selectedMaxPlayers,
+    selectedSuperTwosMode,
 
     // Computed
     isInLobby,
@@ -244,6 +281,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     isInGame,
     isHost,
     hasNickname,
+    currentGameType,
 
     // Actions
     connect,
@@ -256,5 +294,8 @@ export const useLobbyStore = defineStore('lobby', () => {
     startGame,
     leaveGame,
     restartGame,
+    setGameType,
+    setMaxPlayers,
+    setSuperTwosMode,
   }
 })

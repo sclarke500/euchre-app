@@ -2,7 +2,7 @@
 
 import { FullRank, Suit } from '../core/types.js'
 import type { StandardCard } from '../core/types.js'
-import { createStandardDeck, dealAllCards } from '../core/deck.js'
+import { createStandardDeck, createPresidentDeck, dealAllCards } from '../core/deck.js'
 import {
   PresidentPhase,
   PlayerRank,
@@ -44,7 +44,8 @@ export function createPresidentPlayer(
  */
 export function createPresidentGame(
   playerNames: string[],
-  humanPlayerIndex: number = 0
+  humanPlayerIndex: number = 0,
+  superTwosMode: boolean = false
 ): PresidentGameState {
   const numPlayers = playerNames.length
 
@@ -67,6 +68,7 @@ export function createPresidentGame(
     roundNumber: 1,
     gameOver: false,
     lastPlayerId: null,
+    superTwosMode,
   }
 }
 
@@ -74,7 +76,10 @@ export function createPresidentGame(
  * Deal cards to all players
  */
 export function dealPresidentCards(state: PresidentGameState): PresidentGameState {
-  const deck = createStandardDeck()
+  // Use deck with jokers if super 2s mode is enabled
+  const deck = state.superTwosMode
+    ? createPresidentDeck(true)
+    : createStandardDeck()
   const hands = dealAllCards(deck, state.players.length)
 
   const players = state.players.map((player, i) => ({
@@ -137,7 +142,7 @@ export function processPlay(
   }
 
   // Validate play
-  if (!isValidPlay(cards, state.currentPile)) {
+  if (!isValidPlay(cards, state.currentPile, state.superTwosMode)) {
     return state // Invalid play
   }
 

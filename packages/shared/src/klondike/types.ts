@@ -58,6 +58,7 @@ export interface MoveResult {
 }
 
 // Rank values for comparison (Ace=1, King=13)
+// Joker is 0 - not used in Klondike but needed for FullRank completeness
 export const RANK_VALUES: Record<FullRank, number> = {
   [FullRank.Ace]: 1,
   [FullRank.Two]: 2,
@@ -72,6 +73,7 @@ export const RANK_VALUES: Record<FullRank, number> = {
   [FullRank.Jack]: 11,
   [FullRank.Queen]: 12,
   [FullRank.King]: 13,
+  [FullRank.Joker]: 0,
 }
 
 // Red suits for alternating color checks

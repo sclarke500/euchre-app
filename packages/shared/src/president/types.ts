@@ -59,6 +59,7 @@ export interface PresidentGameState {
   roundNumber: number
   gameOver: boolean
   lastPlayerId: number | null   // Who made the last non-pass play
+  superTwosMode: boolean        // Super 2s & Jokers variant
 }
 
 // Actions a player can take

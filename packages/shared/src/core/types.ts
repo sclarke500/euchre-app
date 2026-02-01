@@ -23,6 +23,7 @@ export enum FullRank {
   Queen = 'Q',
   King = 'K',
   Ace = 'A',
+  Joker = 'Joker', // Used in President with super 2s variant
 }
 
 // Euchre uses only 9-A (24 cards)

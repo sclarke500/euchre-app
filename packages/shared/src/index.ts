@@ -12,9 +12,10 @@ export * from './ai-hard.js'
 export * from './aiNames.js'
 
 // Core types - export new types that don't conflict with Euchre
+// Note: GameType is intentionally not re-exported from core/types as multiplayer.ts has its own GameType
 export { FullRank, EuchreRank } from './core/types.js'
-export type { StandardCard, EuchreCard, BasePlayer, GameType } from './core/types.js'
-export { createStandardDeck, createEuchreDeck, dealAllCards } from './core/deck.js'
+export type { StandardCard, EuchreCard, BasePlayer } from './core/types.js'
+export { createStandardDeck, createEuchreDeck, createPresidentDeck, dealAllCards } from './core/deck.js'
 
 // President game (new)
 export * from './president/index.js'

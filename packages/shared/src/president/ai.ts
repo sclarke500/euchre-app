@@ -21,7 +21,7 @@ export function choosePresidentPlay(
   pile: PresidentPile,
   state: PresidentGameState
 ): StandardCard[] | null {
-  const validPlays = findValidPlays(player.hand, pile)
+  const validPlays = findValidPlays(player.hand, pile, state.superTwosMode)
 
   if (validPlays.length === 0) {
     return null // Must pass
@@ -126,7 +126,7 @@ export function shouldPass(
   state: PresidentGameState
 ): boolean {
   // Never pass if we can't play
-  if (!canPlay(player.hand, pile)) {
+  if (!canPlay(player.hand, pile, state.superTwosMode)) {
     return true
   }
 

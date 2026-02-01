@@ -1,6 +1,8 @@
 // Multiplayer Types for WebSocket Communication
 
 import type { Suit, Card, GameState, Bid, GamePhase, TeamScore, Trick } from './game.js'
+import type { StandardCard } from './core/types.js'
+import type { PresidentPhase, PresidentPile, PlayerRank, PlayType } from './president/types.js'
 
 // ============================================
 // Lobby & Table Types
@@ -13,9 +15,16 @@ export interface LobbyPlayer {
 }
 
 export interface TableSeat {
-  odusIndex: number // 0-3
+  odusIndex: number // 0-3 for Euchre, 0-7 for President
   player: LobbyPlayer | null // null if empty
   isHost: boolean
+}
+
+export type GameType = 'euchre' | 'president'
+
+export interface TableSettings {
+  superTwosMode?: boolean // President only
+  maxRounds?: number // President only (default 5)
 }
 
 export interface Table {
@@ -24,6 +33,9 @@ export interface Table {
   seats: TableSeat[]
   hostId: string // odusId of the player who created the table
   createdAt: number
+  gameType: GameType // NEW: Which game this table is for
+  maxPlayers: number // NEW: 4 for Euchre, 4-8 for President
+  settings?: TableSettings // NEW: Game-specific settings
 }
 
 export interface LobbyState {
@@ -47,6 +59,9 @@ export type ClientMessage =
   | DiscardCardMessage
   | RequestStateMessage
   | BootPlayerMessage
+  // President-specific messages
+  | PresidentPlayCardsMessage
+  | PresidentPassMessage
 
 export interface JoinLobbyMessage {
   type: 'join_lobby'
@@ -57,12 +72,15 @@ export interface JoinLobbyMessage {
 export interface CreateTableMessage {
   type: 'create_table'
   tableName?: string
+  gameType?: GameType // NEW: 'euchre' | 'president' (default 'euchre')
+  maxPlayers?: number // NEW: For President (4-8), ignored for Euchre
+  settings?: TableSettings // NEW: Game-specific settings
 }
 
 export interface JoinTableMessage {
   type: 'join_table'
   tableId: string
-  seatIndex: number // 0-3
+  seatIndex: number // 0-3 for Euchre, 0-7 for President
 }
 
 export interface LeaveTableMessage {
@@ -103,6 +121,16 @@ export interface BootPlayerMessage {
   playerId: number // Seat index of player to boot
 }
 
+// President-specific client messages
+export interface PresidentPlayCardsMessage {
+  type: 'president_play_cards'
+  cardIds: string[] // Multiple cards of same rank
+}
+
+export interface PresidentPassMessage {
+  type: 'president_pass'
+}
+
 // ============================================
 // Server -> Client Messages
 // ============================================
@@ -129,6 +157,16 @@ export type ServerMessage =
   | PlayerJoinedMessage
   | PlayerLeftMessage
   | ErrorMessage
+  // President-specific messages
+  | PresidentGameStateMessage
+  | PresidentPlayMadeMessage
+  | PresidentPassedMessage
+  | PresidentPileClearedMessage
+  | PresidentPlayerFinishedMessage
+  | PresidentRoundCompleteMessage
+  | PresidentGameOverMessage
+  | PresidentCardExchangeInfoMessage
+  | PresidentYourTurnMessage
 
 export interface WelcomeMessage {
   type: 'welcome'
@@ -284,4 +322,94 @@ export interface ErrorMessage {
   type: 'error'
   message: string
   code?: string
+}
+
+// ============================================
+// President-Specific Types
+// ============================================
+
+// Client state for President - filtered per player
+export interface PresidentClientGameState {
+  gameType: 'president'
+  phase: PresidentPhase
+  players: PresidentClientPlayer[]
+  currentPlayer: number
+  currentPile: PresidentPile
+  consecutivePasses: number
+  finishedPlayers: number[] // Player IDs in order they finished
+  roundNumber: number
+  gameOver: boolean
+  lastPlayerId: number | null
+  superTwosMode: boolean
+  stateSeq: number // For drift detection
+  timedOutPlayer: number | null
+}
+
+export interface PresidentClientPlayer {
+  id: number
+  name: string
+  handSize: number // Other players only see count
+  hand?: StandardCard[] // Only populated for the receiving player
+  isHuman: boolean
+  rank: PlayerRank | null
+  finishOrder: number | null
+  cardsToGive: number
+  cardsToReceive: number
+}
+
+export interface PresidentGameStateMessage {
+  type: 'president_game_state'
+  state: PresidentClientGameState
+}
+
+export interface PresidentPlayMadeMessage {
+  type: 'president_play_made'
+  playerId: number
+  cards: StandardCard[]
+  playType: PlayType
+  playerName: string
+}
+
+export interface PresidentPassedMessage {
+  type: 'president_passed'
+  playerId: number
+  playerName: string
+}
+
+export interface PresidentPileClearedMessage {
+  type: 'president_pile_cleared'
+  nextPlayerId: number
+}
+
+export interface PresidentPlayerFinishedMessage {
+  type: 'president_player_finished'
+  playerId: number
+  playerName: string
+  finishPosition: number
+  rank: PlayerRank
+}
+
+export interface PresidentRoundCompleteMessage {
+  type: 'president_round_complete'
+  rankings: Array<{ playerId: number; rank: PlayerRank; name: string }>
+  roundNumber: number
+}
+
+export interface PresidentGameOverMessage {
+  type: 'president_game_over'
+  finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>
+}
+
+export interface PresidentCardExchangeInfoMessage {
+  type: 'president_card_exchange_info'
+  youGive: StandardCard[]
+  youReceive: StandardCard[]
+  otherPlayerName: string
+  yourRole: string // 'President', 'Scum', etc.
+}
+
+export interface PresidentYourTurnMessage {
+  type: 'president_your_turn'
+  validActions: string[] // 'play', 'pass'
+  validPlays: string[][] // Array of valid card ID combinations
 }

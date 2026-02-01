@@ -1,0 +1,813 @@
+import type {
+  PresidentPlayer,
+  PresidentPile,
+  PresidentGameState,
+  PlayerRank,
+  PlayType,
+  StandardCard,
+} from '@euchre/shared'
+import {
+  PresidentPhase,
+  createPresidentGame,
+  dealPresidentCards,
+  processPlay,
+  processPass,
+  assignRanks,
+  getNextActivePlayer,
+  createEmptyPile,
+  findValidPlays,
+  canPlay,
+  choosePresidentPlay,
+  chooseCardsToGive,
+  getLowestCards,
+  getHighestCards,
+  getRankDisplayName,
+  getRandomAINames,
+} from '@euchre/shared'
+import type {
+  PresidentClientGameState,
+  PresidentClientPlayer,
+} from '@euchre/shared'
+
+export interface PresidentGamePlayer {
+  odusId: string | null // null for AI players
+  seatIndex: number
+  name: string
+  isHuman: boolean
+  hand: StandardCard[]
+  rank: PlayerRank | null
+  finishOrder: number | null
+  cardsToGive: number
+  cardsToReceive: number
+}
+
+export interface PresidentGameEvents {
+  onStateChange: (playerId: string | null, state: PresidentClientGameState) => void
+  onPlayMade: (playerId: number, cards: StandardCard[], playType: PlayType, playerName: string) => void
+  onPassed: (playerId: number, playerName: string) => void
+  onPileCleared: (nextPlayerId: number) => void
+  onPlayerFinished: (playerId: number, playerName: string, finishPosition: number, rank: PlayerRank) => void
+  onRoundComplete: (rankings: Array<{ playerId: number; rank: PlayerRank; name: string }>, roundNumber: number) => void
+  onGameOver: (finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>) => void
+  onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => void
+  onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => void
+  onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => void
+  onPlayerTimedOut: (playerId: number, playerName: string) => void
+  onPlayerBooted: (playerId: number, playerName: string) => void
+}
+
+export class PresidentGame {
+  public readonly id: string
+  private players: PresidentGamePlayer[] = []
+  private phase: PresidentPhase = PresidentPhase.Setup
+  private currentPile: PresidentPile = createEmptyPile()
+  private currentPlayer = 0
+  private consecutivePasses = 0
+  private finishedPlayers: number[] = []
+  private roundNumber = 1
+  private gameOver = false
+  private lastPlayerId: number | null = null
+  private superTwosMode = false
+  private maxPlayers: number
+  private events: PresidentGameEvents
+  private stateSeq = 0
+  private turnReminderTimeout: ReturnType<typeof setTimeout> | null = null
+  private readonly TURN_REMINDER_DELAY = 15000 // 15 seconds
+  private turnReminderCount = 0
+  private readonly TIMEOUT_AFTER_REMINDERS = 4 // Mark as timed out after 4 reminders (60 seconds)
+  private timedOutPlayer: number | null = null
+
+  constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false) {
+    this.id = id
+    this.events = events
+    this.maxPlayers = maxPlayers
+    this.superTwosMode = superTwosMode
+  }
+
+  /**
+   * Initialize the game with players
+   */
+  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }>): void {
+    // Count how many AI players we need
+    const aiCount = this.maxPlayers - humanPlayers.length
+    const aiNames = getRandomAINames(aiCount)
+    let aiNameIndex = 0
+
+    // Create all players (fill empty seats with AI)
+    for (let i = 0; i < this.maxPlayers; i++) {
+      const humanPlayer = humanPlayers.find((p) => p.seatIndex === i)
+
+      if (humanPlayer) {
+        this.players.push({
+          odusId: humanPlayer.odusId,
+          seatIndex: i,
+          name: humanPlayer.name,
+          isHuman: true,
+          hand: [],
+          rank: null,
+          finishOrder: null,
+          cardsToGive: 0,
+          cardsToReceive: 0,
+        })
+      } else {
+        this.players.push({
+          odusId: null,
+          seatIndex: i,
+          name: aiNames[aiNameIndex++] ?? 'Bot',
+          isHuman: false,
+          hand: [],
+          rank: null,
+          finishOrder: null,
+          cardsToGive: 0,
+          cardsToReceive: 0,
+        })
+      }
+    }
+  }
+
+  /**
+   * Start the game
+   */
+  start(): void {
+    this.startNewRound()
+  }
+
+  /**
+   * Get player info by odusId
+   */
+  getPlayerInfo(odusId: string): { seatIndex: number; name: string } | null {
+    const player = this.players.find((p) => p.odusId === odusId)
+    if (!player) return null
+    return { seatIndex: player.seatIndex, name: player.name }
+  }
+
+  /**
+   * Get the current game state filtered for a specific player
+   */
+  getStateForPlayer(odusId: string | null): PresidentClientGameState {
+    const playerIndex = odusId ? this.players.findIndex((p) => p.odusId === odusId) : -1
+
+    const clientPlayers: PresidentClientPlayer[] = this.players.map((p, index) => ({
+      id: index,
+      name: p.name,
+      handSize: p.hand.length,
+      hand: index === playerIndex ? p.hand : undefined, // Only include cards for this player
+      isHuman: p.isHuman,
+      rank: p.rank,
+      finishOrder: p.finishOrder,
+      cardsToGive: p.cardsToGive,
+      cardsToReceive: p.cardsToReceive,
+    }))
+
+    return {
+      gameType: 'president',
+      phase: this.phase,
+      players: clientPlayers,
+      currentPlayer: this.currentPlayer,
+      currentPile: this.currentPile,
+      consecutivePasses: this.consecutivePasses,
+      finishedPlayers: this.finishedPlayers,
+      roundNumber: this.roundNumber,
+      gameOver: this.gameOver,
+      lastPlayerId: this.lastPlayerId,
+      superTwosMode: this.superTwosMode,
+      stateSeq: this.stateSeq,
+      timedOutPlayer: this.timedOutPlayer,
+    }
+  }
+
+  /**
+   * Force resend state to a specific player (for resync requests)
+   */
+  resendStateToPlayer(odusId: string): void {
+    const state = this.getStateForPlayer(odusId)
+    this.events.onStateChange(odusId, state)
+
+    // Also resend your_turn if it's this player's turn
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
+    if (playerIndex !== -1 && this.currentPlayer === playerIndex) {
+      const player = this.players[playerIndex]!
+      if (player.isHuman && player.finishOrder === null) {
+        this.notifyPlayerTurn(odusId)
+      }
+    }
+  }
+
+  /**
+   * Handle playing cards from a player
+   */
+  handlePlayCards(odusId: string, cardIds: string[]): boolean {
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
+    if (playerIndex === -1) return false
+
+    if (this.currentPlayer !== playerIndex) {
+      return false
+    }
+
+    if (this.phase !== PresidentPhase.Playing) {
+      return false
+    }
+
+    const player = this.players[playerIndex]!
+
+    // Find the cards in hand
+    const cards: StandardCard[] = []
+    for (const cardId of cardIds) {
+      const card = player.hand.find((c) => c.id === cardId)
+      if (!card) return false
+      cards.push(card)
+    }
+
+    // Validate the play
+    const validPlays = findValidPlays(player.hand, this.currentPile, this.superTwosMode)
+    const isValid = validPlays.some(vp =>
+      vp.length === cards.length &&
+      vp.every(vc => cards.some(c => c.id === vc.id))
+    )
+    if (!isValid) return false
+
+    // Clear turn reminder since player acted
+    this.clearTurnReminderTimeout()
+
+    this.playCardsInternal(playerIndex, cards)
+    return true
+  }
+
+  /**
+   * Handle a pass from a player
+   */
+  handlePass(odusId: string): boolean {
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
+    if (playerIndex === -1) return false
+
+    if (this.currentPlayer !== playerIndex) {
+      return false
+    }
+
+    if (this.phase !== PresidentPhase.Playing) {
+      return false
+    }
+
+    // Can't pass if pile is empty (you must play)
+    if (this.currentPile.currentRank === null) {
+      return false
+    }
+
+    // Clear turn reminder since player acted
+    this.clearTurnReminderTimeout()
+
+    this.passInternal(playerIndex)
+    return true
+  }
+
+  // ---- Internal methods ----
+
+  private startNewRound(): void {
+    try {
+      console.log('startNewRound called, roundNumber:', this.roundNumber)
+      this.phase = PresidentPhase.Dealing
+
+      // Build game state for shared functions
+      const gameState = this.buildGameState()
+
+      // Deal cards using shared function
+      const dealtState = dealPresidentCards(gameState)
+      console.log('Cards dealt, players hand sizes:', dealtState.players.map(p => p.hand.length))
+
+      // Update local state from dealt state
+      for (let i = 0; i < this.players.length; i++) {
+        const statePlayer = dealtState.players[i]
+        if (statePlayer) {
+          this.players[i]!.hand = statePlayer.hand
+        }
+      }
+
+      this.currentPile = createEmptyPile()
+      this.consecutivePasses = 0
+      this.finishedPlayers = []
+      this.lastPlayerId = null
+
+      // Reset each player's finishOrder for the new round (ranks are kept)
+      for (const player of this.players) {
+        player.finishOrder = null
+      }
+
+      // Broadcast state to all players
+      this.broadcastState()
+
+      // Check for card exchange (after first round)
+      const hasRanks = this.players.some(p => p.rank !== null)
+      console.log('hasRanks:', hasRanks, 'player ranks:', this.players.map(p => p.rank))
+
+      if (hasRanks) {
+        // Do card exchange
+        setTimeout(() => {
+          try {
+            this.phase = PresidentPhase.CardExchange
+            this.processCardExchange()
+          } catch (error) {
+            console.error('Error in setTimeout -> processCardExchange:', error)
+          }
+        }, 1200)
+      } else {
+        // First round - find starting player (has 3 of clubs)
+        setTimeout(() => {
+          this.currentPlayer = this.findStartingPlayer()
+          this.phase = PresidentPhase.Playing
+          this.broadcastState()
+          this.processCurrentTurn()
+        }, 1200)
+      }
+    } catch (error) {
+      console.error('Error in startNewRound:', error)
+      throw error
+    }
+  }
+
+  private findStartingPlayer(): number {
+    for (const player of this.players) {
+      const has3Clubs = player.hand.some(
+        card => card.rank === '3' && card.suit === 'clubs'
+      )
+      if (has3Clubs) {
+        return player.seatIndex
+      }
+    }
+    return 0
+  }
+
+  private processCardExchange(): void {
+    try {
+      this.processCardExchangeInternal()
+    } catch (error) {
+      console.error('Error in processCardExchange:', error)
+      console.error('Players state:', JSON.stringify(this.players.map(p => ({
+        id: p.seatIndex,
+        name: p.name,
+        rank: p.rank,
+        handSize: p.hand.length,
+        cardsToGive: p.cardsToGive,
+        cardsToReceive: p.cardsToReceive,
+      })), null, 2))
+      throw error
+    }
+  }
+
+  private processCardExchangeInternal(): void {
+    // Process card exchanges:
+    // - President ↔ Scum: 2 cards each
+    // - VP ↔ Vice Scum: 1 card each (4+ players only)
+
+    const president = this.players.find(p => p.rank === 1) // PlayerRank.President
+    const scum = this.players.find(p => p.rank === 4) // PlayerRank.Scum
+    const vp = this.players.find(p => p.rank === 2) // PlayerRank.VicePresident
+    // Vice Scum is a Citizen with cardsToGive = 1
+    const viceScum = this.players.find(p => p.cardsToGive === 1 && p.rank === 3) // PlayerRank.Citizen
+
+    // Helper to convert to PresidentPlayer for shared functions
+    const toPresidentPlayer = (p: PresidentGamePlayer): PresidentPlayer => ({
+      id: p.seatIndex,
+      name: p.name,
+      hand: p.hand,
+      isHuman: p.isHuman,
+      rank: p.rank,
+      finishOrder: p.finishOrder,
+      cardsToGive: p.cardsToGive,
+      cardsToReceive: p.cardsToReceive,
+    })
+
+    // Track exchanges for human notifications
+    const humanExchanges: Map<string, { youGive: StandardCard[]; youReceive: StandardCard[]; otherPlayerName: string; yourRole: string }> = new Map()
+
+    // Process President ↔ Scum exchange (2 cards)
+    if (president && scum) {
+      const scumCards = chooseCardsToGive(toPresidentPlayer(scum), 2)
+      const presidentCards = getLowestCards(president.hand, 2)
+
+      const scumCardIds = new Set(scumCards.map(c => c.id))
+      const presidentCardIds = new Set(presidentCards.map(c => c.id))
+
+      // Remove and add cards
+      president.hand = [...president.hand.filter(c => !presidentCardIds.has(c.id)), ...scumCards]
+      scum.hand = [...scum.hand.filter(c => !scumCardIds.has(c.id)), ...presidentCards]
+
+      // Track for human notifications
+      if (president.isHuman && president.odusId) {
+        humanExchanges.set(president.odusId, {
+          youGive: presidentCards,
+          youReceive: scumCards,
+          otherPlayerName: scum.name,
+          yourRole: 'President',
+        })
+      }
+      if (scum.isHuman && scum.odusId) {
+        humanExchanges.set(scum.odusId, {
+          youGive: scumCards,
+          youReceive: presidentCards,
+          otherPlayerName: president.name,
+          yourRole: 'Scum',
+        })
+      }
+    }
+
+    // Process VP ↔ Vice Scum exchange (1 card) for 4+ players
+    if (vp && viceScum) {
+      const viceScumCards = chooseCardsToGive(toPresidentPlayer(viceScum), 1)
+      const vpCards = getLowestCards(vp.hand, 1)
+
+      const viceScumCardIds = new Set(viceScumCards.map(c => c.id))
+      const vpCardIds = new Set(vpCards.map(c => c.id))
+
+      // Remove and add cards
+      vp.hand = [...vp.hand.filter(c => !vpCardIds.has(c.id)), ...viceScumCards]
+      viceScum.hand = [...viceScum.hand.filter(c => !viceScumCardIds.has(c.id)), ...vpCards]
+
+      // Track for human notifications (only if not already set by president/scum)
+      if (vp.isHuman && vp.odusId && !humanExchanges.has(vp.odusId)) {
+        humanExchanges.set(vp.odusId, {
+          youGive: vpCards,
+          youReceive: viceScumCards,
+          otherPlayerName: viceScum.name,
+          yourRole: 'Vice President',
+        })
+      }
+      if (viceScum.isHuman && viceScum.odusId && !humanExchanges.has(viceScum.odusId)) {
+        humanExchanges.set(viceScum.odusId, {
+          youGive: viceScumCards,
+          youReceive: vpCards,
+          otherPlayerName: vp.name,
+          yourRole: 'Vice Scum',
+        })
+      }
+    }
+
+    // Notify humans of their exchanges
+    for (const [odusId, exchange] of humanExchanges) {
+      this.events.onCardExchangeInfo(
+        odusId,
+        exchange.youGive,
+        exchange.youReceive,
+        exchange.otherPlayerName,
+        exchange.yourRole
+      )
+    }
+
+    this.broadcastState()
+
+    // Wait for exchange acknowledgment display, then start playing
+    setTimeout(() => {
+      // President starts after exchange
+      this.currentPlayer = president?.seatIndex ?? 0
+      this.phase = PresidentPhase.Playing
+      this.broadcastState()
+      this.processCurrentTurn()
+    }, 2000)
+  }
+
+  private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {
+    const player = this.players[playerIndex]!
+
+    // Use shared processPlay function
+    const gameState = this.buildGameState()
+    const newState = processPlay(gameState, playerIndex, cards)
+
+    // Update local state from result
+    this.updateFromGameState(newState)
+
+    // Get play type for the broadcast
+    const playType = cards.length === 1 ? 'single' :
+                     cards.length === 2 ? 'pair' :
+                     cards.length === 3 ? 'triple' : 'quad'
+
+    // Broadcast the play
+    this.events.onPlayMade(playerIndex, cards, playType as PlayType, player.name)
+
+    // Check if player just finished
+    const newPlayer = this.players[playerIndex]!
+    if (newPlayer.finishOrder !== null && player.finishOrder === null) {
+      // Just finished - will get rank assigned at round end
+      this.events.onPlayerFinished(
+        playerIndex,
+        player.name,
+        newPlayer.finishOrder,
+        newPlayer.rank ?? (1 as PlayerRank) // Default to President if rank not yet assigned
+      )
+    }
+
+    // Check for round complete
+    if (this.phase === PresidentPhase.RoundComplete) {
+      this.handleRoundComplete()
+      return
+    }
+
+    this.broadcastState()
+    this.processCurrentTurn()
+  }
+
+  private passInternal(playerIndex: number): void {
+    const player = this.players[playerIndex]!
+
+    // Use shared processPass function
+    const gameState = this.buildGameState()
+    const newState = processPass(gameState, playerIndex)
+
+    // Check if pile was cleared
+    const pileCleared = newState.currentPile.currentRank === null &&
+                        this.currentPile.currentRank !== null
+
+    // Update local state
+    this.updateFromGameState(newState)
+
+    // Broadcast the pass
+    this.events.onPassed(playerIndex, player.name)
+
+    if (pileCleared) {
+      this.events.onPileCleared(this.currentPlayer)
+      // Brief pause when pile clears
+      this.broadcastState()
+      setTimeout(() => {
+        this.processCurrentTurn()
+      }, 500)
+    } else {
+      this.broadcastState()
+      this.processCurrentTurn()
+    }
+  }
+
+  private handleRoundComplete(): void {
+    try {
+      console.log('handleRoundComplete called, roundNumber:', this.roundNumber)
+
+      // Assign ranks based on finish order
+      const gameState = this.buildGameState()
+      console.log('Game state built, players finishOrders:', gameState.players.map(p => p.finishOrder))
+      const rankedState = assignRanks(gameState)
+      console.log('Ranks assigned:', rankedState.players.map(p => ({ id: p.id, rank: p.rank, cardsToGive: p.cardsToGive })))
+      this.updateFromGameState(rankedState)
+
+    // Build rankings for broadcast
+    const rankings = this.players
+      .filter(p => p.rank !== null)
+      .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
+      .map(p => ({
+        playerId: p.seatIndex,
+        rank: p.rank!,
+        name: p.name,
+      }))
+
+    this.events.onRoundComplete(rankings, this.roundNumber)
+    this.broadcastState()
+
+    // Check if game should end (e.g., after 5 rounds)
+    if (this.roundNumber >= 5) {
+      this.gameOver = true
+      this.phase = PresidentPhase.GameOver
+
+      const finalRankings = rankings.map(r => ({
+        playerId: r.playerId,
+        name: r.name,
+        rank: r.rank,
+      }))
+      this.events.onGameOver(finalRankings)
+      this.broadcastState()
+    } else {
+      // Start next round after delay
+      setTimeout(() => {
+        try {
+          this.roundNumber++
+          this.startNewRound()
+        } catch (error) {
+          console.error('Error in setTimeout -> startNewRound:', error)
+        }
+      }, 3000)
+    }
+    } catch (error) {
+      console.error('Error in handleRoundComplete:', error)
+      throw error
+    }
+  }
+
+  private processCurrentTurn(): void {
+    const player = this.players[this.currentPlayer]
+    if (!player) return
+
+    // Skip if player is finished
+    if (player.finishOrder !== null) {
+      const gameState = this.buildGameState()
+      this.currentPlayer = getNextActivePlayer(gameState, this.currentPlayer)
+      this.processCurrentTurn()
+      return
+    }
+
+    // Human player - notify their turn
+    if (player.isHuman && player.odusId) {
+      this.notifyPlayerTurn(player.odusId)
+      return
+    }
+
+    // AI turn - add delay
+    setTimeout(() => {
+      if (this.phase !== PresidentPhase.Playing) return
+
+      const presidentPlayer: PresidentPlayer = {
+        id: player.seatIndex,
+        name: player.name,
+        hand: player.hand,
+        isHuman: false,
+        rank: player.rank,
+        finishOrder: player.finishOrder,
+        cardsToGive: player.cardsToGive,
+        cardsToReceive: player.cardsToReceive,
+      }
+
+      const gameState = this.buildGameState()
+      const play = choosePresidentPlay(presidentPlayer, this.currentPile, gameState)
+
+      if (play === null) {
+        this.passInternal(player.seatIndex)
+      } else {
+        this.playCardsInternal(player.seatIndex, play)
+      }
+    }, 800)
+  }
+
+  private broadcastState(): void {
+    // Increment state sequence number
+    this.stateSeq++
+
+    // Send filtered state to each human player
+    for (const player of this.players) {
+      if (player.isHuman && player.odusId) {
+        const state = this.getStateForPlayer(player.odusId)
+        this.events.onStateChange(player.odusId, state)
+      }
+    }
+  }
+
+  private notifyPlayerTurn(odusId: string): void {
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
+    if (playerIndex === -1) return
+
+    const player = this.players[playerIndex]!
+    const validPlays = findValidPlays(player.hand, this.currentPile, this.superTwosMode)
+    const canPassFlag = this.currentPile.currentRank !== null
+
+    const validActions: string[] = []
+    if (validPlays.length > 0) validActions.push('play')
+    if (canPassFlag) validActions.push('pass')
+
+    // Convert valid plays to card ID arrays
+    const validPlayIds = validPlays.map(vp => vp.map(c => c.id))
+
+    // Clear any existing reminder timeout
+    this.clearTurnReminderTimeout()
+
+    // Reset timeout tracking for new turn
+    this.turnReminderCount = 0
+    this.timedOutPlayer = null
+
+    this.events.onYourTurn(odusId, validActions, validPlayIds)
+
+    // Set up a reminder if they don't act
+    this.turnReminderTimeout = setTimeout(() => {
+      this.sendTurnReminder(odusId, playerIndex)
+    }, this.TURN_REMINDER_DELAY)
+  }
+
+  private sendTurnReminder(odusId: string, playerIndex: number): void {
+    // Verify it's still this player's turn
+    if (this.currentPlayer !== playerIndex) {
+      return
+    }
+
+    this.turnReminderCount++
+    const player = this.players[playerIndex]!
+
+    // Check if player has timed out (exceeded reminder limit)
+    if (this.turnReminderCount >= this.TIMEOUT_AFTER_REMINDERS && this.timedOutPlayer === null) {
+      console.log(`Player ${playerIndex} (${player.name}) has timed out`)
+      this.timedOutPlayer = playerIndex
+      this.events.onPlayerTimedOut(playerIndex, player.name)
+    }
+
+    const validPlays = findValidPlays(player.hand, this.currentPile, this.superTwosMode)
+    const canPassFlag = this.currentPile.currentRank !== null
+
+    const validActions: string[] = []
+    if (validPlays.length > 0) validActions.push('play')
+    if (canPassFlag) validActions.push('pass')
+
+    const validPlayIds = validPlays.map(vp => vp.map(c => c.id))
+
+    console.log(`Sending turn reminder ${this.turnReminderCount} to player ${playerIndex}`)
+    this.events.onTurnReminder(odusId, validActions, validPlayIds)
+
+    // Set up another reminder
+    this.turnReminderTimeout = setTimeout(() => {
+      this.sendTurnReminder(odusId, playerIndex)
+    }, this.TURN_REMINDER_DELAY)
+  }
+
+  private clearTurnReminderTimeout(): void {
+    if (this.turnReminderTimeout) {
+      clearTimeout(this.turnReminderTimeout)
+      this.turnReminderTimeout = null
+    }
+  }
+
+  /**
+   * Boot a timed-out player and replace with AI
+   */
+  bootPlayer(playerIndex: number): boolean {
+    // Can only boot the player who has timed out
+    if (this.timedOutPlayer !== playerIndex) {
+      return false
+    }
+
+    const player = this.players[playerIndex]
+    if (!player || !player.isHuman) {
+      return false
+    }
+
+    console.log(`Booting player ${playerIndex} (${player.name}) and replacing with AI`)
+
+    // Clear timeout state
+    this.clearTurnReminderTimeout()
+    this.turnReminderCount = 0
+    this.timedOutPlayer = null
+
+    // Convert player to AI
+    const aiNames = getRandomAINames(1)
+    player.isHuman = false
+    player.name = aiNames[0] ?? 'Bot'
+    player.odusId = null
+
+    // Notify about the boot
+    this.events.onPlayerBooted(playerIndex, player.name)
+
+    // Broadcast updated state
+    this.broadcastState()
+
+    // If it was this player's turn, have the AI take over
+    if (this.currentPlayer === playerIndex) {
+      this.processCurrentTurn()
+    }
+
+    return true
+  }
+
+  /**
+   * Check if a player is timed out (for external queries)
+   */
+  isPlayerTimedOut(playerIndex: number): boolean {
+    return this.timedOutPlayer === playerIndex
+  }
+
+  // ---- Helper methods to bridge local state and shared game state ----
+
+  private buildGameState(): PresidentGameState {
+    return {
+      gameType: 'president',
+      players: this.players.map(p => ({
+        id: p.seatIndex,
+        name: p.name,
+        hand: p.hand,
+        isHuman: p.isHuman,
+        rank: p.rank,
+        finishOrder: p.finishOrder,
+        cardsToGive: p.cardsToGive,
+        cardsToReceive: p.cardsToReceive,
+      })),
+      phase: this.phase,
+      currentPile: this.currentPile,
+      currentPlayer: this.currentPlayer,
+      consecutivePasses: this.consecutivePasses,
+      finishedPlayers: this.finishedPlayers,
+      roundNumber: this.roundNumber,
+      gameOver: this.gameOver,
+      lastPlayerId: this.lastPlayerId,
+      superTwosMode: this.superTwosMode,
+    }
+  }
+
+  private updateFromGameState(state: PresidentGameState): void {
+    // Update players
+    for (let i = 0; i < this.players.length && i < state.players.length; i++) {
+      const statePlayer = state.players[i]!
+      const localPlayer = this.players[i]!
+      localPlayer.hand = statePlayer.hand
+      localPlayer.rank = statePlayer.rank
+      localPlayer.finishOrder = statePlayer.finishOrder
+      localPlayer.cardsToGive = statePlayer.cardsToGive
+      localPlayer.cardsToReceive = statePlayer.cardsToReceive
+    }
+
+    this.phase = state.phase
+    this.currentPile = state.currentPile
+    this.currentPlayer = state.currentPlayer
+    this.consecutivePasses = state.consecutivePasses
+    this.finishedPlayers = state.finishedPlayers
+    this.gameOver = state.gameOver
+    this.lastPlayerId = state.lastPlayerId
+  }
+}
