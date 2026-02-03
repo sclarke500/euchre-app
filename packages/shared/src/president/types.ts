@@ -6,10 +6,21 @@ import type { Suit, FullRank, StandardCard, BasePlayer, PlayedCard } from '../co
 export enum PresidentPhase {
   Setup = 'setup',
   Dealing = 'dealing',
-  CardExchange = 'card_exchange',  // President/Scum card swap at round start
+  CardExchange = 'card_exchange',  // Scum gives best cards to President (auto)
+  PresidentGiving = 'president_giving', // President/VP choose cards to give back
   Playing = 'playing',
   RoundComplete = 'round_complete',
   GameOver = 'game_over',
+}
+
+// President rule variants
+export type WhoLeadsRule = 'president' | 'scum'
+export type PlayStyleRule = 'multiLoop' | 'singleRound'
+
+export interface PresidentRules {
+  superTwosMode: boolean       // Super 2s & Jokers variant
+  whoLeads: WhoLeadsRule       // Who leads after first round (default: president)
+  playStyle: PlayStyleRule     // Multi-loop or single round (default: multiLoop)
 }
 
 // Player rankings (positions)
@@ -47,6 +58,14 @@ export interface PresidentPlayer extends BasePlayer {
   cardsToReceive: number        // Cards to receive from lower rank
 }
 
+// Track pending exchanges during CardExchange phase
+export interface PendingExchange {
+  fromPlayerId: number          // Who is giving (Scum/Vice-Scum)
+  toPlayerId: number            // Who receives (President/VP)
+  cards: StandardCard[]         // Cards being given
+  complete: boolean             // Has this exchange happened?
+}
+
 // Full game state for President
 export interface PresidentGameState {
   gameType: 'president'
@@ -59,7 +78,13 @@ export interface PresidentGameState {
   roundNumber: number
   gameOver: boolean
   lastPlayerId: number | null   // Who made the last non-pass play
-  superTwosMode: boolean        // Super 2s & Jokers variant
+  
+  // Rules
+  rules: PresidentRules
+  
+  // Exchange tracking
+  pendingExchanges: PendingExchange[]  // Cards Scum gave to President (for display)
+  awaitingGiveBack: number | null      // Player ID who needs to select cards to give back
 }
 
 // Actions a player can take
