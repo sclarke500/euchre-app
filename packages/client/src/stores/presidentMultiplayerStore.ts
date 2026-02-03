@@ -66,13 +66,25 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   function handleMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'president_game_state':
-        console.log('President game_state received - phase:', message.state.phase, 'seq:', message.state.stateSeq)
+        const myPlayerInState = message.state.players.find(p => p.hand !== undefined)
+        console.log('[DEBUG] president_game_state received:', {
+          phase: message.state.phase,
+          seq: message.state.stateSeq,
+          currentPlayer: message.state.currentPlayer,
+          myPlayerId: myPlayerInState?.id,
+          myHand: myPlayerInState?.hand?.map(c => c.id),
+        })
         gameState.value = message.state
         lastStateSeq.value = message.state.stateSeq
         lastStateReceivedAt = Date.now()
         break
 
       case 'president_your_turn':
+        console.log('[DEBUG] president_your_turn received:', {
+          validActions: message.validActions,
+          validPlays: message.validPlays,
+          myHand: myHand.value.map(c => c.id),
+        })
         isMyTurn.value = true
         validActions.value = message.validActions
         validPlays.value = message.validPlays

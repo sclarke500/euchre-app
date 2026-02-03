@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { usePresidentGameAdapter } from '@/composables/usePresidentGameAdapter'
 import { PresidentPhase, sortHandByRank, isValidPlay, type StandardCard, type Card as EuchreCard } from '@euchre/shared'
 import BackButton from '../BackButton.vue'
@@ -36,6 +36,16 @@ onUnmounted(() => {
     adapter.cleanup()
   }
 })
+
+// Debug watcher for valid plays changes
+watch(() => adapter.validPlays.value, (newPlays, oldPlays) => {
+  console.log('[DEBUG] validPlays changed:', {
+    newPlays: newPlays.map(p => p.map(c => c.id)),
+    oldPlays: oldPlays?.map(p => p.map(c => c.id)),
+    isHumanTurn: adapter.isHumanTurn.value,
+    humanHand: adapter.humanPlayer.value?.hand.map(c => c.id),
+  })
+}, { deep: true })
 
 // Selected cards for multi-select
 const selectedCardIds = ref<Set<string>>(new Set())
