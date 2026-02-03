@@ -73,9 +73,9 @@ const sortedHand = computed(() => {
   return sortHandByRank(humanPlayer.value.hand)
 })
 
-// Get opponent players (everyone except human)
+// Get opponent players (everyone except the current player)
 const opponents = computed(() => {
-  return players.value.filter(p => !p.isHuman)
+  return players.value.filter(p => p.id !== humanPlayer.value?.id)
 })
 
 // Check if a card is selectable (during normal play)
