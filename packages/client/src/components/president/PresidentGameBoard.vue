@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { usePresidentGameAdapter } from '@/composables/usePresidentGameAdapter'
 import { PresidentPhase, sortHandByRank, isValidPlay, type StandardCard, type Card as EuchreCard } from '@euchre/shared'
+import BackButton from '../BackButton.vue'
 import Card from '../Card.vue'
 import Modal from '../Modal.vue'
 
@@ -187,12 +188,7 @@ const showRoundComplete = computed(() =>
 
 <template>
   <div class="president-game-board">
-    <!-- Floating back button -->
-    <button class="back-button" @click="showLeaveConfirm = true">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"></polyline>
-      </svg>
-    </button>
+    <BackButton @click="showLeaveConfirm = true" />
 
     <!-- Main game area -->
     <div class="game-main">
@@ -429,28 +425,6 @@ const showRoundComplete = computed(() =>
   width: 100%;
 }
 
-.back-button {
-  position: fixed;
-  top: $spacing-md;
-  left: $spacing-md;
-  z-index: 10100;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
 .opponents-row {
   display: flex;
   justify-content: space-around;
@@ -507,13 +481,13 @@ const showRoundComplete = computed(() =>
   height: 42px;
   background: linear-gradient(135deg, #2c5aa0 0%, #1a3d6e 100%);
   border-radius: 4px;
-  margin-left: -20px;
+  margin-left: $card-overlap-pile;
   border: 1px solid rgba(255, 255, 255, 0.3);
 
   @media (max-height: 500px) {
     width: 22px;
     height: 32px;
-    margin-left: -15px;
+    margin-left: -15px; // Tighter on small screens
     border-radius: 3px;
   }
 
@@ -608,13 +582,13 @@ const showRoundComplete = computed(() =>
 }
 
 .hand-card {
-  margin-left: -25px;
+  margin-left: $card-overlap-hand;
   transform: translateY(50px); // Push cards down, showing only top ~55px
   transition: transform 0.15s ease-out;
 
   // Tighter overlap on small screens
   @media (max-height: 500px) {
-    margin-left: -35px;
+    margin-left: $card-overlap-hand-tight;
   }
 
   &:first-child {

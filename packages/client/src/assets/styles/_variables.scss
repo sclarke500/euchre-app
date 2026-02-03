@@ -20,3 +20,8 @@ $breakpoint-xl: 1200px;
 // Card dimensions - 10% larger for better visibility
 $card-width: 83px;
 $card-height: 116px;
+
+// Card overlap for fanned hands (negative margin-left)
+$card-overlap-hand: -25px;        // Player hands (Euchre, President)
+$card-overlap-hand-tight: -35px;  // Tight hands (many cards, small screens)
+$card-overlap-pile: -20px;        // Stacked piles (opponent backs, played cards)

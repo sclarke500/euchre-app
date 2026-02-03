@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useKlondikeStore } from '@/stores/klondikeStore'
+import BackButton from '../BackButton.vue'
 import KlondikeFoundation from './KlondikeFoundation.vue'
 import KlondikeStockWaste from './KlondikeStockWaste.vue'
 import KlondikeTableauColumn from './KlondikeTableauColumn.vue'
@@ -76,13 +77,10 @@ function handleLeaveGame() {
 
 <template>
   <div class="klondike-board">
+    <BackButton @click="handleLeaveGame" />
+
     <!-- Header with game controls -->
     <div class="game-header">
-      <button class="back-btn" @click="handleLeaveGame">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-      </button>
       <div class="game-info">
         <span class="move-count">Moves: {{ moveCount }}</span>
       </div>
@@ -203,24 +201,9 @@ function handleLeaveGame() {
   align-items: center;
   justify-content: space-between;
   padding: $spacing-xs $spacing-sm;
+  padding-left: 50px; // Space for fixed back button
   color: white;
   flex-shrink: 0;
-}
-
-.back-btn {
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
 }
 
 .game-info {

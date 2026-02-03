@@ -1,11 +1,5 @@
 <template>
-  <Teleport to="body">
-    <button class="back-button" @click="showLeaveConfirm = true">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"></polyline>
-      </svg>
-    </button>
-  </Teleport>
+  <BackButton @click="showLeaveConfirm = true" />
   <div class="game-board">
     <!-- Top row: partner plaque | scoreboard -->
     <div class="cell-partner">
@@ -70,6 +64,7 @@ import { useGameAdapter, type GameAdapter, type UnifiedPlayer } from '@/composab
 import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { GamePhase } from '@euchre/shared'
+import BackButton from './BackButton.vue'
 import ScoreBoard from './ScoreBoard.vue'
 import UnifiedPlayerHand from './UnifiedPlayerHand.vue'
 import UnifiedOpponentHand from './UnifiedOpponentHand.vue'
@@ -204,23 +199,6 @@ onUnmounted(() => {
     ". . . partner partner partner partner partner partner score score score"
     "left left left play play play play play play right right right"
     "plaque plaque plaque plaque hand hand hand hand hand hand hand hand";
-}
-
-.back-button {
-  position: fixed;
-  top: $spacing-md;
-  left: $spacing-md;
-  z-index: 10100;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .cell-partner {
