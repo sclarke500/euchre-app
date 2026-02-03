@@ -61,6 +61,11 @@ const pileCards = computed(() => {
 const gameOver = computed(() => adapter.gameOver.value)
 const finishedPlayers = computed(() => adapter.finishedPlayers.value)
 const exchangeInfo = computed(() => adapter.exchangeInfo.value)
+const isHumanGivingCards = computed(() => adapter.isHumanGivingCards.value)
+const cardsToGiveCount = computed(() => adapter.cardsToGiveCount.value)
+
+// Cards selected to give back during President/VP giving phase
+const selectedGiveBackCards = ref<Set<string>>(new Set())
 
 // Sort human hand by rank
 const sortedHand = computed(() => {
@@ -73,8 +78,12 @@ const opponents = computed(() => {
   return players.value.filter(p => !p.isHuman)
 })
 
-// Check if a card is selectable
+// Check if a card is selectable (during normal play)
 function isCardSelectable(card: StandardCard): boolean {
+  // During give-back phase, cards are selectable for giving
+  if (isHumanGivingCards.value) {
+    return true // All cards can be given back
+  }
   if (!isHumanTurn.value) return false
   // Check if this card can be part of a valid play
   return validPlays.value.some(play =>
@@ -82,13 +91,22 @@ function isCardSelectable(card: StandardCard): boolean {
   )
 }
 
-// Check if a card is selected
+// Check if a card is selected (for play or give-back)
 function isCardSelected(card: StandardCard): boolean {
+  if (isHumanGivingCards.value) {
+    return selectedGiveBackCards.value.has(card.id)
+  }
   return selectedCardIds.value.has(card.id)
 }
 
-// Toggle card selection
+// Toggle card selection (handles both play and give-back modes)
 function toggleCardSelection(card: StandardCard) {
+  // Handle give-back phase selection
+  if (isHumanGivingCards.value) {
+    toggleGiveBackSelection(card)
+    return
+  }
+  
   if (!isCardSelectable(card)) return
 
   const newSelected = new Set(selectedCardIds.value)
@@ -116,6 +134,43 @@ function toggleCardSelection(card: StandardCard) {
   }
 
   selectedCardIds.value = newSelected
+}
+
+// Toggle selection for give-back phase (President/VP choosing cards to give)
+function toggleGiveBackSelection(card: StandardCard) {
+  const newSelected = new Set(selectedGiveBackCards.value)
+  
+  if (newSelected.has(card.id)) {
+    newSelected.delete(card.id)
+  } else {
+    // Can select up to cardsToGiveCount cards
+    if (newSelected.size < cardsToGiveCount.value) {
+      newSelected.add(card.id)
+    } else {
+      // Already at limit - replace oldest selection (or clear and add)
+      newSelected.clear()
+      newSelected.add(card.id)
+    }
+  }
+  
+  selectedGiveBackCards.value = newSelected
+}
+
+// Computed: cards selected for give-back
+const selectedGiveBackCardsList = computed(() => {
+  return sortedHand.value.filter(c => selectedGiveBackCards.value.has(c.id))
+})
+
+// Can confirm give-back selection?
+const canConfirmGiveBack = computed(() => {
+  return selectedGiveBackCards.value.size === cardsToGiveCount.value
+})
+
+// Confirm give-back selection
+function confirmGiveBack() {
+  if (!canConfirmGiveBack.value) return
+  adapter.giveCardsBack(selectedGiveBackCardsList.value)
+  selectedGiveBackCards.value = new Set()
 }
 
 // Get selected cards
@@ -306,14 +361,14 @@ const showRoundComplete = computed(() =>
       </div>
     </div>
 
-    <!-- Card exchange modal -->
-    <Modal :show="!!exchangeInfo" @close="() => {}">
+    <!-- Card exchange modal (for Scum/Vice-Scum showing what was exchanged) -->
+    <Modal :show="!!exchangeInfo && !isHumanGivingCards" @close="() => {}">
       <div v-if="exchangeInfo" class="exchange-modal">
         <h3>Card Exchange</h3>
         <p class="exchange-role">You are <strong>{{ exchangeInfo.yourRole }}</strong></p>
         <div class="exchange-sections">
           <div class="exchange-section give">
-            <div class="exchange-label">You give:</div>
+            <div class="exchange-label">You gave:</div>
             <div class="exchange-cards-wrapper">
               <div class="exchange-cards">
                 <div v-for="card in exchangeInfo.youGive" :key="card.id" class="small-card-wrapper">
@@ -323,7 +378,7 @@ const showRoundComplete = computed(() =>
             </div>
           </div>
           <div class="exchange-section receive">
-            <div class="exchange-label">You receive:</div>
+            <div class="exchange-label">You received:</div>
             <div class="exchange-cards-wrapper">
               <div class="exchange-cards">
                 <div v-for="card in exchangeInfo.youReceive" :key="card.id" class="small-card-wrapper">
@@ -335,6 +390,48 @@ const showRoundComplete = computed(() =>
         </div>
         <button class="modal-btn confirm" @click="adapter.acknowledgeExchange()">
           OK
+        </button>
+      </div>
+    </Modal>
+    
+    <!-- President/VP card selection modal (choosing cards to give back) -->
+    <Modal :show="isHumanGivingCards" @close="() => {}">
+      <div class="exchange-modal give-back-modal">
+        <h3>Choose Cards to Give</h3>
+        <p class="exchange-role">You are <strong>{{ exchangeInfo?.yourRole }}</strong></p>
+        
+        <div class="exchange-section receive">
+          <div class="exchange-label">You received from Scum:</div>
+          <div class="exchange-cards-wrapper">
+            <div class="exchange-cards">
+              <div v-for="card in exchangeInfo?.youReceive ?? []" :key="card.id" class="small-card-wrapper">
+                <Card :card="toCard(card)" />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <p class="give-back-instruction">
+          Select {{ cardsToGiveCount }} card{{ cardsToGiveCount > 1 ? 's' : '' }} from your hand to give back:
+        </p>
+        
+        <div class="give-back-selected">
+          <div v-if="selectedGiveBackCardsList.length === 0" class="no-selection">
+            Tap cards in your hand below to select
+          </div>
+          <div v-else class="exchange-cards">
+            <div v-for="card in selectedGiveBackCardsList" :key="card.id" class="small-card-wrapper">
+              <Card :card="toCard(card)" />
+            </div>
+          </div>
+        </div>
+        
+        <button 
+          class="modal-btn confirm" 
+          :disabled="!canConfirmGiveBack"
+          @click="confirmGiveBack"
+        >
+          Give Cards ({{ selectedGiveBackCards.size }}/{{ cardsToGiveCount }})
         </button>
       </div>
     </Modal>
@@ -899,6 +996,36 @@ const showRoundComplete = computed(() =>
 
   .modal-btn {
     margin-top: $spacing-sm;
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Give-back modal specific styles
+.give-back-modal {
+  .give-back-instruction {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin: $spacing-md 0 $spacing-sm;
+    color: #555;
+  }
+  
+  .give-back-selected {
+    min-height: 80px;
+    padding: $spacing-sm;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    border: 2px dashed rgba(0, 0, 0, 0.2);
+    margin-bottom: $spacing-sm;
+    
+    .no-selection {
+      color: #999;
+      font-style: italic;
+      padding: $spacing-md;
+    }
   }
 }
 

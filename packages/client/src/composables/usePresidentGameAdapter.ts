@@ -26,8 +26,10 @@ export interface PresidentGameAdapter {
   isHumanTurn: ComputedRef<boolean>
   validPlays: ComputedRef<StandardCard[][]>
   humanPlayer: ComputedRef<PresidentPlayer | undefined>
-  superTwosMode: ComputedRef<boolean>
+  superTwosMode: ComputedRef<boolean>  // Convenience accessor for rules.superTwosMode
   exchangeInfo: ComputedRef<ExchangeInfo | null>
+  isHumanGivingCards: ComputedRef<boolean>  // True when human President/VP needs to select cards
+  cardsToGiveCount: ComputedRef<number>     // Number of cards human needs to give back
   lastPlayedCards: ComputedRef<StandardCard[] | null>
   roundNumber: ComputedRef<number>
   gameOver: ComputedRef<boolean>
@@ -38,6 +40,7 @@ export interface PresidentGameAdapter {
   playCards: (cards: StandardCard[]) => void
   pass: () => void
   acknowledgeExchange: () => void
+  giveCardsBack: (cards: StandardCard[]) => void  // President/VP selecting cards to give
   getPlayerRankDisplay: (playerId: number) => string
   bootPlayer?: (playerId: number) => void
 
@@ -66,8 +69,10 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     isHumanTurn: computed(() => store.isHumanTurn ?? false),
     validPlays: computed(() => store.validPlays),
     humanPlayer: computed(() => store.humanPlayer),
-    superTwosMode: computed(() => store.superTwosMode ?? false),
+    superTwosMode: computed(() => store.rules?.superTwosMode ?? false),
     exchangeInfo: computed(() => store.exchangeInfo),
+    isHumanGivingCards: computed(() => store.isHumanGivingCards ?? false),
+    cardsToGiveCount: computed(() => store.cardsToGiveCount ?? 0),
     lastPlayedCards: computed(() => store.lastPlayedCards),
     roundNumber: computed(() => store.roundNumber),
     gameOver: computed(() => store.gameOver),
@@ -78,6 +83,7 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     playCards: (cards: StandardCard[]) => store.playCards(cards),
     pass: () => store.pass(),
     acknowledgeExchange: () => store.acknowledgeExchange(),
+    giveCardsBack: (cards: StandardCard[]) => store.giveCardsBack(cards),
     getPlayerRankDisplay: (playerId: number) => store.getPlayerRankDisplay(playerId),
 
     // Single-player specific
@@ -141,6 +147,8 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     humanPlayer,
     superTwosMode: computed(() => store.superTwosMode ?? false),
     exchangeInfo: computed(() => store.exchangeInfo),
+    isHumanGivingCards: computed(() => false), // TODO: Implement for multiplayer
+    cardsToGiveCount: computed(() => 0), // TODO: Implement for multiplayer
     lastPlayedCards: computed(() => store.lastPlayMade?.cards ?? null),
     roundNumber: computed(() => store.roundNumber),
     gameOver: computed(() => store.gameOver),
@@ -154,6 +162,10 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     },
     pass: () => store.pass(),
     acknowledgeExchange: () => store.acknowledgeExchange(),
+    giveCardsBack: (_cards: StandardCard[]) => {
+      // TODO: Implement for multiplayer
+      console.warn('giveCardsBack not yet implemented for multiplayer')
+    },
     getPlayerRankDisplay: (playerId: number) => {
       const player = store.players.find(p => p.id === playerId)
       if (!player || player.rank === null) return ''
