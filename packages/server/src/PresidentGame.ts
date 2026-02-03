@@ -786,7 +786,13 @@ export class PresidentGame {
       roundNumber: this.roundNumber,
       gameOver: this.gameOver,
       lastPlayerId: this.lastPlayerId,
-      superTwosMode: this.superTwosMode,
+      rules: {
+        superTwosMode: this.superTwosMode,
+        whoLeads: 'president',
+        playStyle: 'multiLoop',
+      },
+      pendingExchanges: [],
+      awaitingGiveBack: null,
     }
   }
 
