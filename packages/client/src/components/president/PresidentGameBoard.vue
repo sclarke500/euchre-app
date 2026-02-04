@@ -108,12 +108,30 @@ const validPlays = computed(() => adapter.validPlays.value)
 const lastPlayedCards = computed(() => adapter.lastPlayedCards.value)
 const roundNumber = computed(() => adapter.roundNumber.value)
 
+// Track sweep animation state
+const isSweeping = ref(false)
+const sweepingCards = ref<StandardCard[] | null>(null)
+
 // Get the cards currently on the pile that need to be beaten
 const pileCards = computed(() => {
   const plays = currentPile.value.plays
   if (plays.length === 0) return null
   // Return the most recent play's cards
   return plays[plays.length - 1]?.cards || null
+})
+
+// Watch for pile clearing to trigger sweep animation
+watch(pileCards, (newCards, oldCards) => {
+  // If we had cards and now we don't, sweep them away
+  if (oldCards && oldCards.length > 0 && !newCards) {
+    sweepingCards.value = oldCards
+    isSweeping.value = true
+    // Clear the sweep after animation completes
+    setTimeout(() => {
+      isSweeping.value = false
+      sweepingCards.value = null
+    }, 400)
+  }
 })
 const gameOver = computed(() => adapter.gameOver.value)
 const finishedPlayers = computed(() => adapter.finishedPlayers.value)
@@ -377,16 +395,17 @@ const showRoundComplete = computed(() =>
         <!-- Normal pile (hidden during giving phase) -->
         <div v-else class="pile-container">
           <div class="pile-status">{{ pileStatus }}</div>
-          <div class="pile-cards">
+          <div :class="['pile-cards', { sweeping: isSweeping }]">
+            <!-- Show sweeping cards during animation, otherwise current pile -->
             <div
-              v-for="(card, index) in (pileCards || [])"
+              v-for="(card, index) in (isSweeping ? sweepingCards : pileCards) || []"
               :key="card.id"
               class="pile-card"
               :style="{ transform: `translateX(${index * 20}px)` }"
             >
               <Card :card="toCard(card)" />
             </div>
-            <div v-if="!pileCards" class="empty-pile">
+            <div v-if="!pileCards && !isSweeping" class="empty-pile">
               Empty
             </div>
           </div>
@@ -775,6 +794,12 @@ const showRoundComplete = computed(() =>
   min-height: $card-height;
   align-items: center;
   justify-content: center;
+  transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
+  
+  &.sweeping {
+    transform: translateX(150%);
+    opacity: 0;
+  }
 }
 
 .pile-card {
