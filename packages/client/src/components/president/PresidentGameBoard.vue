@@ -794,10 +794,10 @@ const showRoundComplete = computed(() =>
   min-height: $card-height;
   align-items: center;
   justify-content: center;
-  transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
-  
+  transition: transform 0.4s ease-in forwards, opacity 0.4s ease-in forwards;
+
   &.sweeping {
-    transform: translateX(150%);
+    transform: translateX(280px);
     opacity: 0;
   }
 }
