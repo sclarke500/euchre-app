@@ -432,9 +432,6 @@ const showRoundComplete = computed(() =>
           <span v-if="humanPlayer && getPlayerRankBadge(humanPlayer.id)" class="rank-badge">{{ getPlayerRankBadge(humanPlayer.id) }}</span>
           {{ humanPlayer?.name || 'You' }}
         </div>
-        <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
-          {{ adapter.getPlayerRankDisplay(humanPlayer.id) }}
-        </span>
       </div>
 
       <!-- Selection feedback for give-back phase -->
