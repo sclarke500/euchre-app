@@ -301,16 +301,8 @@ const showRoundComplete = computed(() =>
         <!-- Give cards prompt (inline, replaces pile during President giving phase) -->
         <div v-if="isHumanGivingCards" class="give-cards-prompt">
           <div class="give-prompt-title">You are {{ exchangeInfo?.yourRole }}</div>
-          <div class="give-prompt-received">
-            <span class="received-label">Received from Scum:</span>
-            <div class="received-cards">
-              <div v-for="card in exchangeInfo?.youReceive ?? []" :key="card.id" class="small-card-wrapper">
-                <Card :card="toCard(card)" />
-              </div>
-            </div>
-          </div>
           <div class="give-prompt-instruction">
-            Select {{ cardsToGiveCount }} card{{ cardsToGiveCount > 1 ? 's' : '' }} from your hand to give back
+            Select {{ cardsToGiveCount }} card{{ cardsToGiveCount > 1 ? 's' : '' }} to give to Scum
           </div>
         </div>
         
@@ -991,24 +983,6 @@ const showRoundComplete = computed(() =>
     
     @media (max-height: 500px) {
       font-size: 1rem;
-    }
-  }
-  
-  .give-prompt-received {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: $spacing-md;
-    
-    .received-label {
-      font-size: 0.85rem;
-      opacity: 0.8;
-      margin-bottom: $spacing-xs;
-    }
-    
-    .received-cards {
-      display: flex;
-      gap: $spacing-xs;
     }
   }
   
