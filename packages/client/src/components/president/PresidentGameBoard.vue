@@ -65,8 +65,8 @@ function updateContainerWidth() {
   if (handContainerRef.value) {
     containerWidth.value = handContainerRef.value.clientWidth
   } else {
-    // Fallback: estimate based on window width minus action panel
-    containerWidth.value = window.innerWidth - 220
+    // Fallback: estimate based on window width minus action panel and padding
+    containerWidth.value = window.innerWidth - 240
   }
 }
 
@@ -792,6 +792,9 @@ const showRoundComplete = computed(() =>
   height: 105px; // Full card height
   overflow: visible;
   position: relative;
+  // Account for bottom safe area (home indicator on notched iPhones)
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  margin-bottom: $spacing-sm;
 }
 
 .hand-container {
@@ -799,12 +802,13 @@ const showRoundComplete = computed(() =>
   justify-content: center;
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 200px; // Reserve space for floating action panel
-  padding: 0 $spacing-md;
+  // Account for safe areas (notch/Dynamic Island)
+  left: max($spacing-md, env(safe-area-inset-left, 0));
+  right: calc(200px + max($spacing-md, env(safe-area-inset-right, 0)));
+  padding: 0 $spacing-sm;
 
   @media (max-height: 500px) {
-    right: 160px;
+    right: calc(160px + env(safe-area-inset-right, 0));
   }
 }
 
