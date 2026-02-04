@@ -624,9 +624,8 @@ const showRoundComplete = computed(() =>
   color: white;
   overflow: hidden;
   position: relative;
-  // Handle safe areas - background extends to edge, content is inset
+  // Only top safe area padding - bottom handled by player-area
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 
   // Mobile portrait: stack vertically
   @media (max-width: 768px) and (orientation: portrait) {
@@ -789,18 +788,18 @@ const showRoundComplete = computed(() =>
 
 .player-area {
   flex: 0 0 auto;
-  height: 105px; // Full card height
+  // Card height + safe area for home indicator
+  height: calc(105px + env(safe-area-inset-bottom, 0px));
   overflow: visible;
   position: relative;
-  // Minimal bottom spacing - safe area handled by body/html
-  margin-bottom: 4px;
 }
 
 .hand-container {
   display: flex;
   justify-content: center;
   position: absolute;
-  bottom: 0;
+  // Position above safe area (home indicator)
+  bottom: env(safe-area-inset-bottom, 0px);
   // Minimum padding + safe area for notch/Dynamic Island
   left: calc(16px + env(safe-area-inset-left, 0px));
   right: calc(200px + env(safe-area-inset-right, 0px));
