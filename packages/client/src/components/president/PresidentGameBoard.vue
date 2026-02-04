@@ -793,8 +793,8 @@ const showRoundComplete = computed(() =>
   overflow: visible;
   position: relative;
   // Account for bottom safe area (home indicator on notched iPhones)
-  padding-bottom: env(safe-area-inset-bottom, 0);
-  margin-bottom: $spacing-sm;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  margin-bottom: 8px;
 }
 
 .hand-container {
@@ -802,13 +802,13 @@ const showRoundComplete = computed(() =>
   justify-content: center;
   position: absolute;
   bottom: 0;
-  // Account for safe areas (notch/Dynamic Island)
-  left: max($spacing-md, env(safe-area-inset-left, 0));
-  right: calc(200px + max($spacing-md, env(safe-area-inset-right, 0)));
-  padding: 0 $spacing-sm;
+  // Minimum padding + safe area for notch/Dynamic Island
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  right: calc(210px + env(safe-area-inset-right, 0px));
+  padding: 0;
 
   @media (max-height: 500px) {
-    right: calc(160px + env(safe-area-inset-right, 0));
+    right: calc(170px + env(safe-area-inset-right, 0px));
   }
 }
 
