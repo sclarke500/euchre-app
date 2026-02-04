@@ -72,13 +72,13 @@ function updateContainerWidth() {
 
 // Calculate dynamic overlap based on card count and available width
 const cardWidth = 83 // From _variables.scss
-const minVisiblePerCard = 25 // Minimum pixels visible per card for tapping
+const minVisiblePerCard = 20 // Minimum pixels visible per card for tapping
 
 const dynamicCardOverlap = computed(() => {
   const cardCount = sortedHand.value.length
   if (cardCount <= 1) return 0
   
-  const availableWidth = containerWidth.value || (window.innerWidth - 220)
+  const availableWidth = containerWidth.value || (window.innerWidth - 240)
   
   // Calculate: availableWidth = cardWidth + (cardCount - 1) * (cardWidth + overlap)
   // Solve for overlap: overlap = (availableWidth - cardWidth) / (cardCount - 1) - cardWidth
@@ -86,9 +86,9 @@ const dynamicCardOverlap = computed(() => {
   
   // Clamp between reasonable values
   // More negative = more overlap (cards closer together)
-  // -25 is default, -(cardWidth - minVisible) is maximum overlap
-  const defaultOverlap = -25
-  const maxAllowedOverlap = -(cardWidth - minVisiblePerCard) // -58
+  // -35 is default (tighter), -(cardWidth - minVisible) is maximum overlap
+  const defaultOverlap = -35
+  const maxAllowedOverlap = -(cardWidth - minVisiblePerCard) // -63
   
   // Use the more negative value (tighter) if needed to fit
   return Math.max(maxAllowedOverlap, Math.min(defaultOverlap, maxOverlap))
@@ -801,11 +801,11 @@ const showRoundComplete = computed(() =>
   bottom: 0;
   // Minimum padding + safe area for notch/Dynamic Island
   left: calc(16px + env(safe-area-inset-left, 0px));
-  right: calc(210px + env(safe-area-inset-right, 0px));
-  padding: 0;
+  right: calc(200px + env(safe-area-inset-right, 0px));
+  padding: 0 8px;
 
   @media (max-height: 500px) {
-    right: calc(170px + env(safe-area-inset-right, 0px));
+    right: calc(165px + env(safe-area-inset-right, 0px));
   }
 }
 
