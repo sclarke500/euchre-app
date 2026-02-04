@@ -789,9 +789,8 @@ const showRoundComplete = computed(() =>
   height: 105px; // Full card height
   overflow: visible;
   position: relative;
-  // Account for bottom safe area (home indicator on notched iPhones)
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  margin-bottom: 8px;
+  // Minimal bottom spacing - safe area handled by body/html
+  margin-bottom: 4px;
 }
 
 .hand-container {
