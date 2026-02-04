@@ -18,7 +18,7 @@ import {
  */
 export const DEFAULT_PRESIDENT_RULES: PresidentRules = {
   superTwosMode: false,
-  whoLeads: 'president',
+  whoLeads: 'scum',
   playStyle: 'multiLoop',
 }
 import {

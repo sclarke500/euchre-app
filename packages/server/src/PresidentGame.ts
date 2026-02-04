@@ -606,8 +606,9 @@ export class PresidentGame {
   }
 
   private finishCardExchange(): void {
-    const president = this.players.find(p => p.rank === 1)
-    this.currentPlayer = president?.seatIndex ?? 0
+    // Scum leads after card exchange (default rule)
+    const scum = this.players.find(p => p.rank === 4)
+    this.currentPlayer = scum?.seatIndex ?? 0
     this.phase = PresidentPhase.Playing
     this.pendingExchangeReceivedCards.clear()
     this.broadcastState()
@@ -938,7 +939,7 @@ export class PresidentGame {
       lastPlayerId: this.lastPlayerId,
       rules: {
         superTwosMode: this.superTwosMode,
-        whoLeads: 'president',
+        whoLeads: 'scum',
         playStyle: 'multiLoop',
       },
       pendingExchanges: [],
