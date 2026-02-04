@@ -756,7 +756,7 @@ const showRoundComplete = computed(() =>
   align-items: center;
   justify-content: center;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible; // Allow sweep animation to be visible
 }
 
 .pile-container {
