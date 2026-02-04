@@ -187,11 +187,14 @@ const canConfirmGiveBack = computed(() => {
 function confirmGiveBack() {
   if (!canConfirmGiveBack.value) return
   
-  // Store the exchange info for summary modal
-  completedExchange.value = {
-    youGave: [...selectedGiveBackCardsList.value],
-    youReceived: exchangeInfo.value?.youReceive ?? [],
-    yourRole: exchangeInfo.value?.yourRole ?? 'President'
+  // Store the exchange info for summary modal (single-player only)
+  // In multiplayer, server sends president_card_exchange_info which populates exchangeInfo
+  if (!adapter.isMultiplayer) {
+    completedExchange.value = {
+      youGave: [...selectedGiveBackCardsList.value],
+      youReceived: exchangeInfo.value?.youReceive ?? [],
+      yourRole: exchangeInfo.value?.yourRole ?? 'President'
+    }
   }
   
   adapter.giveCardsBack(selectedGiveBackCardsList.value)
