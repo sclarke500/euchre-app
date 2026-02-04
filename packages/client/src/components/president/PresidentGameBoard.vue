@@ -149,9 +149,10 @@ function isCardSelectable(card: StandardCard): boolean {
     return true // All cards can be given back
   }
   if (!isHumanTurn.value) return false
-  // Check if this card can be part of a valid play
+  // Check if this card's RANK can be part of a valid play
+  // (validPlays only contains specific card IDs, but any card of that rank is playable)
   return validPlays.value.some(play =>
-    play.some(c => c.id === card.id)
+    play.some(c => c.rank === card.rank)
   )
 }
 
