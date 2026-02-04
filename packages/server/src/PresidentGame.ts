@@ -50,6 +50,7 @@ export interface PresidentGameEvents {
   onRoundComplete: (rankings: Array<{ playerId: number; rank: PlayerRank; name: string }>, roundNumber: number) => void
   onGameOver: (finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>) => void
   onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => void
+  onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string) => void
   onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => void
   onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => void
   onPlayerTimedOut: (playerId: number, playerName: string) => void
@@ -76,6 +77,10 @@ export class PresidentGame {
   private turnReminderCount = 0
   private readonly TIMEOUT_AFTER_REMINDERS = 4 // Mark as timed out after 4 reminders (60 seconds)
   private timedOutPlayer: number | null = null
+  
+  // Card exchange state - track who still needs to give cards
+  private awaitingGiveCards: number | null = null // seat index of player we're waiting on
+  private pendingExchangeReceivedCards: Map<number, StandardCard[]> = new Map() // what each player received
 
   constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false) {
     this.id = id
@@ -260,6 +265,39 @@ export class PresidentGame {
     return true
   }
 
+  /**
+   * Handle a player giving cards during the card exchange phase (President/VP)
+   */
+  handleGiveCards(odusId: string, cardIds: string[]): boolean {
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
+    if (playerIndex === -1) return false
+
+    if (this.phase !== PresidentPhase.PresidentGiving) {
+      return false
+    }
+
+    if (this.awaitingGiveCards !== playerIndex) {
+      return false
+    }
+
+    const player = this.players[playerIndex]!
+
+    // Find the cards in hand
+    const cards: StandardCard[] = []
+    for (const cardId of cardIds) {
+      const card = player.hand.find((c) => c.id === cardId)
+      if (!card) return false
+      cards.push(card)
+    }
+
+    // Validate correct number of cards
+    const expectedCount = player.rank === 1 ? 2 : 1
+    if (cards.length !== expectedCount) return false
+
+    this.giveCards(playerIndex, cards)
+    return true
+  }
+
   // ---- Internal methods ----
 
   private startNewRound(): void {
@@ -354,9 +392,9 @@ export class PresidentGame {
   }
 
   private processCardExchangeInternal(): void {
-    // Process card exchanges:
-    // - President ↔ Scum: 2 cards each
-    // - VP ↔ Vice Scum: 1 card each (4+ players only)
+    // Two-phase card exchange:
+    // Phase 1: Scum/Vice-Scum MUST give their best cards (automatic)
+    // Phase 2: President/VP CHOOSE which cards to give back (manual for humans)
 
     const president = this.players.find(p => p.rank === 1) // PlayerRank.President
     const scum = this.players.find(p => p.rank === 4) // PlayerRank.Scum
@@ -376,92 +414,204 @@ export class PresidentGame {
       cardsToReceive: p.cardsToReceive,
     })
 
-    // Track exchanges for human notifications
-    const humanExchanges: Map<string, { youGive: StandardCard[]; youReceive: StandardCard[]; otherPlayerName: string; yourRole: string }> = new Map()
+    // Clear pending exchange state
+    this.pendingExchangeReceivedCards.clear()
 
-    // Process President ↔ Scum exchange (2 cards)
+    // PHASE 1: Scum gives best cards to President (automatic)
     if (president && scum) {
       const scumCards = chooseCardsToGive(toPresidentPlayer(scum), 2)
-      const presidentCards = getLowestCards(president.hand, 2)
-
       const scumCardIds = new Set(scumCards.map(c => c.id))
-      const presidentCardIds = new Set(presidentCards.map(c => c.id))
-
-      // Remove and add cards
-      president.hand = [...president.hand.filter(c => !presidentCardIds.has(c.id)), ...scumCards]
-      scum.hand = [...scum.hand.filter(c => !scumCardIds.has(c.id)), ...presidentCards]
-
-      // Track for human notifications
-      if (president.isHuman && president.odusId) {
-        humanExchanges.set(president.odusId, {
-          youGive: presidentCards,
-          youReceive: scumCards,
-          otherPlayerName: scum.name,
-          yourRole: 'President',
-        })
-      }
+      
+      // Remove cards from Scum, add to President
+      scum.hand = scum.hand.filter(c => !scumCardIds.has(c.id))
+      president.hand = [...president.hand, ...scumCards]
+      
+      // Track what President received (for give-back phase)
+      this.pendingExchangeReceivedCards.set(president.seatIndex, scumCards)
+      
+      // Notify Scum what they gave (they don't choose, it's automatic)
       if (scum.isHuman && scum.odusId) {
-        humanExchanges.set(scum.odusId, {
-          youGive: scumCards,
-          youReceive: presidentCards,
-          otherPlayerName: president.name,
-          yourRole: 'Scum',
-        })
+        // Scum will see their exchange info after President gives back
       }
     }
 
-    // Process VP ↔ Vice Scum exchange (1 card) for 4+ players
+    // PHASE 1b: Vice-Scum gives best card to VP (automatic) 
     if (vp && viceScum) {
       const viceScumCards = chooseCardsToGive(toPresidentPlayer(viceScum), 1)
-      const vpCards = getLowestCards(vp.hand, 1)
-
       const viceScumCardIds = new Set(viceScumCards.map(c => c.id))
-      const vpCardIds = new Set(vpCards.map(c => c.id))
-
-      // Remove and add cards
-      vp.hand = [...vp.hand.filter(c => !vpCardIds.has(c.id)), ...viceScumCards]
-      viceScum.hand = [...viceScum.hand.filter(c => !viceScumCardIds.has(c.id)), ...vpCards]
-
-      // Track for human notifications (only if not already set by president/scum)
-      if (vp.isHuman && vp.odusId && !humanExchanges.has(vp.odusId)) {
-        humanExchanges.set(vp.odusId, {
-          youGive: vpCards,
-          youReceive: viceScumCards,
-          otherPlayerName: viceScum.name,
-          yourRole: 'Vice President',
-        })
-      }
-      if (viceScum.isHuman && viceScum.odusId && !humanExchanges.has(viceScum.odusId)) {
-        humanExchanges.set(viceScum.odusId, {
-          youGive: viceScumCards,
-          youReceive: vpCards,
-          otherPlayerName: vp.name,
-          yourRole: 'Vice Scum',
-        })
-      }
-    }
-
-    // Notify humans of their exchanges
-    for (const [odusId, exchange] of humanExchanges) {
-      this.events.onCardExchangeInfo(
-        odusId,
-        exchange.youGive,
-        exchange.youReceive,
-        exchange.otherPlayerName,
-        exchange.yourRole
-      )
+      
+      // Remove cards from Vice-Scum, add to VP
+      viceScum.hand = viceScum.hand.filter(c => !viceScumCardIds.has(c.id))
+      vp.hand = [...vp.hand, ...viceScumCards]
+      
+      // Track what VP received
+      this.pendingExchangeReceivedCards.set(vp.seatIndex, viceScumCards)
     }
 
     this.broadcastState()
 
-    // Wait for exchange acknowledgment display, then start playing
-    setTimeout(() => {
-      // President starts after exchange
-      this.currentPlayer = president?.seatIndex ?? 0
-      this.phase = PresidentPhase.Playing
+    // PHASE 2: President/VP choose which cards to give back
+    // Start with President
+    if (president) {
+      this.startGiveBackPhase(president.seatIndex)
+    } else {
+      // No president? Start playing (shouldn't happen)
+      this.finishCardExchange()
+    }
+  }
+
+  private startGiveBackPhase(playerSeatIndex: number): void {
+    const player = this.players[playerSeatIndex]
+    if (!player) {
+      this.finishCardExchange()
+      return
+    }
+
+    const cardsToGive = player.rank === 1 ? 2 : 1 // President gives 2, VP gives 1
+    const receivedCards = this.pendingExchangeReceivedCards.get(playerSeatIndex) ?? []
+    const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President' }
+    const yourRole = roleNames[player.rank ?? 0] ?? 'Unknown'
+
+    if (player.isHuman && player.odusId) {
+      // Human player - wait for their choice
+      this.phase = PresidentPhase.PresidentGiving
+      this.awaitingGiveCards = playerSeatIndex
+      
+      this.events.onAwaitingGiveCards(
+        player.odusId,
+        cardsToGive,
+        receivedCards,
+        yourRole
+      )
       this.broadcastState()
-      this.processCurrentTurn()
-    }, 2000)
+    } else {
+      // AI player - auto-choose lowest cards
+      const toPresidentPlayer = (p: PresidentGamePlayer): PresidentPlayer => ({
+        id: p.seatIndex,
+        name: p.name,
+        hand: p.hand,
+        isHuman: p.isHuman,
+        rank: p.rank,
+        finishOrder: p.finishOrder,
+        cardsToGive: p.cardsToGive,
+        cardsToReceive: p.cardsToReceive,
+      })
+      
+      const cardsToGiveBack = getLowestCards(player.hand, cardsToGive)
+      
+      // Small delay for AI to feel more natural
+      setTimeout(() => {
+        this.completeGiveBack(playerSeatIndex, cardsToGiveBack)
+      }, 500)
+    }
+  }
+
+  // Called when a player submits their give-back cards
+  public giveCards(playerSeatIndex: number, cards: StandardCard[]): void {
+    if (this.phase !== PresidentPhase.PresidentGiving) {
+      console.warn('giveCards called but not in PresidentGiving phase')
+      return
+    }
+    if (this.awaitingGiveCards !== playerSeatIndex) {
+      console.warn('giveCards called by wrong player')
+      return
+    }
+    
+    const player = this.players[playerSeatIndex]
+    if (!player) return
+    
+    const expectedCount = player.rank === 1 ? 2 : 1
+    if (cards.length !== expectedCount) {
+      console.warn(`Expected ${expectedCount} cards but got ${cards.length}`)
+      return
+    }
+    
+    // Validate player has these cards
+    const cardIds = new Set(cards.map(c => c.id))
+    const hasAllCards = cards.every(c => player.hand.some(h => h.id === c.id))
+    if (!hasAllCards) {
+      console.warn('Player does not have all submitted cards')
+      return
+    }
+    
+    this.completeGiveBack(playerSeatIndex, cards)
+  }
+
+  private completeGiveBack(playerSeatIndex: number, cards: StandardCard[]): void {
+    const player = this.players[playerSeatIndex]
+    if (!player) return
+
+    // Find the recipient (Scum for President, Vice-Scum for VP)
+    let recipient: PresidentGamePlayer | undefined
+    if (player.rank === 1) {
+      recipient = this.players.find(p => p.rank === 4) // Scum
+    } else if (player.rank === 2) {
+      recipient = this.players.find(p => p.cardsToGive === 1 && p.rank === 3) // Vice-Scum
+    }
+
+    if (recipient) {
+      const cardIds = new Set(cards.map(c => c.id))
+      
+      // Remove cards from giver, add to recipient
+      player.hand = player.hand.filter(c => !cardIds.has(c.id))
+      recipient.hand = [...recipient.hand, ...cards]
+
+      // Notify both players of the exchange
+      const receivedCards = this.pendingExchangeReceivedCards.get(playerSeatIndex) ?? []
+      const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President', 3: 'Citizen', 4: 'Scum' }
+      
+      // Notify the giver (President/VP)
+      if (player.isHuman && player.odusId) {
+        this.events.onCardExchangeInfo(
+          player.odusId,
+          cards,
+          receivedCards,
+          recipient.name,
+          roleNames[player.rank ?? 0] ?? 'Unknown'
+        )
+      }
+      
+      // Notify the recipient (Scum/Vice-Scum)
+      const recipientReceivedCards = this.pendingExchangeReceivedCards.get(recipient.seatIndex)
+      const recipientGaveCards = recipientReceivedCards // What they gave = what giver received
+      if (recipient.isHuman && recipient.odusId) {
+        // For Scum: they gave their best cards, received the cards President just gave
+        const scumGave = receivedCards // Scum gave what President received
+        this.events.onCardExchangeInfo(
+          recipient.odusId,
+          scumGave,
+          cards, // Scum received what President gave
+          player.name,
+          roleNames[recipient.rank ?? 0] ?? 'Scum'
+        )
+      }
+    }
+
+    this.awaitingGiveCards = null
+    this.broadcastState()
+
+    // Check if VP also needs to give cards
+    const vp = this.players.find(p => p.rank === 2)
+    if (player.rank === 1 && vp && this.pendingExchangeReceivedCards.has(vp.seatIndex)) {
+      // President done, now VP's turn
+      setTimeout(() => {
+        this.startGiveBackPhase(vp.seatIndex)
+      }, 500)
+    } else {
+      // All done, start playing
+      setTimeout(() => {
+        this.finishCardExchange()
+      }, 1500)
+    }
+  }
+
+  private finishCardExchange(): void {
+    const president = this.players.find(p => p.rank === 1)
+    this.currentPlayer = president?.seatIndex ?? 0
+    this.phase = PresidentPhase.Playing
+    this.pendingExchangeReceivedCards.clear()
+    this.broadcastState()
+    this.processCurrentTurn()
   }
 
   private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {
@@ -792,7 +942,7 @@ export class PresidentGame {
         playStyle: 'multiLoop',
       },
       pendingExchanges: [],
-      awaitingGiveBack: null,
+      awaitingGiveBack: this.awaitingGiveCards,
     }
   }
 

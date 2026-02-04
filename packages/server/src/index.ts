@@ -404,6 +404,14 @@ function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
           yourRole,
         })
       },
+      onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string) => {
+        sendToPlayer(playerId, {
+          type: 'president_awaiting_give_cards',
+          cardsToGive,
+          receivedCards,
+          yourRole,
+        })
+      },
       onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => {
         sendToPlayer(playerId, {
           type: 'president_your_turn',
@@ -719,6 +727,24 @@ function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
   }
 }
 
+function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  const presidentGame = presidentGames.get(client.gameId)
+  if (!presidentGame) {
+    send(ws, { type: 'error', message: 'President game not found' })
+    return
+  }
+
+  const success = presidentGame.handleGiveCards(client.player.odusId, cardIds)
+  if (!success) {
+    send(ws, { type: 'error', message: 'Invalid card selection' })
+  }
+}
+
 function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
   if (!client.player || !client.gameId) {
     send(ws, { type: 'error', message: 'Not in a game' })
@@ -832,6 +858,14 @@ function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
           youGive,
           youReceive,
           otherPlayerName,
+          yourRole,
+        })
+      },
+      onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string) => {
+        sendToPlayer(playerId, {
+          type: 'president_awaiting_give_cards',
+          cardsToGive,
+          receivedCards,
           yourRole,
         })
       },
@@ -1036,6 +1070,9 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       break
     case 'president_pass':
       handlePresidentPass(ws, client)
+      break
+    case 'president_give_cards':
+      handlePresidentGiveCards(ws, client, message.cardIds)
       break
     case 'boot_player':
       handleBootPlayer(ws, client, message.playerId)

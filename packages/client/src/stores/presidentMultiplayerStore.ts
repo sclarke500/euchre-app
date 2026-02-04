@@ -18,13 +18,19 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   const validPlays = ref<string[][]>([]) // Array of valid card ID combinations
   const isMyTurn = ref(false)
 
-  // Card exchange info
+  // Card exchange info (for summary modal after exchange)
   const exchangeInfo = ref<{
     youGive: StandardCard[]
     youReceive: StandardCard[]
     otherPlayerName: string
     yourRole: string
   } | null>(null)
+
+  // Give-back phase state (President/VP choosing cards to give)
+  const isAwaitingGiveCards = ref(false)
+  const cardsToGiveCount = ref(0)
+  const receivedCardsForGiveBack = ref<StandardCard[]>([])
+  const giveBackRole = ref('')
 
   // Local UI state
   const lastPlayMade = ref<{ playerId: number; cards: StandardCard[]; playerName: string } | null>(null)
@@ -143,6 +149,19 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
           otherPlayerName: message.otherPlayerName,
           yourRole: message.yourRole,
         }
+        // Clear give-back state when we receive exchange summary
+        isAwaitingGiveCards.value = false
+        cardsToGiveCount.value = 0
+        receivedCardsForGiveBack.value = []
+        giveBackRole.value = ''
+        break
+
+      case 'president_awaiting_give_cards':
+        // President or VP needs to choose cards to give back
+        isAwaitingGiveCards.value = true
+        cardsToGiveCount.value = message.cardsToGive
+        receivedCardsForGiveBack.value = message.receivedCards
+        giveBackRole.value = message.yourRole
         break
 
       case 'player_timed_out':
@@ -199,6 +218,19 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     exchangeInfo.value = null
   }
 
+  function giveCards(cardIds: string[]): void {
+    if (!isAwaitingGiveCards.value) return
+    if (cardIds.length !== cardsToGiveCount.value) return
+
+    websocket.send({
+      type: 'president_give_cards',
+      cardIds,
+    })
+
+    // Clear state - server will send exchange_info after processing
+    isAwaitingGiveCards.value = false
+  }
+
   function bootPlayer(playerId: number): void {
     websocket.send({
       type: 'boot_player',
@@ -247,6 +279,10 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     validActions.value = []
     validPlays.value = []
     exchangeInfo.value = null
+    isAwaitingGiveCards.value = false
+    cardsToGiveCount.value = 0
+    receivedCardsForGiveBack.value = []
+    giveBackRole.value = ''
     lastStateSeq.value = 0
     lastStateReceivedAt = 0
   }
@@ -261,6 +297,12 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     lastPlayMade,
     lastPass,
     pileCleared,
+    
+    // Give-back phase state
+    isAwaitingGiveCards,
+    cardsToGiveCount,
+    receivedCardsForGiveBack,
+    giveBackRole,
 
     // Computed
     phase,
@@ -285,6 +327,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     playCards,
     pass,
     acknowledgeExchange,
+    giveCards,
     bootPlayer,
     initialize,
     cleanup,

@@ -146,9 +146,20 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     validPlays,
     humanPlayer,
     superTwosMode: computed(() => store.superTwosMode ?? false),
-    exchangeInfo: computed(() => store.exchangeInfo),
-    isHumanGivingCards: computed(() => false), // TODO: Implement for multiplayer
-    cardsToGiveCount: computed(() => 0), // TODO: Implement for multiplayer
+    exchangeInfo: computed(() => {
+      // For multiplayer, also expose the received cards from give-back phase
+      if (store.isAwaitingGiveCards) {
+        return {
+          youGive: [], // Will be filled after selection
+          youReceive: store.receivedCardsForGiveBack ?? [],
+          otherPlayerName: '',
+          yourRole: store.giveBackRole ?? '',
+        }
+      }
+      return store.exchangeInfo
+    }),
+    isHumanGivingCards: computed(() => store.isAwaitingGiveCards ?? false),
+    cardsToGiveCount: computed(() => store.cardsToGiveCount ?? 0),
     lastPlayedCards: computed(() => store.lastPlayMade?.cards ?? null),
     roundNumber: computed(() => store.roundNumber),
     gameOver: computed(() => store.gameOver),
@@ -162,9 +173,9 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     },
     pass: () => store.pass(),
     acknowledgeExchange: () => store.acknowledgeExchange(),
-    giveCardsBack: (_cards: StandardCard[]) => {
-      // TODO: Implement for multiplayer
-      console.warn('giveCardsBack not yet implemented for multiplayer')
+    giveCardsBack: (cards: StandardCard[]) => {
+      const cardIds = cards.map(c => c.id)
+      store.giveCards(cardIds)
     },
     getPlayerRankDisplay: (playerId: number) => {
       const player = store.players.find(p => p.id === playerId)

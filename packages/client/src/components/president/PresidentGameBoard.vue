@@ -249,13 +249,13 @@ const pileStatus = computed(() => {
   return `Beat: ${count}${currentPile.value.currentRank}s`
 })
 
-// Get player status
+// Get player status (card count or playing indicator)
 function getPlayerStatus(playerId: number): string {
   const player = players.value[playerId]
   if (!player) return ''
 
   if (player.finishOrder !== null) {
-    return adapter.getPlayerRankDisplay(playerId) || `#${player.finishOrder}`
+    return 'Finished'
   }
 
   if (playerId === currentPlayer.value) {
@@ -263,6 +263,20 @@ function getPlayerStatus(playerId: number): string {
   }
 
   return `${player.hand.length} cards`
+}
+
+// Get player rank badge (from previous round)
+function getPlayerRankBadge(playerId: number): string | null {
+  const player = players.value[playerId]
+  if (!player?.rank) return null
+  
+  const rankLabels: Record<number, string> = {
+    1: '👑', // President
+    2: '🎖️', // Vice President  
+    3: '',   // Citizen - no badge
+    4: '💩', // Scum
+  }
+  return rankLabels[player.rank] || null
 }
 
 // Show round complete modal
@@ -284,7 +298,10 @@ const showRoundComplete = computed(() =>
           :key="opponent.id"
           :class="['opponent', { active: currentPlayer === opponent.id }]"
         >
-          <div class="opponent-name">{{ opponent.name }}</div>
+          <div class="opponent-name">
+            <span v-if="getPlayerRankBadge(opponent.id)" class="rank-badge">{{ getPlayerRankBadge(opponent.id) }}</span>
+            {{ opponent.name }}
+          </div>
           <div class="opponent-cards">
             <div
               v-for="i in opponent.hand.length"
@@ -359,7 +376,10 @@ const showRoundComplete = computed(() =>
     <!-- Floating action panel -->
     <div :class="['floating-action-panel', { active: isHumanTurn || isHumanGivingCards }]">
       <div class="player-info-panel">
-        <div class="player-name-panel">{{ humanPlayer?.name || 'You' }}</div>
+        <div class="player-name-panel">
+          <span v-if="humanPlayer && getPlayerRankBadge(humanPlayer.id)" class="rank-badge">{{ getPlayerRankBadge(humanPlayer.id) }}</span>
+          {{ humanPlayer?.name || 'You' }}
+        </div>
         <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
           {{ adapter.getPlayerRankDisplay(humanPlayer.id) }}
         </span>
@@ -608,11 +628,18 @@ const showRoundComplete = computed(() =>
 .opponent-name {
   font-weight: bold;
   margin-bottom: $spacing-xs;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 
   @media (max-height: 500px) {
     font-size: 0.85rem;
     margin-bottom: 2px;
   }
+}
+
+.rank-badge {
+  font-size: 1.1em;
 }
 
 .opponent-cards {

@@ -62,6 +62,7 @@ export type ClientMessage =
   // President-specific messages
   | PresidentPlayCardsMessage
   | PresidentPassMessage
+  | PresidentGiveCardsMessage
 
 export interface JoinLobbyMessage {
   type: 'join_lobby'
@@ -131,6 +132,11 @@ export interface PresidentPassMessage {
   type: 'president_pass'
 }
 
+export interface PresidentGiveCardsMessage {
+  type: 'president_give_cards'
+  cardIds: string[]
+}
+
 // ============================================
 // Server -> Client Messages
 // ============================================
@@ -166,6 +172,7 @@ export type ServerMessage =
   | PresidentRoundCompleteMessage
   | PresidentGameOverMessage
   | PresidentCardExchangeInfoMessage
+  | PresidentAwaitingGiveCardsMessage
   | PresidentYourTurnMessage
 
 export interface WelcomeMessage {
@@ -406,6 +413,13 @@ export interface PresidentCardExchangeInfoMessage {
   youReceive: StandardCard[]
   otherPlayerName: string
   yourRole: string // 'President', 'Scum', etc.
+}
+
+export interface PresidentAwaitingGiveCardsMessage {
+  type: 'president_awaiting_give_cards'
+  cardsToGive: number
+  receivedCards: StandardCard[]
+  yourRole: string // 'President' or 'Vice President'
 }
 
 export interface PresidentYourTurnMessage {
