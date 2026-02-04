@@ -31,10 +31,7 @@ body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  // Safe area padding for modern iPhones (notch, Dynamic Island, home indicator)
-  // Only apply top/bottom - left/right creates unnecessary gaps on Android with side cutouts
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  // Let game boards handle safe areas internally for full-bleed backgrounds
 }
 
 ul,

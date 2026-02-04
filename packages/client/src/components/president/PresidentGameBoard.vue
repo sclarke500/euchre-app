@@ -624,6 +624,9 @@ const showRoundComplete = computed(() =>
   color: white;
   overflow: hidden;
   position: relative;
+  // Handle safe areas - background extends to edge, content is inset
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 
   // Mobile portrait: stack vertically
   @media (max-width: 768px) and (orientation: portrait) {
