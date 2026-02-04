@@ -125,12 +125,15 @@ watch(pileCards, (newCards, oldCards) => {
   // If we had cards and now we don't, sweep them away
   if (oldCards && oldCards.length > 0 && !newCards) {
     sweepingCards.value = oldCards
-    isSweeping.value = true
-    // Clear the sweep after animation completes
+    // Pause to let players see the final cards, then sweep
     setTimeout(() => {
-      isSweeping.value = false
-      sweepingCards.value = null
-    }, 400)
+      isSweeping.value = true
+      // Clear the sweep after animation completes
+      setTimeout(() => {
+        isSweeping.value = false
+        sweepingCards.value = null
+      }, 400)
+    }, 500)
   }
 })
 const gameOver = computed(() => adapter.gameOver.value)
