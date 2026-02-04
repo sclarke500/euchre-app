@@ -47,6 +47,53 @@ watch(() => adapter.validPlays.value, (newPlays, oldPlays) => {
   })
 }, { deep: true })
 
+// Track container width for dynamic card overlap
+const handContainerRef = ref<HTMLElement | null>(null)
+const containerWidth = ref(0)
+
+// Update container width on mount and resize
+onMounted(() => {
+  updateContainerWidth()
+  window.addEventListener('resize', updateContainerWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateContainerWidth)
+})
+
+function updateContainerWidth() {
+  if (handContainerRef.value) {
+    containerWidth.value = handContainerRef.value.clientWidth
+  } else {
+    // Fallback: estimate based on window width minus action panel
+    containerWidth.value = window.innerWidth - 220
+  }
+}
+
+// Calculate dynamic overlap based on card count and available width
+const cardWidth = 83 // From _variables.scss
+const minVisiblePerCard = 25 // Minimum pixels visible per card for tapping
+
+const dynamicCardOverlap = computed(() => {
+  const cardCount = sortedHand.value.length
+  if (cardCount <= 1) return 0
+  
+  const availableWidth = containerWidth.value || (window.innerWidth - 220)
+  
+  // Calculate: availableWidth = cardWidth + (cardCount - 1) * (cardWidth + overlap)
+  // Solve for overlap: overlap = (availableWidth - cardWidth) / (cardCount - 1) - cardWidth
+  const maxOverlap = (availableWidth - cardWidth) / (cardCount - 1) - cardWidth
+  
+  // Clamp between reasonable values
+  // More negative = more overlap (cards closer together)
+  // -25 is default, -(cardWidth - minVisible) is maximum overlap
+  const defaultOverlap = -25
+  const maxAllowedOverlap = -(cardWidth - minVisiblePerCard) // -58
+  
+  // Use the more negative value (tighter) if needed to fit
+  return Math.max(maxAllowedOverlap, Math.min(defaultOverlap, maxOverlap))
+})
+
 // Selected cards for multi-select
 const selectedCardIds = ref<Set<string>>(new Set())
 
@@ -347,15 +394,16 @@ const showRoundComplete = computed(() =>
 
       <!-- Player hand -->
       <div class="player-area">
-        <div class="hand-container">
+        <div ref="handContainerRef" class="hand-container">
           <div
-            v-for="card in sortedHand"
+            v-for="(card, index) in sortedHand"
             :key="card.id"
             :class="['hand-card', {
               selectable: isCardSelectable(card),
               selected: isCardSelected(card),
               dimmed: isHumanTurn && !isCardSelectable(card)
             }]"
+            :style="index > 0 ? { marginLeft: `${dynamicCardOverlap}px` } : {}"
             @click="toggleCardSelection(card)"
           >
             <Card
@@ -760,18 +808,9 @@ const showRoundComplete = computed(() =>
 }
 
 .hand-card {
-  margin-left: $card-overlap-hand;
+  // margin-left is now applied dynamically via inline style for responsive fit
   transform: translateY(50px); // Push cards down, showing only top ~55px
-  transition: transform 0.15s ease-out;
-
-  // Tighter overlap on small screens
-  @media (max-height: 500px) {
-    margin-left: $card-overlap-hand-tight;
-  }
-
-  &:first-child {
-    margin-left: 0;
-  }
+  transition: transform 0.15s ease-out, margin-left 0.15s ease-out;
 
   &.selectable {
     cursor: pointer;
