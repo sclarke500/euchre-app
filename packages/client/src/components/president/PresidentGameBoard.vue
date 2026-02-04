@@ -77,6 +77,13 @@ const cardsToGiveCount = computed(() => adapter.cardsToGiveCount.value)
 // Cards selected to give back during President/VP giving phase
 const selectedGiveBackCards = ref<Set<string>>(new Set())
 
+// Track completed exchange for summary modal
+const completedExchange = ref<{
+  youGave: StandardCard[]
+  youReceived: StandardCard[]
+  yourRole: string
+} | null>(null)
+
 // Sort human hand by rank
 const sortedHand = computed(() => {
   if (!humanPlayer.value) return []
@@ -179,8 +186,21 @@ const canConfirmGiveBack = computed(() => {
 // Confirm give-back selection
 function confirmGiveBack() {
   if (!canConfirmGiveBack.value) return
+  
+  // Store the exchange info for summary modal
+  completedExchange.value = {
+    youGave: [...selectedGiveBackCardsList.value],
+    youReceived: exchangeInfo.value?.youReceive ?? [],
+    yourRole: exchangeInfo.value?.yourRole ?? 'President'
+  }
+  
   adapter.giveCardsBack(selectedGiveBackCardsList.value)
   selectedGiveBackCards.value = new Set()
+}
+
+// Dismiss exchange summary modal
+function dismissExchangeSummary() {
+  completedExchange.value = null
 }
 
 // Get selected cards
@@ -278,7 +298,24 @@ const showRoundComplete = computed(() =>
 
       <!-- Center pile -->
       <div class="center-area">
-        <div class="pile-container">
+        <!-- Give cards prompt (inline, replaces pile during President giving phase) -->
+        <div v-if="isHumanGivingCards" class="give-cards-prompt">
+          <div class="give-prompt-title">You are {{ exchangeInfo?.yourRole }}</div>
+          <div class="give-prompt-received">
+            <span class="received-label">Received from Scum:</span>
+            <div class="received-cards">
+              <div v-for="card in exchangeInfo?.youReceive ?? []" :key="card.id" class="small-card-wrapper">
+                <Card :card="toCard(card)" />
+              </div>
+            </div>
+          </div>
+          <div class="give-prompt-instruction">
+            Select {{ cardsToGiveCount }} card{{ cardsToGiveCount > 1 ? 's' : '' }} from your hand to give back
+          </div>
+        </div>
+        
+        <!-- Normal pile (hidden during giving phase) -->
+        <div v-else class="pile-container">
           <div class="pile-status">{{ pileStatus }}</div>
           <div class="pile-cards">
             <div
@@ -328,7 +365,7 @@ const showRoundComplete = computed(() =>
     </div>
 
     <!-- Floating action panel -->
-    <div :class="['floating-action-panel', { active: isHumanTurn }]">
+    <div :class="['floating-action-panel', { active: isHumanTurn || isHumanGivingCards }]">
       <div class="player-info-panel">
         <div class="player-name-panel">{{ humanPlayer?.name || 'You' }}</div>
         <span v-if="humanPlayer?.finishOrder" class="player-rank-panel">
@@ -336,8 +373,18 @@ const showRoundComplete = computed(() =>
         </span>
       </div>
 
-      <!-- Selection feedback -->
-      <div v-if="isHumanTurn" class="selection-feedback">
+      <!-- Selection feedback for give-back phase -->
+      <div v-if="isHumanGivingCards" class="selection-feedback giving-mode">
+        <div v-if="selectedGiveBackCards.size > 0" class="selection-count">
+          {{ selectedGiveBackCards.size }}/{{ cardsToGiveCount }} selected
+        </div>
+        <div v-else class="hint-text">
+          Tap cards to select
+        </div>
+      </div>
+
+      <!-- Selection feedback for normal play -->
+      <div v-else-if="isHumanTurn" class="selection-feedback">
         <div v-if="selectedCards.length > 0" class="selection-count">
           {{ selectedCards.length }} card{{ selectedCards.length !== 1 ? 's' : '' }} selected
         </div>
@@ -352,8 +399,19 @@ const showRoundComplete = computed(() =>
       <!-- Spacer to push buttons to bottom -->
       <div class="panel-spacer"></div>
 
-      <!-- Action buttons - always visible, disabled when not applicable -->
-      <div class="action-buttons">
+      <!-- Action buttons for give-back phase -->
+      <div v-if="isHumanGivingCards" class="action-buttons">
+        <button
+          class="action-btn give-btn"
+          :disabled="!canConfirmGiveBack"
+          @click="confirmGiveBack"
+        >
+          Give Cards ({{ selectedGiveBackCards.size }}/{{ cardsToGiveCount }})
+        </button>
+      </div>
+
+      <!-- Action buttons for normal play -->
+      <div v-else class="action-buttons">
         <button
           class="action-btn play-btn"
           :disabled="!isHumanTurn || !canPlaySelection"
@@ -404,44 +462,35 @@ const showRoundComplete = computed(() =>
       </div>
     </Modal>
     
-    <!-- President/VP card selection modal (choosing cards to give back) -->
-    <Modal :show="isHumanGivingCards" @close="() => {}">
-      <div class="exchange-modal give-back-modal">
-        <h3>Choose Cards to Give</h3>
-        <p class="exchange-role">You are <strong>{{ exchangeInfo?.yourRole }}</strong></p>
-        
-        <div class="exchange-section receive">
-          <div class="exchange-label">You received from Scum:</div>
-          <div class="exchange-cards-wrapper">
-            <div class="exchange-cards">
-              <div v-for="card in exchangeInfo?.youReceive ?? []" :key="card.id" class="small-card-wrapper">
-                <Card :card="toCard(card)" />
+    <!-- Exchange summary modal (for President/VP after they've given cards) -->
+    <Modal :show="!!completedExchange" @close="dismissExchangeSummary">
+      <div v-if="completedExchange" class="exchange-modal">
+        <h3>Card Exchange Complete</h3>
+        <p class="exchange-role">You are <strong>{{ completedExchange.yourRole }}</strong></p>
+        <div class="exchange-sections">
+          <div class="exchange-section receive">
+            <div class="exchange-label">You received:</div>
+            <div class="exchange-cards-wrapper">
+              <div class="exchange-cards">
+                <div v-for="card in completedExchange.youReceived" :key="card.id" class="small-card-wrapper">
+                  <Card :card="toCard(card)" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="exchange-section give">
+            <div class="exchange-label">You gave:</div>
+            <div class="exchange-cards-wrapper">
+              <div class="exchange-cards">
+                <div v-for="card in completedExchange.youGave" :key="card.id" class="small-card-wrapper">
+                  <Card :card="toCard(card)" />
+                </div>
               </div>
             </div>
           </div>
         </div>
-        
-        <p class="give-back-instruction">
-          Select {{ cardsToGiveCount }} card{{ cardsToGiveCount > 1 ? 's' : '' }} from your hand to give back:
-        </p>
-        
-        <div class="give-back-selected">
-          <div v-if="selectedGiveBackCardsList.length === 0" class="no-selection">
-            Tap cards in your hand below to select
-          </div>
-          <div v-else class="exchange-cards">
-            <div v-for="card in selectedGiveBackCardsList" :key="card.id" class="small-card-wrapper">
-              <Card :card="toCard(card)" />
-            </div>
-          </div>
-        </div>
-        
-        <button 
-          class="modal-btn confirm" 
-          :disabled="!canConfirmGiveBack"
-          @click="confirmGiveBack"
-        >
-          Give Cards ({{ selectedGiveBackCards.size }}/{{ cardsToGiveCount }})
+        <button class="modal-btn confirm" @click="dismissExchangeSummary">
+          OK
         </button>
       </div>
     </Modal>
@@ -896,6 +945,19 @@ const showRoundComplete = computed(() =>
   }
 }
 
+.give-btn {
+  background: #9b59b6;
+  color: white;
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
 .pass-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;
@@ -903,6 +965,73 @@ const showRoundComplete = computed(() =>
   &:active:not(:disabled) {
     transform: scale(0.98);
   }
+}
+
+// Give cards prompt (inline in center area)
+.give-cards-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-lg;
+  background: rgba(155, 89, 182, 0.2);
+  border: 2px solid rgba(155, 89, 182, 0.6);
+  border-radius: 12px;
+  min-width: 250px;
+  
+  @media (max-height: 500px) {
+    padding: $spacing-sm;
+    min-width: 200px;
+  }
+  
+  .give-prompt-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: $spacing-sm;
+    color: #d4a5e8;
+    
+    @media (max-height: 500px) {
+      font-size: 1rem;
+    }
+  }
+  
+  .give-prompt-received {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: $spacing-md;
+    
+    .received-label {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin-bottom: $spacing-xs;
+    }
+    
+    .received-cards {
+      display: flex;
+      gap: $spacing-xs;
+    }
+  }
+  
+  .give-prompt-instruction {
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    animation: pulse-glow 2s ease-in-out infinite;
+    
+    @media (max-height: 500px) {
+      font-size: 0.9rem;
+    }
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; text-shadow: 0 0 10px rgba(212, 165, 232, 0.5); }
+}
+
+.selection-feedback.giving-mode {
+  background: rgba(155, 89, 182, 0.2);
+  border: 1px solid rgba(155, 89, 182, 0.4);
 }
 
 // Modal styles
@@ -1010,31 +1139,6 @@ const showRoundComplete = computed(() =>
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-    }
-  }
-}
-
-// Give-back modal specific styles
-.give-back-modal {
-  .give-back-instruction {
-    font-size: 0.9rem;
-    font-weight: bold;
-    margin: $spacing-md 0 $spacing-sm;
-    color: #555;
-  }
-  
-  .give-back-selected {
-    min-height: 80px;
-    padding: $spacing-sm;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
-    border: 2px dashed rgba(0, 0, 0, 0.2);
-    margin-bottom: $spacing-sm;
-    
-    .no-selection {
-      color: #999;
-      font-style: italic;
-      padding: $spacing-md;
     }
   }
 }
