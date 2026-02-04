@@ -651,6 +651,24 @@ export class PresidentGame {
       return
     }
 
+    // Check if joker was played - auto-clear pile since nothing can beat it
+    const playedJoker = cards.some(c => c.rank === 'Joker')
+    if (playedJoker && this.superTwosMode) {
+      this.broadcastState()
+      // Brief pause to show the joker, then auto-clear
+      setTimeout(() => {
+        this.currentPile = createEmptyPile()
+        this.currentPlayer = playerIndex // Joker player leads again
+        this.consecutivePasses = 0
+        this.events.onPileCleared(playerIndex)
+        this.broadcastState()
+        setTimeout(() => {
+          this.processCurrentTurn()
+        }, 300)
+      }, 800)
+      return
+    }
+
     this.broadcastState()
     this.processCurrentTurn()
   }

@@ -305,7 +305,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   function playCards(cards: StandardCard[]) {
     if (cards.length === 0) return
 
-    const state = processPlay(gameState.value, currentPlayer.value, cards)
+    const playingPlayer = currentPlayer.value
+    const state = processPlay(gameState.value, playingPlayer, cards)
 
     // Update state
     players.value = state.players
@@ -319,6 +320,22 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     // Check for round complete
     if (state.phase === PresidentPhase.RoundComplete) {
       handleRoundComplete()
+      return
+    }
+
+    // Check if joker was played - auto-clear pile since nothing can beat it
+    const playedJoker = cards.some(c => c.rank === 'Joker')
+    if (playedJoker && rules.value.superTwosMode) {
+      // Brief pause to show the joker, then auto-clear
+      setTimeout(() => {
+        currentPile.value = createEmptyPile()
+        currentPlayer.value = playingPlayer // Joker player leads again
+        consecutivePasses.value = 0
+        lastPlayedCards.value = null
+        setTimeout(() => {
+          processAITurn()
+        }, 300)
+      }, 800)
       return
     }
 
