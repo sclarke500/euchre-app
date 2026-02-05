@@ -16,6 +16,7 @@ import {
   getNextActivePlayer,
   createEmptyPile,
   findValidPlays,
+  isValidPlay,
   canPlay,
   choosePresidentPlay,
   chooseCardsToGive,
@@ -223,13 +224,12 @@ export class PresidentGame {
       cards.push(card)
     }
 
-    // Validate the play
-    const validPlays = findValidPlays(player.hand, this.currentPile, this.superTwosMode)
-    const isValid = validPlays.some(vp =>
-      vp.length === cards.length &&
-      vp.every(vc => cards.some(c => c.id === vc.id))
-    )
-    if (!isValid) return false
+    // Validate the play - check if it's a valid play against the current pile
+    // This allows any cards of the same rank, not just the specific card IDs
+    // returned by findValidPlays (which only returns the first N cards of each rank)
+    if (!isValidPlay(cards, this.currentPile, this.superTwosMode)) {
+      return false
+    }
 
     // Clear turn reminder since player acted
     this.clearTurnReminderTimeout()
@@ -269,14 +269,21 @@ export class PresidentGame {
    * Handle a player giving cards during the card exchange phase (President/VP)
    */
   handleGiveCards(odusId: string, cardIds: string[]): boolean {
+    console.log('handleGiveCards called:', { odusId, cardIds })
+    
     const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
-    if (playerIndex === -1) return false
+    if (playerIndex === -1) {
+      console.log('handleGiveCards: player not found')
+      return false
+    }
 
     if (this.phase !== PresidentPhase.PresidentGiving) {
+      console.log('handleGiveCards: wrong phase', this.phase)
       return false
     }
 
     if (this.awaitingGiveCards !== playerIndex) {
+      console.log('handleGiveCards: not awaiting this player', { awaitingGiveCards: this.awaitingGiveCards, playerIndex })
       return false
     }
 
@@ -286,14 +293,22 @@ export class PresidentGame {
     const cards: StandardCard[] = []
     for (const cardId of cardIds) {
       const card = player.hand.find((c) => c.id === cardId)
-      if (!card) return false
+      if (!card) {
+        console.log('handleGiveCards: card not in hand', cardId)
+        return false
+      }
       cards.push(card)
     }
 
     // Validate correct number of cards
     const expectedCount = player.rank === 1 ? 2 : 1
-    if (cards.length !== expectedCount) return false
+    console.log('handleGiveCards: rank check', { rank: player.rank, expectedCount, actualCount: cards.length })
+    if (cards.length !== expectedCount) {
+      console.log('handleGiveCards: wrong card count')
+      return false
+    }
 
+    console.log('handleGiveCards: calling giveCards')
     this.giveCards(playerIndex, cards)
     return true
   }
@@ -539,14 +554,27 @@ export class PresidentGame {
 
   private completeGiveBack(playerSeatIndex: number, cards: StandardCard[]): void {
     const player = this.players[playerSeatIndex]
-    if (!player) return
+    if (!player) {
+      console.error('completeGiveBack: player not found for seatIndex', playerSeatIndex)
+      return
+    }
+
+    console.log('completeGiveBack:', {
+      playerSeatIndex,
+      playerRank: player.rank,
+      playerName: player.name,
+      cardsToGive: cards.map(c => c.id),
+      playerHandSize: player.hand.length,
+    })
 
     // Find the recipient (Scum for President, Vice-Scum for VP)
     let recipient: PresidentGamePlayer | undefined
     if (player.rank === 1) {
       recipient = this.players.find(p => p.rank === 4) // Scum
+      console.log('Looking for Scum (rank 4), found:', recipient?.name ?? 'NONE', 'All ranks:', this.players.map(p => ({ name: p.name, rank: p.rank })))
     } else if (player.rank === 2) {
       recipient = this.players.find(p => p.cardsToGive === 1 && p.rank === 3) // Vice-Scum
+      console.log('Looking for Vice-Scum, found:', recipient?.name ?? 'NONE')
     }
 
     if (recipient) {
@@ -585,6 +613,12 @@ export class PresidentGame {
           roleNames[recipient.rank ?? 0] ?? 'Scum'
         )
       }
+    } else {
+      // BUG: recipient not found! Cards won't be transferred!
+      console.error('completeGiveBack: NO RECIPIENT FOUND! Cards not transferred!', {
+        playerRank: player.rank,
+        allPlayers: this.players.map(p => ({ name: p.name, rank: p.rank, seatIndex: p.seatIndex })),
+      })
     }
 
     this.awaitingGiveCards = null
