@@ -48,6 +48,7 @@ export interface PresidentGameAdapter {
   isMultiplayer: boolean
   initialize?: () => void
   cleanup?: () => void
+  requestResync?: () => void  // Manual resync for when state gets out of sync
 }
 
 export function usePresidentGameAdapter(mode: 'singleplayer' | 'multiplayer'): PresidentGameAdapter {
@@ -195,5 +196,6 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     isMultiplayer: true,
     initialize: () => store.initialize(),
     cleanup: () => store.cleanup(),
+    requestResync: () => store.requestStateResync(),
   }
 }

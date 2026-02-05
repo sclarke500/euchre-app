@@ -309,6 +309,13 @@ function confirmLeave() {
   emit('leaveGame')
 }
 
+// Manual resync for multiplayer
+function handleResync() {
+  if (adapter.requestResync) {
+    adapter.requestResync()
+  }
+}
+
 // Get pile display text
 const pileStatus = computed(() => {
   if (!currentPile.value.currentRank) {
@@ -360,6 +367,16 @@ const showRoundComplete = computed(() =>
 <template>
   <div class="president-game-board">
     <BackButton @click="showLeaveConfirm = true" />
+    
+    <!-- Resync button for multiplayer -->
+    <button 
+      v-if="adapter.isMultiplayer" 
+      class="resync-btn"
+      @click="handleResync"
+      title="Refresh game state"
+    >
+      🔄
+    </button>
 
     <!-- Main game area -->
     <div class="game-main">
@@ -652,6 +669,33 @@ const showRoundComplete = computed(() =>
   // Mobile portrait: stack vertically
   @media (max-width: 768px) and (orientation: portrait) {
     flex-direction: column;
+  }
+}
+
+.resync-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 50px; // Next to back button
+  z-index: 100;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  &:active {
+    transform: rotate(180deg);
   }
 }
 

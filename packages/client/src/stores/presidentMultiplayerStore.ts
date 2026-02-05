@@ -331,6 +331,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     acknowledgeExchange,
     giveCards,
     bootPlayer,
+    requestStateResync,
     initialize,
     cleanup,
   }

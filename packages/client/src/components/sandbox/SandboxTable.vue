@@ -81,12 +81,31 @@
         />
         
         <!-- Deck in center when not dealt -->
-        <div v-if="table.cardsInDeck.value.length > 0" class="deck">
+        <div v-if="table.cardsInDeck.value.length > 0 && !isDealing" class="deck">
           <div class="deck-card" v-for="i in Math.min(5, table.cardsInDeck.value.length)" :key="i" 
                :style="{ transform: `translateY(${-i}px)` }">
           </div>
           <span class="deck-count">{{ table.cardsInDeck.value.length }}</span>
         </div>
+        
+        <!-- Deck during dealing (shrinking) -->
+        <div v-if="isDealing" class="deck dealing">
+          <div class="deck-card" v-for="i in Math.min(3, table.cardsInDeck.value.length)" :key="i" 
+               :style="{ transform: `translateY(${-i}px)` }">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Flying cards animation layer -->
+      <div class="flying-layer">
+        <SandboxFlyingCard
+          v-for="flying in flyingCards"
+          :key="flying.id"
+          :card="flying.card"
+          :target-position="flying.targetPosition"
+          :delay="flying.delay"
+          :on-complete="() => handleFlyingCardComplete(flying.id)"
+        />
       </div>
 
       <div v-if="hasPosition('right')" class="seat seat-right">
@@ -111,15 +130,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useTable, type TablePosition } from '@/engine'
+import { ref, computed, reactive } from 'vue'
+import { useTable, type TablePosition, type Card } from '@/engine'
 import SandboxHand from './SandboxHand.vue'
 import SandboxPlayArea from './SandboxPlayArea.vue'
+import SandboxFlyingCard from './SandboxFlyingCard.vue'
 
 const playerCount = ref<2 | 3 | 4 | 5 | 6>(4)
 const cardsPerHand = ref(5)
 
 const table = useTable(playerCount.value)
+
+// Flying cards for deal animation
+interface FlyingCard {
+  card: Card
+  targetPosition: TablePosition
+  delay: number
+  id: string
+}
+const flyingCards = ref<FlyingCard[]>([])
+const isDealing = ref(false)
 
 // Computed helpers
 const hasDeck = computed(() => table.cardsInDeck.value.length > 0)
@@ -134,6 +164,8 @@ function hasPosition(pos: TablePosition): boolean {
 function resetTable() {
   table.reset()
   table.setPlayerCount(playerCount.value)
+  flyingCards.value = []
+  isDealing.value = false
 }
 
 function handleNewDeck() {
@@ -142,7 +174,62 @@ function handleNewDeck() {
 }
 
 function handleDeal() {
-  table.dealCards(cardsPerHand.value)
+  if (isDealing.value) return
+  isDealing.value = true
+  
+  const deckCards = [...table.cardsInDeck.value]
+  const positions = table.layout.value.positions
+  const totalCards = cardsPerHand.value * positions.length
+  
+  // Create flying card entries
+  const newFlyingCards: FlyingCard[] = []
+  let cardIndex = 0
+  
+  // Deal in rounds (one card to each player per round)
+  for (let round = 0; round < cardsPerHand.value; round++) {
+    for (const position of positions) {
+      if (cardIndex >= deckCards.length || cardIndex >= totalCards) break
+      
+      const card = deckCards[cardIndex]
+      if (!card) break
+      
+      // Set face up for human player only
+      card.faceUp = position === 'bottom'
+      
+      newFlyingCards.push({
+        card: { ...card },
+        targetPosition: position,
+        delay: cardIndex * 80, // 80ms stagger
+        id: `fly-${card.id}-${Date.now()}`
+      })
+      
+      cardIndex++
+    }
+  }
+  
+  flyingCards.value = newFlyingCards
+}
+
+function handleFlyingCardComplete(flyingId: string) {
+  const flying = flyingCards.value.find(f => f.id === flyingId)
+  if (!flying) return
+  
+  // Move the card to the hand in table state
+  table.moveCard(flying.card.id, { zone: 'hand', position: flying.targetPosition }, false)
+  
+  // Update card's faceUp state
+  const card = table.cards.value.get(flying.card.id)
+  if (card) {
+    card.faceUp = flying.targetPosition === 'bottom'
+  }
+  
+  // Remove from flying cards
+  flyingCards.value = flyingCards.value.filter(f => f.id !== flyingId)
+  
+  // Check if all done
+  if (flyingCards.value.length === 0) {
+    isDealing.value = false
+  }
 }
 
 function handleCardClick(cardId: string) {
@@ -155,7 +242,9 @@ function handlePlayRandom() {
     const hand = table.cardsInHand(position)
     if (hand.length > 0) {
       const randomCard = hand[Math.floor(Math.random() * hand.length)]
-      table.playCard(randomCard.id, position)
+      if (randomCard) {
+        table.playCard(randomCard.id, position)
+      }
     }
   }
 }
@@ -164,7 +253,9 @@ function handleCollect() {
   // Collect to a random winner
   const positions = table.layout.value.positions
   const winner = positions[Math.floor(Math.random() * positions.length)]
-  table.collectTrick(winner)
+  if (winner) {
+    table.collectTrick(winner)
+  }
 }
 </script>
 
