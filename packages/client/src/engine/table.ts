@@ -76,7 +76,7 @@ export function useTable(initialPlayerCount: number = 4) {
   // -------------------------------------------------------------------------
 
   function setPlayerCount(count: 2 | 3 | 4 | 5 | 6) {
-    layout.value = LAYOUTS[count]
+    layout.value = LAYOUTS[count] ?? LAYOUTS[4]
     
     // Create players for each position
     players.value = layout.value.positions.map((position, index) => ({
@@ -183,6 +183,7 @@ export function useTable(initialPlayerCount: number = 4) {
         if (cardIndex >= deckCards.length) break
         
         const card = deckCards[cardIndex]
+        if (!card) break
         card.faceUp = position === 'bottom' ? faceUp : false // only show human's cards
         
         const anim = moveCard(card.id, { zone: 'hand', position })
