@@ -158,6 +158,21 @@ export const useLobbyStore = defineStore('lobby', () => {
 
       // Set up message handler
       websocket.onMessage(handleMessage)
+      
+      // Set up reconnect handler to re-identify
+      websocket.onReconnect(() => {
+        console.log('Reconnected - re-identifying to server')
+        if (hasNickname.value) {
+          // Re-join lobby to re-establish identity
+          joinLobby()
+          
+          // If we were in a game, request state resync
+          if (gameId.value) {
+            console.log('Requesting game state resync after reconnect')
+            websocket.send({ type: 'request_state' })
+          }
+        }
+      })
 
       // Join lobby with nickname
       if (hasNickname.value) {

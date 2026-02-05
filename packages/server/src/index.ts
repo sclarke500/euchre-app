@@ -110,6 +110,36 @@ function handleJoinLobby(ws: WebSocket, client: ConnectedClient, nickname: strin
     connectedAt: Date.now(),
   }
 
+  // Check if this player is in an active game (reconnecting)
+  let reconnectedToGame = false
+  for (const [gameId, game] of presidentGames) {
+    const playerInfo = game.getPlayerInfo(playerId)
+    if (playerInfo) {
+      // Found their game - restore the connection
+      client.gameId = gameId
+      console.log(`Player ${nickname} reconnected to President game ${gameId}`)
+      reconnectedToGame = true
+      
+      // Immediately send them the current game state
+      game.resendStateToPlayer(playerId)
+      break
+    }
+  }
+  
+  // Also check regular games
+  if (!reconnectedToGame) {
+    for (const [gameId, game] of games) {
+      const playerInfo = game.getPlayerInfo(playerId)
+      if (playerInfo) {
+        client.gameId = gameId
+        console.log(`Player ${nickname} reconnected to Euchre game ${gameId}`)
+        reconnectedToGame = true
+        game.resendStateToPlayer(playerId)
+        break
+      }
+    }
+  }
+
   // Send welcome with assigned/confirmed ID
   send(ws, {
     type: 'welcome',
@@ -123,7 +153,7 @@ function handleJoinLobby(ws: WebSocket, client: ConnectedClient, nickname: strin
     state: getLobbyState(),
   })
 
-  console.log(`Player joined lobby: ${nickname} (${playerId})`)
+  console.log(`Player joined lobby: ${nickname} (${playerId})${reconnectedToGame ? ' [reconnected to game]' : ''}`)
 }
 
 function handleCreateTable(

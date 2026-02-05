@@ -4,14 +4,17 @@ import type {
 } from '@euchre/shared'
 
 type MessageHandler = (message: ServerMessage) => void
+type ReconnectHandler = () => void
 
 class WebSocketService {
   private ws: WebSocket | null = null
   private handlers: Set<MessageHandler> = new Set()
+  private reconnectHandlers: Set<ReconnectHandler> = new Set()
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
   private url: string = ''
+  private wasConnected = false
 
   get isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN
@@ -38,8 +41,16 @@ class WebSocketService {
 
         this.ws.onopen = () => {
           console.log('WebSocket connected')
+          const wasReconnect = this.wasConnected
           this.reconnectAttempts = 0
+          this.wasConnected = true
           resolve()
+          
+          // If this was a reconnect, notify handlers
+          if (wasReconnect) {
+            console.log('WebSocket reconnected - notifying handlers')
+            this.reconnectHandlers.forEach(handler => handler())
+          }
         }
 
         this.ws.onmessage = (event) => {
@@ -85,6 +96,11 @@ class WebSocketService {
   onMessage(handler: MessageHandler): () => void {
     this.handlers.add(handler)
     return () => this.handlers.delete(handler)
+  }
+
+  onReconnect(handler: ReconnectHandler): () => void {
+    this.reconnectHandlers.add(handler)
+    return () => this.reconnectHandlers.delete(handler)
   }
 
   private attemptReconnect(): void {
