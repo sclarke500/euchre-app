@@ -9,14 +9,19 @@ import PresidentGameBoard from './components/president/PresidentGameBoard.vue'
 import KlondikeGameBoard from './components/klondike/KlondikeGameBoard.vue'
 import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
+import { SandboxTable } from './components/sandbox'
 
 const gameStore = useGameStore()
 const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
 
 // App view state
-type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame'
-const currentView = ref<AppView>('menu')
+type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox'
+
+// Check for sandbox URL parameter
+const urlParams = new URLSearchParams(window.location.search)
+const initialView: AppView = urlParams.get('sandbox') !== null ? 'sandbox' : 'menu'
+const currentView = ref<AppView>(initialView)
 const currentGame = ref<GameType>('euchre')
 
 const phase = computed(() => gameStore.phase)
@@ -276,6 +281,11 @@ function backToMenu() {
       v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'euchre'"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
+    />
+
+    <!-- Animation Sandbox (access via ?sandbox) -->
+    <SandboxTable
+      v-else-if="currentView === 'sandbox'"
     />
 
     <!-- Multiplayer President Game -->

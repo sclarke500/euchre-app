@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Game Table Layouts - Ranking Tool</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 { 
+            text-align: center; 
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .controls button {
+            background: #4a4a6a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .controls button:hover {
+            background: #5a5a8a;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #252542;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: #333;
+            cursor: pointer;
+        }
+        .card img.placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #555;
+        }
+        .card-body {
+            padding: 15px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .card-game {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .rating {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .rating button {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #444;
+            background: transparent;
+            color: #888;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .rating button:hover {
+            border-color: #666;
+            color: #fff;
+        }
+        .rating button.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            color: white;
+        }
+        .rating button.active.bad {
+            background: #f44336;
+            border-color: #f44336;
+        }
+        .notes {
+            width: 100%;
+            background: #1a1a2e;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #eee;
+            padding: 8px;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        .notes::placeholder {
+            color: #666;
+        }
+        .app-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #6eb5ff;
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .app-link:hover {
+            text-decoration: underline;
+        }
+        .add-card {
+            background: #1e1e36;
+            border: 2px dashed #444;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .add-card:hover {
+            border-color: #666;
+            background: #252542;
+        }
+        .add-card span {
+            font-size: 48px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .add-card p {
+            color: #666;
+            font-size: 14px;
+        }
+        .summary {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #252542;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        .summary h2 {
+            margin-top: 0;
+            color: #fff;
+        }
+        .summary-list {
+            list-style: none;
+            padding: 0;
+        }
+        .summary-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+        .summary-list .score {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .summary-list .score.low {
+            color: #f44336;
+        }
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox.active {
+            display: flex;
+        }
+        .lightbox img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+        }
+        .filter-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .filter-bar button {
+            background: transparent;
+            color: #888;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            margin: 3px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .filter-bar button:hover,
+        .filter-bar button.active {
+            background: #4a4a6a;
+            color: #fff;
+            border-color: #4a4a6a;
+        }
+    </style>
+</head>
+<body>
+    <h1>🃏 Card Game Table Layouts</h1>
+    <p class="subtitle">Rate layouts 1-5. Click images to enlarge. Notes auto-save.</p>
+
+    <div class="filter-bar">
+        <button class="active" data-filter="all">All</button>
+        <button data-filter="poker">Poker</button>
+        <button data-filter="euchre">Euchre</button>
+        <button data-filter="spades">Spades</button>
+        <button data-filter="solitaire">Solitaire</button>
+        <button data-filter="other">Other</button>
+    </div>
+
+    <div class="controls">
+        <button onclick="exportRankings()">📋 Export Rankings</button>
+        <button onclick="clearAll()">🗑️ Clear All Ratings</button>
+    </div>
+
+    <div class="grid" id="grid">
+        <!-- Cards will be populated by JS -->
+    </div>
+
+    <div class="summary" id="summary">
+        <h2>📊 Rankings Summary</h2>
+        <ul class="summary-list" id="summary-list"></ul>
+    </div>
+
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="">
+    </div>
+
+    <script>
+        // Card game layouts to review
+        const layouts = [
+            // POKER
+            {
+                id: 'pokerstars',
+                name: 'PokerStars',
+                game: 'poker',
+                img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/PokerStars_logo.svg/1200px-PokerStars_logo.svg.png',
+                link: 'https://apps.apple.com/us/app/pokerstars-poker-real-money/id458771213',
+                notes: 'Visit App Store for gameplay screenshots'
+            },
+            {
+                id: 'zynga',
+                name: 'Zynga Poker',
+                game: 'poker',
+                img: 'https://play-lh.googleusercontent.com/r-v2wgTUr1EATqk5GC0p83FGqYqvYcJZPw5CcF3b5dZqANdHqpNBU5OjmTNnJ9Oqcbo',
+                link: 'https://play.google.com/store/apps/details?id=com.zynga.livepoker',
+                notes: 'Social-focused design, colorful'
+            },
+            {
+                id: 'governor',
+                name: 'Governor of Poker 3',
+                game: 'poker',
+                img: 'https://play-lh.googleusercontent.com/kUG7kL7E0d3YL1_3LB0_1V2I-xVrKdI_vHvJNR7h0G5sLe-lLwlqb0TQHnXwJmKhow',
+                link: 'https://play.google.com/store/apps/details?id=air.com.youdagames.governorofpoker3',
+                notes: 'RPG-style progression wrapper'
+            },
+            // EUCHRE
+            {
+                id: 'euchre3d',
+                name: 'Euchre 3D',
+                game: 'euchre',
+                img: 'https://play-lh.googleusercontent.com/fHKDWGR3KYTlOxlT8qFMiCYqNvJyWC1YEKa8yJsKv0OLGXcRJ8qJKCYNyJuqCdKJQw',
+                link: 'https://play.google.com/store/apps/details?id=com.astarsoftware.euchre',
+                notes: 'Realistic 3D table view, most popular'
+            },
+            {
+                id: 'trickster',
+                name: 'Trickster Euchre',
+                game: 'euchre',
+                img: 'https://play-lh.googleusercontent.com/qLZhkq5rQH8v5JHLL5XLnJDVbT-x4YhGqCJqzDDkGqJiQ0oXvQVpVZrKCqCJpvJVMQ',
+                link: 'https://play.google.com/store/apps/details?id=com.trickstercards.euchre',
+                notes: 'Clean, focused on playing with friends'
+            },
+            {
+                id: 'euchre_classic',
+                name: 'Euchre Classic',
+                game: 'euchre',
+                img: 'https://play-lh.googleusercontent.com/y3kT6c9PsLlqGSh1rMJCNZhBJnVjUQNVG-sPxnZCF9zNdLqYFbPwJSKLrPSqD8YQNpM',
+                link: 'https://apps.apple.com/us/app/euchre-classic-card-game/id1513147390',
+                notes: 'Simpler interface'
+            },
+            // SPADES
+            {
+                id: 'spades_plus',
+                name: 'Spades Plus',
+                game: 'spades',
+                img: 'https://play-lh.googleusercontent.com/7dN-5B8gJzcxbDhgNh7LvZSdVxBwQTJCvr_7GgHqF6xJQtGHNs9HqHcJCNJdOZNQcQ',
+                link: 'https://play.google.com/store/apps/details?id=com.zynga.spadesplus',
+                notes: 'Largest community, Zynga-owned'
+            },
+            {
+                id: 'vip_spades',
+                name: 'VIP Spades',
+                game: 'spades',
+                img: 'https://play-lh.googleusercontent.com/fKVVJxCqGqNtVNKyMNXhN5HvK8vGqJPvNKfNxVKvQN5qPJKhPvB_PKqVPvNqKPvNqPvNqQ',
+                link: 'https://play.google.com/store/apps/details?id=com.casualarena.spades',
+                notes: 'More serious players'
+            },
+            // SOLITAIRE
+            {
+                id: 'solitaire_bliss',
+                name: 'Solitaire Bliss',
+                game: 'solitaire',
+                img: 'https://play-lh.googleusercontent.com/rqGrPCOTwLHVzOJhWVBBHDvQ7cJqXJgN5jPkJCvZJ3QZPJqJPJqJPJqJPJqJPJqJPJqJPQ',
+                link: 'https://play.google.com/store/apps/details?id=com.mongoosenet.bliss',
+                notes: 'Clean with competitive features'
+            },
+            {
+                id: 'solitaire_master',
+                name: 'Solitaire Master',
+                game: 'solitaire',
+                img: 'https://play-lh.googleusercontent.com/LXqJJvJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPQ',
+                link: 'https://apps.apple.com/us/app/solitaire-master-card-game/id1573566186',
+                notes: 'Beautiful animations, elegant'
+            },
+            // OTHER GAMES
+            {
+                id: 'president',
+                name: 'President (King & Scum)',
+                game: 'other',
+                img: 'https://is1-ssl.mzstatic.com/image/thumb/Purple114/v4/9c/9c/9c/9c9c9c9c-9c9c-9c9c-9c9c-9c9c9c9c9c9c/AppIcon.png/512x512bb.jpg',
+                link: 'https://apps.apple.com/us/app/president-king-scum-ahole/id879475002',
+                notes: 'Simple card shedding game'
+            },
+            {
+                id: 'crazy_eights',
+                name: 'Crazy Eights (LITE Games)',
+                game: 'other',
+                img: 'https://play-lh.googleusercontent.com/mJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPJqJPQ',
+                link: 'https://play.google.com/store/apps/details?id=com.b.seventeight',
+                notes: 'Classic Mau-Mau style'
+            },
+        ];
+
+        // Load ratings from localStorage
+        let ratings = JSON.parse(localStorage.getItem('cardLayoutRatings') || '{}');
+
+        function renderCards(filter = 'all') {
+            const grid = document.getElementById('grid');
+            const filtered = filter === 'all' ? layouts : layouts.filter(l => l.game === filter);
+            
+            grid.innerHTML = filtered.map(layout => `
+                <div class="card" data-game="${layout.game}">
+                    <img src="${layout.img}" 
+                         alt="${layout.name}" 
+                         onclick="openLightbox('${layout.img}')"
+                         onerror="this.style.background='#333'; this.alt='Visit link for screenshots'">
+                    <div class="card-body">
+                        <div class="card-title">${layout.name}</div>
+                        <div class="card-game">${layout.game.toUpperCase()}</div>
+                        <div class="rating">
+                            ${[1,2,3,4,5].map(n => `
+                                <button onclick="rate('${layout.id}', ${n})" 
+                                        class="${ratings[layout.id]?.score === n ? 'active' + (n <= 2 ? ' bad' : '') : ''}">${n}</button>
+                            `).join('')}
+                        </div>
+                        <textarea class="notes" 
+                                  placeholder="Notes: What do you like/dislike about this layout?"
+                                  onchange="saveNotes('${layout.id}', this.value)">${ratings[layout.id]?.notes || layout.notes || ''}</textarea>
+                        <a class="app-link" href="${layout.link}" target="_blank">📱 View in App Store →</a>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add "add new" card
+            grid.innerHTML += `
+                <div class="card add-card" onclick="addCustomLayout()">
+                    <span>+</span>
+                    <p>Add Screenshot URL</p>
+                </div>
+            `;
+
+            updateSummary();
+        }
+
+        function rate(id, score) {
+            ratings[id] = ratings[id] || {};
+            ratings[id].score = score;
+            localStorage.setItem('cardLayoutRatings', JSON.stringify(ratings));
+            renderCards(document.querySelector('.filter-bar button.active').dataset.filter);
+        }
+
+        function saveNotes(id, notes) {
+            ratings[id] = ratings[id] || {};
+            ratings[id].notes = notes;
+            localStorage.setItem('cardLayoutRatings', JSON.stringify(ratings));
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const list = document.getElementById('summary-list');
+            const ranked = layouts
+                .filter(l => ratings[l.id]?.score)
+                .sort((a, b) => (ratings[b.id]?.score || 0) - (ratings[a.id]?.score || 0));
+            
+            if (ranked.length === 0) {
+                list.innerHTML = '<li style="color: #666">No ratings yet. Rate some layouts above!</li>';
+                return;
+            }
+
+            list.innerHTML = ranked.map(l => `
+                <li>
+                    <span>${l.name} <small style="color:#666">(${l.game})</small></span>
+                    <span class="score ${ratings[l.id].score <= 2 ? 'low' : ''}">${ratings[l.id].score}/5</span>
+                </li>
+            `).join('');
+        }
+
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        function exportRankings() {
+            const ranked = layouts
+                .filter(l => ratings[l.id]?.score)
+                .sort((a, b) => (ratings[b.id]?.score || 0) - (ratings[a.id]?.score || 0));
+            
+            let text = "# Card Game Layout Rankings\n\n";
+            text += "Generated: " + new Date().toLocaleString() + "\n\n";
+            
+            ranked.forEach((l, i) => {
+                text += `## ${i+1}. ${l.name} (${l.game}) - ${ratings[l.id].score}/5\n`;
+                if (ratings[l.id].notes) {
+                    text += `Notes: ${ratings[l.id].notes}\n`;
+                }
+                text += `Link: ${l.link}\n\n`;
+            });
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Rankings copied to clipboard!');
+            });
+        }
+
+        function clearAll() {
+            if (confirm('Clear all ratings and notes?')) {
+                ratings = {};
+                localStorage.removeItem('cardLayoutRatings');
+                renderCards();
+            }
+        }
+
+        function addCustomLayout() {
+            const url = prompt('Enter image URL:');
+            if (!url) return;
+            const name = prompt('Name this layout:') || 'Custom';
+            const game = prompt('Game type (poker/euchre/spades/solitaire/other):') || 'other';
+            
+            layouts.push({
+                id: 'custom_' + Date.now(),
+                name: name,
+                game: game,
+                img: url,
+                link: url,
+                notes: ''
+            });
+            renderCards();
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-bar button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderCards(btn.dataset.filter);
+            });
+        });
+
+        // Keyboard shortcut for lightbox
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        // Initial render
+        renderCards();
+    </script>
+</body>
+</html>
