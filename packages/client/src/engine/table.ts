@@ -51,7 +51,9 @@ export function shuffleDeck(cards: Card[]): Card[] {
   const shuffled = [...cards]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    const temp = shuffled[i]!
+    shuffled[i] = shuffled[j]!
+    shuffled[j] = temp
   }
   return shuffled
 }
@@ -65,7 +67,7 @@ export function useTable(initialPlayerCount: number = 4) {
   const cards: Ref<Map<string, Card>> = ref(new Map())
   const cardLocations: Ref<Map<string, CardLocation>> = ref(new Map())
   const players: Ref<Player[]> = ref([])
-  const layout: Ref<TableLayout> = ref(LAYOUTS[initialPlayerCount] || LAYOUTS[4])
+  const layout: Ref<TableLayout> = ref(LAYOUTS[initialPlayerCount] ?? LAYOUTS[4]!)
   
   // Animation queue
   const pendingAnimations: Ref<AnimationRequest[]> = ref([])
@@ -76,7 +78,7 @@ export function useTable(initialPlayerCount: number = 4) {
   // -------------------------------------------------------------------------
 
   function setPlayerCount(count: 2 | 3 | 4 | 5 | 6) {
-    layout.value = LAYOUTS[count] ?? LAYOUTS[4]
+    layout.value = LAYOUTS[count]!
     
     // Create players for each position
     players.value = layout.value.positions.map((position, index) => ({
