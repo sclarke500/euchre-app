@@ -254,13 +254,17 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
     // Set up periodic sync check
     syncCheckInterval = setInterval(() => {
-      // Check for stale state during turn or card-giving phase
-      const needsSync = isMyTurn.value || isAwaitingGiveCards.value
-      if (!gameState.value || !needsSync) return
+      // Always check for stale state when in a game
+      if (!gameState.value) return
 
       const timeSinceLastUpdate = Date.now() - lastStateReceivedAt
-      if (timeSinceLastUpdate > 10000) {
-        console.log('No state update for 10s while waiting for action - requesting resync')
+      
+      // More aggressive resync when it's our turn (10s), otherwise still check but less frequently (30s)
+      const isWaitingForUs = isMyTurn.value || isAwaitingGiveCards.value
+      const staleThreshold = isWaitingForUs ? 10000 : 30000
+      
+      if (timeSinceLastUpdate > staleThreshold) {
+        console.log(`No state update for ${staleThreshold/1000}s - requesting resync`)
         requestStateResync()
         lastStateReceivedAt = Date.now()
       }
