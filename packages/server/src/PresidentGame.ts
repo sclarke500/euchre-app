@@ -189,10 +189,25 @@ export class PresidentGame {
     const state = this.getStateForPlayer(odusId)
     this.events.onStateChange(odusId, state)
 
-    // Also resend your_turn if it's this player's turn
     const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
-    if (playerIndex !== -1 && this.currentPlayer === playerIndex) {
-      const player = this.players[playerIndex]!
+    if (playerIndex === -1) return
+
+    const player = this.players[playerIndex]!
+
+    // Resend awaiting_give_cards if this player needs to give cards (PresidentGiving phase)
+    if (this.phase === PresidentPhase.PresidentGiving && this.awaitingGiveCards === playerIndex) {
+      const cardsToGive = player.rank === 1 ? 2 : 1
+      const receivedCards = this.pendingExchangeReceivedCards.get(playerIndex) ?? []
+      const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President' }
+      const yourRole = roleNames[player.rank ?? 0] ?? 'Unknown'
+      
+      console.log('Resending awaiting_give_cards to player', playerIndex, player.name)
+      this.events.onAwaitingGiveCards(odusId, cardsToGive, receivedCards, yourRole)
+      return
+    }
+
+    // Resend your_turn if it's this player's turn during Playing phase
+    if (this.phase === PresidentPhase.Playing && this.currentPlayer === playerIndex) {
       if (player.isHuman && player.finishOrder === null) {
         this.notifyPlayerTurn(odusId)
       }
