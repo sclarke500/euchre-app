@@ -64,6 +64,9 @@ export interface GameAdapter {
   makeBid: (bid: Bid | BidAction, suit?: Suit, goingAlone?: boolean) => void
   playCard: (card: Card | string) => void
   discardCard: (card: Card | string) => void
+  
+  // Multiplayer-specific
+  requestResync?: () => void
 }
 
 function createEmptyTrick(): Trick {
@@ -286,6 +289,10 @@ function createMultiplayerAdapter(): GameAdapter {
     discardCard: (card: Card | string) => {
       const cardId = typeof card === 'string' ? card : card.id
       store.discardCard(cardId)
+    },
+    
+    requestResync: () => {
+      store.requestStateResync()
     },
   }
 }

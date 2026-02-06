@@ -1,5 +1,16 @@
 <template>
   <BackButton @click="showLeaveConfirm = true" />
+  
+  <!-- Resync button for multiplayer -->
+  <button 
+    v-if="game.isMultiplayer" 
+    class="resync-btn"
+    @click="handleResync"
+    title="Refresh game state"
+  >
+    🔄
+  </button>
+  
   <div class="game-board">
     <!-- Top row: partner plaque | scoreboard -->
     <div class="cell-partner">
@@ -87,6 +98,13 @@ const showLeaveConfirm = ref(false)
 function confirmLeave() {
   showLeaveConfirm.value = false
   emit('leaveGame')
+}
+
+// Manual resync for multiplayer
+function handleResync() {
+  if (game.requestResync) {
+    game.requestResync()
+  }
 }
 
 // Create the appropriate adapter based on mode
@@ -291,6 +309,33 @@ onUnmounted(() => {
     background: #e74c3c;
     color: white;
     border: none;
+  }
+}
+
+.resync-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 50px; // Next to back button
+  z-index: 100;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  &:active {
+    transform: rotate(180deg);
   }
 }
 </style>

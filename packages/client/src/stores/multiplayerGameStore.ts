@@ -265,5 +265,6 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     discardCard,
     initialize,
     cleanup,
+    requestStateResync,
   }
 })
