@@ -406,9 +406,20 @@ const showRoundComplete = computed(() =>
       <div class="center-area">
         <!-- Give cards prompt (inline, replaces pile during President giving phase) -->
         <div v-if="isHumanGivingCards" class="give-cards-prompt">
-          <div class="give-prompt-title">You are {{ exchangeInfo?.yourRole }}</div>
+          <div class="give-prompt-title">You are {{ exchangeInfo?.yourRole }}!</div>
+          
+          <!-- Show cards received from Scum -->
+          <div v-if="exchangeInfo?.youReceive?.length" class="received-cards-section">
+            <div class="received-label">You received from Scum:</div>
+            <div class="received-cards">
+              <div v-for="card in exchangeInfo.youReceive" :key="card.id" class="received-card">
+                <Card :card="toCard(card)" />
+              </div>
+            </div>
+          </div>
+          
           <div class="give-prompt-instruction">
-            Select {{ cardsToGiveCount }} card{{ cardsToGiveCount > 1 ? 's' : '' }} to give to Scum
+            Now select {{ cardsToGiveCount }} card{{ cardsToGiveCount > 1 ? 's' : '' }} from your hand to give back
           </div>
         </div>
         
@@ -1147,6 +1158,28 @@ const showRoundComplete = computed(() =>
     
     @media (max-height: 500px) {
       font-size: 0.9rem;
+    }
+  }
+  
+  .received-cards-section {
+    margin: $spacing-sm 0;
+    text-align: center;
+    
+    .received-label {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      margin-bottom: $spacing-xs;
+    }
+    
+    .received-cards {
+      display: flex;
+      justify-content: center;
+      gap: $spacing-xs;
+      
+      .received-card {
+        transform: scale(0.7);
+        transform-origin: center;
+      }
     }
   }
 }

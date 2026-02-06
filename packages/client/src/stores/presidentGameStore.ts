@@ -178,8 +178,16 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     awaitingGiveBack.value = state.awaitingGiveBack
     roundNumber.value = state.roundNumber
 
+    console.log('[DEBUG] startRound state after startNewRound:', {
+      phase: state.phase,
+      awaitingGiveBack: state.awaitingGiveBack,
+      pendingExchanges: state.pendingExchanges?.length,
+      playerRanks: state.players.map(p => ({ id: p.id, rank: p.rank, isHuman: p.isHuman })),
+    })
+    
     setTimeout(() => {
       phase.value = state.phase
+      console.log('[DEBUG] After timeout, phase set to:', state.phase)
       
       if (state.phase === PresidentPhase.PresidentGiving) {
         // Card exchange phase - check if human needs to give cards
@@ -195,10 +203,24 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   function handleGivingPhase() {
     const human = humanPlayer.value
     
+    console.log('[DEBUG] handleGivingPhase:', {
+      humanId: human?.id,
+      humanRank: human?.rank,
+      awaitingGiveBack: awaitingGiveBack.value,
+      phase: phase.value,
+      pendingExchanges: pendingExchanges.value.map(e => ({
+        from: e.fromPlayerId,
+        to: e.toPlayerId,
+        cards: e.cards.map(c => `${c.rank}${c.suit[0]}`),
+      })),
+    })
+    
     if (human && awaitingGiveBack.value === human.id) {
       // Human is President or VP - needs to select cards to give
       // Get info about what they received
       const info = getExchangeInfo(gameState.value, human.id)
+      console.log('[DEBUG] getExchangeInfo result:', info)
+      
       if (info) {
         const scum = players.value.find(p => p.rank === PlayerRank.Scum)
         const viceScum = players.value.find(p => 
@@ -213,8 +235,12 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
           yourRole: info.yourRole,
         }
         waitingForExchangeAck.value = false // User needs to select, not just ack
+        console.log('[DEBUG] exchangeInfo set:', exchangeInfo.value)
+      } else {
+        console.warn('[DEBUG] getExchangeInfo returned null!')
       }
     } else {
+      console.log('[DEBUG] AI is giving cards (not human)')
       // AI is President/VP - let them give cards automatically
       processAIGiveBack()
     }
