@@ -136,7 +136,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     // Build rules from settings
     rules.value = {
       superTwosMode: settings.isSuperTwosAndJokers(),
-      whoLeads: 'president', // TODO: Add to settings
+      whoLeads: 'scum', // Scum leads after card exchange (standard rule)
       playStyle: 'multiLoop', // TODO: Add to settings
     }
 
