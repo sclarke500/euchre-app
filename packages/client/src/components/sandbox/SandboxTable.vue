@@ -105,6 +105,8 @@
           :target-position="flying.targetPosition"
           :delay="flying.delay"
           :stack-index="flying.stackIndex"
+          :deal-order="flying.dealOrder"
+          :total-cards="flyingCards.length"
           :on-complete="() => handleFlyingCardComplete(flying.id)"
         />
       </div>
@@ -148,6 +150,7 @@ interface FlyingCard {
   targetPosition: TablePosition
   delay: number
   stackIndex: number  // Position in player's stack
+  dealOrder: number   // Overall order dealt (0 = first card dealt)
   id: string
   landed: boolean     // Has this card reached its stack position?
 }
@@ -220,6 +223,7 @@ function handleDeal() {
         targetPosition: position,
         delay: cardIndex * 100, // 100ms stagger for clearer deal
         stackIndex: currentStackIndex,
+        dealOrder: cardIndex,  // Track overall deal order for z-index
         id: `fly-${card.id}-${Date.now()}`,
         landed: false,
       })

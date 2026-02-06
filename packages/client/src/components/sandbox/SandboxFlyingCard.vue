@@ -18,6 +18,8 @@ const props = defineProps<{
   targetPosition: TablePosition
   delay: number
   stackIndex: number  // Which card in the stack (for offset)
+  dealOrder: number   // Order this card is dealt (0 = first, used for z-index)
+  totalCards: number  // Total cards being dealt (for z-index calculation)
   deckPosition?: { x: number; y: number }  // Where the deck is
   onComplete: () => void
 }>()
@@ -59,19 +61,22 @@ const cardStyle = computed(() => {
   const target = stackCoords[props.targetPosition]
   
   if (stage.value === 'start') {
-    // Start at deck position
+    // Start at deck position - FIRST card dealt should be on TOP (highest z-index)
+    // Invert: first dealt (dealOrder=0) gets highest z-index
+    const startingZIndex = 2000 + (props.totalCards - props.dealOrder)
     return {
       left: `${deckPos.value.x}%`,
       top: `${deckPos.value.y}%`,
       transform: 'translate(-50%, -50%) rotate(0deg)',
       opacity: 1,
       transition: 'none',
-      zIndex: 1000 + props.stackIndex,
+      zIndex: startingZIndex,
     }
   }
   
   if (stage.value === 'flying' || stage.value === 'landed') {
     // Stack position with random offset for natural look
+    // At destination, later cards in stack go on top
     const stackOffset = props.stackIndex * 0.5  // Slight vertical stacking
     return {
       left: `calc(${target.x}% + ${randomOffset.x}px)`,
