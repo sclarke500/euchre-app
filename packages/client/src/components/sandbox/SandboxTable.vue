@@ -80,19 +80,12 @@
           :player-count="playerCount"
         />
         
-        <!-- Deck in center when not dealt -->
+        <!-- Deck in center - hidden during dealing (flying cards become the deck) -->
         <div v-if="table.cardsInDeck.value.length > 0 && !isDealing" class="deck">
           <div class="deck-card" v-for="i in Math.min(5, table.cardsInDeck.value.length)" :key="i" 
                :style="{ transform: `translateY(${-i}px)` }">
           </div>
           <span class="deck-count">{{ table.cardsInDeck.value.length }}</span>
-        </div>
-        
-        <!-- Deck during dealing (shrinking) -->
-        <div v-if="isDealing" class="deck dealing">
-          <div class="deck-card" v-for="i in Math.min(3, table.cardsInDeck.value.length)" :key="i" 
-               :style="{ transform: `translateY(${-i}px)` }">
-          </div>
         </div>
       </div>
       

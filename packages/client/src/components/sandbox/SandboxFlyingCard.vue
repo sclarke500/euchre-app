@@ -64,9 +64,11 @@ const cardStyle = computed(() => {
     // Start at deck position - FIRST card dealt should be on TOP (highest z-index)
     // Invert: first dealt (dealOrder=0) gets highest z-index
     const startingZIndex = 2000 + (props.totalCards - props.dealOrder)
+    // Stack offset: cards lower in deck are slightly lower visually
+    const stackOffset = (props.totalCards - props.dealOrder) * 0.5
     return {
       left: `${deckPos.value.x}%`,
-      top: `${deckPos.value.y}%`,
+      top: `calc(${deckPos.value.y}% + ${stackOffset}px)`,
       transform: 'translate(-50%, -50%) rotate(0deg)',
       opacity: 1,
       transition: 'none',
