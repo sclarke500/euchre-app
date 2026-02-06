@@ -149,9 +149,11 @@ interface FlyingCard {
   delay: number
   stackIndex: number  // Position in player's stack
   id: string
+  landed: boolean     // Has this card reached its stack position?
 }
 const flyingCards = ref<FlyingCard[]>([])
 const isDealing = ref(false)
+const allCardsLanded = ref(false)
 
 // Track how many cards each player has received (for stacking)
 const stackCounts = ref<Map<TablePosition, number>>(new Map())
@@ -171,6 +173,7 @@ function resetTable() {
   table.setPlayerCount(playerCount.value)
   flyingCards.value = []
   isDealing.value = false
+  allCardsLanded.value = false
 }
 
 function handleNewDeck() {
@@ -181,6 +184,7 @@ function handleNewDeck() {
 function handleDeal() {
   if (isDealing.value) return
   isDealing.value = true
+  allCardsLanded.value = false
   
   const deckCards = [...table.cardsInDeck.value]
   const positions = table.layout.value.positions
@@ -216,7 +220,8 @@ function handleDeal() {
         targetPosition: position,
         delay: cardIndex * 100, // 100ms stagger for clearer deal
         stackIndex: currentStackIndex,
-        id: `fly-${card.id}-${Date.now()}`
+        id: `fly-${card.id}-${Date.now()}`,
+        landed: false,
       })
       
       cardIndex++
@@ -230,22 +235,38 @@ function handleFlyingCardComplete(flyingId: string) {
   const flying = flyingCards.value.find(f => f.id === flyingId)
   if (!flying) return
   
-  // Move the card to the hand in table state
-  table.moveCard(flying.card.id, { zone: 'hand', position: flying.targetPosition }, false)
+  // Mark as landed (card stays visible in stack)
+  flying.landed = true
   
-  // Update card's faceUp state
-  const card = table.cards.value.get(flying.card.id)
-  if (card) {
-    card.faceUp = flying.targetPosition === 'bottom'
+  // Check if ALL cards have landed
+  const allLanded = flyingCards.value.every(f => f.landed)
+  
+  if (allLanded) {
+    allCardsLanded.value = true
+    
+    // Wait a moment to show the stacks, then move to hands
+    setTimeout(() => {
+      moveStacksToHands()
+    }, 800)  // Show stacks for 800ms before forming hands
+  }
+}
+
+function moveStacksToHands() {
+  // Move all flying cards to their respective hands
+  for (const flying of flyingCards.value) {
+    table.moveCard(flying.card.id, { zone: 'hand', position: flying.targetPosition }, false)
+    
+    // Update card's faceUp state
+    const card = table.cards.value.get(flying.card.id)
+    if (card) {
+      card.faceUp = flying.targetPosition === 'bottom'
+    }
   }
   
-  // Remove from flying cards
-  flyingCards.value = flyingCards.value.filter(f => f.id !== flyingId)
-  
-  // Check if all done
-  if (flyingCards.value.length === 0) {
-    isDealing.value = false
-  }
+  // Clear flying cards and end dealing
+  flyingCards.value = []
+  isDealing.value = false
+  allCardsLanded.value = false
 }
 
 function handleCardClick(cardId: string) {
