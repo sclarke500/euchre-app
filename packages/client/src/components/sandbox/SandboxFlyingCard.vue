@@ -1,9 +1,10 @@
 <template>
   <div 
     class="flying-card"
+    :class="{ 'face-down': !showFaceUp }"
     :style="cardStyle"
   >
-    <SandboxCard :card="card" />
+    <SandboxCard :card="displayCard" />
   </div>
 </template>
 
@@ -16,51 +17,73 @@ const props = defineProps<{
   card: Card
   targetPosition: TablePosition
   delay: number
+  stackIndex: number  // Which card in the stack (for offset)
+  deckPosition?: { x: number; y: number }  // Where the deck is
   onComplete: () => void
 }>()
 
-const stage = ref<'start' | 'flying' | 'done'>('start')
+const stage = ref<'start' | 'flying' | 'landed'>('start')
 
-// Target positions relative to table center (percentages)
-const targetCoords: Record<TablePosition, { x: number; y: number; rotate: number }> = {
-  'bottom': { x: 50, y: 85, rotate: 0 },
-  'top': { x: 50, y: 15, rotate: 180 },
-  'left': { x: 15, y: 50, rotate: 90 },
-  'right': { x: 85, y: 50, rotate: -90 },
-  'top-left': { x: 25, y: 15, rotate: 180 },
-  'top-right': { x: 75, y: 15, rotate: 180 },
+// Random offset for this card (consistent per card)
+const randomOffset = {
+  x: (Math.random() - 0.5) * 12,  // ±6px
+  y: (Math.random() - 0.5) * 8,   // ±4px
+  rotate: (Math.random() - 0.5) * 8,  // ±4 degrees
 }
 
+// Stack positions - where dealt cards pile up (slightly closer to center than hands)
+const stackCoords: Record<TablePosition, { x: number; y: number; rotate: number }> = {
+  'bottom': { x: 50, y: 75, rotate: 0 },
+  'top': { x: 50, y: 25, rotate: 180 },
+  'left': { x: 25, y: 50, rotate: 90 },
+  'right': { x: 75, y: 50, rotate: -90 },
+  'top-left': { x: 30, y: 25, rotate: 160 },
+  'top-right': { x: 70, y: 25, rotate: -160 },
+}
+
+// Deck is at center
+const deckPos = computed(() => props.deckPosition ?? { x: 50, y: 50 })
+
+// Show card face-up only for bottom player after landing
+const showFaceUp = computed(() => 
+  props.targetPosition === 'bottom' && stage.value === 'landed'
+)
+
+// Display card with faceUp based on animation stage
+const displayCard = computed(() => ({
+  ...props.card,
+  faceUp: showFaceUp.value,
+}))
+
 const cardStyle = computed(() => {
-  const target = targetCoords[props.targetPosition]
+  const target = stackCoords[props.targetPosition]
   
   if (stage.value === 'start') {
-    // Start at deck position (center)
+    // Start at deck position
     return {
-      left: '50%',
-      top: '50%',
-      transform: 'translate(-50%, -50%) scale(0.8)',
-      opacity: 0,
-      transition: 'none',
-    }
-  }
-  
-  if (stage.value === 'flying') {
-    // Animate to target
-    return {
-      left: `${target.x}%`,
-      top: `${target.y}%`,
-      transform: `translate(-50%, -50%) rotate(${target.rotate}deg)`,
+      left: `${deckPos.value.x}%`,
+      top: `${deckPos.value.y}%`,
+      transform: 'translate(-50%, -50%) rotate(0deg)',
       opacity: 1,
-      transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      transition: 'none',
+      zIndex: 1000 + props.stackIndex,
     }
   }
   
-  // Done - hide
-  return {
-    opacity: 0,
-    transition: 'opacity 0.1s',
+  if (stage.value === 'flying' || stage.value === 'landed') {
+    // Stack position with random offset for natural look
+    const stackOffset = props.stackIndex * 0.5  // Slight vertical stacking
+    return {
+      left: `calc(${target.x}% + ${randomOffset.x}px)`,
+      top: `calc(${target.y}% + ${randomOffset.y - stackOffset}px)`,
+      transform: `translate(-50%, -50%) rotate(${target.rotate + randomOffset.rotate}deg)`,
+      opacity: 1,
+      transition: 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      zIndex: 1000 + props.stackIndex,
+    }
   }
+  
+  return { opacity: 0 }
 })
 
 onMounted(() => {
@@ -68,11 +91,11 @@ onMounted(() => {
   setTimeout(() => {
     stage.value = 'flying'
     
-    // Complete after animation
+    // Land after flight animation
     setTimeout(() => {
-      stage.value = 'done'
+      stage.value = 'landed'
       props.onComplete()
-    }, 450)
+    }, 400)
   }, props.delay)
 })
 </script>
@@ -80,7 +103,6 @@ onMounted(() => {
 <style scoped>
 .flying-card {
   position: absolute;
-  z-index: 1000;
   pointer-events: none;
 }
 </style>

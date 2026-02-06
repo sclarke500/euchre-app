@@ -104,6 +104,7 @@
           :card="flying.card"
           :target-position="flying.targetPosition"
           :delay="flying.delay"
+          :stack-index="flying.stackIndex"
           :on-complete="() => handleFlyingCardComplete(flying.id)"
         />
       </div>
@@ -146,10 +147,14 @@ interface FlyingCard {
   card: Card
   targetPosition: TablePosition
   delay: number
+  stackIndex: number  // Position in player's stack
   id: string
 }
 const flyingCards = ref<FlyingCard[]>([])
 const isDealing = ref(false)
+
+// Track how many cards each player has received (for stacking)
+const stackCounts = ref<Map<TablePosition, number>>(new Map())
 
 // Computed helpers
 const hasDeck = computed(() => table.cardsInDeck.value.length > 0)
@@ -181,11 +186,17 @@ function handleDeal() {
   const positions = table.layout.value.positions
   const totalCards = cardsPerHand.value * positions.length
   
+  // Reset stack counts
+  stackCounts.value = new Map()
+  for (const pos of positions) {
+    stackCounts.value.set(pos, 0)
+  }
+  
   // Create flying card entries
   const newFlyingCards: FlyingCard[] = []
   let cardIndex = 0
   
-  // Deal in rounds (one card to each player per round)
+  // Deal in rounds (one card to each player per round) - like a real dealer
   for (let round = 0; round < cardsPerHand.value; round++) {
     for (const position of positions) {
       if (cardIndex >= deckCards.length || cardIndex >= totalCards) break
@@ -193,13 +204,18 @@ function handleDeal() {
       const card = deckCards[cardIndex]
       if (!card) break
       
-      // Set face up for human player only
-      card.faceUp = position === 'bottom'
+      // All cards start face down (will flip for human after landing)
+      card.faceUp = false
+      
+      // Get current stack count for this position
+      const currentStackIndex = stackCounts.value.get(position) ?? 0
+      stackCounts.value.set(position, currentStackIndex + 1)
       
       newFlyingCards.push({
         card: { ...card },
         targetPosition: position,
-        delay: cardIndex * 80, // 80ms stagger
+        delay: cardIndex * 100, // 100ms stagger for clearer deal
+        stackIndex: currentStackIndex,
         id: `fly-${card.id}-${Date.now()}`
       })
       
