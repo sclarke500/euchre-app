@@ -463,6 +463,7 @@ function handleCollect() {
   position: absolute;
   width: 70px;
   height: 100px;
+  z-index: 100;  // Below flying cards
   
   .deck-card {
     position: absolute;
@@ -481,5 +482,15 @@ function handleCollect() {
     font-size: 12px;
     color: #888;
   }
+}
+
+.flying-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;  // Above deck
+  pointer-events: none;
 }
 </style>
