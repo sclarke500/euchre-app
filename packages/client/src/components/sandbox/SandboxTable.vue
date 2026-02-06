@@ -389,6 +389,7 @@ function handleCollect() {
   display: grid;
   gap: 10px;
   padding: 20px;
+  position: relative;  // Needed for flying-layer positioning
   background: 
     radial-gradient(ellipse at center, #1e5631 0%, #0d3320 70%),
     linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
@@ -457,6 +458,7 @@ function handleCollect() {
   align-items: center;
   justify-content: center;
   position: relative;
+  z-index: 1;  // Low z-index so flying-layer can be above
 }
 
 .deck {
