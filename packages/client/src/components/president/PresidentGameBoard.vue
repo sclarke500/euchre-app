@@ -158,9 +158,24 @@ const sortedHand = computed(() => {
   return sortHandByRank(humanPlayer.value.hand)
 })
 
-// Get opponent players (everyone except the current player)
+// Get opponent players in correct turn order (clockwise from human's perspective)
+// Left → Center → Right should match who plays after the human in turn order
 const opponents = computed(() => {
-  return players.value.filter(p => p.id !== humanPlayer.value?.id)
+  const human = humanPlayer.value
+  const allPlayers = players.value
+  
+  if (!human) return allPlayers
+  
+  const humanIndex = allPlayers.findIndex(p => p.id === human.id)
+  if (humanIndex === -1) return allPlayers.filter(p => p.id !== human.id)
+  
+  // Reorder: start from player after human, wrap around, exclude human
+  const reordered: typeof allPlayers = []
+  for (let i = 1; i < allPlayers.length; i++) {
+    const idx = (humanIndex + i) % allPlayers.length
+    reordered.push(allPlayers[idx]!)
+  }
+  return reordered
 })
 
 // Check if a card is selectable (during normal play)
