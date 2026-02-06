@@ -158,11 +158,6 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
       case 'president_awaiting_give_cards':
         // President or VP needs to choose cards to give back
-        console.log('[DEBUG] president_awaiting_give_cards:', {
-          cardsToGive: message.cardsToGive,
-          receivedCards: message.receivedCards,
-          yourRole: message.yourRole,
-        })
         isAwaitingGiveCards.value = true
         cardsToGiveCount.value = message.cardsToGive
         receivedCardsForGiveBack.value = message.receivedCards ?? []

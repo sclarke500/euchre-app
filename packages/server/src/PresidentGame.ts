@@ -507,13 +507,6 @@ export class PresidentGame {
       this.phase = PresidentPhase.PresidentGiving
       this.awaitingGiveCards = playerSeatIndex
       
-      console.log('[DEBUG] Sending president_awaiting_give_cards:', {
-        playerId: player.odusId,
-        cardsToGive,
-        receivedCards: receivedCards.map(c => `${c.rank}${c.suit[0]}`),
-        yourRole,
-      })
-      
       this.events.onAwaitingGiveCards(
         player.odusId,
         cardsToGive,
