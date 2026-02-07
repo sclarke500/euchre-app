@@ -194,6 +194,9 @@ async function handleDeal() {
       const managed = deck.value.dealTo(hand)
       if (!managed) break
       
+      // Get the ref BEFORE we move (it's still connected from deck)
+      const cardRef = cardRefs.get(managed.card.id)
+      
       refreshCards()
       
       // Get target position (loose stack for now)
@@ -202,12 +205,11 @@ async function handleDeal() {
       
       // Animate the card
       // First bump z-index so it flies above remaining deck
-      const currentPos = managed.ref?.getPosition()
-      if (currentPos) {
-        managed.ref?.setPosition({ ...currentPos, zIndex: 1000 + cardIndex })
+      const currentPos = cardRef?.getPosition()
+      if (currentPos && cardRef) {
+        cardRef.setPosition({ ...currentPos, zIndex: 1000 + cardIndex })
+        await cardRef.moveTo(targetPos, 300)
       }
-      
-      await managed.ref?.moveTo(targetPos, 300)
       
       // Small delay between cards
       await new Promise(r => setTimeout(r, 60))
