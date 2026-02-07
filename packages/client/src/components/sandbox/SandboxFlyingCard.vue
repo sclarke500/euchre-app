@@ -85,7 +85,7 @@ const cardStyle = computed(() => {
       top: `calc(${target.y}% + ${randomOffset.y - stackOffset}px)`,
       transform: `translate(-50%, -50%) rotate(${target.rotate + randomOffset.rotate}deg)`,
       opacity: 1,
-      transition: 'all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94)',  // Slow for debugging
+      transition: 'all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',  // 2s flight
       zIndex: 1000 + props.stackIndex,
     }
   }
@@ -102,7 +102,7 @@ onMounted(() => {
     setTimeout(() => {
       stage.value = 'landed'
       props.onComplete()
-    }, 1100)  // Slightly longer than 1s transition
+    }, 2100)  // Slightly longer than 2s transition
   }, props.delay)
 })
 </script>

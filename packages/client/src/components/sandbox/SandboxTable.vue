@@ -184,7 +184,7 @@ function handleDeal() {
   
   const deckCards = [...table.cardsInDeck.value]
   const positions = table.layout.value.positions
-  const totalCards = 3  // DEBUG: only deal 3 cards for inspection
+  const totalCards = cardsPerHand.value * positions.length
   
   // Reset stack counts
   stackCounts.value = new Map()
@@ -214,7 +214,7 @@ function handleDeal() {
       newFlyingCards.push({
         card: { ...card },
         targetPosition: position,
-        delay: cardIndex * 2000, // 2s stagger - very slow for DOM inspection
+        delay: cardIndex * 3000, // 3s between cards
         stackIndex: currentStackIndex,
         dealOrder: cardIndex,  // Track overall deal order for z-index
         id: `fly-${card.id}-${Date.now()}`,
