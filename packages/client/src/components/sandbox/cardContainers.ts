@@ -179,7 +179,9 @@ export class Hand extends CardContainer {
     const arcY = -Math.cos(rotRad) * arcAmount
     
     // Curve rotation for cards (fan out from center)
-    const curveRotation = normalizedPos * this.fanCurve
+    // For vertical fans, invert so it looks like horizontal fan but rotated
+    const curveMult = this.fanDirection === 'vertical' ? -1 : 1
+    const curveRotation = normalizedPos * this.fanCurve * curveMult
     
     let x = this.position.x
     let y = this.position.y
