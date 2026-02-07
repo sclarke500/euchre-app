@@ -149,7 +149,11 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
       isAnimating.value = true
       
       requestAnimationFrame(() => {
-        position.value = { ...target }
+        // Preserve flipY if not specified in target
+        position.value = { 
+          ...target,
+          flipY: target.flipY ?? position.value.flipY ?? 0,
+        }
         
         setTimeout(() => {
           isAnimating.value = false

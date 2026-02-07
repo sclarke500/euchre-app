@@ -264,18 +264,9 @@ async function handleFan() {
     }
     
     // Wait for flip/move to complete
+    // Cards now at flipY=180, faceUp=false → showFaceUp=true (showing face)
+    // Don't change anything - the visual is correct
     await new Promise(r => setTimeout(r, 550))
-    
-    // Reset flipY to 0 FIRST (while faceUp is still false, so showFaceUp stays true)
-    for (const managed of bottomHand.cards) {
-      const cardRef = cardRefs.get(managed.card.id)
-      if (cardRef) {
-        const currentPos = cardRef.getPosition()
-        cardRef.setPosition({ ...currentPos, flipY: 0 })
-      }
-    }
-    // NOW set faceUp to true (showFaceUp will still be true since flipY is 0)
-    bottomHand.flipCards(true)
   }
   
   // Step 2: All hands fan and resize simultaneously
