@@ -111,8 +111,8 @@ function initializeContainers() {
   const cx = rect.width / 2
   const cy = rect.height / 2
   
-  // Create deck at bottom right (test position)
-  deck.value = new Deck({ x: rect.width - 100, y: rect.height - 100 })
+  // Create deck at bottom right corner
+  deck.value = new Deck({ x: rect.width, y: rect.height })
   
   // Create 4 hands around the board (all face down initially)
   hands.value = [
