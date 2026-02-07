@@ -77,15 +77,18 @@ const cardStyle = computed(() => {
   
   if (stage.value === 'flying' || stage.value === 'landed') {
     // Stack position with random offset for natural look
-    // At destination, later cards in stack go on top
     const stackOffset = props.stackIndex * 0.5  // Slight vertical stacking
+    // Keep high z-index while flying (above remaining deck), lower when landed
+    const flyingZIndex = stage.value === 'flying' 
+      ? 3000 + (props.totalCards - props.dealOrder)  // Stay above deck while flying
+      : 1000 + props.stackIndex  // Stack order at destination
     return {
       left: `calc(${target.x}% + ${randomOffset.x}px)`,
       top: `calc(${target.y}% + ${randomOffset.y - stackOffset}px)`,
       transform: `translate(-50%, -50%) rotate(${target.rotate + randomOffset.rotate}deg)`,
       opacity: 1,
       transition: 'all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',  // 2s flight
-      zIndex: 1000 + props.stackIndex,
+      zIndex: flyingZIndex,
     }
   }
   
