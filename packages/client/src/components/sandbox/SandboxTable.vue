@@ -217,7 +217,7 @@ function initializeContainers() {
       fanDirection: 'horizontal',
       fanSpacing: isUser ? 20 : 10,
       rotation: seat.rotation,  // Aligned with table edge
-      scale: isUser ? 1.0 : 0.7,  // User's fanned cards larger
+      scale: 0.7,  // All cards same size initially
       fanCurve: 6,  // Degrees between cards
       angleToCenter,
     }))
