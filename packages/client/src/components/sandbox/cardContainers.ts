@@ -172,47 +172,40 @@ export class Hand extends CardContainer {
       }
     }
     
-    // Fanned mode using transform-origin
-    // Origin must be on the edge facing table center, adjusted by hand rotation
-    
+    // Fanned mode
     const middleIndex = (cardCount - 1) / 2
-    const spreadAngle = (index - middleIndex) * this.fanCurve
+    const isUser = this.rotation === 0
     
-    // Card dimensions (base size before scale)
-    const cardW = 70
-    const cardH = 100
-    
-    // Origin distance from card center toward the pivot edge
-    // Use percentage of card size + extra for wider arc
-    const arcDistance = 50  // extra pixels beyond card edge
-    
-    // Calculate origin based on rotation (which edge faces table center)
-    let originX = 0
-    let originY = 0
-    const rot = ((this.rotation % 360) + 360) % 360  // Normalize to 0-359
-    
-    if (rot < 45 || rot >= 315) {
-      // Bottom (0°): pivot at center bottom
-      originY = cardH / 2 + arcDistance
-    } else if (rot >= 45 && rot < 135) {
-      // Right (90°): pivot at right center
-      originX = cardW / 2 + arcDistance
-    } else if (rot >= 135 && rot < 225) {
-      // Top (180°): pivot at center top
-      originY = -(cardH / 2 + arcDistance)
+    if (isUser) {
+      // User's hand: use transform-origin for curved arc
+      const spreadAngle = (index - middleIndex) * this.fanCurve
+      const originDistance = 120 * this.scale
+      
+      return {
+        x: this.position.x,
+        y: this.position.y,
+        rotation: spreadAngle,
+        zIndex: 200 + index,
+        scale: this.scale,
+        originX: 0,
+        originY: originDistance,
+      }
     } else {
-      // Left (270° / -90°): pivot at left center
-      originX = -(cardW / 2 + arcDistance)
-    }
-    
-    return {
-      x: this.position.x,
-      y: this.position.y,
-      rotation: this.rotation + spreadAngle,
-      zIndex: 200 + index,
-      scale: this.scale,
-      originX: originX * this.scale,
-      originY: originY * this.scale,
+      // Opponents: straight spread, no rotation per card
+      const spreadAmount = (index - middleIndex) * this.fanSpacing * this.scale
+      
+      // Spread along the hand's rotation direction
+      const rotRad = this.rotation * Math.PI / 180
+      const offsetX = spreadAmount * Math.cos(rotRad)
+      const offsetY = spreadAmount * Math.sin(rotRad)
+      
+      return {
+        x: this.position.x + offsetX,
+        y: this.position.y + offsetY,
+        rotation: this.rotation,
+        zIndex: 200 + index,
+        scale: this.scale,
+      }
     }
   }
   

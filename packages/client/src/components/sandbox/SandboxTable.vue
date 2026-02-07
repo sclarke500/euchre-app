@@ -215,10 +215,10 @@ function initializeContainers() {
     hands.value.push(new Hand(`player-${i}`, handPos, {
       faceUp: false,
       fanDirection: 'horizontal',
-      fanSpacing: isUser ? 20 : 10,
+      fanSpacing: isUser ? 30 : 12,
       rotation: seat.rotation,  // Aligned with table edge
       scale: 0.7,  // All cards same size initially
-      fanCurve: 6,  // Degrees between cards
+      fanCurve: isUser ? 8 : 0,  // Only user gets curve
       angleToCenter,
     }))
   }
