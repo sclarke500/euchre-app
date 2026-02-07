@@ -163,13 +163,16 @@ export class Hand extends CardContainer {
     const startOffset = -totalWidth / 2
     const fanOffset = startOffset + index * this.fanSpacing * this.scale
     
-    // Calculate curve: -1 at left edge, 0 at center, +1 at right edge
+    // Calculate curve: -1 at first card, 0 at center, +1 at last card
     const normalizedPos = cardCount > 1 
       ? (index / (cardCount - 1)) * 2 - 1  // -1 to +1
       : 0
-    const curveRotation = normalizedPos * this.fanCurve
     
-    // Arc offset for y (cards at edges slightly higher)
+    // For vertical fans, invert curve so cards fan toward table center
+    const curveDir = this.fanDirection === 'vertical' ? -1 : 1
+    const curveRotation = normalizedPos * this.fanCurve * curveDir
+    
+    // Arc offset (cards at center slightly lifted)
     const arcOffset = (1 - normalizedPos * normalizedPos) * this.fanCurve * 0.5
     
     let x = this.position.x
@@ -180,7 +183,7 @@ export class Hand extends CardContainer {
       y -= arcOffset  // Lift center cards slightly
     } else {
       y += fanOffset
-      x -= arcOffset
+      x += arcOffset * curveDir  // Offset toward table center
     }
     
     return {
