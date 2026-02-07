@@ -113,19 +113,50 @@ const displayRank = computed(() => {
 // Move to a new position with animation
 function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
   return new Promise((resolve) => {
-    animationDuration.value = duration
-    isAnimating.value = true
+    const start = { ...position.value }
+    const startTime = performance.now()
     
-    // Trigger animation on next tick
-    requestAnimationFrame(() => {
-      position.value = { ...target }
+    // If flipY is being animated, use JS animation for smooth flip
+    const animateFlip = target.flipY !== undefined && target.flipY !== start.flipY
+    
+    if (animateFlip) {
+      // JS animation for flip (so cos calculation updates each frame)
+      const animate = (now: number) => {
+        const elapsed = now - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3)
+        
+        position.value = {
+          x: start.x + (target.x - start.x) * eased,
+          y: start.y + (target.y - start.y) * eased,
+          rotation: start.rotation + (target.rotation - start.rotation) * eased,
+          zIndex: target.zIndex,
+          scale: (start.scale ?? 1) + ((target.scale ?? 1) - (start.scale ?? 1)) * eased,
+          flipY: (start.flipY ?? 0) + ((target.flipY ?? 0) - (start.flipY ?? 0)) * eased,
+        }
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          resolve()
+        }
+      }
+      requestAnimationFrame(animate)
+    } else {
+      // CSS transition for non-flip animations
+      animationDuration.value = duration
+      isAnimating.value = true
       
-      // Resolve after animation completes
-      setTimeout(() => {
-        isAnimating.value = false
-        resolve()
-      }, duration + 50)
-    })
+      requestAnimationFrame(() => {
+        position.value = { ...target }
+        
+        setTimeout(() => {
+          isAnimating.value = false
+          resolve()
+        }, duration + 50)
+      })
+    }
   })
 }
 
