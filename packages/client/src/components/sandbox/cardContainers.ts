@@ -172,16 +172,19 @@ export class Hand extends CardContainer {
       y += fanOffset
     }
     
-    // Only apply curve rotation for user's hand (bottom)
+    // Only apply curve for user's hand (bottom)
     let curveRotation = 0
+    let arcOffset = 0
     if (this.id === 'bottom' && this.fanCurve > 0 && cardCount > 1) {
       const normalizedPos = (index / (cardCount - 1)) * 2 - 1  // -1 to +1
       curveRotation = normalizedPos * this.fanCurve
+      // Arc height: edge cards move up toward table center
+      arcOffset = normalizedPos * normalizedPos * this.fanCurve * 1.5
     }
     
     return {
       x,
-      y,
+      y: y - arcOffset,
       rotation: this.rotation + curveRotation,
       zIndex: 200 + index,
       scale: this.scale,
