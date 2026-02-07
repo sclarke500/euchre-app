@@ -215,9 +215,9 @@ function initializeContainers() {
     hands.value.push(new Hand(`player-${i}`, handPos, {
       faceUp: false,
       fanDirection: 'horizontal',
-      fanSpacing: isUser ? 25 : 12,
+      fanSpacing: isUser ? 20 : 10,
       rotation: seat.rotation,  // Aligned with table edge
-      scale: 1.0,  // All cards same size
+      scale: 0.7,  // Match deck size
       fanCurve: isUser ? 6 : 3,
       angleToCenter,
     }))
