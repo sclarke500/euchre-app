@@ -1,20 +1,9 @@
 <template>
   <div class="sandbox">
-    <!-- Controls Panel -->
+    <!-- Controls -->
     <div class="controls">
-      <h3>🎮 Animation Sandbox</h3>
+      <h3>🎮 Card Engine v2</h3>
       
-      <div class="control-group">
-        <label>Players:</label>
-        <select v-model="playerCount" @change="resetTable">
-          <option :value="2">2 Players</option>
-          <option :value="3">3 Players</option>
-          <option :value="4">4 Players</option>
-          <option :value="5">5 Players</option>
-          <option :value="6">6 Players</option>
-        </select>
-      </div>
-
       <div class="control-group">
         <label>Cards per hand:</label>
         <input type="number" v-model.number="cardsPerHand" min="1" max="13" />
@@ -22,312 +11,293 @@
 
       <div class="button-group">
         <button @click="handleNewDeck">🃏 New Deck</button>
-        <button @click="handleDeal" :disabled="!hasDeck">🎴 Deal</button>
-        <button @click="handlePlayRandom" :disabled="!hasCards">▶️ Play Card</button>
-        <button @click="handleCollect" :disabled="!hasPlayedCards">🧹 Collect</button>
-        <button @click="resetTable">🔄 Reset</button>
+        <button @click="handleDeal" :disabled="!hasDeck || isDealing">🎴 Deal</button>
+        <button @click="handleFan" :disabled="!hasDealt">👐 Fan Hands</button>
+        <button @click="handleStack" :disabled="!hasDealt">📚 Stack Hands</button>
+        <button @click="handleReset">🔄 Reset</button>
       </div>
 
       <div class="status">
-        <p>Deck: {{ table.cardsInDeck.value.length }} cards</p>
-        <p>Your hand: {{ table.cardsInHand('bottom').length }} cards</p>
-        <p>Play area: {{ table.cardsInPlayArea().length }} cards</p>
+        <p>Deck: {{ deck?.cards.length ?? 0 }} cards</p>
+        <p>Dealing: {{ isDealing ? 'Yes' : 'No' }}</p>
       </div>
     </div>
 
-    <!-- Table Area -->
-    <div class="table" :class="`players-${playerCount}`">
-      <!-- Grid areas defined by player count -->
-      
-      <!-- Top positions -->
-      <div v-if="hasPosition('top-left')" class="seat seat-top-left">
-        <SandboxHand 
-          :cards="table.cardsInHand('top-left')" 
-          position="top-left"
-          :is-current="false"
-        />
-      </div>
-      
-      <div v-if="hasPosition('top')" class="seat seat-top">
-        <SandboxHand 
-          :cards="table.cardsInHand('top')" 
-          position="top"
-          :is-current="false"
-        />
-      </div>
-      
-      <div v-if="hasPosition('top-right')" class="seat seat-top-right">
-        <SandboxHand 
-          :cards="table.cardsInHand('top-right')" 
-          position="top-right"
-          :is-current="false"
-        />
-      </div>
-
-      <!-- Side positions -->
-      <div v-if="hasPosition('left')" class="seat seat-left">
-        <SandboxHand 
-          :cards="table.cardsInHand('left')" 
-          position="left"
-          :is-current="false"
-        />
-      </div>
-
-      <!-- Center play area -->
-      <div class="play-area">
-        <SandboxPlayArea 
-          :cards="table.cardsInPlayArea()" 
-          :player-count="playerCount"
-        />
-        
-        <!-- Deck in center - hidden during dealing (flying cards become the deck) -->
-        <div v-if="table.cardsInDeck.value.length > 0 && !isDealing" class="deck">
-          <div class="deck-card" v-for="i in Math.min(5, table.cardsInDeck.value.length)" :key="i" 
-               :style="{ transform: `translateY(${-i}px)` }">
-          </div>
-          <span class="deck-count">{{ table.cardsInDeck.value.length }}</span>
-        </div>
-      </div>
-      
-      <!-- Flying cards animation layer -->
-      <div class="flying-layer">
-        <SandboxFlyingCard
-          v-for="flying in flyingCards"
-          :key="flying.id"
-          :ref="(el) => setFlyingCardRef(flying.id, el)"
-          :card="flying.card"
-          :target-position="flying.targetPosition"
-          :delay="flying.delay"
-          :stack-index="flying.stackIndex"
-          :deal-order="flying.dealOrder"
-          :total-cards="flyingCards.length"
-          :cards-in-hand="getCardsInHandCount(flying.targetPosition)"
-          :on-complete="() => handleFlyingCardComplete(flying.id)"
-          :on-forming-complete="() => handleFormingComplete(flying.id)"
-        />
-      </div>
-
-      <div v-if="hasPosition('right')" class="seat seat-right">
-        <SandboxHand 
-          :cards="table.cardsInHand('right')" 
-          position="right"
-          :is-current="false"
-        />
-      </div>
-
-      <!-- Bottom (player) position -->
-      <div class="seat seat-bottom">
-        <SandboxHand 
-          :cards="table.cardsInHand('bottom')" 
-          position="bottom"
-          :is-current="true"
-          @card-click="handleCardClick"
-        />
-      </div>
+    <!-- Board -->
+    <div ref="boardRef" class="board">
+      <!-- All cards rendered here -->
+      <BoardCard
+        v-for="managed in allCards"
+        :key="managed.card.id"
+        :ref="(el) => setCardRef(managed.card.id, el)"
+        :card="managed.card"
+        :face-up="managed.faceUp"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
-import { useTable, type TablePosition, type Card } from '@/engine'
-import SandboxHand from './SandboxHand.vue'
-import SandboxPlayArea from './SandboxPlayArea.vue'
-import SandboxFlyingCard from './SandboxFlyingCard.vue'
+import { ref, computed, onMounted, nextTick, shallowRef, triggerRef } from 'vue'
+import { createStandardDeck } from '@euchre/shared'
+import BoardCard from './BoardCard.vue'
+import { Deck, Hand, type ManagedCard, type BoardCardRef, type SandboxCard } from './cardContainers'
 
-const playerCount = ref<2 | 3 | 4 | 5 | 6>(4)
+const boardRef = ref<HTMLElement | null>(null)
 const cardsPerHand = ref(5)
 
-const table = useTable(playerCount.value)
+// Containers (shallowRef since we manage reactivity manually)
+const deck = shallowRef<Deck | null>(null)
+const hands = shallowRef<Hand[]>([])
 
-// Flying cards for deal animation
-interface FlyingCard {
-  card: Card
-  targetPosition: TablePosition
-  delay: number
-  stackIndex: number  // Position in player's stack
-  dealOrder: number   // Overall order dealt (0 = first card dealt)
-  id: string
-  landed: boolean     // Has this card reached its stack position?
-}
-const flyingCards = ref<FlyingCard[]>([])
+// Animation constants
+const DEAL_FLIGHT_MS = 400
+const DEAL_DELAY_MS = 80
+
+// State
 const isDealing = ref(false)
-const allCardsLanded = ref(false)
+const hasDealt = ref(false)
 
-// Track how many cards each player has received (for stacking)
-const stackCounts = ref<Map<TablePosition, number>>(new Map())
+// Trigger for re-rendering cards
+const cardsTrigger = ref(0)
+function refreshCards() {
+  cardsTrigger.value++
+}
 
-// Refs to flying card components for triggering forming animation
-const flyingCardRefs = ref<Map<string, any>>(new Map())
-const formingComplete = ref<Set<string>>(new Set())
+// All cards from all containers for rendering
+const allCards = computed<ManagedCard[]>(() => {
+  // Depend on trigger for manual reactivity
+  const _ = cardsTrigger.value
+  
+  const cards: ManagedCard[] = []
+  if (deck.value) {
+    cards.push(...deck.value.cards)
+  }
+  for (const hand of hands.value) {
+    cards.push(...hand.cards)
+  }
+  return cards
+})
 
-function setFlyingCardRef(id: string, el: any) {
+const hasDeck = computed(() => {
+  const _ = cardsTrigger.value
+  return (deck.value?.cards.length ?? 0) > 0
+})
+
+// Card refs
+const cardRefs = new Map<string, BoardCardRef>()
+
+function setCardRef(cardId: string, el: any) {
   if (el) {
-    flyingCardRefs.value.set(id, el)
+    cardRefs.set(cardId, el as BoardCardRef)
+    // Also set on the container
+    deck.value?.setCardRef(cardId, el as BoardCardRef)
+    for (const hand of hands.value) {
+      hand.setCardRef(cardId, el as BoardCardRef)
+    }
   } else {
-    flyingCardRefs.value.delete(id)
+    cardRefs.delete(cardId)
   }
 }
 
-function getCardsInHandCount(position: TablePosition): number {
-  return stackCounts.value.get(position) ?? 0
+// Get board dimensions
+function getBoardCenter(): { x: number; y: number } {
+  if (!boardRef.value) return { x: 400, y: 300 }
+  const rect = boardRef.value.getBoundingClientRect()
+  return { x: rect.width / 2, y: rect.height / 2 }
 }
 
-// Computed helpers
-const hasDeck = computed(() => table.cardsInDeck.value.length > 0)
-const hasCards = computed(() => table.cardsInHand('bottom').length > 0)
-const hasPlayedCards = computed(() => table.cardsInPlayArea().length > 0)
-
-function hasPosition(pos: TablePosition): boolean {
-  return table.layout.value.positions.includes(pos)
+// Initialize containers with positions based on board size
+function initializeContainers() {
+  if (!boardRef.value) return
+  
+  const rect = boardRef.value.getBoundingClientRect()
+  const cx = rect.width / 2
+  const cy = rect.height / 2
+  
+  // Create deck at bottom right corner
+  deck.value = new Deck({ x: rect.width, y: rect.height })
+  
+  // Create 4 hands around the board (all face down initially)
+  hands.value = [
+    new Hand('bottom', { x: cx, y: rect.height - 80 }, { 
+      faceUp: false, 
+      fanDirection: 'horizontal',
+      fanSpacing: 30,
+      rotation: 0,
+      scale: 1.3,  // User's cards 130%
+      fanCurve: 8, // Slight curve
+    }),
+    new Hand('left', { x: 80, y: cy }, { 
+      faceUp: false, 
+      fanDirection: 'vertical',
+      fanSpacing: 15,
+      rotation: 90,
+      scale: 0.6,  // Opponent cards 60%
+      fanCurve: 6,
+    }),
+    new Hand('top', { x: cx, y: 50 }, { 
+      faceUp: false, 
+      fanDirection: 'horizontal',
+      fanSpacing: 15,
+      rotation: 180,
+      scale: 0.6,  // Opponent cards 60%
+      fanCurve: 6,
+    }),
+    new Hand('right', { x: rect.width - 80, y: cy }, { 
+      faceUp: false, 
+      fanDirection: 'vertical',
+      fanSpacing: 15,
+      rotation: -90,
+      scale: 0.6,  // Opponent cards 60%
+      fanCurve: 6,
+    }),
+  ]
 }
 
-// Actions
-function resetTable() {
-  table.reset()
-  table.setPlayerCount(playerCount.value)
-  flyingCards.value = []
-  isDealing.value = false
-  allCardsLanded.value = false
+// Create a new deck
+async function handleNewDeck() {
+  handleReset()
+  
+  await nextTick()
+  initializeContainers()
+  
+  if (!deck.value) return
+  
+  // Create cards (convert from StandardCard to SandboxCard)
+  const standardCards = createStandardDeck()
+  for (const sc of standardCards) {
+    const card: SandboxCard = {
+      id: sc.id,
+      suit: sc.suit,
+      rank: sc.rank,
+    }
+    deck.value.addCard(card, false)
+  }
+  
+  refreshCards()
+  
+  // Wait for Vue to render the cards
+  await nextTick()
+  
+  // Set initial positions
+  for (let i = 0; i < deck.value.cards.length; i++) {
+    const managed = deck.value.cards[i]
+    const pos = deck.value.getCardPosition(i)
+    managed?.ref?.setPosition(pos)
+  }
 }
 
-function handleNewDeck() {
-  resetTable()
-  table.initializeDeck(false)
-}
-
-function handleDeal() {
-  if (isDealing.value) return
+// Deal cards to all hands
+async function handleDeal() {
+  if (!deck.value || isDealing.value) return
+  
   isDealing.value = true
-  allCardsLanded.value = false
   
-  const deckCards = [...table.cardsInDeck.value]
-  const positions = table.layout.value.positions
-  const totalCards = cardsPerHand.value * positions.length
-  
-  // Reset stack counts
-  stackCounts.value = new Map()
-  for (const pos of positions) {
-    stackCounts.value.set(pos, 0)
-  }
-  
-  // Create flying card entries
-  const newFlyingCards: FlyingCard[] = []
+  const totalCards = cardsPerHand.value * hands.value.length
   let cardIndex = 0
   
-  // Deal in rounds (one card to each player per round) - like a real dealer
+  // Deal in rounds
   for (let round = 0; round < cardsPerHand.value; round++) {
-    for (const position of positions) {
-      if (cardIndex >= deckCards.length || cardIndex >= totalCards) break
+    for (const hand of hands.value) {
+      if (cardIndex >= totalCards) break
       
-      const card = deckCards[cardIndex]
-      if (!card) break
+      // Deal from deck to hand
+      const managed = deck.value.dealTo(hand)
+      if (!managed) break
       
-      // All cards start face down (will flip for human after landing)
-      card.faceUp = false
+      // Capture position and ref BEFORE moving
+      const cardId = managed.card.id
+      const cardRef = cardRefs.get(cardId)
+      const startPos = cardRef?.getPosition()
       
-      // Get current stack count for this position
-      const currentStackIndex = stackCounts.value.get(position) ?? 0
-      stackCounts.value.set(position, currentStackIndex + 1)
+      // Get target position (card is now in hand)
+      const handIndex = hand.cards.length - 1
+      const targetPos = hand.getCardPosition(handIndex)
       
-      newFlyingCards.push({
-        card: { ...card },
-        targetPosition: position,
-        delay: cardIndex * 80, // 80ms between cards
-        stackIndex: currentStackIndex,
-        dealOrder: cardIndex,  // Track overall deal order for z-index
-        id: `fly-${card.id}-${Date.now()}`,
-        landed: false,
-      })
+      // Animate the card (don't refresh yet - we have the ref)
+      if (startPos && cardRef) {
+        // Set high z-index (no transition)
+        cardRef.setPosition({ ...startPos, zIndex: 1000 + cardIndex })
+        
+        // Wait for browser to paint the start position before animating
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+        
+        // Now animate to target
+        cardRef.moveTo(targetPos, DEAL_FLIGHT_MS)
+      }
+      
+      // Delay between cards being dealt
+      await new Promise(r => setTimeout(r, DEAL_DELAY_MS))
       
       cardIndex++
     }
   }
   
-  flyingCards.value = newFlyingCards
+  // Wait for last card's animation to complete before refreshing
+  await new Promise(r => setTimeout(r, DEAL_FLIGHT_MS))
+  
+  // Now refresh to sync Vue's view with the new card ownership
+  refreshCards()
+  
+  isDealing.value = false
+  hasDealt.value = true
 }
 
-function handleFlyingCardComplete(flyingId: string) {
-  const flying = flyingCards.value.find(f => f.id === flyingId)
-  if (!flying) return
+// Fan all hands
+async function handleFan() {
+  if (!boardRef.value) return
+  const rect = boardRef.value.getBoundingClientRect()
   
-  // Mark as landed (card stays visible in stack)
-  flying.landed = true
-  
-  // Check if ALL cards have landed
-  const allLanded = flyingCards.value.every(f => f.landed)
-  
-  if (allLanded) {
-    allCardsLanded.value = true
+  const bottomHand = hands.value.find(h => h.id === 'bottom')
+  if (bottomHand) {
+    // Step 1: Move bottom hand down and flip cards (180 deg)
+    bottomHand.position = { x: rect.width / 2, y: rect.height }
     
-    // Wait a moment to show the stacks, then move to hands
-    setTimeout(() => {
-      moveStacksToHands()
-    }, 800)  // Show stacks for 800ms before forming hands
-  }
-}
-
-function moveStacksToHands() {
-  // Trigger forming animation on all flying cards
-  formingComplete.value = new Set()
-  
-  for (const flying of flyingCards.value) {
-    const ref = flyingCardRefs.value.get(flying.id)
-    if (ref?.startForming) {
-      ref.startForming()
-    }
-  }
-}
-
-function handleFormingComplete(flyingId: string) {
-  formingComplete.value.add(flyingId)
-  
-  // Check if all cards have finished forming
-  if (formingComplete.value.size >= flyingCards.value.length) {
-    // Now actually move cards to hands
-    for (const flying of flyingCards.value) {
-      table.moveCard(flying.card.id, { zone: 'hand', position: flying.targetPosition }, false)
-      
-      const card = table.cards.value.get(flying.card.id)
-      if (card) {
-        card.faceUp = flying.targetPosition === 'bottom'
+    // Animate each card to new position with flip
+    for (const managed of bottomHand.cards) {
+      const cardRef = cardRefs.get(managed.card.id)
+      if (cardRef) {
+        const currentPos = cardRef.getPosition()
+        cardRef.moveTo({
+          ...currentPos,
+          y: rect.height,
+          flipY: 180,  // Flip the card
+        }, 500)
       }
     }
     
-    // Clear flying cards and end dealing
-    flyingCards.value = []
-    flyingCardRefs.value.clear()
-    formingComplete.value.clear()
-    isDealing.value = false
-    allCardsLanded.value = false
+    // Wait for flip/move to complete
+    // Cards now at flipY=180, faceUp=false → showFaceUp=true (showing face)
+    // Don't change anything - the visual is correct
+    await new Promise(r => setTimeout(r, 550))
   }
+  
+  // Step 2: All hands fan and resize simultaneously
+  const fanPromises = hands.value.map(hand => hand.setMode('fanned', 400))
+  await Promise.all(fanPromises)
+  
+  refreshCards()
 }
 
-function handleCardClick(cardId: string) {
-  table.playCard(cardId, 'bottom')
+// Stack all hands
+async function handleStack() {
+  const promises = hands.value.map(hand => hand.setMode('looseStack', 400))
+  await Promise.all(promises)
 }
 
-function handlePlayRandom() {
-  // Each player plays a random card
-  for (const position of table.layout.value.positions) {
-    const hand = table.cardsInHand(position)
-    if (hand.length > 0) {
-      const randomCard = hand[Math.floor(Math.random() * hand.length)]
-      if (randomCard) {
-        table.playCard(randomCard.id, position)
-      }
-    }
-  }
+// Reset everything
+function handleReset() {
+  deck.value = null
+  hands.value = []
+  cardRefs.clear()
+  isDealing.value = false
+  hasDealt.value = false
 }
 
-function handleCollect() {
-  // Collect to a random winner
-  const positions = table.layout.value.positions
-  const winner = positions[Math.floor(Math.random() * positions.length)]
-  if (winner) {
-    table.collectTrick(winner)
-  }
-}
+onMounted(() => {
+  initializeContainers()
+})
 </script>
 
 <style scoped lang="scss">
@@ -364,7 +334,7 @@ function handleCollect() {
     text-transform: uppercase;
   }
 
-  select, input {
+  input {
     padding: 8px;
     border-radius: 6px;
     border: 1px solid #444;
@@ -413,116 +383,12 @@ function handleCollect() {
   }
 }
 
-// Table layout using CSS Grid
-.table {
+.board {
   flex: 1;
-  display: grid;
-  gap: 10px;
-  padding: 20px;
-  position: relative;  // Needed for flying-layer positioning
+  position: relative;
   background: 
     radial-gradient(ellipse at center, #1e5631 0%, #0d3320 70%),
     linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
-  
-  // Default 4-player layout
-  grid-template-columns: 1fr 2fr 1fr;
-  grid-template-rows: 1fr 2fr 1fr;
-  grid-template-areas:
-    ".    top    ."
-    "left center right"
-    ".    bottom .";
-
-  &.players-2 {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 2fr 1fr;
-    grid-template-areas:
-      "top"
-      "center"
-      "bottom";
-  }
-
-  &.players-3 {
-    grid-template-columns: 1fr 2fr 1fr;
-    grid-template-rows: 1fr 2fr 1fr;
-    grid-template-areas:
-      ".    .      ."
-      "left center right"
-      ".    bottom .";
-  }
-
-  &.players-5 {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1fr 2fr 1fr;
-    grid-template-areas:
-      ".    top-left .      top-right ."
-      "left .        center .         right"
-      ".    .        bottom .         .";
-  }
-
-  &.players-6 {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1fr 2fr 1fr;
-    grid-template-areas:
-      ".    top-left top    top-right ."
-      "left .        center .         right"
-      ".    .        bottom .         .";
-  }
-}
-
-.seat {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &-top { grid-area: top; }
-  &-top-left { grid-area: top-left; }
-  &-top-right { grid-area: top-right; }
-  &-left { grid-area: left; }
-  &-right { grid-area: right; }
-  &-bottom { grid-area: bottom; }
-}
-
-.play-area {
-  grid-area: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 1;  // Low z-index so flying-layer can be above
-}
-
-.deck {
-  position: absolute;
-  width: 70px;
-  height: 100px;
-  z-index: 100;  // Below flying cards
-  
-  .deck-card {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #1a3a7c 0%, #0d1f4d 100%);
-    border-radius: 6px;
-    border: 2px solid #2a4a9c;
-  }
-  
-  .deck-count {
-    position: absolute;
-    bottom: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 12px;
-    color: #888;
-  }
-}
-
-.flying-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1000;  // Above deck
-  pointer-events: none;
+  overflow: hidden;
 }
 </style>

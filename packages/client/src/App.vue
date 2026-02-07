@@ -9,21 +9,18 @@ import PresidentGameBoard from './components/president/PresidentGameBoard.vue'
 import KlondikeGameBoard from './components/klondike/KlondikeGameBoard.vue'
 import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
-import { SandboxTable } from './components/sandbox'
-import SandboxTableV2 from './components/sandbox/SandboxTableV2.vue'
+import SandboxTable from './components/sandbox/SandboxTable.vue'
 
 const gameStore = useGameStore()
 const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
 
 // App view state
-type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox' | 'sandbox2'
+type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox'
 
 // Check for sandbox URL parameter
 const urlParams = new URLSearchParams(window.location.search)
-const initialView: AppView = urlParams.get('sandbox2') !== null ? 'sandbox2' 
-  : urlParams.get('sandbox') !== null ? 'sandbox' 
-  : 'menu'
+const initialView: AppView = urlParams.get('sandbox') !== null ? 'sandbox' : 'menu'
 const currentView = ref<AppView>(initialView)
 const currentGame = ref<GameType>('euchre')
 
@@ -289,11 +286,6 @@ function backToMenu() {
     <!-- Animation Sandbox (access via ?sandbox) -->
     <SandboxTable
       v-else-if="currentView === 'sandbox'"
-    />
-
-    <!-- Animation Sandbox V2 (access via ?sandbox2) -->
-    <SandboxTableV2
-      v-else-if="currentView === 'sandbox2'"
     />
 
     <!-- Multiplayer President Game -->
