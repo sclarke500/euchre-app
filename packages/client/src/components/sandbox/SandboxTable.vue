@@ -214,7 +214,7 @@ function handleDeal() {
       newFlyingCards.push({
         card: { ...card },
         targetPosition: position,
-        delay: cardIndex * 100, // 100ms stagger for clearer deal
+        delay: cardIndex * 500, // 500ms stagger - slow for debugging
         stackIndex: currentStackIndex,
         dealOrder: cardIndex,  // Track overall deal order for z-index
         id: `fly-${card.id}-${Date.now()}`,
