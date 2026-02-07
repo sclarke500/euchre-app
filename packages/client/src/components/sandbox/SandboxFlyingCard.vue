@@ -62,14 +62,15 @@ const cardStyle = computed(() => {
   
   if (stage.value === 'start') {
     // Start at deck position - FIRST card dealt should be on TOP
-    // First dealt (dealOrder=0) gets lowest z-index (appears on top in this stacking context)
     const startingZIndex = 2000 + props.dealOrder
     // Stack offset: first card (dealOrder=0) at top (offset=0), later cards pushed down
     const stackOffset = props.dealOrder * 0.5
+    // DEBUG: rotate first card 90deg to identify it
+    const rotation = props.dealOrder === 0 ? 90 : 0
     return {
       left: `${deckPos.value.x}%`,
       top: `calc(${deckPos.value.y}% + ${stackOffset}px)`,
-      transform: 'translate(-50%, -50%) rotate(0deg)',
+      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
       opacity: 1,
       transition: 'none',
       zIndex: startingZIndex,
@@ -94,16 +95,14 @@ const cardStyle = computed(() => {
 })
 
 onMounted(() => {
-  // Start animation after delay
-  setTimeout(() => {
-    stage.value = 'flying'
-    
-    // Land after flight animation (match transition duration)
-    setTimeout(() => {
-      stage.value = 'landed'
-      props.onComplete()
-    }, 2100)  // Slightly longer than 2s transition
-  }, props.delay)
+  // DEBUG: Don't animate - stay in 'start' position for CSS debugging
+  // setTimeout(() => {
+  //   stage.value = 'flying'
+  //   setTimeout(() => {
+  //     stage.value = 'landed'
+  //     props.onComplete()
+  //   }, 2100)
+  // }, props.delay)
 })
 </script>
 
