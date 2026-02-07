@@ -172,21 +172,24 @@ export class Hand extends CardContainer {
       }
     }
     
-    // Fanned mode - cards spread along hand's rotation direction
-    const middleIndex = (cardCount - 1) / 2
-    const spreadAmount = (index - middleIndex) * this.fanSpacing * this.scale
+    // Fanned mode using transform-origin
+    // All cards at same position, different rotations, origin creates the arc
     
-    // Spread cards along the hand's rotation direction
-    const rotRad = this.rotation * Math.PI / 180
-    const offsetX = spreadAmount * Math.cos(rotRad)
-    const offsetY = spreadAmount * Math.sin(rotRad)
+    const middleIndex = (cardCount - 1) / 2
+    const spreadAngle = (index - middleIndex) * this.fanCurve  // e.g. -12, -6, 0, 6, 12 degrees
+    
+    // Origin below card center (in local card space, before rotation)
+    // 150% = 50% below the bottom edge of the card
+    const originDistance = 120  // pixels below card center
     
     return {
-      x: this.position.x + offsetX,
-      y: this.position.y + offsetY,
-      rotation: this.rotation,
+      x: this.position.x,
+      y: this.position.y,
+      rotation: this.rotation + spreadAngle,
       zIndex: 200 + index,
       scale: this.scale,
+      originX: 0,
+      originY: originDistance * this.scale,
     }
   }
   

@@ -217,8 +217,8 @@ function initializeContainers() {
       fanDirection: 'horizontal',
       fanSpacing: isUser ? 20 : 10,
       rotation: seat.rotation,  // Aligned with table edge
-      scale: 0.7,  // Match deck size
-      fanCurve: 0,  // No curvature for now
+      scale: isUser ? 1.0 : 0.7,  // User's fanned cards larger
+      fanCurve: 6,  // Degrees between cards
       angleToCenter,
     }))
   }
