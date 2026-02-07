@@ -198,8 +198,9 @@ defineExpose({
 }
 
 .card-inner {
-  width: 70px;
-  height: 100px;
+  // Dynamic card size based on viewport
+  width: min(70px, 8vw);
+  height: min(100px, 11.5vw);
   background: #fff;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);

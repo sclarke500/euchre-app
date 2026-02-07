@@ -164,54 +164,69 @@ function initializeContainers() {
   const playerCount = 5
   hands.value = []
   
-  // Hand positions relative to table (avatars handled by CSS)
-  const handPositions = [
-    { x: 0.5, y: 1.0 },    // Player 0 (user) - below table
-    { x: 0.15, y: 0.5 },   // Player 1 - left side
-    { x: 0.30, y: 0.15 },  // Player 2 - top left  
-    { x: 0.70, y: 0.15 },  // Player 3 - top right
-    { x: 0.85, y: 0.5 },   // Player 4 - right side
+  // Table bounds in board coordinates
+  const tableLeft = boardW * tableMarginX
+  const tableTop = boardH * tableMarginTop
+  const tableRight = tableLeft + tableW
+  const tableBottom = tableTop + tableH
+  
+  // Distance from table edge for opponent hands
+  const handInset = Math.min(tableW, tableH) * 0.12
+  
+  // Seat definitions: position on table edge, rotation aligned with edge
+  // side: 'left' | 'top' | 'right' | 'bottom', position along that edge (0-1)
+  const seats = [
+    { side: 'bottom', pos: 0.5, rotation: 0 },      // Player 0 (user) - below table
+    { side: 'left', pos: 0.5, rotation: 90 },       // Player 1 - left
+    { side: 'top', pos: 0.30, rotation: 180 },      // Player 2 - top left
+    { side: 'top', pos: 0.70, rotation: 180 },      // Player 3 - top right
+    { side: 'right', pos: 0.5, rotation: -90 },     // Player 4 - right
   ]
   
   for (let i = 0; i < playerCount; i++) {
     const isUser = i === 0
-    const pos = handPositions[i]
-    if (!pos) continue
+    const seat = seats[i]
+    if (!seat) continue
     
-    // Calculate hand position in board coordinates
-    const tableLeft = boardW * tableMarginX
-    const tableTop = boardH * tableMarginTop
-    const handX = tableLeft + pos.x * tableW
-    const handY = tableTop + pos.y * tableH
+    let handX: number, handY: number
     
     if (isUser) {
-      // User's hand is below the table (in the user area)
-      const userPos = { x: tableX, y: boardH * 0.92 }
-      const angleToCenter = Hand.calcAngleToCenter(userPos, center)
-      
-      hands.value.push(new Hand('player-0', userPos, {
-        faceUp: false,
-        fanDirection: 'horizontal',
-        fanSpacing: 30,
-        rotation: 0,
-        scale: 1.3,
-        fanCurve: 8,
-        angleToCenter,
-      }))
+      // User's hand is below the table
+      handX = tableX
+      handY = boardH * 0.92
     } else {
-      const handPos = { x: handX, y: handY }
-      const angleToCenter = Hand.calcAngleToCenter(handPos, center)
-      
-      hands.value.push(new Hand(`player-${i}`, handPos, {
-        faceUp: false,
-        fanDirection: 'horizontal',
-        fanSpacing: 12,
-        rotation: angleToCenter + 90,
-        scale: 0.5,
-        fanCurve: 3,
-        angleToCenter,
-      }))
+      // Position hand on table, inset from edge
+      switch (seat.side) {
+        case 'left':
+          handX = tableLeft + handInset
+          handY = tableTop + seat.pos * tableH
+          break
+        case 'right':
+          handX = tableRight - handInset
+          handY = tableTop + seat.pos * tableH
+          break
+        case 'top':
+          handX = tableLeft + seat.pos * tableW
+          handY = tableTop + handInset
+          break
+        default:
+          handX = tableX
+          handY = tableBottom - handInset
+      }
     }
+    
+    const handPos = { x: handX, y: handY }
+    const angleToCenter = Hand.calcAngleToCenter(handPos, center)
+    
+    hands.value.push(new Hand(`player-${i}`, handPos, {
+      faceUp: false,
+      fanDirection: 'horizontal',
+      fanSpacing: isUser ? 30 : 12,
+      rotation: seat.rotation,  // Aligned with table edge
+      scale: isUser ? 1.3 : 0.5,
+      fanCurve: isUser ? 8 : 3,
+      angleToCenter,
+    }))
   }
 }
 
