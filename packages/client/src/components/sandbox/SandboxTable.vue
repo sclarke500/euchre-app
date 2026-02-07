@@ -489,12 +489,26 @@ onMounted(() => {
   bottom: 20%;  // Room for user's hand
   border-radius: 40px;
   background: 
-    radial-gradient(ellipse at center, #1e5631 0%, #0d3320 70%),
-    linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+    radial-gradient(ellipse at center, #2d7a4a 0%, #1a5c35 70%),
+    linear-gradient(135deg, #2a6b40 0%, #1a4d2d 100%);
   border: 8px solid #3d2817;  // Wood-colored border
   box-shadow: 
-    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    inset 0 0 60px rgba(0, 0, 0, 0.3),
     0 4px 20px rgba(0, 0, 0, 0.5);
+  
+  // Watermark logo
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    background: url('@/assets/AppLogo.png') center/contain no-repeat;
+    opacity: 0.08;
+    pointer-events: none;
+  }
   
   // Wide layout (5+ players) - rectangular
   &.wide {
