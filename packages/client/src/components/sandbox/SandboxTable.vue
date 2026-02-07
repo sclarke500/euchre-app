@@ -5,6 +5,14 @@
       <h3>🎮 Card Engine v2</h3>
       
       <div class="control-group">
+        <label>Table Layout:</label>
+        <select v-model="tableLayout" @change="handleReset">
+          <option value="normal">Normal (4 players)</option>
+          <option value="wide">Wide (5+ players)</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
         <label>Cards per hand:</label>
         <input type="number" v-model.number="cardsPerHand" min="1" max="13" />
       </div>
@@ -26,7 +34,7 @@
     <!-- Board -->
     <div ref="boardRef" class="board">
       <!-- Table surface with avatars positioned around it -->
-      <div ref="tableRef" class="table-surface">
+      <div ref="tableRef" class="table-surface" :class="tableLayout">
         <!-- Player avatars positioned via CSS classes -->
         <div 
           v-for="(hand, i) in hands" 
@@ -60,13 +68,14 @@ import { Deck, Hand, type ManagedCard, type BoardCardRef, type SandboxCard } fro
 const boardRef = ref<HTMLElement | null>(null)
 const tableRef = ref<HTMLElement | null>(null)
 const cardsPerHand = ref(5)
+const tableLayout = ref<'normal' | 'wide'>('wide')  // normal = 4 players, wide = 5+ players
 
 // Containers (shallowRef since we manage reactivity manually)
 const deck = shallowRef<Deck | null>(null)
 const hands = shallowRef<Hand[]>([])
 
-// Table layout
-const tableLayout = ref({
+// Table dimensions (calculated)
+const tableDimensions = ref({
   x: 0, y: 0,  // table center
   width: 0, height: 0,  // table dimensions
   playerCount: 5,
@@ -138,7 +147,8 @@ function initializeContainers() {
   const boardH = rect.height
   
   // Table dimensions - using percentages to match CSS
-  const tableMarginX = 0.05    // 5% left/right
+  const isWideLayout = tableLayout.value === 'wide'
+  const tableMarginX = isWideLayout ? 0.05 : 0.15  // 5% wide, 15% normal
   const tableMarginTop = 0.06  // 6% top
   const userAreaPct = 0.20     // 20% for user's hand area
   const tableW = boardW * (1 - tableMarginX * 2)
@@ -146,12 +156,12 @@ function initializeContainers() {
   const tableX = boardW / 2  // center X
   const tableY = boardH * tableMarginTop + tableH / 2  // center Y
   
-  tableLayout.value = {
+  tableDimensions.value = {
     x: tableX,
     y: tableY,
     width: tableW,
     height: tableH,
-    playerCount: 5,
+    playerCount: tableLayout.value === 'normal' ? 4 : 5,
   }
   
   // Table center (where kitty will be)
@@ -160,8 +170,9 @@ function initializeContainers() {
   // Create deck at table center (will be kitty position) - smaller scale
   deck.value = new Deck({ x: tableX, y: tableY }, 0.7)
   
-  // Player positions
-  const playerCount = 5
+  // Player positions based on layout
+  const isWide = tableLayout.value === 'wide'
+  const playerCount = isWide ? 5 : 4
   hands.value = []
   
   // Table bounds in board coordinates
@@ -173,14 +184,20 @@ function initializeContainers() {
   // Distance from table edge for opponent hands
   const handInset = Math.min(tableW, tableH) * 0.12
   
-  // Seat definitions: position on table edge, rotation aligned with edge
-  // side: 'left' | 'top' | 'right' | 'bottom', position along that edge (0-1)
-  const seats = [
-    { side: 'bottom', pos: 0.5, rotation: 0 },      // Player 0 (user) - below table
+  // Seat definitions based on layout
+  // Normal (4 players): user at bottom, one opponent on each other side
+  // Wide (5 players): user at bottom, 2 at top, 1 each side
+  const seats = isWide ? [
+    { side: 'bottom', pos: 0.5, rotation: 0 },      // Player 0 (user)
     { side: 'left', pos: 0.5, rotation: 90 },       // Player 1 - left
     { side: 'top', pos: 0.25, rotation: 180 },      // Player 2 - top left
     { side: 'top', pos: 0.75, rotation: 180 },      // Player 3 - top right
     { side: 'right', pos: 0.5, rotation: -90 },     // Player 4 - right
+  ] : [
+    { side: 'bottom', pos: 0.5, rotation: 0 },      // Player 0 (user)
+    { side: 'left', pos: 0.5, rotation: 90 },       // Player 1 - left
+    { side: 'top', pos: 0.5, rotation: 180 },       // Player 2 - top (partner)
+    { side: 'right', pos: 0.5, rotation: -90 },     // Player 3 - right
   ]
   
   for (let i = 0; i < playerCount; i++) {
@@ -410,7 +427,7 @@ onMounted(() => {
     text-transform: uppercase;
   }
 
-  input {
+  input, select {
     padding: 8px;
     border-radius: 6px;
     border: 1px solid #444;
@@ -469,8 +486,6 @@ onMounted(() => {
 .table-surface {
   position: absolute;
   top: 6%;
-  left: 5%;
-  right: 5%;
   bottom: 20%;  // Room for user's hand
   border-radius: 40px;
   background: 
@@ -480,6 +495,19 @@ onMounted(() => {
   box-shadow: 
     inset 0 0 60px rgba(0, 0, 0, 0.4),
     0 4px 20px rgba(0, 0, 0, 0.5);
+  
+  // Wide layout (5+ players) - rectangular
+  &.wide {
+    left: 5%;
+    right: 5%;
+  }
+  
+  // Normal layout (4 players) - more square
+  &.normal {
+    left: 15%;
+    right: 15%;
+    border-radius: 30px;
+  }
 }
 
 .player-avatar {
@@ -513,8 +541,15 @@ onMounted(() => {
   // Seat positions (relative to table-surface)
   &.seat-0 { display: none; }  // User - hidden
   &.seat-1 { left: 0; top: 50%; transform: translate(-50%, -50%); }  // Left
-  &.seat-2 { left: 25%; top: 0; transform: translate(-50%, -50%); }  // Top left
-  &.seat-3 { left: 75%; top: 0; transform: translate(-50%, -50%); }  // Top right
-  &.seat-4 { left: 100%; top: 50%; transform: translate(-50%, -50%); }  // Right
+  &.seat-2 { left: 25%; top: 0; transform: translate(-50%, -50%); }  // Top left (wide) / Top center (normal)
+  &.seat-3 { left: 75%; top: 0; transform: translate(-50%, -50%); }  // Top right (wide) / Right (normal)
+  &.seat-4 { left: 100%; top: 50%; transform: translate(-50%, -50%); }  // Right (wide only)
+  
+  // Normal layout overrides (4 players)
+  .table-surface.normal & {
+    &.seat-2 { left: 50%; top: 0; }  // Top center (partner)
+    &.seat-3 { left: 100%; top: 50%; }  // Right
+    &.seat-4 { display: none; }  // No 5th player
+  }
 }
 </style>
