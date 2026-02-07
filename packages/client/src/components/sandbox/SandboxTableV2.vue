@@ -126,6 +126,7 @@ function initializeContainers() {
       fanSpacing: 30,
       rotation: 0,
       scale: 1.3,  // User's cards 130%
+      fanCurve: 8, // Slight curve
     }),
     new Hand('left', { x: 80, y: cy }, { 
       faceUp: false, 

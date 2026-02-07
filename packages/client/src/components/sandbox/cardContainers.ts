@@ -116,6 +116,7 @@ export class Hand extends CardContainer {
   fanSpacing: number  // pixels between cards
   rotation: number    // rotation of the whole hand
   scale: number       // card scale (1.0 = normal)
+  fanCurve: number    // degrees of rotation at edges (0 = flat, 15 = curved)
   
   constructor(
     id: string, 
@@ -126,6 +127,7 @@ export class Hand extends CardContainer {
       fanSpacing?: number
       rotation?: number
       scale?: number
+      fanCurve?: number
     } = {}
   ) {
     super(id, position)
@@ -134,6 +136,7 @@ export class Hand extends CardContainer {
     this.fanSpacing = options.fanSpacing ?? 20
     this.rotation = options.rotation ?? 0
     this.scale = options.scale ?? 1.0
+    this.fanCurve = options.fanCurve ?? 0
   }
   
   getCardPosition(index: number): CardPosition {
@@ -160,19 +163,30 @@ export class Hand extends CardContainer {
     const startOffset = -totalWidth / 2
     const fanOffset = startOffset + index * this.fanSpacing * this.scale
     
+    // Calculate curve: -1 at left edge, 0 at center, +1 at right edge
+    const normalizedPos = cardCount > 1 
+      ? (index / (cardCount - 1)) * 2 - 1  // -1 to +1
+      : 0
+    const curveRotation = normalizedPos * this.fanCurve
+    
+    // Arc offset for y (cards at edges slightly higher)
+    const arcOffset = (1 - normalizedPos * normalizedPos) * this.fanCurve * 0.5
+    
     let x = this.position.x
     let y = this.position.y
     
     if (this.fanDirection === 'horizontal') {
       x += fanOffset
+      y -= arcOffset  // Lift center cards slightly
     } else {
       y += fanOffset
+      x -= arcOffset
     }
     
     return {
       x,
       y,
-      rotation: this.rotation,
+      rotation: this.rotation + curveRotation,
       zIndex: 200 + index,
       scale: this.scale,
     }
