@@ -178,8 +178,8 @@ function initializeContainers() {
   const seats = [
     { side: 'bottom', pos: 0.5, rotation: 0 },      // Player 0 (user) - below table
     { side: 'left', pos: 0.5, rotation: 90 },       // Player 1 - left
-    { side: 'top', pos: 0.30, rotation: 180 },      // Player 2 - top left
-    { side: 'top', pos: 0.70, rotation: 180 },      // Player 3 - top right
+    { side: 'top', pos: 0.25, rotation: 180 },      // Player 2 - top left
+    { side: 'top', pos: 0.75, rotation: 180 },      // Player 3 - top right
     { side: 'right', pos: 0.5, rotation: -90 },     // Player 4 - right
   ]
   
