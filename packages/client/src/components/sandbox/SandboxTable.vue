@@ -143,7 +143,7 @@ function initializeContainers() {
       fanSpacing: isUser ? 30 : 15,
       rotation: angleToCenter + 90,  // Rotate so cards face inward
       scale: isUser ? 1.3 : 0.6,
-      fanCurve: isUser ? 8 : 0,
+      fanCurve: isUser ? 8 : 4,  // All hands get curve now
       angleToCenter,
     }))
   }
