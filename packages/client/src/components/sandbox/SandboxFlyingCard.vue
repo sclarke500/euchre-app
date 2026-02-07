@@ -65,12 +65,10 @@ const cardStyle = computed(() => {
     const startingZIndex = 2000 + (props.totalCards - props.dealOrder)
     // Stack offset: first card (dealOrder=0) at top (offset=0), later cards pushed down
     const stackOffset = props.dealOrder * 0.5
-    // DEBUG: rotate first card 90deg to identify it
-    const rotation = props.dealOrder === 0 ? 90 : 0
     return {
       left: `${deckPos.value.x}%`,
       top: `calc(${deckPos.value.y}% + ${stackOffset}px)`,
-      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+      transform: 'translate(-50%, -50%) rotate(0deg)',
       opacity: 1,
       transition: 'none',
       zIndex: startingZIndex,
@@ -95,14 +93,14 @@ const cardStyle = computed(() => {
 })
 
 onMounted(() => {
-  // DEBUG: Don't animate - stay in 'start' position for CSS debugging
-  // setTimeout(() => {
-  //   stage.value = 'flying'
-  //   setTimeout(() => {
-  //     stage.value = 'landed'
-  //     props.onComplete()
-  //   }, 2100)
-  // }, props.delay)
+  // Start animation after delay
+  setTimeout(() => {
+    stage.value = 'flying'
+    setTimeout(() => {
+      stage.value = 'landed'
+      props.onComplete()
+    }, 2100)
+  }, props.delay)
 })
 </script>
 
