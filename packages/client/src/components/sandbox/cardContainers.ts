@@ -172,9 +172,7 @@ export class Hand extends CardContainer {
       }
     }
     
-    // Fanned mode - cards spread horizontally from hand position
-    
-    // Calculate spread for this card
+    // Fanned mode - cards spread along hand's rotation direction
     const middleIndex = (cardCount - 1) / 2
     const spreadAmount = (index - middleIndex) * this.fanSpacing * this.scale
     
@@ -183,13 +181,10 @@ export class Hand extends CardContainer {
     const offsetX = spreadAmount * Math.cos(rotRad)
     const offsetY = spreadAmount * Math.sin(rotRad)
     
-    // Curve rotation for user's hand (rotation === 0)
-    const curveRotation = this.rotation === 0 ? (index - middleIndex) * this.fanCurve : 0
-    
     return {
       x: this.position.x + offsetX,
       y: this.position.y + offsetY,
-      rotation: this.rotation + curveRotation,
+      rotation: this.rotation,
       zIndex: 200 + index,
       scale: this.scale,
     }

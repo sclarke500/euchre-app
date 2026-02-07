@@ -218,7 +218,7 @@ function initializeContainers() {
       fanSpacing: isUser ? 20 : 10,
       rotation: seat.rotation,  // Aligned with table edge
       scale: 0.7,  // Match deck size
-      fanCurve: isUser ? 6 : 3,
+      fanCurve: 0,  // No curvature for now
       angleToCenter,
     }))
   }
