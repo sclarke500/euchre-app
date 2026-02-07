@@ -173,14 +173,37 @@ export class Hand extends CardContainer {
     }
     
     // Fanned mode using transform-origin
-    // All cards at same position, different rotations, origin creates the arc
+    // Origin must be on the edge facing table center, adjusted by hand rotation
     
     const middleIndex = (cardCount - 1) / 2
-    const spreadAngle = (index - middleIndex) * this.fanCurve  // e.g. -12, -6, 0, 6, 12 degrees
+    const spreadAngle = (index - middleIndex) * this.fanCurve
     
-    // Origin below card center - only for user (rotation 0), none for opponents
-    const isUser = this.rotation === 0
-    const originDistance = isUser ? 120 : 0
+    // Card dimensions (base size before scale)
+    const cardW = 70
+    const cardH = 100
+    
+    // Origin distance from card center toward the pivot edge
+    // Use percentage of card size + extra for wider arc
+    const arcDistance = 50  // extra pixels beyond card edge
+    
+    // Calculate origin based on rotation (which edge faces table center)
+    let originX = 0
+    let originY = 0
+    const rot = ((this.rotation % 360) + 360) % 360  // Normalize to 0-359
+    
+    if (rot < 45 || rot >= 315) {
+      // Bottom (0°): pivot at center bottom
+      originY = cardH / 2 + arcDistance
+    } else if (rot >= 45 && rot < 135) {
+      // Right (90°): pivot at right center
+      originX = cardW / 2 + arcDistance
+    } else if (rot >= 135 && rot < 225) {
+      // Top (180°): pivot at center top
+      originY = -(cardH / 2 + arcDistance)
+    } else {
+      // Left (270° / -90°): pivot at left center
+      originX = -(cardW / 2 + arcDistance)
+    }
     
     return {
       x: this.position.x,
@@ -188,8 +211,8 @@ export class Hand extends CardContainer {
       rotation: this.rotation + spreadAngle,
       zIndex: 200 + index,
       scale: this.scale,
-      originX: 0,
-      originY: originDistance * this.scale,
+      originX: originX * this.scale,
+      originY: originY * this.scale,
     }
   }
   
