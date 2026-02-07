@@ -34,6 +34,7 @@ export interface CardPosition {
   y: number      // pixels from top
   rotation: number  // degrees
   zIndex: number
+  scale?: number  // 1.0 = normal size
 }
 
 interface SandboxCard {
@@ -61,15 +62,18 @@ const isAnimating = ref(false)
 const animationDuration = ref(350)
 
 // Computed card style
-const cardStyle = computed(() => ({
-  left: `${position.value.x}px`,
-  top: `${position.value.y}px`,
-  transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg)`,
-  zIndex: position.value.zIndex,
-  transition: isAnimating.value 
-    ? `all ${animationDuration.value}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
-    : 'none',
-}))
+const cardStyle = computed(() => {
+  const scale = position.value.scale ?? 1.0
+  return {
+    left: `${position.value.x}px`,
+    top: `${position.value.y}px`,
+    transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale})`,
+    zIndex: position.value.zIndex,
+    transition: isAnimating.value 
+      ? `all ${animationDuration.value}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+      : 'none',
+  }
+})
 
 // Card display helpers
 const suitSymbol = computed(() => {

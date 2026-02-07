@@ -6,6 +6,7 @@ export interface CardPosition {
   y: number
   rotation: number
   zIndex: number
+  scale?: number  // 1.0 = normal size
 }
 
 export interface BoardCardRef {
@@ -113,6 +114,7 @@ export class Hand extends CardContainer {
   fanDirection: 'horizontal' | 'vertical'
   fanSpacing: number  // pixels between cards
   rotation: number    // rotation of the whole hand
+  scale: number       // card scale (1.0 = normal)
   
   constructor(
     id: string, 
@@ -122,6 +124,7 @@ export class Hand extends CardContainer {
       fanDirection?: 'horizontal' | 'vertical'
       fanSpacing?: number
       rotation?: number
+      scale?: number
     } = {}
   ) {
     super(id, position)
@@ -129,6 +132,7 @@ export class Hand extends CardContainer {
     this.fanDirection = options.fanDirection ?? 'horizontal'
     this.fanSpacing = options.fanSpacing ?? 20
     this.rotation = options.rotation ?? 0
+    this.scale = options.scale ?? 1.0
   }
   
   getCardPosition(index: number): CardPosition {
@@ -146,13 +150,14 @@ export class Hand extends CardContainer {
         y: this.position.y + randomY - index * 0.5,
         rotation: this.rotation + randomRot,
         zIndex: 200 + index,
+        scale: 1.0,  // Normal size during deal
       }
     }
     
-    // Fanned mode
-    const totalWidth = (cardCount - 1) * this.fanSpacing
+    // Fanned mode - use hand's scale
+    const totalWidth = (cardCount - 1) * this.fanSpacing * this.scale
     const startOffset = -totalWidth / 2
-    const fanOffset = startOffset + index * this.fanSpacing
+    const fanOffset = startOffset + index * this.fanSpacing * this.scale
     
     let x = this.position.x
     let y = this.position.y
@@ -168,6 +173,7 @@ export class Hand extends CardContainer {
       y,
       rotation: this.rotation,
       zIndex: 200 + index,
+      scale: this.scale,
     }
   }
   

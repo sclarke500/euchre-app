@@ -120,29 +120,33 @@ function initializeContainers() {
   
   // Create 4 hands around the board (all face down initially)
   hands.value = [
-    new Hand('bottom', { x: cx, y: rect.height - 80 }, { 
+    new Hand('bottom', { x: cx, y: rect.height - 50 }, { 
       faceUp: false, 
       fanDirection: 'horizontal',
       fanSpacing: 30,
-      rotation: 0 
+      rotation: 0,
+      scale: 1.3,  // User's cards 130%
     }),
-    new Hand('left', { x: 100, y: cy }, { 
+    new Hand('left', { x: 80, y: cy }, { 
       faceUp: false, 
       fanDirection: 'vertical',
-      fanSpacing: 20,
-      rotation: 90 
+      fanSpacing: 15,
+      rotation: 90,
+      scale: 0.6,  // Opponent cards 60%
     }),
-    new Hand('top', { x: cx, y: 80 }, { 
+    new Hand('top', { x: cx, y: 50 }, { 
       faceUp: false, 
       fanDirection: 'horizontal',
-      fanSpacing: 20,
-      rotation: 180 
+      fanSpacing: 15,
+      rotation: 180,
+      scale: 0.6,  // Opponent cards 60%
     }),
-    new Hand('right', { x: rect.width - 100, y: cy }, { 
+    new Hand('right', { x: rect.width - 80, y: cy }, { 
       faceUp: false, 
       fanDirection: 'vertical',
-      fanSpacing: 20,
-      rotation: -90 
+      fanSpacing: 15,
+      rotation: -90,
+      scale: 0.6,  // Opponent cards 60%
     }),
   ]
 }
