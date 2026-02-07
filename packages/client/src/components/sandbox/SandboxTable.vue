@@ -138,7 +138,7 @@ function initializeContainers() {
   
   // Table dimensions - positioned in upper portion, room for user's hand below
   const tableMargin = 60  // More space around table
-  const userHandHeight = 150
+  const userHandHeight = 100
   const tableW = boardW - tableMargin * 2
   const tableH = boardH - userHandHeight - tableMargin
   const tableX = boardW / 2  // center X
@@ -451,7 +451,7 @@ onMounted(() => {
   top: 60px;
   left: 60px;
   right: 60px;
-  bottom: 150px;  // Room for user's hand
+  bottom: 100px;  // Room for user's hand
   border-radius: 40px;
   background: 
     radial-gradient(ellipse at center, #1e5631 0%, #0d3320 70%),
