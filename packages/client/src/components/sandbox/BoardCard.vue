@@ -3,8 +3,8 @@
     class="board-card"
     :style="cardStyle"
   >
-    <div class="card-inner" :class="{ 'face-down': !faceUp }">
-      <template v-if="faceUp">
+    <div class="card-inner" :class="{ 'face-down': !showFaceUp }">
+      <template v-if="showFaceUp">
         <div class="corner top-left" :class="colorClass">
           <span class="rank">{{ displayRank }}</span>
           <span class="suit">{{ suitSymbol }}</span>
@@ -34,7 +34,8 @@ export interface CardPosition {
   y: number      // pixels from top
   rotation: number  // degrees
   zIndex: number
-  scale?: number  // 1.0 = normal size
+  scale?: number    // 1.0 = normal size
+  flipY?: number    // 0-180 degrees for flip animation
 }
 
 interface SandboxCard {
@@ -55,6 +56,8 @@ const position = ref<CardPosition>(props.initialPosition ?? {
   y: 0,
   rotation: 0,
   zIndex: 1,
+  scale: 1,
+  flipY: 0,
 })
 
 // Animation state
@@ -64,15 +67,24 @@ const animationDuration = ref(350)
 // Computed card style
 const cardStyle = computed(() => {
   const scale = position.value.scale ?? 1.0
+  const flipY = position.value.flipY ?? 0
   return {
     left: `${position.value.x}px`,
     top: `${position.value.y}px`,
-    transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale})`,
+    transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale}) rotateY(${flipY}deg)`,
     zIndex: position.value.zIndex,
     transition: isAnimating.value 
       ? `all ${animationDuration.value}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
       : 'none',
   }
+})
+
+// When flipY is between 90-270, show the opposite face
+const showFaceUp = computed(() => {
+  const flipY = position.value.flipY ?? 0
+  const normalizedFlip = ((flipY % 360) + 360) % 360
+  const isFlipped = normalizedFlip > 90 && normalizedFlip < 270
+  return isFlipped ? !props.faceUp : props.faceUp
 })
 
 // Card display helpers

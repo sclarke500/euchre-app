@@ -6,7 +6,8 @@ export interface CardPosition {
   y: number
   rotation: number
   zIndex: number
-  scale?: number  // 1.0 = normal size
+  scale?: number    // 1.0 = normal size
+  flipY?: number    // 0-180 degrees for flip animation
 }
 
 export interface BoardCardRef {

@@ -120,7 +120,7 @@ function initializeContainers() {
   
   // Create 4 hands around the board (all face down initially)
   hands.value = [
-    new Hand('bottom', { x: cx, y: rect.height }, { 
+    new Hand('bottom', { x: cx, y: rect.height - 80 }, { 
       faceUp: false, 
       fanDirection: 'horizontal',
       fanSpacing: 30,
@@ -242,15 +242,39 @@ async function handleDeal() {
 
 // Fan all hands
 async function handleFan() {
-  // Flip bottom player's cards face up first
+  if (!boardRef.value) return
+  const rect = boardRef.value.getBoundingClientRect()
+  
   const bottomHand = hands.value.find(h => h.id === 'bottom')
   if (bottomHand) {
+    // Step 1: Move bottom hand down and flip cards (180 deg)
+    bottomHand.position = { x: rect.width / 2, y: rect.height }
+    
+    // Animate each card to new position with flip
+    for (const managed of bottomHand.cards) {
+      const cardRef = cardRefs.get(managed.card.id)
+      if (cardRef) {
+        const currentPos = cardRef.getPosition()
+        cardRef.moveTo({
+          ...currentPos,
+          y: rect.height,
+          flipY: 180,  // Flip the card
+        }, 500)
+      }
+    }
+    
+    // Wait for flip/move to complete
+    await new Promise(r => setTimeout(r, 550))
+    
+    // Update faceUp state for reactivity
     bottomHand.flipCards(true)
-    refreshCards()
   }
   
-  const promises = hands.value.map(hand => hand.setMode('fanned', 400))
-  await Promise.all(promises)
+  // Step 2: All hands fan and resize simultaneously
+  const fanPromises = hands.value.map(hand => hand.setMode('fanned', 400))
+  await Promise.all(fanPromises)
+  
+  refreshCards()
 }
 
 // Stack all hands
