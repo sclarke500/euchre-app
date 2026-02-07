@@ -120,7 +120,7 @@ function initializeContainers() {
   
   // Create 4 hands around the board (all face down initially)
   hands.value = [
-    new Hand('bottom', { x: cx, y: rect.height - 50 }, { 
+    new Hand('bottom', { x: cx, y: rect.height }, { 
       faceUp: false, 
       fanDirection: 'horizontal',
       fanSpacing: 30,
