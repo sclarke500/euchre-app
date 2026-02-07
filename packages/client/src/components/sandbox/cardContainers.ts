@@ -171,28 +171,26 @@ export class Hand extends CardContainer {
     const startOffset = -totalWidth / 2
     const fanOffset = startOffset + index * this.fanSpacing * this.scale
     
-    let x = this.position.x
-    let y = this.position.y
-    
-    if (this.fanDirection === 'horizontal') {
-      x += fanOffset
-    } else {
-      y += fanOffset
-    }
+    // Offset cards along the hand's rotation direction (tangent to circle)
+    const rotRad = this.rotation * Math.PI / 180
+    let x = this.position.x + fanOffset * Math.cos(rotRad)
+    let y = this.position.y + fanOffset * Math.sin(rotRad)
     
     // Only apply curve if fanCurve is set (user's hand)
     let curveRotation = 0
-    let arcOffset = 0
     if (this.fanCurve > 0 && cardCount > 1) {
       const normalizedPos = (index / (cardCount - 1)) * 2 - 1  // -1 to +1
       curveRotation = normalizedPos * this.fanCurve
-      // Arc height: edge cards move up toward table center
-      arcOffset = normalizedPos * normalizedPos * this.fanCurve * 1.5
+      // Arc: edge cards pushed toward center along angleToCenter direction
+      const arcAmount = normalizedPos * normalizedPos * this.fanCurve * 1.5
+      const arcRad = this.angleToCenter * Math.PI / 180
+      x += arcAmount * Math.cos(arcRad)
+      y += arcAmount * Math.sin(arcRad)
     }
     
     return {
       x,
-      y: y - arcOffset,
+      y,
       rotation: this.rotation + curveRotation,
       zIndex: 200 + index,
       scale: this.scale,
