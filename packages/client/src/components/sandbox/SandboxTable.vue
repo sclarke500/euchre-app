@@ -136,13 +136,13 @@ function initializeContainers() {
   const boardW = rect.width
   const boardH = rect.height
   
-  // Table dimensions - positioned in upper portion, room for user's hand below
-  const tableMargin = 60  // More space around table
-  const userHandHeight = 100
-  const tableW = boardW - tableMargin * 2
-  const tableH = boardH - userHandHeight - tableMargin
+  // Table dimensions - using percentages to match CSS
+  const tableMarginPct = 0.03  // 3%
+  const userAreaPct = 0.18     // 18% for user's hand area
+  const tableW = boardW * (1 - tableMarginPct * 2)
+  const tableH = boardH * (1 - tableMarginPct - userAreaPct)
   const tableX = boardW / 2  // center X
-  const tableY = tableMargin + tableH / 2  // center Y (shifted up)
+  const tableY = boardH * tableMarginPct + tableH / 2  // center Y
   
   tableLayout.value = {
     x: tableX,
@@ -177,12 +177,14 @@ function initializeContainers() {
     if (!pos) continue
     
     // Calculate hand position in board coordinates
-    const handX = tableMargin + pos.x * tableW
-    const handY = tableMargin + pos.y * tableH
+    const tableLeft = boardW * tableMarginPct
+    const tableTop = boardH * tableMarginPct
+    const handX = tableLeft + pos.x * tableW
+    const handY = tableTop + pos.y * tableH
     
     if (isUser) {
-      // User's hand is below the table
-      const userPos = { x: tableX, y: boardH - 60 }
+      // User's hand is below the table (in the user area)
+      const userPos = { x: tableX, y: boardH * 0.92 }
       const angleToCenter = Hand.calcAngleToCenter(userPos, center)
       
       hands.value.push(new Hand('player-0', userPos, {
@@ -444,14 +446,16 @@ onMounted(() => {
   position: relative;
   background: #1a1a2e;  // Dark background outside table
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .table-surface {
   position: absolute;
-  top: 60px;
-  left: 60px;
-  right: 60px;
-  bottom: 100px;  // Room for user's hand
+  top: 3%;
+  left: 3%;
+  right: 3%;
+  bottom: 18%;  // Room for user's hand
   border-radius: 40px;
   background: 
     radial-gradient(ellipse at center, #1e5631 0%, #0d3320 70%),
