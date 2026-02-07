@@ -67,7 +67,6 @@ const cardStyle = computed(() => {
     // Stack offset: first card (dealOrder=0) at top (offset=0), later cards pushed down
     const stackOffset = props.dealOrder * 0.5
     return {
-      position: 'absolute',  // Required for z-index to work
       left: `${deckPos.value.x}%`,
       top: `calc(${deckPos.value.y}% + ${stackOffset}px)`,
       transform: 'translate(-50%, -50%) rotate(0deg)',
@@ -82,7 +81,6 @@ const cardStyle = computed(() => {
     // At destination, later cards in stack go on top
     const stackOffset = props.stackIndex * 0.5  // Slight vertical stacking
     return {
-      position: 'absolute',  // Required for z-index to work
       left: `calc(${target.x}% + ${randomOffset.x}px)`,
       top: `calc(${target.y}% + ${randomOffset.y - stackOffset}px)`,
       transform: `translate(-50%, -50%) rotate(${target.rotate + randomOffset.rotate}deg)`,
