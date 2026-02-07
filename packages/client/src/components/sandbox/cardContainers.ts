@@ -153,10 +153,10 @@ export class Hand extends CardContainer {
     const cardCount = this.cards.length
     
     if (this.mode === 'looseStack') {
-      // Random-ish loose stack
+      // Random-ish loose stack - scale the randomness by hand scale
       const seed = index * 12345.6789
-      const randomX = (Math.sin(seed) * 0.5) * 12
-      const randomY = (Math.cos(seed) * 0.5) * 8
+      const randomX = (Math.sin(seed) * 0.5) * 12 * this.scale
+      const randomY = (Math.cos(seed) * 0.5) * 8 * this.scale
       const randomRot = (Math.sin(seed * 2) * 0.5) * 8
       
       return {
@@ -164,7 +164,7 @@ export class Hand extends CardContainer {
         y: this.position.y + randomY - index * 0.5,
         rotation: this.rotation + randomRot,
         zIndex: 200 + index,
-        scale: 1.0,  // Normal size during deal
+        scale: this.scale,  // Use hand's scale
       }
     }
     
