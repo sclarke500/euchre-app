@@ -361,7 +361,7 @@ onMounted(() => {
 <style scoped lang="scss">
 .sandbox {
   display: flex;
-  height: 100vh;
+  height: 100%;
   background: #1a1a2e;
   color: #fff;
 }
@@ -446,9 +446,6 @@ onMounted(() => {
   position: relative;
   background: #1a1a2e;  // Dark background outside table
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border: 3px solid red;  // DEBUG
 }
 
 .table-surface {
