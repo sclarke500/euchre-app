@@ -25,6 +25,20 @@
 
     <!-- Board -->
     <div ref="boardRef" class="board">
+      <!-- Table surface -->
+      <div class="table-surface"></div>
+      
+      <!-- Player avatars (outside table) -->
+      <div 
+        v-for="(hand, i) in hands" 
+        :key="'avatar-' + hand.id"
+        class="player-avatar"
+        :class="{ 'is-user': i === 0 }"
+        :style="getAvatarStyle(i)"
+      >
+        <div class="avatar-circle">{{ i === 0 ? '👤' : `P${i + 1}` }}</div>
+      </div>
+      
       <!-- All cards rendered here -->
       <BoardCard
         v-for="managed in allCards"
@@ -49,6 +63,16 @@ const cardsPerHand = ref(5)
 // Containers (shallowRef since we manage reactivity manually)
 const deck = shallowRef<Deck | null>(null)
 const hands = shallowRef<Hand[]>([])
+
+// Table layout - stored for avatar positioning
+const tableLayout = ref({
+  x: 0, y: 0,  // table center
+  width: 0, height: 0,  // table dimensions
+  playerCount: 5,
+})
+
+// Avatar positions (calculated based on table)
+const avatarPositions = ref<Array<{ x: number; y: number }>>([])
 
 // Animation constants
 const DEAL_FLIGHT_MS = 400
@@ -84,6 +108,16 @@ const hasDeck = computed(() => {
   return (deck.value?.cards.length ?? 0) > 0
 })
 
+// Get avatar position style
+function getAvatarStyle(playerIndex: number) {
+  const pos = avatarPositions.value[playerIndex]
+  if (!pos) return {}
+  return {
+    left: `${pos.x}px`,
+    top: `${pos.y}px`,
+  }
+}
+
 // Card refs
 const cardRefs = new Map<string, BoardCardRef>()
 
@@ -112,40 +146,94 @@ function initializeContainers() {
   if (!boardRef.value) return
   
   const rect = boardRef.value.getBoundingClientRect()
-  const cx = rect.width / 2
-  const cy = rect.height / 2
+  const boardW = rect.width
+  const boardH = rect.height
   
-  // Board center (where kitty will be)
-  const center = { x: cx, y: cy }
+  // Table dimensions - positioned in upper portion, room for user's hand below
+  const tableMargin = 40
+  const userHandHeight = 150
+  const tableW = boardW - tableMargin * 2
+  const tableH = boardH - userHandHeight - tableMargin
+  const tableX = boardW / 2  // center X
+  const tableY = tableMargin + tableH / 2  // center Y (shifted up)
   
-  // Create deck at bottom right corner
-  deck.value = new Deck({ x: rect.width, y: rect.height })
+  tableLayout.value = {
+    x: tableX,
+    y: tableY,
+    width: tableW,
+    height: tableH,
+    playerCount: 5,
+  }
   
-  // Position players around an ellipse
+  // Table center (where kitty will be)
+  const center = { x: tableX, y: tableY }
+  
+  // Create deck at table center (will be kitty position)
+  deck.value = new Deck({ x: tableX, y: tableY })
+  
+  // Player positions
   const playerCount = 5
-  const rx = cx - 100  // horizontal radius
-  const ry = cy - 80   // vertical radius
-  
   hands.value = []
+  avatarPositions.value = []
+  
+  // Ellipse for opponent hands ON the table
+  const handRx = tableW * 0.35  // hands inside table
+  const handRy = tableH * 0.35
+  
+  // Ellipse for avatars OUTSIDE the table  
+  const avatarRx = tableW * 0.55
+  const avatarRy = tableH * 0.55
+  
   for (let i = 0; i < playerCount; i++) {
-    // Start from bottom (user), go clockwise
-    const angle = (Math.PI / 2) + (i * 2 * Math.PI / playerCount)
-    const pos = {
-      x: cx + rx * Math.cos(angle),
-      y: cy + ry * Math.sin(angle),
-    }
-    const angleToCenter = Hand.calcAngleToCenter(pos, center)
     const isUser = i === 0
     
-    hands.value.push(new Hand(`player-${i}`, pos, {
-      faceUp: false,
-      fanDirection: 'horizontal',
-      fanSpacing: isUser ? 30 : 15,
-      rotation: angleToCenter + 90,  // Rotate so cards face inward
-      scale: isUser ? 1.3 : 0.6,
-      fanCurve: isUser ? 8 : 4,  // All hands get curve now
-      angleToCenter,
-    }))
+    if (isUser) {
+      // User's hand is below the table
+      const userPos = { x: tableX, y: boardH - 60 }
+      const angleToCenter = Hand.calcAngleToCenter(userPos, center)
+      
+      hands.value.push(new Hand('player-0', userPos, {
+        faceUp: false,
+        fanDirection: 'horizontal',
+        fanSpacing: 30,
+        rotation: 0,  // User's cards face up
+        scale: 1.3,
+        fanCurve: 8,
+        angleToCenter,
+      }))
+      
+      // User avatar at bottom center (below hand)
+      avatarPositions.value.push({ x: tableX, y: boardH - 20 })
+    } else {
+      // Opponent hands ON the table, arranged around upper arc
+      // Skip the bottom position (that's the user), distribute others on top arc
+      const opponentIndex = i - 1  // 0 to 3 for opponents
+      const opponentCount = playerCount - 1
+      // Spread from left to right across the top
+      const angle = Math.PI + (opponentIndex + 0.5) * Math.PI / opponentCount
+      
+      const handPos = {
+        x: tableX + handRx * Math.cos(angle),
+        y: tableY + handRy * Math.sin(angle),
+      }
+      const angleToCenter = Hand.calcAngleToCenter(handPos, center)
+      
+      hands.value.push(new Hand(`player-${i}`, handPos, {
+        faceUp: false,
+        fanDirection: 'horizontal',
+        fanSpacing: 12,
+        rotation: angleToCenter + 90,
+        scale: 0.5,
+        fanCurve: 3,
+        angleToCenter,
+      }))
+      
+      // Avatar outside the table
+      avatarPositions.value.push({
+        x: tableX + avatarRx * Math.cos(angle),
+        y: tableY + avatarRy * Math.sin(angle),
+      })
+    }
   }
 }
 
@@ -380,9 +468,47 @@ onMounted(() => {
 .board {
   flex: 1;
   position: relative;
+  background: #1a1a2e;  // Dark background outside table
+  overflow: hidden;
+}
+
+.table-surface {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  right: 40px;
+  bottom: 150px;  // Room for user's hand
+  border-radius: 40px;
   background: 
     radial-gradient(ellipse at center, #1e5631 0%, #0d3320 70%),
     linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
-  overflow: hidden;
+  border: 8px solid #3d2817;  // Wood-colored border
+  box-shadow: 
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.player-avatar {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  
+  .avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #3a3a5a;
+    border: 2px solid #5a5a8a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  &.is-user {
+    display: none;  // Hide user avatar for now
+  }
 }
 </style>
