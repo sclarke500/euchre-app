@@ -199,15 +199,24 @@ async function handleDeal() {
       const cardRef = cardRefs.get(cardId)
       const startPos = cardRef?.getPosition()
       
+      console.log(`Card ${cardIndex}: ${cardId}`)
+      console.log(`  - has ref before: ${!!cardRef}`)
+      console.log(`  - startPos:`, startPos)
+      
       refreshCards()
       await nextTick()  // Wait for Vue to process the change
       
       // Re-grab ref after render (might be same or updated)
       const cardRefAfter = cardRefs.get(cardId)
       
+      console.log(`  - has ref after: ${!!cardRefAfter}`)
+      console.log(`  - same ref: ${cardRef === cardRefAfter}`)
+      
       // Get target position (loose stack for now)
       const handIndex = hand.cards.length - 1
       const targetPos = hand.getCardPosition(handIndex)
+      
+      console.log(`  - targetPos:`, targetPos)
       
       // Animate the card
       if (startPos && cardRefAfter) {
@@ -216,6 +225,9 @@ async function handleDeal() {
         
         // Start animation (don't await - let cards fly in parallel with delay)
         cardRefAfter.moveTo(targetPos, 300)
+        console.log(`  - animating!`)
+      } else {
+        console.log(`  - SKIPPED: no startPos or ref`)
       }
       
       // Delay between cards being dealt
