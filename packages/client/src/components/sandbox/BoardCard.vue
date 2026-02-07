@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 export interface CardPosition {
   x: number      // pixels from left
@@ -121,6 +121,14 @@ function setPosition(pos: CardPosition) {
 function getPosition(): CardPosition {
   return { ...position.value }
 }
+
+onMounted(() => {
+  console.log(`BoardCard MOUNTED: ${props.card.id}`)
+})
+
+onUnmounted(() => {
+  console.log(`BoardCard UNMOUNTED: ${props.card.id}`)
+})
 
 // Expose methods
 defineExpose({
