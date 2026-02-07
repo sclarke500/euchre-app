@@ -121,48 +121,32 @@ function initializeContainers() {
   // Create deck at bottom right corner
   deck.value = new Deck({ x: rect.width, y: rect.height })
   
-  // Hand positions
-  const bottomPos = { x: cx, y: rect.height - 80 }
-  const leftPos = { x: 80, y: cy }
-  const topPos = { x: cx, y: 50 }
-  const rightPos = { x: rect.width - 80, y: cy }
+  // Position players around an ellipse
+  const playerCount = 5
+  const rx = cx - 100  // horizontal radius
+  const ry = cy - 80   // vertical radius
   
-  // Create 4 hands around the board (all face down initially)
-  hands.value = [
-    new Hand('bottom', bottomPos, { 
-      faceUp: false, 
+  hands.value = []
+  for (let i = 0; i < playerCount; i++) {
+    // Start from bottom (user), go clockwise
+    const angle = (Math.PI / 2) + (i * 2 * Math.PI / playerCount)
+    const pos = {
+      x: cx + rx * Math.cos(angle),
+      y: cy + ry * Math.sin(angle),
+    }
+    const angleToCenter = Hand.calcAngleToCenter(pos, center)
+    const isUser = i === 0
+    
+    hands.value.push(new Hand(`player-${i}`, pos, {
+      faceUp: false,
       fanDirection: 'horizontal',
-      fanSpacing: 30,
-      rotation: 0,
-      scale: 1.3,
-      fanCurve: 8,
-      angleToCenter: Hand.calcAngleToCenter(bottomPos, center),
-    }),
-    new Hand('left', leftPos, { 
-      faceUp: false, 
-      fanDirection: 'vertical',
-      fanSpacing: 15,
-      rotation: 90,
-      scale: 0.6,
-      angleToCenter: Hand.calcAngleToCenter(leftPos, center),
-    }),
-    new Hand('top', topPos, { 
-      faceUp: false, 
-      fanDirection: 'horizontal',
-      fanSpacing: 15,
-      rotation: 180,
-      scale: 0.6,
-      angleToCenter: Hand.calcAngleToCenter(topPos, center),
-    }),
-    new Hand('right', rightPos, { 
-      faceUp: false, 
-      fanDirection: 'vertical',
-      fanSpacing: 15,
-      rotation: -90,
-      scale: 0.6,
-      angleToCenter: Hand.calcAngleToCenter(rightPos, center),
-    }),
-  ]
+      fanSpacing: isUser ? 30 : 15,
+      rotation: angleToCenter + 90,  // Rotate so cards face inward
+      scale: isUser ? 1.3 : 0.6,
+      fanCurve: isUser ? 8 : 0,
+      angleToCenter,
+    }))
+  }
 }
 
 // Create a new deck
@@ -259,13 +243,13 @@ async function handleFan() {
   if (!boardRef.value) return
   const rect = boardRef.value.getBoundingClientRect()
   
-  const bottomHand = hands.value.find(h => h.id === 'bottom')
-  if (bottomHand) {
-    // Step 1: Move bottom hand down and flip cards (180 deg)
-    bottomHand.position = { x: rect.width / 2, y: rect.height }
+  const userHand = hands.value[0]  // First hand is always user
+  if (userHand) {
+    // Step 1: Move user hand down and flip cards (180 deg)
+    userHand.position = { x: rect.width / 2, y: rect.height }
     
     // Animate each card to new position with flip
-    for (const managed of bottomHand.cards) {
+    for (const managed of userHand.cards) {
       const cardRef = cardRefs.get(managed.card.id)
       if (cardRef) {
         const currentPos = cardRef.getPosition()
