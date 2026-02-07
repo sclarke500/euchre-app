@@ -211,10 +211,13 @@ async function handleDeal() {
       
       // Animate the card
       if (startPos && cardRefAfter) {
-        // Restore starting position with high z-index
+        // Restore starting position with high z-index (no transition)
         cardRefAfter.setPosition({ ...startPos, zIndex: 1000 + cardIndex })
         
-        // Start animation
+        // Wait for browser to paint the start position before animating
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+        
+        // Now animate to target
         cardRefAfter.moveTo(targetPos, 2000)
       }
       
