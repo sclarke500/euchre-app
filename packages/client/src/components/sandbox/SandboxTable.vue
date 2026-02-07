@@ -115,39 +115,52 @@ function initializeContainers() {
   const cx = rect.width / 2
   const cy = rect.height / 2
   
+  // Board center (where kitty will be)
+  const center = { x: cx, y: cy }
+  
   // Create deck at bottom right corner
   deck.value = new Deck({ x: rect.width, y: rect.height })
   
+  // Hand positions
+  const bottomPos = { x: cx, y: rect.height - 80 }
+  const leftPos = { x: 80, y: cy }
+  const topPos = { x: cx, y: 50 }
+  const rightPos = { x: rect.width - 80, y: cy }
+  
   // Create 4 hands around the board (all face down initially)
   hands.value = [
-    new Hand('bottom', { x: cx, y: rect.height - 80 }, { 
+    new Hand('bottom', bottomPos, { 
       faceUp: false, 
       fanDirection: 'horizontal',
       fanSpacing: 30,
       rotation: 0,
-      scale: 1.3,  // User's cards 130%
-      fanCurve: 8, // Slight curve
+      scale: 1.3,
+      fanCurve: 8,
+      angleToCenter: Hand.calcAngleToCenter(bottomPos, center),
     }),
-    new Hand('left', { x: 80, y: cy }, { 
+    new Hand('left', leftPos, { 
       faceUp: false, 
       fanDirection: 'vertical',
       fanSpacing: 15,
       rotation: 90,
       scale: 0.6,
+      angleToCenter: Hand.calcAngleToCenter(leftPos, center),
     }),
-    new Hand('top', { x: cx, y: 50 }, { 
+    new Hand('top', topPos, { 
       faceUp: false, 
       fanDirection: 'horizontal',
       fanSpacing: 15,
       rotation: 180,
       scale: 0.6,
+      angleToCenter: Hand.calcAngleToCenter(topPos, center),
     }),
-    new Hand('right', { x: rect.width - 80, y: cy }, { 
+    new Hand('right', rightPos, { 
       faceUp: false, 
       fanDirection: 'vertical',
       fanSpacing: 15,
       rotation: -90,
       scale: 0.6,
+      angleToCenter: Hand.calcAngleToCenter(rightPos, center),
     }),
   ]
 }

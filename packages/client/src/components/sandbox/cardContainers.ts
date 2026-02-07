@@ -117,6 +117,7 @@ export class Hand extends CardContainer {
   rotation: number    // rotation of the whole hand
   scale: number       // card scale (1.0 = normal)
   fanCurve: number    // degrees of rotation at edges (0 = flat, 15 = curved)
+  angleToCenter: number  // angle in degrees pointing toward board center (kitty)
   
   constructor(
     id: string, 
@@ -128,6 +129,7 @@ export class Hand extends CardContainer {
       rotation?: number
       scale?: number
       fanCurve?: number
+      angleToCenter?: number
     } = {}
   ) {
     super(id, position)
@@ -137,6 +139,12 @@ export class Hand extends CardContainer {
     this.rotation = options.rotation ?? 0
     this.scale = options.scale ?? 1.0
     this.fanCurve = options.fanCurve ?? 0
+    this.angleToCenter = options.angleToCenter ?? 0
+  }
+  
+  // Calculate angle to center from current position
+  static calcAngleToCenter(handPos: { x: number; y: number }, centerPos: { x: number; y: number }): number {
+    return Math.atan2(centerPos.y - handPos.y, centerPos.x - handPos.x) * (180 / Math.PI)
   }
   
   getCardPosition(index: number): CardPosition {
