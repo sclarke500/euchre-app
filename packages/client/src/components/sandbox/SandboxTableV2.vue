@@ -215,11 +215,11 @@ async function handleDeal() {
         cardRefAfter.setPosition({ ...startPos, zIndex: 1000 + cardIndex })
         
         // Start animation
-        cardRefAfter.moveTo(targetPos, 1000)
+        cardRefAfter.moveTo(targetPos, 2000)
       }
       
       // Delay between cards being dealt
-      await new Promise(r => setTimeout(r, 150))
+      await new Promise(r => setTimeout(r, 500))
       
       cardIndex++
     }
