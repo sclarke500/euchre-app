@@ -180,12 +180,30 @@ function initializeContainers() {
   const handRx = tableW * 0.35  // hands inside table
   const handRy = tableH * 0.35
   
-  // Avatars positioned just outside the table edge
-  // Table edge is at tableW/2 and tableH/2 from center
-  // Use larger offset to account for rectangular table vs ellipse positioning
-  const avatarOffset = 80
-  const avatarRx = tableW / 2 + avatarOffset
-  const avatarRy = tableH / 2 + avatarOffset
+  // Avatar offset from table edge
+  const avatarOffset = 40
+  
+  // Helper: find where ray from center at angle intersects rectangle edge
+  function getRectEdgePoint(angle: number, halfW: number, halfH: number, offset: number) {
+    const cos = Math.cos(angle)
+    const sin = Math.sin(angle)
+    
+    // Find intersection with rectangle edges
+    // Rectangle edges at ±halfW (left/right) and ±halfH (top/bottom)
+    let x, y
+    
+    if (Math.abs(cos) * halfH > Math.abs(sin) * halfW) {
+      // Hits left or right edge
+      x = cos > 0 ? halfW + offset : -(halfW + offset)
+      y = sin * (halfW + offset) / Math.abs(cos)
+    } else {
+      // Hits top or bottom edge
+      y = sin > 0 ? halfH + offset : -(halfH + offset)
+      x = cos * (halfH + offset) / Math.abs(sin)
+    }
+    
+    return { x, y }
+  }
   
   for (let i = 0; i < playerCount; i++) {
     const isUser = i === 0
@@ -231,10 +249,11 @@ function initializeContainers() {
         angleToCenter,
       }))
       
-      // Avatar outside the table
+      // Avatar outside the table - use rectangle edge positioning
+      const avatarEdge = getRectEdgePoint(angle, tableW / 2, tableH / 2, avatarOffset)
       avatarPositions.value.push({
-        x: tableX + avatarRx * Math.cos(angle),
-        y: tableY + avatarRy * Math.sin(angle),
+        x: tableX + avatarEdge.x,
+        y: tableY + avatarEdge.y,
       })
     }
   }
