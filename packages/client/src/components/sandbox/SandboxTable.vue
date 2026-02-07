@@ -320,29 +320,36 @@ async function handleFan() {
   
   const userHand = hands.value[0]  // First hand is always user
   if (userHand) {
-    // Step 1: Move user hand down and flip cards (180 deg)
-    userHand.position = { x: rect.width / 2, y: rect.height }
+    // Step 1: Move user's cards to bottom center, enlarge, and flip
+    const targetY = rect.height - 50  // Near bottom of board
+    const targetX = rect.width / 2
+    const targetScale = 1.0  // Larger for user's fanned hand
     
-    // Animate each card to new position with flip
+    // Update hand position and scale for fanned state
+    userHand.position = { x: targetX, y: targetY }
+    userHand.scale = targetScale
+    userHand.fanSpacing = 30  // Wider spacing when enlarged
+    
+    // Animate each card to new position with flip and scale
     for (const managed of userHand.cards) {
       const cardRef = cardRefs.get(managed.card.id)
       if (cardRef) {
         const currentPos = cardRef.getPosition()
         cardRef.moveTo({
           ...currentPos,
-          y: rect.height,
+          x: targetX,
+          y: targetY,
+          scale: targetScale,
           flipY: 180,  // Flip the card
         }, 500)
       }
     }
     
     // Wait for flip/move to complete
-    // Cards now at flipY=180, faceUp=false → showFaceUp=true (showing face)
-    // Don't change anything - the visual is correct
     await new Promise(r => setTimeout(r, 550))
   }
   
-  // Step 2: All hands fan and resize simultaneously
+  // Step 2: All hands fan in place
   const fanPromises = hands.value.map(hand => hand.setMode('fanned', 400))
   await Promise.all(fanPromises)
   
