@@ -80,17 +80,21 @@ export abstract class CardContainer {
 
 // Deck container - cards stacked on top of each other
 export class Deck extends CardContainer {
-  constructor(position: { x: number; y: number }) {
+  scale: number
+  
+  constructor(position: { x: number; y: number }, scale: number = 1.0) {
     super('deck', position)
+    this.scale = scale
   }
   
   getCardPosition(index: number): CardPosition {
     // Stack cards with slight offset
     return {
       x: this.position.x,
-      y: this.position.y - index * 0.5,
+      y: this.position.y - index * 0.3 * this.scale,
       rotation: 0,
       zIndex: 100 + index,
+      scale: this.scale,
     }
   }
   

@@ -157,8 +157,8 @@ function initializeContainers() {
   // Table center (where kitty will be)
   const center = { x: tableX, y: tableY }
   
-  // Create deck at table center (will be kitty position)
-  deck.value = new Deck({ x: tableX, y: tableY })
+  // Create deck at table center (will be kitty position) - smaller scale
+  deck.value = new Deck({ x: tableX, y: tableY }, 0.7)
   
   // Player positions
   const playerCount = 5
@@ -190,29 +190,23 @@ function initializeContainers() {
     
     let handX: number, handY: number
     
-    if (isUser) {
-      // User's hand is below the table
-      handX = tableX
-      handY = boardH * 0.92
-    } else {
-      // Position hand on table, inset from edge
-      switch (seat.side) {
-        case 'left':
-          handX = tableLeft + handInset
-          handY = tableTop + seat.pos * tableH
-          break
-        case 'right':
-          handX = tableRight - handInset
-          handY = tableTop + seat.pos * tableH
-          break
-        case 'top':
-          handX = tableLeft + seat.pos * tableW
-          handY = tableTop + handInset
-          break
-        default:
-          handX = tableX
-          handY = tableBottom - handInset
-      }
+    // Position hand on table, inset from edge
+    switch (seat.side) {
+      case 'left':
+        handX = tableLeft + handInset
+        handY = tableTop + seat.pos * tableH
+        break
+      case 'right':
+        handX = tableRight - handInset
+        handY = tableTop + seat.pos * tableH
+        break
+      case 'top':
+        handX = tableLeft + seat.pos * tableW
+        handY = tableTop + handInset
+        break
+      default: // bottom (user)
+        handX = tableX
+        handY = tableBottom - handInset
     }
     
     const handPos = { x: handX, y: handY }
@@ -221,10 +215,10 @@ function initializeContainers() {
     hands.value.push(new Hand(`player-${i}`, handPos, {
       faceUp: false,
       fanDirection: 'horizontal',
-      fanSpacing: isUser ? 30 : 12,
+      fanSpacing: isUser ? 25 : 12,
       rotation: seat.rotation,  // Aligned with table edge
-      scale: isUser ? 1.3 : 0.5,
-      fanCurve: isUser ? 8 : 3,
+      scale: 1.0,  // All cards same size
+      fanCurve: isUser ? 6 : 3,
       angleToCenter,
     }))
   }
