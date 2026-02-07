@@ -150,7 +150,7 @@ function initializeContainers() {
   const boardH = rect.height
   
   // Table dimensions - positioned in upper portion, room for user's hand below
-  const tableMargin = 40
+  const tableMargin = 60  // More space around table
   const userHandHeight = 150
   const tableW = boardW - tableMargin * 2
   const tableH = boardH - userHandHeight - tableMargin
@@ -180,9 +180,11 @@ function initializeContainers() {
   const handRx = tableW * 0.35  // hands inside table
   const handRy = tableH * 0.35
   
-  // Ellipse for avatars OUTSIDE the table  
-  const avatarRx = tableW * 0.55
-  const avatarRy = tableH * 0.55
+  // Avatars positioned just outside the table edge
+  // Table edge is at tableW/2 and tableH/2 from center
+  const avatarOffset = 35  // pixels outside the table edge
+  const avatarRx = tableW / 2 + avatarOffset
+  const avatarRy = tableH / 2 + avatarOffset
   
   for (let i = 0; i < playerCount; i++) {
     const isUser = i === 0
@@ -474,9 +476,9 @@ onMounted(() => {
 
 .table-surface {
   position: absolute;
-  top: 40px;
-  left: 40px;
-  right: 40px;
+  top: 60px;
+  left: 60px;
+  right: 60px;
   bottom: 150px;  // Room for user's hand
   border-radius: 40px;
   background: 
@@ -494,17 +496,18 @@ onMounted(() => {
   z-index: 50;
   
   .avatar-circle {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: #3a3a5a;
-    border: 2px solid #5a5a8a;
+    border: 3px solid #5a5a8a;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 18px;
+    font-weight: bold;
     color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
   }
   
   &.is-user {
