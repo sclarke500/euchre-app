@@ -215,7 +215,7 @@ async function handleDeal() {
         cardRefAfter.setPosition({ ...startPos, zIndex: 1000 + cardIndex })
         
         // Start animation
-        cardRefAfter.moveTo(targetPos, 300)
+        cardRefAfter.moveTo(targetPos, 500)
       }
       
       // Delay between cards being dealt
