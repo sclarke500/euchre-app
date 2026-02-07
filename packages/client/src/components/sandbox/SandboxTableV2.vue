@@ -194,24 +194,28 @@ async function handleDeal() {
       const managed = deck.value.dealTo(hand)
       if (!managed) break
       
-      // Get the ref BEFORE we move (it's still connected from deck)
-      const cardRef = cardRefs.get(managed.card.id)
-      const currentPos = cardRef?.getPosition()
+      // Capture position BEFORE moving
+      const cardId = managed.card.id
+      const cardRef = cardRefs.get(cardId)
+      const startPos = cardRef?.getPosition()
       
       refreshCards()
       await nextTick()  // Wait for Vue to process the change
+      
+      // Re-grab ref after render (might be same or updated)
+      const cardRefAfter = cardRefs.get(cardId)
       
       // Get target position (loose stack for now)
       const handIndex = hand.cards.length - 1
       const targetPos = hand.getCardPosition(handIndex)
       
       // Animate the card
-      if (currentPos && cardRef) {
-        // Set high z-index so it flies above remaining deck
-        cardRef.setPosition({ ...currentPos, zIndex: 1000 + cardIndex })
+      if (startPos && cardRefAfter) {
+        // Restore starting position with high z-index
+        cardRefAfter.setPosition({ ...startPos, zIndex: 1000 + cardIndex })
         
         // Start animation (don't await - let cards fly in parallel with delay)
-        cardRef.moveTo(targetPos, 300)
+        cardRefAfter.moveTo(targetPos, 300)
       }
       
       // Delay between cards being dealt
