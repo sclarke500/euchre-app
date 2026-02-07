@@ -176,37 +176,29 @@ function initializeContainers() {
   hands.value = []
   avatarPositions.value = []
   
-  // Ellipse for opponent hands ON the table
-  const handRx = tableW * 0.35  // hands inside table
-  const handRy = tableH * 0.35
+  // Predefined seat positions (percentages relative to table)
+  // For 5 players: user at bottom, 4 opponents around the table
+  const seatPositions = [
+    { x: 0.5, y: 1.15 },   // Player 0 (user) - below table
+    { x: 0.05, y: 0.5 },   // Player 1 - left side
+    { x: 0.25, y: -0.08 }, // Player 2 - top left
+    { x: 0.75, y: -0.08 }, // Player 3 - top right
+    { x: 0.95, y: 0.5 },   // Player 4 - right side
+  ]
   
-  // Avatar offset from table edge
-  const avatarOffset = 40
-  
-  // Helper: find where ray from center at angle intersects rectangle edge
-  function getRectEdgePoint(angle: number, halfW: number, halfH: number, offset: number) {
-    const cos = Math.cos(angle)
-    const sin = Math.sin(angle)
-    
-    // Find intersection with rectangle edges
-    // Rectangle edges at ±halfW (left/right) and ±halfH (top/bottom)
-    let x, y
-    
-    if (Math.abs(cos) * halfH > Math.abs(sin) * halfW) {
-      // Hits left or right edge
-      x = cos > 0 ? halfW + offset : -(halfW + offset)
-      y = sin * (halfW + offset) / Math.abs(cos)
-    } else {
-      // Hits top or bottom edge
-      y = sin > 0 ? halfH + offset : -(halfH + offset)
-      x = cos * (halfH + offset) / Math.abs(sin)
-    }
-    
-    return { x, y }
-  }
+  // Table bounds for positioning
+  const tableLeft = tableMargin
+  const tableTop = tableMargin
   
   for (let i = 0; i < playerCount; i++) {
     const isUser = i === 0
+    const seat = seatPositions[i]
+    if (!seat) continue
+    
+    // Avatar position (relative to table bounds)
+    const avatarX = tableLeft + seat.x * tableW
+    const avatarY = tableTop + seat.y * tableH
+    avatarPositions.value.push({ x: avatarX, y: avatarY })
     
     if (isUser) {
       // User's hand is below the table
@@ -217,26 +209,17 @@ function initializeContainers() {
         faceUp: false,
         fanDirection: 'horizontal',
         fanSpacing: 30,
-        rotation: 0,  // User's cards face up
+        rotation: 0,
         scale: 1.3,
         fanCurve: 8,
         angleToCenter,
       }))
-      
-      // User avatar at bottom center (below hand)
-      avatarPositions.value.push({ x: tableX, y: boardH - 20 })
     } else {
-      // Opponent hands ON the table, arranged around upper arc
-      // Skip the bottom position (that's the user), distribute others on top arc
-      const opponentIndex = i - 1  // 0 to 3 for opponents
-      const opponentCount = playerCount - 1
-      // Spread from left to right across the top
-      const angle = Math.PI + (opponentIndex + 0.5) * Math.PI / opponentCount
-      
-      const handPos = {
-        x: tableX + handRx * Math.cos(angle),
-        y: tableY + handRy * Math.sin(angle),
-      }
+      // Opponent hands ON the table, near their avatar but inside table
+      // Hand position is between avatar and table center
+      const handX = tableX + (avatarX - tableX) * 0.6
+      const handY = tableY + (avatarY - tableY) * 0.6
+      const handPos = { x: handX, y: handY }
       const angleToCenter = Hand.calcAngleToCenter(handPos, center)
       
       hands.value.push(new Hand(`player-${i}`, handPos, {
@@ -248,13 +231,6 @@ function initializeContainers() {
         fanCurve: 3,
         angleToCenter,
       }))
-      
-      // Avatar outside the table - use rectangle edge positioning
-      const avatarEdge = getRectEdgePoint(angle, tableW / 2, tableH / 2, avatarOffset)
-      avatarPositions.value.push({
-        x: tableX + avatarEdge.x,
-        y: tableY + avatarEdge.y,
-      })
     }
   }
 }
