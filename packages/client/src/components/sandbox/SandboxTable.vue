@@ -35,6 +35,7 @@
           :class="[`seat-${i}`, { 'is-user': i === 0 }]"
         >
           <div class="avatar-circle">{{ i === 0 ? '👤' : `P${i + 1}` }}</div>
+          <div class="player-name">{{ i === 0 ? 'You' : `Player ${i + 1}` }}</div>
         </div>
       </div>
       
@@ -137,12 +138,13 @@ function initializeContainers() {
   const boardH = rect.height
   
   // Table dimensions - using percentages to match CSS
-  const tableMarginPct = 0.03  // 3%
-  const userAreaPct = 0.18     // 18% for user's hand area
-  const tableW = boardW * (1 - tableMarginPct * 2)
-  const tableH = boardH * (1 - tableMarginPct - userAreaPct)
+  const tableMarginX = 0.05    // 5% left/right
+  const tableMarginTop = 0.06  // 6% top
+  const userAreaPct = 0.20     // 20% for user's hand area
+  const tableW = boardW * (1 - tableMarginX * 2)
+  const tableH = boardH * (1 - tableMarginTop - userAreaPct)
   const tableX = boardW / 2  // center X
-  const tableY = boardH * tableMarginPct + tableH / 2  // center Y
+  const tableY = boardH * tableMarginTop + tableH / 2  // center Y
   
   tableLayout.value = {
     x: tableX,
@@ -177,8 +179,8 @@ function initializeContainers() {
     if (!pos) continue
     
     // Calculate hand position in board coordinates
-    const tableLeft = boardW * tableMarginPct
-    const tableTop = boardH * tableMarginPct
+    const tableLeft = boardW * tableMarginX
+    const tableTop = boardH * tableMarginTop
     const handX = tableLeft + pos.x * tableW
     const handY = tableTop + pos.y * tableH
     
@@ -450,10 +452,10 @@ onMounted(() => {
 
 .table-surface {
   position: absolute;
-  top: 3%;
-  left: 3%;
-  right: 3%;
-  bottom: 18%;  // Room for user's hand
+  top: 6%;
+  left: 5%;
+  right: 5%;
+  bottom: 20%;  // Room for user's hand
   border-radius: 40px;
   background: 
     radial-gradient(ellipse at center, #1e5631 0%, #0d3320 70%),
@@ -482,6 +484,14 @@ onMounted(() => {
     font-weight: bold;
     color: #fff;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  .player-name {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #ccc;
+    text-align: center;
+    white-space: nowrap;
   }
   
   // Seat positions (relative to table-surface)
