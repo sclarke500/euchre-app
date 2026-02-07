@@ -182,7 +182,8 @@ function initializeContainers() {
   
   // Avatars positioned just outside the table edge
   // Table edge is at tableW/2 and tableH/2 from center
-  const avatarOffset = 35  // pixels outside the table edge
+  // Use larger offset to account for rectangular table vs ellipse positioning
+  const avatarOffset = 80
   const avatarRx = tableW / 2 + avatarOffset
   const avatarRy = tableH / 2 + avatarOffset
   
