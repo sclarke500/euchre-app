@@ -1,0 +1,224 @@
+// Card container system for sandbox
+// Containers own cards and manage their positions
+
+export interface CardPosition {
+  x: number
+  y: number
+  rotation: number
+  zIndex: number
+}
+
+export interface BoardCardRef {
+  moveTo: (target: CardPosition, duration?: number) => Promise<void>
+  setPosition: (pos: CardPosition) => void
+  getPosition: () => CardPosition
+}
+
+// Simple card type for the sandbox
+export interface SandboxCard {
+  id: string
+  suit: string
+  rank: string
+}
+
+export interface ManagedCard {
+  card: SandboxCard
+  faceUp: boolean
+  ref: BoardCardRef | null
+}
+
+// Base container - uses plain arrays (Vue components handle reactivity)
+export abstract class CardContainer {
+  id: string
+  position: { x: number; y: number }  // Center position in pixels
+  cards: ManagedCard[] = []
+  
+  constructor(id: string, position: { x: number; y: number }) {
+    this.id = id
+    this.position = position
+  }
+  
+  // Add a card to this container
+  addCard(card: SandboxCard, faceUp: boolean = false): ManagedCard {
+    const managed: ManagedCard = { card, faceUp, ref: null }
+    this.cards.push(managed)
+    return managed
+  }
+  
+  // Remove a card from this container
+  removeCard(cardId: string): ManagedCard | null {
+    const index = this.cards.findIndex(m => m.card.id === cardId)
+    if (index === -1) return null
+    const [removed] = this.cards.splice(index, 1)
+    return removed ?? null
+  }
+  
+  // Get position for a card at given index
+  abstract getCardPosition(index: number): CardPosition
+  
+  // Reposition all cards (with animation)
+  async repositionAll(duration: number = 350): Promise<void> {
+    const promises = this.cards.map((managed, index) => {
+      const pos = this.getCardPosition(index)
+      return managed.ref?.moveTo(pos, duration)
+    })
+    await Promise.all(promises)
+  }
+  
+  // Set ref for a card
+  setCardRef(cardId: string, ref: BoardCardRef | null) {
+    const managed = this.cards.find(m => m.card.id === cardId)
+    if (managed) {
+      managed.ref = ref
+    }
+  }
+}
+
+// Deck container - cards stacked on top of each other
+export class Deck extends CardContainer {
+  constructor(position: { x: number; y: number }) {
+    super('deck', position)
+  }
+  
+  getCardPosition(index: number): CardPosition {
+    // Stack cards with slight offset
+    return {
+      x: this.position.x,
+      y: this.position.y - index * 0.5,
+      rotation: 0,
+      zIndex: 100 + index,
+    }
+  }
+  
+  // Deal top card to a hand
+  dealTo(hand: Hand): ManagedCard | null {
+    if (this.cards.length === 0) return null
+    
+    // Remove from top of deck (last card)
+    const managed = this.cards.pop()
+    if (!managed) return null
+    
+    // Add to hand
+    hand.addManagedCard(managed)
+    return managed
+  }
+}
+
+// Hand container - cards fanned out
+export type HandMode = 'looseStack' | 'fanned'
+
+export class Hand extends CardContainer {
+  mode: HandMode = 'looseStack'
+  faceUp: boolean
+  fanDirection: 'horizontal' | 'vertical'
+  fanSpacing: number  // pixels between cards
+  rotation: number    // rotation of the whole hand
+  
+  constructor(
+    id: string, 
+    position: { x: number; y: number },
+    options: {
+      faceUp?: boolean
+      fanDirection?: 'horizontal' | 'vertical'
+      fanSpacing?: number
+      rotation?: number
+    } = {}
+  ) {
+    super(id, position)
+    this.faceUp = options.faceUp ?? false
+    this.fanDirection = options.fanDirection ?? 'horizontal'
+    this.fanSpacing = options.fanSpacing ?? 20
+    this.rotation = options.rotation ?? 0
+  }
+  
+  getCardPosition(index: number): CardPosition {
+    const cardCount = this.cards.length
+    
+    if (this.mode === 'looseStack') {
+      // Random-ish loose stack
+      const seed = index * 12345.6789
+      const randomX = (Math.sin(seed) * 0.5) * 12
+      const randomY = (Math.cos(seed) * 0.5) * 8
+      const randomRot = (Math.sin(seed * 2) * 0.5) * 8
+      
+      return {
+        x: this.position.x + randomX,
+        y: this.position.y + randomY - index * 0.5,
+        rotation: this.rotation + randomRot,
+        zIndex: 200 + index,
+      }
+    }
+    
+    // Fanned mode
+    const totalWidth = (cardCount - 1) * this.fanSpacing
+    const startOffset = -totalWidth / 2
+    const fanOffset = startOffset + index * this.fanSpacing
+    
+    let x = this.position.x
+    let y = this.position.y
+    
+    if (this.fanDirection === 'horizontal') {
+      x += fanOffset
+    } else {
+      y += fanOffset
+    }
+    
+    return {
+      x,
+      y,
+      rotation: this.rotation,
+      zIndex: 200 + index,
+    }
+  }
+  
+  // Add an already-managed card (from deck)
+  addManagedCard(managed: ManagedCard) {
+    managed.faceUp = this.faceUp
+    this.cards.push(managed)
+  }
+  
+  // Set display mode and reposition
+  async setMode(mode: HandMode, duration: number = 400): Promise<void> {
+    this.mode = mode
+    await this.repositionAll(duration)
+  }
+}
+
+// Play area - cards played to center
+export class PlayArea extends CardContainer {
+  playerPositions: Map<string, { x: number; y: number; rotation: number }>
+  
+  constructor(position: { x: number; y: number }) {
+    super('playArea', position)
+    this.playerPositions = new Map()
+  }
+  
+  // Set where each player's cards go in the play area
+  setPlayerPosition(playerId: string, pos: { x: number; y: number; rotation: number }) {
+    this.playerPositions.set(playerId, pos)
+  }
+  
+  getCardPosition(index: number): CardPosition {
+    // Default center stacking
+    return {
+      x: this.position.x + index * 20,
+      y: this.position.y,
+      rotation: 0,
+      zIndex: 300 + index,
+    }
+  }
+  
+  // Get position for a specific player's played card
+  getPlayerCardPosition(playerId: string): CardPosition {
+    const pos = this.playerPositions.get(playerId)
+    if (!pos) {
+      return this.getCardPosition(this.cards.length)
+    }
+    return {
+      x: pos.x,
+      y: pos.y,
+      rotation: pos.rotation,
+      zIndex: 300 + this.cards.length,
+    }
+  }
+}
