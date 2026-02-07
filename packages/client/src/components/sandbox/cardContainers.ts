@@ -8,6 +8,8 @@ export interface CardPosition {
   zIndex: number
   scale?: number    // 1.0 = normal size
   flipY?: number    // 0-180 degrees for flip animation
+  originX?: number  // transform-origin X offset in pixels (from center)
+  originY?: number  // transform-origin Y offset in pixels (from center)
 }
 
 export interface BoardCardRef {
@@ -166,36 +168,29 @@ export class Hand extends CardContainer {
       }
     }
     
-    // Fanned mode - use hand's scale
-    const totalWidth = (cardCount - 1) * this.fanSpacing * this.scale
-    const startOffset = -totalWidth / 2
-    const fanOffset = startOffset + index * this.fanSpacing * this.scale
+    // Fanned mode using transform-origin for natural arc
+    // All cards positioned at hand center, rotated around a shared origin point
     
-    // Offset cards along the hand's rotation direction (tangent to circle)
-    const rotRad = this.rotation * Math.PI / 180
-    let x = this.position.x + fanOffset * Math.cos(rotRad)
-    let y = this.position.y + fanOffset * Math.sin(rotRad)
+    // Calculate spread angle for this card
+    const middleIndex = (cardCount - 1) / 2
+    const spreadAngle = (index - middleIndex) * this.fanCurve
     
-    // Apply curve if fanCurve is set
-    let curveRotation = 0
-    if (this.fanCurve > 0 && cardCount > 1) {
-      const normalizedPos = (index / (cardCount - 1)) * 2 - 1  // -1 to +1
-      curveRotation = normalizedPos * this.fanCurve
-      // Arc: edge cards pushed AWAY from center (linear with distance from middle)
-      const distFromCenter = Math.abs(normalizedPos)  // 0 at center, 1 at edges
-      const arcAmount = distFromCenter * this.fanCurve
-      // Push away = opposite of angleToCenter
-      const awayRad = (this.angleToCenter + 180) * Math.PI / 180
-      x += arcAmount * Math.cos(awayRad)
-      y += arcAmount * Math.sin(awayRad)
-    }
+    // Origin point is opposite of angleToCenter (toward player, away from table center)
+    // Distance from card center to pivot point
+    const originDistance = 150 * this.scale  // pixels below card center
+    const awayAngle = this.angleToCenter + 180  // opposite direction
+    const awayRad = awayAngle * Math.PI / 180
+    const originX = originDistance * Math.cos(awayRad)
+    const originY = originDistance * Math.sin(awayRad)
     
     return {
-      x,
-      y,
-      rotation: this.rotation + curveRotation,
+      x: this.position.x,
+      y: this.position.y,
+      rotation: this.rotation + spreadAngle,
       zIndex: 200 + index,
       scale: this.scale,
+      originX,
+      originY,
     }
   }
   
