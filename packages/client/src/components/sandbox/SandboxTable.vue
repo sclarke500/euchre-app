@@ -448,6 +448,7 @@ onMounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  border: 3px solid red;  // DEBUG
 }
 
 .table-surface {
