@@ -89,10 +89,10 @@
         </div>
       </div>
       
-      <!-- Flying cards animation layer -->
+      <!-- Flying cards animation layer - reversed so first-to-deal renders last (on top) -->
       <div class="flying-layer">
         <SandboxFlyingCard
-          v-for="flying in flyingCards"
+          v-for="flying in [...flyingCards].reverse()"
           :key="flying.id"
           :card="flying.card"
           :target-position="flying.targetPosition"
