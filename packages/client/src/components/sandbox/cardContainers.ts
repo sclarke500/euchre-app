@@ -178,9 +178,9 @@ export class Hand extends CardContainer {
     const middleIndex = (cardCount - 1) / 2
     const spreadAngle = (index - middleIndex) * this.fanCurve  // e.g. -12, -6, 0, 6, 12 degrees
     
-    // Origin below card center (in local card space, before rotation)
-    // 150% = 50% below the bottom edge of the card
-    const originDistance = 120  // pixels below card center
+    // Origin below card center - only for user (rotation 0), none for opponents
+    const isUser = this.rotation === 0
+    const originDistance = isUser ? 120 : 0
     
     return {
       x: this.position.x,
