@@ -175,13 +175,9 @@ export class Hand extends CardContainer {
     const middleIndex = (cardCount - 1) / 2
     const spreadAngle = (index - middleIndex) * this.fanCurve
     
-    // Origin point is opposite of angleToCenter (toward player, away from table center)
-    // Distance from card center to pivot point
-    const originDistance = 150 * this.scale  // pixels below card center
-    const awayAngle = this.angleToCenter + 180  // opposite direction
-    const awayRad = awayAngle * Math.PI / 180
-    const originX = originDistance * Math.cos(awayRad)
-    const originY = originDistance * Math.sin(awayRad)
+    // Origin is always "below" the card in LOCAL card space (positive Y = down)
+    // The hand's rotation will orient the fan correctly in global space
+    const originDistance = 150 * this.scale
     
     return {
       x: this.position.x,
@@ -189,8 +185,8 @@ export class Hand extends CardContainer {
       rotation: this.rotation + spreadAngle,
       zIndex: 200 + index,
       scale: this.scale,
-      originX,
-      originY,
+      originX: 0,
+      originY: originDistance,  // below card center in local space
     }
   }
   
