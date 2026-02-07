@@ -176,16 +176,18 @@ export class Hand extends CardContainer {
     let x = this.position.x + fanOffset * Math.cos(rotRad)
     let y = this.position.y + fanOffset * Math.sin(rotRad)
     
-    // Only apply curve if fanCurve is set (user's hand)
+    // Apply curve if fanCurve is set
     let curveRotation = 0
     if (this.fanCurve > 0 && cardCount > 1) {
       const normalizedPos = (index / (cardCount - 1)) * 2 - 1  // -1 to +1
       curveRotation = normalizedPos * this.fanCurve
-      // Arc: edge cards pushed toward center along angleToCenter direction
-      const arcAmount = normalizedPos * normalizedPos * this.fanCurve * 1.5
-      const arcRad = this.angleToCenter * Math.PI / 180
-      x += arcAmount * Math.cos(arcRad)
-      y += arcAmount * Math.sin(arcRad)
+      // Arc: edge cards pushed AWAY from center (linear with distance from middle)
+      const distFromCenter = Math.abs(normalizedPos)  // 0 at center, 1 at edges
+      const arcAmount = distFromCenter * this.fanCurve * 2
+      // Push away = opposite of angleToCenter
+      const awayRad = (this.angleToCenter + 180) * Math.PI / 180
+      x += arcAmount * Math.cos(awayRad)
+      y += arcAmount * Math.sin(awayRad)
     }
     
     return {
