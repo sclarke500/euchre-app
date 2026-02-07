@@ -25,18 +25,17 @@
 
     <!-- Board -->
     <div ref="boardRef" class="board">
-      <!-- Table surface -->
-      <div class="table-surface"></div>
-      
-      <!-- Player avatars (outside table) -->
-      <div 
-        v-for="(hand, i) in hands" 
-        :key="'avatar-' + hand.id"
-        class="player-avatar"
-        :class="{ 'is-user': i === 0 }"
-        :style="getAvatarStyle(i)"
-      >
-        <div class="avatar-circle">{{ i === 0 ? '👤' : `P${i + 1}` }}</div>
+      <!-- Table surface with avatars positioned around it -->
+      <div ref="tableRef" class="table-surface">
+        <!-- Player avatars positioned via CSS classes -->
+        <div 
+          v-for="(hand, i) in hands" 
+          :key="'avatar-' + hand.id"
+          class="player-avatar"
+          :class="[`seat-${i}`, { 'is-user': i === 0 }]"
+        >
+          <div class="avatar-circle">{{ i === 0 ? '👤' : `P${i + 1}` }}</div>
+        </div>
       </div>
       
       <!-- All cards rendered here -->
@@ -58,21 +57,19 @@ import BoardCard from './BoardCard.vue'
 import { Deck, Hand, type ManagedCard, type BoardCardRef, type SandboxCard } from './cardContainers'
 
 const boardRef = ref<HTMLElement | null>(null)
+const tableRef = ref<HTMLElement | null>(null)
 const cardsPerHand = ref(5)
 
 // Containers (shallowRef since we manage reactivity manually)
 const deck = shallowRef<Deck | null>(null)
 const hands = shallowRef<Hand[]>([])
 
-// Table layout - stored for avatar positioning
+// Table layout
 const tableLayout = ref({
   x: 0, y: 0,  // table center
   width: 0, height: 0,  // table dimensions
   playerCount: 5,
 })
-
-// Avatar positions (calculated based on table)
-const avatarPositions = ref<Array<{ x: number; y: number }>>([])
 
 // Animation constants
 const DEAL_FLIGHT_MS = 400
@@ -107,16 +104,6 @@ const hasDeck = computed(() => {
   const _ = cardsTrigger.value
   return (deck.value?.cards.length ?? 0) > 0
 })
-
-// Get avatar position style
-function getAvatarStyle(playerIndex: number) {
-  const pos = avatarPositions.value[playerIndex]
-  if (!pos) return {}
-  return {
-    left: `${pos.x}px`,
-    top: `${pos.y}px`,
-  }
-}
 
 // Card refs
 const cardRefs = new Map<string, BoardCardRef>()
@@ -174,31 +161,24 @@ function initializeContainers() {
   // Player positions
   const playerCount = 5
   hands.value = []
-  avatarPositions.value = []
   
-  // Predefined seat positions (percentages relative to table)
-  // For 5 players: user at bottom, 4 opponents around the table
-  const seatPositions = [
-    { x: 0.5, y: 1.15 },   // Player 0 (user) - below table
-    { x: 0.05, y: 0.5 },   // Player 1 - left side
-    { x: 0.25, y: -0.08 }, // Player 2 - top left
-    { x: 0.75, y: -0.08 }, // Player 3 - top right
-    { x: 0.95, y: 0.5 },   // Player 4 - right side
+  // Hand positions relative to table (avatars handled by CSS)
+  const handPositions = [
+    { x: 0.5, y: 1.0 },    // Player 0 (user) - below table
+    { x: 0.15, y: 0.5 },   // Player 1 - left side
+    { x: 0.30, y: 0.15 },  // Player 2 - top left  
+    { x: 0.70, y: 0.15 },  // Player 3 - top right
+    { x: 0.85, y: 0.5 },   // Player 4 - right side
   ]
-  
-  // Table bounds for positioning
-  const tableLeft = tableMargin
-  const tableTop = tableMargin
   
   for (let i = 0; i < playerCount; i++) {
     const isUser = i === 0
-    const seat = seatPositions[i]
-    if (!seat) continue
+    const pos = handPositions[i]
+    if (!pos) continue
     
-    // Avatar position (relative to table bounds)
-    const avatarX = tableLeft + seat.x * tableW
-    const avatarY = tableTop + seat.y * tableH
-    avatarPositions.value.push({ x: avatarX, y: avatarY })
+    // Calculate hand position in board coordinates
+    const handX = tableMargin + pos.x * tableW
+    const handY = tableMargin + pos.y * tableH
     
     if (isUser) {
       // User's hand is below the table
@@ -215,10 +195,6 @@ function initializeContainers() {
         angleToCenter,
       }))
     } else {
-      // Opponent hands ON the table, near their avatar but inside table
-      // Hand position is between avatar and table center
-      const handX = tableX + (avatarX - tableX) * 0.6
-      const handY = tableY + (avatarY - tableY) * 0.6
       const handPos = { x: handX, y: handY }
       const angleToCenter = Hand.calcAngleToCenter(handPos, center)
       
@@ -506,8 +482,11 @@ onMounted(() => {
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
   }
   
-  &.is-user {
-    display: none;  // Hide user avatar for now
-  }
+  // Seat positions (relative to table-surface)
+  &.seat-0 { display: none; }  // User - hidden
+  &.seat-1 { left: 0; top: 50%; transform: translate(-50%, -50%); }  // Left
+  &.seat-2 { left: 25%; top: 0; transform: translate(-50%, -50%); }  // Top left
+  &.seat-3 { left: 75%; top: 0; transform: translate(-50%, -50%); }  // Top right
+  &.seat-4 { left: 100%; top: 50%; transform: translate(-50%, -50%); }  // Right
 }
 </style>
