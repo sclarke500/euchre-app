@@ -68,10 +68,12 @@ const animationDuration = ref(350)
 const cardStyle = computed(() => {
   const scale = position.value.scale ?? 1.0
   const flipY = position.value.flipY ?? 0
+  // flipY controls scaleX: 0=full, 90=flat, 180=full (flipped content shown via showFaceUp)
+  const flipProgress = Math.abs(Math.cos(flipY * Math.PI / 180))
   return {
     left: `${position.value.x}px`,
     top: `${position.value.y}px`,
-    transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale}) rotateY(${flipY}deg)`,
+    transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale * flipProgress}, ${scale})`,
     zIndex: position.value.zIndex,
     transition: isAnimating.value 
       ? `all ${animationDuration.value}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
