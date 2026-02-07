@@ -94,13 +94,16 @@
         <SandboxFlyingCard
           v-for="flying in flyingCards"
           :key="flying.id"
+          :ref="(el) => setFlyingCardRef(flying.id, el)"
           :card="flying.card"
           :target-position="flying.targetPosition"
           :delay="flying.delay"
           :stack-index="flying.stackIndex"
           :deal-order="flying.dealOrder"
           :total-cards="flyingCards.length"
+          :cards-in-hand="getCardsInHandCount(flying.targetPosition)"
           :on-complete="() => handleFlyingCardComplete(flying.id)"
+          :on-forming-complete="() => handleFormingComplete(flying.id)"
         />
       </div>
 
@@ -153,6 +156,22 @@ const allCardsLanded = ref(false)
 
 // Track how many cards each player has received (for stacking)
 const stackCounts = ref<Map<TablePosition, number>>(new Map())
+
+// Refs to flying card components for triggering forming animation
+const flyingCardRefs = ref<Map<string, any>>(new Map())
+const formingComplete = ref<Set<string>>(new Set())
+
+function setFlyingCardRef(id: string, el: any) {
+  if (el) {
+    flyingCardRefs.value.set(id, el)
+  } else {
+    flyingCardRefs.value.delete(id)
+  }
+}
+
+function getCardsInHandCount(position: TablePosition): number {
+  return stackCounts.value.get(position) ?? 0
+}
 
 // Computed helpers
 const hasDeck = computed(() => table.cardsInDeck.value.length > 0)
@@ -249,21 +268,39 @@ function handleFlyingCardComplete(flyingId: string) {
 }
 
 function moveStacksToHands() {
-  // Move all flying cards to their respective hands
+  // Trigger forming animation on all flying cards
+  formingComplete.value = new Set()
+  
   for (const flying of flyingCards.value) {
-    table.moveCard(flying.card.id, { zone: 'hand', position: flying.targetPosition }, false)
-    
-    // Update card's faceUp state
-    const card = table.cards.value.get(flying.card.id)
-    if (card) {
-      card.faceUp = flying.targetPosition === 'bottom'
+    const ref = flyingCardRefs.value.get(flying.id)
+    if (ref?.startForming) {
+      ref.startForming()
     }
   }
+}
+
+function handleFormingComplete(flyingId: string) {
+  formingComplete.value.add(flyingId)
   
-  // Clear flying cards and end dealing
-  flyingCards.value = []
-  isDealing.value = false
-  allCardsLanded.value = false
+  // Check if all cards have finished forming
+  if (formingComplete.value.size >= flyingCards.value.length) {
+    // Now actually move cards to hands
+    for (const flying of flyingCards.value) {
+      table.moveCard(flying.card.id, { zone: 'hand', position: flying.targetPosition }, false)
+      
+      const card = table.cards.value.get(flying.card.id)
+      if (card) {
+        card.faceUp = flying.targetPosition === 'bottom'
+      }
+    }
+    
+    // Clear flying cards and end dealing
+    flyingCards.value = []
+    flyingCardRefs.value.clear()
+    formingComplete.value.clear()
+    isDealing.value = false
+    allCardsLanded.value = false
+  }
 }
 
 function handleCardClick(cardId: string) {

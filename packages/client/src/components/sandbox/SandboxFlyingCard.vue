@@ -20,11 +20,13 @@ const props = defineProps<{
   stackIndex: number  // Which card in the stack (for offset)
   dealOrder: number   // Order this card is dealt (0 = first, used for z-index)
   totalCards: number  // Total cards being dealt (for z-index calculation)
+  cardsInHand: number // Total cards in this player's hand (for fan calculation)
   deckPosition?: { x: number; y: number }  // Where the deck is
   onComplete: () => void
+  onFormingComplete?: () => void
 }>()
 
-const stage = ref<'start' | 'flying' | 'landed'>('start')
+const stage = ref<'start' | 'flying' | 'landed' | 'forming'>('start')
 
 // Random offset for this card (consistent per card)
 const randomOffset = {
@@ -41,6 +43,16 @@ const stackCoords: Record<TablePosition, { x: number; y: number; rotate: number 
   'right': { x: 75, y: 50, rotate: -90 },
   'top-left': { x: 30, y: 25, rotate: 160 },
   'top-right': { x: 70, y: 25, rotate: -160 },
+}
+
+// Hand positions - where fanned hands are displayed  
+const handCoords: Record<TablePosition, { x: number; y: number; rotate: number; fanDir: 'x' | 'y' }> = {
+  'bottom': { x: 50, y: 85, rotate: 0, fanDir: 'x' },
+  'top': { x: 50, y: 15, rotate: 180, fanDir: 'x' },
+  'left': { x: 15, y: 50, rotate: 90, fanDir: 'y' },
+  'right': { x: 85, y: 50, rotate: -90, fanDir: 'y' },
+  'top-left': { x: 25, y: 15, rotate: 180, fanDir: 'x' },
+  'top-right': { x: 75, y: 15, rotate: 180, fanDir: 'x' },
 }
 
 // Deck is at center
@@ -92,8 +104,40 @@ const cardStyle = computed(() => {
     }
   }
   
+  if (stage.value === 'forming') {
+    // Animate to fanned hand position
+    const hand = handCoords[props.targetPosition]
+    const overlap = 20  // pixels between cards in fan
+    const fanOffset = props.stackIndex * overlap
+    // Center the fan around the hand position
+    const totalWidth = (props.cardsInHand - 1) * overlap
+    const centerOffset = -totalWidth / 2
+    
+    const fanX = hand.fanDir === 'x' ? fanOffset + centerOffset : 0
+    const fanY = hand.fanDir === 'y' ? fanOffset + centerOffset : 0
+    
+    return {
+      left: `calc(${hand.x}% + ${fanX}px)`,
+      top: `calc(${hand.y}% + ${fanY}px)`,
+      transform: `translate(-50%, -50%) rotate(${hand.rotate}deg)`,
+      opacity: 1,
+      transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      zIndex: 500 + props.stackIndex,
+    }
+  }
+  
   return { opacity: 0 }
 })
+
+// Expose function to trigger forming animation
+function startForming() {
+  stage.value = 'forming'
+  setTimeout(() => {
+    props.onFormingComplete?.()
+  }, 450)
+}
+
+defineExpose({ startForming })
 
 onMounted(() => {
   // Start animation after delay
