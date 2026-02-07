@@ -134,7 +134,6 @@ function initializeContainers() {
       fanSpacing: 15,
       rotation: 90,
       scale: 0.6,  // Opponent cards 60%
-      fanCurve: 6,
     }),
     new Hand('top', { x: cx, y: 50 }, { 
       faceUp: false, 
@@ -150,7 +149,6 @@ function initializeContainers() {
       fanSpacing: 15,
       rotation: -90,
       scale: 0.6,  // Opponent cards 60%
-      fanCurve: 6,
     }),
   ]
 }
