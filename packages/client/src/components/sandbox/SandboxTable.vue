@@ -133,24 +133,21 @@ function initializeContainers() {
       fanDirection: 'vertical',
       fanSpacing: 15,
       rotation: 90,
-      scale: 0.6,  // Opponent cards 60%
-      fanCurve: 6,
+      scale: 0.6,
     }),
     new Hand('top', { x: cx, y: 50 }, { 
       faceUp: false, 
       fanDirection: 'horizontal',
       fanSpacing: 15,
       rotation: 180,
-      scale: 0.6,  // Opponent cards 60%
-      fanCurve: 6,
+      scale: 0.6,
     }),
     new Hand('right', { x: rect.width - 80, y: cy }, { 
       faceUp: false, 
       fanDirection: 'vertical',
       fanSpacing: 15,
       rotation: -90,
-      scale: 0.6,  // Opponent cards 60%
-      fanCurve: 6,
+      scale: 0.6,
     }),
   ]
 }

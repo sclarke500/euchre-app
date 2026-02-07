@@ -163,26 +163,6 @@ export class Hand extends CardContainer {
     const startOffset = -totalWidth / 2
     const fanOffset = startOffset + index * this.fanSpacing * this.scale
     
-    // Calculate curve: -1 at first card, 0 at center, +1 at last card
-    const normalizedPos = cardCount > 1 
-      ? (index / (cardCount - 1)) * 2 - 1  // -1 to +1
-      : 0
-    
-    // Arc offset magnitude (center cards get max offset)
-    const arcAmount = (1 - normalizedPos * normalizedPos) * this.fanCurve * 0.8
-    
-    // Calculate arc direction based on rotation (arc bows toward table center)
-    // rotation=0 (bottom): arc up (-y), rotation=180 (top): arc down (+y)
-    // rotation=90 (left): arc right (+x), rotation=-90 (right): arc left (-x)
-    const rotRad = this.rotation * Math.PI / 180
-    const arcX = Math.sin(rotRad) * arcAmount
-    const arcY = -Math.cos(rotRad) * arcAmount
-    
-    // Curve rotation for cards (fan out from center)
-    // Invert curve for hands on the "positive rotation" side (left=90°, top=180°)
-    const curveMult = this.rotation > 0 ? -1 : 1
-    const curveRotation = normalizedPos * this.fanCurve * curveMult
-    
     let x = this.position.x
     let y = this.position.y
     
@@ -192,9 +172,12 @@ export class Hand extends CardContainer {
       y += fanOffset
     }
     
-    // Apply arc offset toward table center
-    x += arcX
-    y += arcY
+    // Only apply curve rotation for user's hand (bottom)
+    let curveRotation = 0
+    if (this.id === 'bottom' && this.fanCurve > 0 && cardCount > 1) {
+      const normalizedPos = (index / (cardCount - 1)) * 2 - 1  // -1 to +1
+      curveRotation = normalizedPos * this.fanCurve
+    }
     
     return {
       x,
