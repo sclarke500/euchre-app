@@ -182,6 +182,14 @@ export class Hand extends CardContainer {
     this.mode = mode
     await this.repositionAll(duration)
   }
+  
+  // Flip all cards face up or down
+  flipCards(faceUp: boolean) {
+    this.faceUp = faceUp
+    for (const managed of this.cards) {
+      managed.faceUp = faceUp
+    }
+  }
 }
 
 // Play area - cards played to center

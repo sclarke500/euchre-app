@@ -114,10 +114,10 @@ function initializeContainers() {
   // Create deck at center
   deck.value = new Deck({ x: cx, y: cy })
   
-  // Create 4 hands around the board
+  // Create 4 hands around the board (all face down initially)
   hands.value = [
     new Hand('bottom', { x: cx, y: rect.height - 80 }, { 
-      faceUp: true, 
+      faceUp: false, 
       fanDirection: 'horizontal',
       fanSpacing: 30,
       rotation: 0 
@@ -219,7 +219,7 @@ async function handleDeal() {
       }
       
       // Delay between cards being dealt
-      await new Promise(r => setTimeout(r, 80))
+      await new Promise(r => setTimeout(r, 150))
       
       cardIndex++
     }
@@ -231,6 +231,13 @@ async function handleDeal() {
 
 // Fan all hands
 async function handleFan() {
+  // Flip bottom player's cards face up first
+  const bottomHand = hands.value.find(h => h.id === 'bottom')
+  if (bottomHand) {
+    bottomHand.flipCards(true)
+    refreshCards()
+  }
+  
   const promises = hands.value.map(hand => hand.setMode('fanned', 400))
   await Promise.all(promises)
 }
