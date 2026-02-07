@@ -50,6 +50,10 @@ const cardsPerHand = ref(5)
 const deck = shallowRef<Deck | null>(null)
 const hands = shallowRef<Hand[]>([])
 
+// Animation constants
+const DEAL_FLIGHT_MS = 400
+const DEAL_DELAY_MS = 80
+
 // State
 const isDealing = ref(false)
 const hasDealt = ref(false)
@@ -212,15 +216,18 @@ async function handleDeal() {
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
         
         // Now animate to target
-        cardRef.moveTo(targetPos, 2000)
+        cardRef.moveTo(targetPos, DEAL_FLIGHT_MS)
       }
       
       // Delay between cards being dealt
-      await new Promise(r => setTimeout(r, 500))
+      await new Promise(r => setTimeout(r, DEAL_DELAY_MS))
       
       cardIndex++
     }
   }
+  
+  // Wait for last card's animation to complete before refreshing
+  await new Promise(r => setTimeout(r, DEAL_FLIGHT_MS))
   
   // Now refresh to sync Vue's view with the new card ownership
   refreshCards()
