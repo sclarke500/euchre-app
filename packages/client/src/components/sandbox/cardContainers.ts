@@ -183,7 +183,7 @@ export class Hand extends CardContainer {
       curveRotation = normalizedPos * this.fanCurve
       // Arc: edge cards pushed AWAY from center (linear with distance from middle)
       const distFromCenter = Math.abs(normalizedPos)  // 0 at center, 1 at edges
-      const arcAmount = distFromCenter * this.fanCurve * 2
+      const arcAmount = distFromCenter * this.fanCurve
       // Push away = opposite of angleToCenter
       const awayRad = (this.angleToCenter + 180) * Math.PI / 180
       x += arcAmount * Math.cos(awayRad)
