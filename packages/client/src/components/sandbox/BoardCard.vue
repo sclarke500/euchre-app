@@ -202,8 +202,8 @@ defineExpose({
   width: min(49px, 5.6vw);
   height: min(70px, 8vw);
   background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   position: relative;
   user-select: none;
 
@@ -221,22 +221,22 @@ defineExpose({
   line-height: 1;
 
   &.top-left {
-    top: 4px;
-    left: 5px;
+    top: 3px;
+    left: 3px;
   }
 
   &.bottom-right {
-    bottom: 4px;
-    right: 5px;
+    bottom: 3px;
+    right: 3px;
     transform: rotate(180deg);
   }
 
   .rank {
-    font-size: 18px;
+    font-size: 12px;
   }
 
   .suit {
-    font-size: 14px;
+    font-size: 10px;
   }
 
   &.red { color: #e74c3c; }
@@ -251,7 +251,7 @@ defineExpose({
   transform: translate(-50%, -50%);
 
   .suit-large {
-    font-size: 32px;
+    font-size: 22px;
   }
 
   &.red { color: #e74c3c; }
@@ -262,7 +262,7 @@ defineExpose({
 .card-back {
   width: 100%;
   height: 100%;
-  padding: 6px;
+  padding: 4px;
   box-sizing: border-box;
 
   .pattern {
@@ -272,19 +272,19 @@ defineExpose({
       repeating-linear-gradient(
         45deg,
         #2a4a9c 0px,
-        #2a4a9c 2px,
-        transparent 2px,
-        transparent 8px
+        #2a4a9c 1px,
+        transparent 1px,
+        transparent 6px
       ),
       repeating-linear-gradient(
         -45deg,
         #2a4a9c 0px,
-        #2a4a9c 2px,
-        transparent 2px,
-        transparent 8px
+        #2a4a9c 1px,
+        transparent 1px,
+        transparent 6px
       );
-    border-radius: 3px;
-    border: 2px solid #3a5aac;
+    border-radius: 2px;
+    border: 1px solid #3a5aac;
   }
 }
 </style>
