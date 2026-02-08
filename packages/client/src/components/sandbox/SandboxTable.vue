@@ -368,7 +368,8 @@ async function handleFan() {
   
   // Step 2: Scale up opponent hands and fan all
   for (let i = 1; i < hands.value.length; i++) {
-    hands.value[i].scale = 0.8  // Slightly larger when fanned
+    const hand = hands.value[i]
+    if (hand) hand.scale = 0.8  // Slightly larger when fanned
   }
   
   const fanPromises = hands.value.map(hand => hand.setMode('fanned', 400))
