@@ -182,7 +182,7 @@ function initializeContainers() {
   const tableBottom = tableTop + tableH
   
   // Distance from table edge for opponent hands
-  const handInset = Math.min(tableW, tableH) * 0.12
+  const handInset = Math.min(tableW, tableH) * 0.12 + 10
   
   // Seat definitions based on layout
   // Normal (4 players): user at bottom, one opponent on each other side
