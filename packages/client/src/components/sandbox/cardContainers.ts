@@ -8,8 +8,6 @@ export interface CardPosition {
   zIndex: number
   scale?: number    // 1.0 = normal size
   flipY?: number    // 0-180 degrees for flip animation
-  originX?: number  // transform-origin X offset in pixels (from center)
-  originY?: number  // transform-origin Y offset in pixels (from center)
 }
 
 export interface BoardCardRef {
@@ -177,9 +175,8 @@ export class Hand extends CardContainer {
     const isUser = this.rotation === 0
     
     if (isUser) {
-      // User's hand: use transform-origin for curved arc
+      // User's hand: fan with rotation, CSS transform-origin creates the arc
       const spreadAngle = (index - middleIndex) * this.fanCurve
-      const originDistance = 84 * this.scale  // 84 = base origin for 49x70 card
       
       return {
         x: this.position.x,
@@ -187,8 +184,6 @@ export class Hand extends CardContainer {
         rotation: spreadAngle,
         zIndex: 200 + index,
         scale: this.scale,
-        originX: 0,
-        originY: originDistance,
       }
     } else {
       // Opponents: straight spread, no rotation per card

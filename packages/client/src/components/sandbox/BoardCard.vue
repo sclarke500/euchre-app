@@ -36,8 +36,6 @@ export interface CardPosition {
   zIndex: number
   scale?: number    // 1.0 = normal size
   flipY?: number    // 0-180 degrees for flip animation
-  originX?: number  // transform-origin X offset in pixels (from center)
-  originY?: number  // transform-origin Y offset in pixels (from center)
 }
 
 interface SandboxCard {
@@ -70,17 +68,12 @@ const animationDuration = ref(350)
 const cardStyle = computed(() => {
   const scale = position.value.scale ?? 1.0
   const flipY = position.value.flipY ?? 0
-  const originX = position.value.originX ?? 0
-  const originY = position.value.originY ?? 0
   // flipY controls scaleX: 0=full, 90=flat, 180=full (flipped content shown via showFaceUp)
   const flipProgress = Math.abs(Math.cos(flipY * Math.PI / 180))
-  // transform-origin: offset from card center (card is 70x100)
-  const originStyle = `calc(50% + ${originX}px) calc(50% + ${originY}px)`
   return {
     left: `${position.value.x}px`,
     top: `${position.value.y}px`,
     transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale * flipProgress}, ${scale})`,
-    transformOrigin: originStyle,
     zIndex: position.value.zIndex,
     transition: isAnimating.value 
       ? `all ${animationDuration.value}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
@@ -195,6 +188,8 @@ defineExpose({
   position: absolute;
   pointer-events: auto;
   cursor: default;
+  // Fixed transform-origin for fan arc - percentage scales with card size
+  transform-origin: center 180%;
 }
 
 .card-inner {
