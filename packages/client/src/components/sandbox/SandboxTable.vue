@@ -148,8 +148,8 @@ function initializeContainers() {
   
   // Table dimensions - using percentages to match CSS
   const isWideLayout = tableLayout.value === 'wide'
-  const tableMarginX = isWideLayout ? 0.05 : 0.15  // 5% wide, 15% normal
-  const tableMarginTop = 0.06  // 6% top
+  const tableMarginX = isWideLayout ? 0.10 : 0.30  // 10% wide, 30% normal
+  const tableMarginTop = 0.12  // 12% top
   const userAreaPct = 0.20     // 20% for user's hand area
   const tableW = boardW * (1 - tableMarginX * 2)
   const tableH = boardH * (1 - tableMarginTop - userAreaPct)
@@ -498,7 +498,7 @@ onMounted(() => {
 
 .table-surface {
   position: absolute;
-  top: 6%;
+  top: 12%;
   bottom: 20%;  // Room for user's hand
   border-radius: 40px;
   background: 
@@ -525,14 +525,14 @@ onMounted(() => {
   
   // Wide layout (5+ players) - rectangular
   &.wide {
-    left: 5%;
-    right: 5%;
+    left: 10%;
+    right: 10%;
   }
   
   // Normal layout (4 players) - more square
   &.normal {
-    left: 15%;
-    right: 15%;
+    left: 30%;
+    right: 30%;
     border-radius: 30px;
   }
 }
