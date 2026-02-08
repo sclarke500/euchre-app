@@ -340,12 +340,12 @@ async function handleFan() {
     // Step 1: Move user's cards to bottom center, enlarge, and flip
     const targetY = rect.height - 50  // Near bottom of board
     const targetX = rect.width / 2
-    const targetScale = 1.0  // Larger for user's fanned hand
+    const targetScale = 1.4  // Larger for user's fanned hand
     
     // Update hand position and scale for fanned state
     userHand.position = { x: targetX, y: targetY }
     userHand.scale = targetScale
-    userHand.fanSpacing = 30  // Wider spacing when enlarged
+    userHand.fanSpacing = 40  // Wider spacing when enlarged
     
     // Animate each card to new position with flip and scale
     for (const managed of userHand.cards) {
@@ -366,7 +366,11 @@ async function handleFan() {
     await new Promise(r => setTimeout(r, 550))
   }
   
-  // Step 2: All hands fan in place
+  // Step 2: Scale up opponent hands and fan all
+  for (let i = 1; i < hands.value.length; i++) {
+    hands.value[i].scale = 0.8  // Slightly larger when fanned
+  }
+  
   const fanPromises = hands.value.map(hand => hand.setMode('fanned', 400))
   await Promise.all(fanPromises)
   
@@ -375,6 +379,10 @@ async function handleFan() {
 
 // Stack all hands
 async function handleStack() {
+  // Reset all hands to base scale
+  for (const hand of hands.value) {
+    hand.scale = 0.7
+  }
   const promises = hands.value.map(hand => hand.setMode('looseStack', 400))
   await Promise.all(promises)
 }
