@@ -555,38 +555,41 @@ onMounted(() => {
   z-index: 50;
   
   .avatar-circle {
-    width: 56px;
-    height: 56px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: #3a3a5a;
-    border: 3px solid #5a5a8a;
+    border: 2px solid #5a5a8a;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     color: #fff;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
   
   .player-name {
     margin-top: 4px;
-    font-size: 12px;
-    color: #ccc;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: #fff;
     text-align: center;
     white-space: nowrap;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
   }
   
-  // Seat positions (relative to table-surface)
+  // Seat positions - positioned OUTSIDE table (in margins)
   &.seat-0 { display: none; }  // User - hidden
-  &.seat-1 { left: 0; top: 50%; transform: translate(-50%, -50%); }  // Left
-  &.seat-2 { left: 25%; top: 0; transform: translate(-50%, -50%); }  // Top left (wide) / Top center (normal)
-  &.seat-3 { left: 75%; top: 0; transform: translate(-50%, -50%); }  // Top right (wide) / Right (normal)
-  &.seat-4 { left: 100%; top: 50%; transform: translate(-50%, -50%); }  // Right (wide only)
+  &.seat-1 { left: -30px; top: 50%; }  // Left - in left margin
+  &.seat-2 { left: 25%; top: -30px; }  // Top left (wide)
+  &.seat-3 { left: 75%; top: -30px; }  // Top right (wide)
+  &.seat-4 { left: calc(100% + 30px); top: 50%; }  // Right - in right margin
   
   // Normal layout overrides (4 players)
   .table-surface.normal & {
-    &.seat-2 { left: 50%; top: 0; }  // Top center (partner)
+    &.seat-2 { left: 50%; top: -30px; }  // Top center (partner)
     &.seat-3 { left: 100%; top: 50%; }  // Right
     &.seat-4 { display: none; }  // No 5th player
   }
