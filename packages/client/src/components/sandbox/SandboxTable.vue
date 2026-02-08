@@ -182,7 +182,7 @@ function initializeContainers() {
   const tableBottom = tableTop + tableH
   
   // Distance from table edge for opponent hands
-  const handInset = Math.min(tableW, tableH) * 0.12 + 10
+  const handInset = Math.min(tableW, tableH) * 0.15 + 20
   
   // Seat definitions based on layout
   // Normal (4 players): user at bottom, one opponent on each other side
@@ -349,7 +349,7 @@ async function handleFan() {
     
     // Animate each card to new position with flip and scale
     // Include originY now so there's no jump when fanning adds it
-    const originDistance = 120 * targetScale
+    const originDistance = 84 * targetScale  // 84 = base origin for 49x70 card
     for (const managed of userHand.cards) {
       const cardRef = cardRefs.get(managed.card.id)
       if (cardRef) {

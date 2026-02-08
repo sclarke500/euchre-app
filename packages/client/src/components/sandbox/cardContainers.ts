@@ -179,7 +179,7 @@ export class Hand extends CardContainer {
     if (isUser) {
       // User's hand: use transform-origin for curved arc
       const spreadAngle = (index - middleIndex) * this.fanCurve
-      const originDistance = 120 * this.scale
+      const originDistance = 84 * this.scale  // 84 = base origin for 49x70 card
       
       return {
         x: this.position.x,
