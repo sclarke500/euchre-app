@@ -182,7 +182,7 @@ function initializeContainers() {
   const tableBottom = tableTop + tableH
   
   // Distance from table edge for opponent hands
-  const handInset = Math.min(tableW, tableH) * 0.15 + 20
+  const handInset = Math.min(tableW, tableH) * 0.08 + 10
   
   // Seat definitions based on layout
   // Normal (4 players): user at bottom, one opponent on each other side
@@ -372,10 +372,10 @@ async function handleFan() {
     await new Promise(r => setTimeout(r, 550))
   }
   
-  // Step 2: Scale up opponent hands and fan all
+  // Step 2: Scale opponent hands and fan all
   for (let i = 1; i < hands.value.length; i++) {
     const hand = hands.value[i]
-    if (hand) hand.scale = 0.8  // Slightly larger when fanned
+    if (hand) hand.scale = 0.65  // Smaller for opponents
   }
   
   const fanPromises = hands.value.map(hand => hand.setMode('fanned', 400))
