@@ -167,8 +167,8 @@ function initializeContainers() {
   // Table center (where kitty will be)
   const center = { x: tableX, y: tableY }
   
-  // Create deck at table center (will be kitty position) - smaller scale
-  deck.value = new Deck({ x: tableX, y: tableY }, 0.7)
+  // Create deck at table center (will be kitty position)
+  deck.value = new Deck({ x: tableX, y: tableY }, 1.0)
   
   // Player positions based on layout
   const isWide = tableLayout.value === 'wide'
@@ -234,7 +234,7 @@ function initializeContainers() {
       fanDirection: 'horizontal',
       fanSpacing: isUser ? 30 : 12,
       rotation: seat.rotation,  // Aligned with table edge
-      scale: 0.7,  // All cards same size initially
+      scale: 1.0,  // Base scale
       fanCurve: isUser ? 8 : 0,  // Only user gets curve
       angleToCenter,
     }))
@@ -381,7 +381,7 @@ async function handleFan() {
 async function handleStack() {
   // Reset all hands to base scale
   for (const hand of hands.value) {
-    hand.scale = 0.7
+    hand.scale = 1.0
   }
   const promises = hands.value.map(hand => hand.setMode('looseStack', 400))
   await Promise.all(promises)
