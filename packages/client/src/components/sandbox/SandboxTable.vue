@@ -348,6 +348,8 @@ async function handleFan() {
     userHand.fanSpacing = 40  // Wider spacing when enlarged
     
     // Animate each card to new position with flip and scale
+    // Include originY now so there's no jump when fanning adds it
+    const originDistance = 120 * targetScale
     for (const managed of userHand.cards) {
       const cardRef = cardRefs.get(managed.card.id)
       if (cardRef) {
@@ -358,6 +360,8 @@ async function handleFan() {
           y: targetY,
           scale: targetScale,
           flipY: 180,  // Flip the card
+          originX: 0,
+          originY: originDistance,
         }, 500)
       }
     }
