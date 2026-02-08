@@ -120,6 +120,54 @@ Two AI implementations in `packages/shared/src/`:
 - Considers opponent voids when deciding to protect partner's win
 - Tracker must be reset each round and updated after each trick
 
+## Card Engine v2 (Sandbox)
+
+A new animation system being developed in `packages/client/src/components/sandbox/`. The goal is a cleaner, container-based architecture for card positioning and animation.
+
+### Key Files
+- `SandboxTable.vue` - Test harness with table surface, player avatars, controls
+- `BoardCard.vue` - Single card component with position/animation methods
+- `cardContainers.ts` - Container classes that own and position cards
+
+### Architecture Concepts
+
+**Container-based ownership**: Cards belong to exactly one container at a time (Deck, Hand, PlayArea). Containers manage card positions based on their mode.
+
+**Single render layer**: All cards render in one flat layer on the board, absolutely positioned. No swapping between render systems.
+
+**ManagedCard**: Wrapper that tracks a card + its face-up state + ref to the DOM component:
+```typescript
+interface ManagedCard {
+  card: SandboxCard
+  faceUp: boolean
+  ref: BoardCardRef | null
+}
+```
+
+**BoardCardRef methods**:
+- `setPosition(pos)` - Instant position (no animation)
+- `moveTo(pos, duration)` - Animated transition
+- `getPosition()` - Current position
+- `setArcFan(enabled)` - Toggle transform-origin for arc-style fanning
+
+### Container Types
+
+**Deck**: Stacked cards at a position (kitty). Has `dealTo(hand)` method.
+
+**Hand**: Player's cards. Two modes:
+- `looseStack` - Random-ish pile (face down, waiting)
+- `fanned` - Spread out for viewing
+
+Hand options: `rotation`, `scale`, `fanSpacing`, `fanCurve` (arc effect for user's hand)
+
+**PlayArea**: Center area for played cards (not yet fully implemented).
+
+### Table Layout
+- `.table-surface` with CSS for felt texture and wood border
+- Supports `normal` (4 players) and `wide` (5+ players) layouts
+- Player avatars positioned outside table edges
+- User always at bottom (seat-0), hidden avatar
+
 ## Code Style
 
 - Vue components use `<script setup lang="ts">`
