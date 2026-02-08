@@ -347,6 +347,12 @@ async function handleFan() {
     userHand.scale = targetScale
     userHand.fanSpacing = 40  // Wider spacing when enlarged
     
+    // Enable arc fan mode on user's cards (sets CSS transform-origin)
+    for (const managed of userHand.cards) {
+      const cardRef = cardRefs.get(managed.card.id)
+      cardRef?.setArcFan(true)
+    }
+    
     // Animate each card to new position with flip and scale
     for (const managed of userHand.cards) {
       const cardRef = cardRefs.get(managed.card.id)
@@ -384,6 +390,16 @@ async function handleStack() {
   for (const hand of hands.value) {
     hand.scale = 1.0
   }
+  
+  // Disable arc fan mode on user's cards
+  const userHand = hands.value[0]
+  if (userHand) {
+    for (const managed of userHand.cards) {
+      const cardRef = cardRefs.get(managed.card.id)
+      cardRef?.setArcFan(false)
+    }
+  }
+  
   const promises = hands.value.map(hand => hand.setMode('looseStack', 400))
   await Promise.all(promises)
 }

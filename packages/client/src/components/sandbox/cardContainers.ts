@@ -14,6 +14,7 @@ export interface BoardCardRef {
   moveTo: (target: CardPosition, duration?: number) => Promise<void>
   setPosition: (pos: CardPosition) => void
   getPosition: () => CardPosition
+  setArcFan: (enabled: boolean) => void
 }
 
 // Simple card type for the sandbox

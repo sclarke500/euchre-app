@@ -1,6 +1,7 @@
 <template>
   <div 
     class="board-card"
+    :class="{ 'arc-fan': useArcFan }"
     :style="cardStyle"
   >
     <div class="card-inner" :class="{ 'face-down': !showFaceUp }">
@@ -175,11 +176,18 @@ function getPosition(): CardPosition {
   return { ...position.value }
 }
 
+// Arc fan mode (for user's fanned hand)
+const useArcFan = ref(false)
+function setArcFan(enabled: boolean) {
+  useArcFan.value = enabled
+}
+
 // Expose methods
 defineExpose({
   moveTo,
   setPosition,
   getPosition,
+  setArcFan,
 })
 </script>
 
@@ -188,8 +196,11 @@ defineExpose({
   position: absolute;
   pointer-events: auto;
   cursor: default;
-  // Fixed transform-origin for fan arc - percentage scales with card size
-  transform-origin: center 180%;
+  
+  // Fan arc origin - only applied when card has .arc-fan class
+  &.arc-fan {
+    transform-origin: center 180%;
+  }
 }
 
 .card-inner {
