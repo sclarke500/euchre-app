@@ -29,7 +29,7 @@
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
-import Modal from './Modal.vue'
+import Modal from '../Modal.vue'
 
 interface Props {
   winner: number | null

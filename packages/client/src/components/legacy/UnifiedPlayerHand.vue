@@ -42,7 +42,7 @@ import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase } from '@euchre/shared'
 import type { Card as CardType } from '@euchre/shared'
 import { sortCards } from '@/utils/cardSort'
-import Card from './Card.vue'
+import Card from '../Card.vue'
 
 const game = inject<GameAdapter>('game')!
 

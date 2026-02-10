@@ -1,7 +1,7 @@
 <template>
   <div 
     class="board-card"
-    :class="{ 'arc-fan': useArcFan }"
+    :class="{ 'arc-fan': useArcFan, 'dimmed': dimmed, 'selected': selected, 'highlighted': highlighted }"
     :style="cardStyle"
   >
     <div class="card-inner" :class="{ 'face-down': !showFaceUp }">
@@ -19,7 +19,7 @@
         </div>
       </template>
       <template v-else>
-        <div class="card-back">
+        <div class="card-back-pattern">
           <div class="pattern"></div>
         </div>
       </template>
@@ -28,30 +28,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-
-export interface CardPosition {
-  x: number      // pixels from left
-  y: number      // pixels from top
-  rotation: number  // degrees
-  zIndex: number
-  scale?: number    // 1.0 = normal size
-  flipY?: number    // 0-180 degrees for flip animation
-}
-
-interface SandboxCard {
-  id: string
-  suit: string
-  rank: string
-}
+import { ref, computed } from 'vue'
+import type { CardPosition, SandboxCard } from './cardContainers'
 
 const props = defineProps<{
   card: SandboxCard
   faceUp: boolean
   initialPosition?: CardPosition
+  dimmed?: boolean
+  selected?: boolean
+  highlighted?: boolean
 }>()
 
-// Current position state
 const position = ref<CardPosition>(props.initialPosition ?? {
   x: 0,
   y: 0,
@@ -61,36 +49,39 @@ const position = ref<CardPosition>(props.initialPosition ?? {
   flipY: 0,
 })
 
-// Animation state
 const isAnimating = ref(false)
 const animationDuration = ref(350)
 
-// Computed card style
 const cardStyle = computed(() => {
   const scale = position.value.scale ?? 1.0
   const flipY = position.value.flipY ?? 0
   // flipY controls scaleX: 0=full, 90=flat, 180=full (flipped content shown via showFaceUp)
   const flipProgress = Math.abs(Math.cos(flipY * Math.PI / 180))
+  const dur = `${animationDuration.value}ms`
+  const ease = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
   return {
     left: `${position.value.x}px`,
     top: `${position.value.y}px`,
     transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale * flipProgress}, ${scale})`,
     zIndex: position.value.zIndex,
-    transition: isAnimating.value 
-      ? `all ${animationDuration.value}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`
+    // Transition left/top/transform only — z-index must apply instantly
+    // so cards moving to the pile render above existing pile cards immediately
+    transition: isAnimating.value
+      ? `left ${dur} ${ease}, top ${dur} ${ease}, transform ${dur} ${ease}`
       : 'none',
   }
 })
 
 // When flipY is between 90-270, show the opposite face
+// Cards with no suit/rank (e.g. kitty dummies) are always face-down
 const showFaceUp = computed(() => {
+  if (!props.card.suit && !props.card.rank) return false
   const flipY = position.value.flipY ?? 0
   const normalizedFlip = ((flipY % 360) + 360) % 360
   const isFlipped = normalizedFlip > 90 && normalizedFlip < 270
   return isFlipped ? !props.faceUp : props.faceUp
 })
 
-// Card display helpers
 const suitSymbol = computed(() => {
   const symbols: Record<string, string> = {
     hearts: '♥',
@@ -111,7 +102,6 @@ const displayRank = computed(() => {
   return props.card.rank
 })
 
-// Move to a new position with animation
 function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
   return new Promise((resolve) => {
     const start = { ...position.value }
@@ -165,24 +155,20 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
   })
 }
 
-// Set position immediately (no animation)
 function setPosition(pos: CardPosition) {
   isAnimating.value = false
   position.value = { ...pos }
 }
 
-// Get current position
 function getPosition(): CardPosition {
   return { ...position.value }
 }
 
-// Arc fan mode (for user's fanned hand)
 const useArcFan = ref(false)
 function setArcFan(enabled: boolean) {
   useArcFan.value = enabled
 }
 
-// Expose methods
 defineExpose({
   moveTo,
   setPosition,
@@ -201,6 +187,25 @@ defineExpose({
   &.arc-fan {
     transform-origin: center 180%;
   }
+
+  &.dimmed {
+    filter: brightness(0.5) saturate(0.4);
+  }
+
+  &.selected {
+    margin-top: -12px;
+    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
+    transition: margin-top 0.15s ease, filter 0.15s ease;
+  }
+
+  &.highlighted {
+    filter: drop-shadow(0 0 8px rgba(0, 200, 150, 0.7)) drop-shadow(0 0 16px rgba(0, 200, 150, 0.3));
+    transition: filter 0.4s ease;
+  }
+
+  &:not(.selected):not(.highlighted) {
+    transition: margin-top 0.15s ease;
+  }
 }
 
 .card-inner {
@@ -209,12 +214,12 @@ defineExpose({
   height: min(70px, 8vw);
   background: #fff;
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   position: relative;
   user-select: none;
 
   &.face-down {
-    background: linear-gradient(135deg, #1a3a7c 0%, #0d1f4d 100%);
+    background: #e8e4df;
   }
 }
 
@@ -238,11 +243,11 @@ defineExpose({
   }
 
   .rank {
-    font-size: 12px;
+    font-size: 15px;
   }
 
   .suit {
-    font-size: 10px;
+    font-size: 13px;
   }
 
   &.red { color: #e74c3c; }
@@ -257,7 +262,7 @@ defineExpose({
   transform: translate(-50%, -50%);
 
   .suit-large {
-    font-size: 22px;
+    font-size: 26px;
   }
 
   &.red { color: #e74c3c; }
@@ -265,32 +270,32 @@ defineExpose({
   &.joker { color: #9b59b6; }
 }
 
-.card-back {
+.card-back-pattern {
   width: 100%;
   height: 100%;
-  padding: 4px;
+  padding: 3px;
   box-sizing: border-box;
 
   .pattern {
     width: 100%;
     height: 100%;
-    background: 
+    background:
       repeating-linear-gradient(
         45deg,
-        #2a4a9c 0px,
-        #2a4a9c 1px,
+        rgba(255, 255, 255, 0.15) 0px,
+        rgba(255, 255, 255, 0.15) 1px,
         transparent 1px,
-        transparent 6px
+        transparent 5px
       ),
       repeating-linear-gradient(
         -45deg,
-        #2a4a9c 0px,
-        #2a4a9c 1px,
+        rgba(255, 255, 255, 0.15) 0px,
+        rgba(255, 255, 255, 0.15) 1px,
         transparent 1px,
-        transparent 6px
-      );
+        transparent 5px
+      ),
+      linear-gradient(135deg, #8b3a4a 0%, #6b2838 100%);
     border-radius: 2px;
-    border: 1px solid #3a5aac;
   }
 }
 </style>

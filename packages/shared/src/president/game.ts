@@ -331,21 +331,18 @@ export function assignRanks(state: PresidentGameState): PresidentGameState {
  * Start a new round
  */
 export function startNewRound(state: PresidentGameState): PresidentGameState {
-  // Deal new cards
+  // Deal new cards (equal hands for all players)
   const dealtState = dealPresidentCards(state)
 
   // Check if this is first round (no ranks) or subsequent (card exchange)
   const hasRanks = state.players.some(p => p.rank !== null)
 
   if (hasRanks) {
-    // Auto-execute Scum → President exchange (Scum MUST give best cards)
-    const withAutoExchange = executeScumToPresidentExchange(dealtState)
-    
     // Find who needs to give cards back (President first, then VP)
-    const president = withAutoExchange.players.find(p => p.rank === PlayerRank.President)
-    
+    const president = dealtState.players.find(p => p.rank === PlayerRank.President)
+
     return {
-      ...withAutoExchange,
+      ...dealtState,
       phase: PresidentPhase.PresidentGiving,
       roundNumber: state.roundNumber + 1,
       awaitingGiveBack: president?.id ?? null,
@@ -360,76 +357,6 @@ export function startNewRound(state: PresidentGameState): PresidentGameState {
     phase: PresidentPhase.Playing,
     currentPlayer: startingPlayer,
     roundNumber: state.roundNumber,
-  }
-}
-
-/**
- * Auto-execute Scum giving best cards to President (mandatory)
- * Also handles Vice-Scum → VP if applicable
- */
-function executeScumToPresidentExchange(state: PresidentGameState): PresidentGameState {
-  let players = [...state.players]
-  const pendingExchanges: PendingExchange[] = []
-  const numPlayers = players.length
-  
-  // Find the players
-  const scum = players.find(p => p.rank === PlayerRank.Scum)
-  const president = players.find(p => p.rank === PlayerRank.President)
-  const viceScum = numPlayers >= 5 
-    ? players.find(p => p.finishOrder === numPlayers - 1 && p.rank !== PlayerRank.Scum)
-    : null
-  const vp = players.find(p => p.rank === PlayerRank.VicePresident)
-  
-  // Scum gives 2 best cards to President
-  if (scum && president) {
-    const cardsToGive = getHighestCards(scum.hand, 2)
-    const cardIds = new Set(cardsToGive.map(c => c.id))
-    
-    pendingExchanges.push({
-      fromPlayerId: scum.id,
-      toPlayerId: president.id,
-      cards: cardsToGive,
-      complete: true,
-    })
-    
-    players = players.map(p => {
-      if (p.id === scum.id) {
-        return { ...p, hand: p.hand.filter(c => !cardIds.has(c.id)) }
-      }
-      if (p.id === president.id) {
-        return { ...p, hand: [...p.hand, ...cardsToGive], cardsToReceive: 0 }
-      }
-      return p
-    })
-  }
-  
-  // Vice-Scum gives 1 best card to VP (if 5+ players)
-  if (viceScum && vp) {
-    const cardsToGive = getHighestCards(viceScum.hand, 1)
-    const cardIds = new Set(cardsToGive.map(c => c.id))
-    
-    pendingExchanges.push({
-      fromPlayerId: viceScum.id,
-      toPlayerId: vp.id,
-      cards: cardsToGive,
-      complete: true,
-    })
-    
-    players = players.map(p => {
-      if (p.id === viceScum.id) {
-        return { ...p, hand: p.hand.filter(c => !cardIds.has(c.id)) }
-      }
-      if (p.id === vp.id) {
-        return { ...p, hand: [...p.hand, ...cardsToGive], cardsToReceive: 0 }
-      }
-      return p
-    })
-  }
-  
-  return {
-    ...state,
-    players,
-    pendingExchanges,
   }
 }
 
@@ -450,8 +377,9 @@ export function findStartingPlayer(state: PresidentGameState): number {
 }
 
 /**
- * Process President/VP giving cards back to Scum/Vice-Scum (manual selection)
- * Called during PresidentGiving phase
+ * Process President/VP giving cards to Scum/Vice-Scum (bidirectional exchange).
+ * When President gives selected cards to Scum, Scum simultaneously gives their
+ * highest cards to President. Called during PresidentGiving phase.
  */
 export function processGiveBackCards(
   state: PresidentGameState,
@@ -460,63 +388,85 @@ export function processGiveBackCards(
 ): PresidentGameState {
   if (state.phase !== PresidentPhase.PresidentGiving) return state
   if (state.awaitingGiveBack !== fromPlayerId) return state
-  
+
   const fromPlayer = state.players[fromPlayerId]
   if (!fromPlayer) return state
-  
-  // Determine recipient based on who's giving
+
+  // Determine exchange partner based on who's giving
   let toPlayerId: number | null = null
   let expectedCardCount = 0
-  
+
   if (fromPlayer.rank === PlayerRank.President) {
     toPlayerId = state.players.find(p => p.rank === PlayerRank.Scum)?.id ?? null
     expectedCardCount = 2
   } else if (fromPlayer.rank === PlayerRank.VicePresident) {
     // Find Vice-Scum (second to last finisher, not Scum)
     const numPlayers = state.players.length
-    toPlayerId = state.players.find(p => 
+    toPlayerId = state.players.find(p =>
       p.finishOrder === numPlayers - 1 && p.rank !== PlayerRank.Scum
     )?.id ?? null
     expectedCardCount = 1
   }
-  
+
   if (toPlayerId === null) return state
   if (cards.length !== expectedCardCount) return state
-  
+
   const toPlayer = state.players[toPlayerId]
   if (!toPlayer) return state
-  
-  // Transfer cards
-  const cardIds = new Set(cards.map(c => c.id))
+
+  // Bidirectional exchange:
+  // 1. Scum/ViceScum gives highest cards to President/VP
+  const scumGiveCards = getHighestCards(toPlayer.hand, expectedCardCount)
+  const scumGiveIds = new Set(scumGiveCards.map(c => c.id))
+
+  // 2. President/VP gives selected cards to Scum/ViceScum
+  const presGiveIds = new Set(cards.map(c => c.id))
+
+  const pendingExchanges: PendingExchange[] = [
+    ...state.pendingExchanges,
+    { fromPlayerId: toPlayerId, toPlayerId: fromPlayerId, cards: scumGiveCards, complete: true },
+    { fromPlayerId: fromPlayerId, toPlayerId: toPlayerId, cards: [...cards], complete: true },
+  ]
+
   const players = state.players.map(p => {
     if (p.id === fromPlayerId) {
-      return { ...p, hand: p.hand.filter(c => !cardIds.has(c.id)) }
+      // President/VP: remove given cards, add received from scum
+      return {
+        ...p,
+        hand: [...p.hand.filter(c => !presGiveIds.has(c.id)), ...scumGiveCards],
+      }
     }
     if (p.id === toPlayerId) {
-      return { ...p, hand: [...p.hand, ...cards] }
+      // Scum/ViceScum: remove highest cards, add president's given cards
+      return {
+        ...p,
+        hand: [...p.hand.filter(c => !scumGiveIds.has(c.id)), ...cards],
+      }
     }
     return p
   })
-  
+
   // Check if VP also needs to give (5+ players)
   const vp = players.find(p => p.rank === PlayerRank.VicePresident)
   const vpNeedsToGive = vp && fromPlayer.rank === PlayerRank.President && players.length >= 5
-  
+
   if (vpNeedsToGive && vp) {
     // VP's turn to give
     return {
       ...state,
       players,
+      pendingExchanges,
       awaitingGiveBack: vp.id,
     }
   }
-  
+
   // All exchanges complete - determine who leads
   const startPlayer = getLeadingPlayer(state, players)
-  
+
   return {
     ...state,
     players,
+    pendingExchanges,
     phase: PresidentPhase.Playing,
     currentPlayer: startPlayer,
     awaitingGiveBack: null,
@@ -538,34 +488,41 @@ function getLeadingPlayer(state: PresidentGameState, players: PresidentPlayer[])
 }
 
 /**
- * Get info about what cards the human player received and needs to give
- * (for UI display during PresidentGiving phase)
+ * Extract human-relevant exchange info from pendingExchanges.
+ * Called after processGiveBackCards completes to build the notification data.
  */
-export function getExchangeInfo(state: PresidentGameState, humanPlayerId: number): {
-  receivedCards: StandardCard[]
-  cardsToGive: number
+export function getHumanExchangeInfo(
+  pendingExchanges: PendingExchange[],
+  humanPlayerId: number,
+  players: PresidentPlayer[]
+): {
+  youGive: StandardCard[]
+  youReceive: StandardCard[]
+  otherPlayerName: string
   yourRole: string
 } | null {
-  if (state.phase !== PresidentPhase.PresidentGiving) return null
-  if (state.awaitingGiveBack !== humanPlayerId) return null
-  
-  const player = state.players[humanPlayerId]
-  if (!player) return null
-  
-  // Find what cards this player received
-  const exchange = state.pendingExchanges.find(e => e.toPlayerId === humanPlayerId)
-  
+  // Find exchanges involving the human
+  const humanGave = pendingExchanges.find(e => e.fromPlayerId === humanPlayerId)
+  const humanReceived = pendingExchanges.find(e => e.toPlayerId === humanPlayerId)
+
+  if (!humanGave && !humanReceived) return null
+
+  const human = players.find(p => p.id === humanPlayerId)
+  const otherPlayerId = humanGave?.toPlayerId ?? humanReceived?.fromPlayerId
+  const other = otherPlayerId !== undefined ? players.find(p => p.id === otherPlayerId) : undefined
+
   const roleNames: Record<PlayerRank, string> = {
     [PlayerRank.President]: 'President',
     [PlayerRank.VicePresident]: 'Vice President',
     [PlayerRank.Citizen]: 'Citizen',
     [PlayerRank.Scum]: 'Scum',
   }
-  
+
   return {
-    receivedCards: exchange?.cards ?? [],
-    cardsToGive: player.rank === PlayerRank.President ? 2 : 1,
-    yourRole: player.rank ? roleNames[player.rank] : 'Unknown',
+    youGive: humanGave?.cards ?? [],
+    youReceive: humanReceived?.cards ?? [],
+    otherPlayerName: other?.name ?? '',
+    yourRole: human?.rank != null ? roleNames[human.rank] : '',
   }
 }
 

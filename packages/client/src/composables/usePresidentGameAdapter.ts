@@ -7,6 +7,7 @@ import type {
   PresidentPile,
   StandardCard,
   PlayerRank,
+  PendingExchange,
 } from '@euchre/shared'
 import { PresidentPhase as Phase } from '@euchre/shared'
 
@@ -42,7 +43,13 @@ export interface PresidentGameAdapter {
   acknowledgeExchange: () => void
   giveCardsBack: (cards: StandardCard[]) => void  // President/VP selecting cards to give
   getPlayerRankDisplay: (playerId: number) => string
+  dealAnimationComplete: () => void  // Signal store that deal animation is done
   bootPlayer?: (playerId: number) => void
+
+  // Animation callbacks — store waits for these before advancing turns
+  setPlayAnimationCallback?: (cb: ((play: { cards: StandardCard[], playerId: number, playIndex: number }) => Promise<void>) | null) => void
+  setPileClearedCallback?: (cb: (() => Promise<void>) | null) => void
+  setExchangeAnimationCallback?: (cb: ((exchanges: PendingExchange[]) => Promise<void>) | null) => void
 
   // Multiplayer-specific
   isMultiplayer: boolean
@@ -86,6 +93,10 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     acknowledgeExchange: () => store.acknowledgeExchange(),
     giveCardsBack: (cards: StandardCard[]) => store.giveCardsBack(cards),
     getPlayerRankDisplay: (playerId: number) => store.getPlayerRankDisplay(playerId),
+    dealAnimationComplete: () => store.dealAnimationComplete(),
+    setPlayAnimationCallback: (cb) => store.setPlayAnimationCallback(cb),
+    setPileClearedCallback: (cb) => store.setPileClearedCallback(cb),
+    setExchangeAnimationCallback: (cb) => store.setExchangeAnimationCallback(cb),
 
     // Single-player specific
     isMultiplayer: false,
@@ -190,6 +201,7 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
       }
       return rankNames[player.rank] || ''
     },
+    dealAnimationComplete: () => {}, // No-op for multiplayer (server controls timing)
     bootPlayer: (playerId: number) => store.bootPlayer(playerId),
 
     // Multiplayer-specific

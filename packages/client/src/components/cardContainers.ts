@@ -1,6 +1,3 @@
-// Card container system for sandbox
-// Containers own cards and manage their positions
-
 export interface CardPosition {
   x: number
   y: number
@@ -17,7 +14,6 @@ export interface BoardCardRef {
   setArcFan: (enabled: boolean) => void
 }
 
-// Simple card type for the sandbox
 export interface SandboxCard {
   id: string
   suit: string
@@ -30,7 +26,6 @@ export interface ManagedCard {
   ref: BoardCardRef | null
 }
 
-// Base container - uses plain arrays (Vue components handle reactivity)
 export abstract class CardContainer {
   id: string
   position: { x: number; y: number }  // Center position in pixels
@@ -41,14 +36,12 @@ export abstract class CardContainer {
     this.position = position
   }
   
-  // Add a card to this container
   addCard(card: SandboxCard, faceUp: boolean = false): ManagedCard {
     const managed: ManagedCard = { card, faceUp, ref: null }
     this.cards.push(managed)
     return managed
   }
   
-  // Remove a card from this container
   removeCard(cardId: string): ManagedCard | null {
     const index = this.cards.findIndex(m => m.card.id === cardId)
     if (index === -1) return null
@@ -56,10 +49,8 @@ export abstract class CardContainer {
     return removed ?? null
   }
   
-  // Get position for a card at given index
   abstract getCardPosition(index: number): CardPosition
-  
-  // Reposition all cards (with animation)
+
   async repositionAll(duration: number = 350): Promise<void> {
     const promises = this.cards.map((managed, index) => {
       const pos = this.getCardPosition(index)
@@ -68,16 +59,16 @@ export abstract class CardContainer {
     await Promise.all(promises)
   }
   
-  // Set ref for a card
-  setCardRef(cardId: string, ref: BoardCardRef | null) {
+  setCardRef(cardId: string, ref: BoardCardRef | null): boolean {
     const managed = this.cards.find(m => m.card.id === cardId)
     if (managed) {
       managed.ref = ref
+      return true
     }
+    return false
   }
 }
 
-// Deck container - cards stacked on top of each other
 export class Deck extends CardContainer {
   scale: number
   
@@ -87,31 +78,27 @@ export class Deck extends CardContainer {
   }
   
   getCardPosition(index: number): CardPosition {
-    // Stack cards with slight offset
     return {
       x: this.position.x,
-      y: this.position.y - index * 0.3 * this.scale,
+      y: this.position.y - index * 0.8,  // slight upward offset for stacked look
       rotation: 0,
       zIndex: 100 + index,
       scale: this.scale,
+      flipY: 0,  // deck cards are always face-down by default
     }
   }
   
-  // Deal top card to a hand
   dealTo(hand: Hand): ManagedCard | null {
     if (this.cards.length === 0) return null
     
-    // Remove from top of deck (last card)
     const managed = this.cards.pop()
     if (!managed) return null
     
-    // Add to hand
     hand.addManagedCard(managed)
     return managed
   }
 }
 
-// Hand container - cards fanned out
 export type HandMode = 'looseStack' | 'fanned'
 
 export class Hand extends CardContainer {
@@ -123,9 +110,10 @@ export class Hand extends CardContainer {
   scale: number       // card scale (1.0 = normal)
   fanCurve: number    // degrees of rotation at edges (0 = flat, 15 = curved)
   angleToCenter: number  // angle in degrees pointing toward board center (kitty)
-  
+  isUser: boolean     // whether this is the human player's hand (affects fan rendering)
+
   constructor(
-    id: string, 
+    id: string,
     position: { x: number; y: number },
     options: {
       faceUp?: boolean
@@ -135,6 +123,7 @@ export class Hand extends CardContainer {
       scale?: number
       fanCurve?: number
       angleToCenter?: number
+      isUser?: boolean
     } = {}
   ) {
     super(id, position)
@@ -145,9 +134,9 @@ export class Hand extends CardContainer {
     this.scale = options.scale ?? 1.0
     this.fanCurve = options.fanCurve ?? 0
     this.angleToCenter = options.angleToCenter ?? 0
+    this.isUser = options.isUser ?? false
   }
   
-  // Calculate angle to center from current position
   static calcAngleToCenter(handPos: { x: number; y: number }, centerPos: { x: number; y: number }): number {
     return Math.atan2(centerPos.y - handPos.y, centerPos.x - handPos.x) * (180 / Math.PI)
   }
@@ -156,7 +145,7 @@ export class Hand extends CardContainer {
     const cardCount = this.cards.length
     
     if (this.mode === 'looseStack') {
-      // Random-ish loose stack - scale the randomness by hand scale
+      // Deterministic pseudo-random scatter, scaled by hand scale
       const seed = index * 12345.6789
       const randomX = (Math.sin(seed) * 0.5) * 12 * this.scale
       const randomY = (Math.cos(seed) * 0.5) * 8 * this.scale
@@ -173,12 +162,11 @@ export class Hand extends CardContainer {
     
     // Fanned mode
     const middleIndex = (cardCount - 1) / 2
-    const isUser = this.rotation === 0
-    
-    if (isUser) {
-      // User's hand: fan with rotation, CSS transform-origin creates the arc
+
+    if (this.isUser && this.fanCurve > 0) {
+      // Display mode: arc fan with rotation, CSS transform-origin creates the arc
       const spreadAngle = (index - middleIndex) * this.fanCurve
-      
+
       return {
         x: this.position.x,
         y: this.position.y,
@@ -187,14 +175,14 @@ export class Hand extends CardContainer {
         scale: this.scale,
       }
     } else {
-      // Opponents: straight spread, no rotation per card
+      // Play mode (user with fanCurve=0) or opponents: straight horizontal spread
       const spreadAmount = (index - middleIndex) * this.fanSpacing * this.scale
-      
+
       // Spread along the hand's rotation direction
       const rotRad = this.rotation * Math.PI / 180
       const offsetX = spreadAmount * Math.cos(rotRad)
       const offsetY = spreadAmount * Math.sin(rotRad)
-      
+
       return {
         x: this.position.x + offsetX,
         y: this.position.y + offsetY,
@@ -205,19 +193,16 @@ export class Hand extends CardContainer {
     }
   }
   
-  // Add an already-managed card (from deck)
   addManagedCard(managed: ManagedCard) {
     managed.faceUp = this.faceUp
     this.cards.push(managed)
   }
   
-  // Set display mode and reposition
   async setMode(mode: HandMode, duration: number = 400): Promise<void> {
     this.mode = mode
     await this.repositionAll(duration)
   }
   
-  // Flip all cards face up or down
   flipCards(faceUp: boolean) {
     this.faceUp = faceUp
     for (const managed of this.cards) {
@@ -226,41 +211,41 @@ export class Hand extends CardContainer {
   }
 }
 
-// Play area - cards played to center
-export class PlayArea extends CardContainer {
-  playerPositions: Map<string, { x: number; y: number; rotation: number }>
-  
-  constructor(position: { x: number; y: number }) {
-    super('playArea', position)
-    this.playerPositions = new Map()
+export class Pile extends CardContainer {
+  private cardPositions = new Map<string, CardPosition>()
+  scale: number
+
+  constructor(id: string, position: { x: number; y: number }, scale: number = 1.0) {
+    super(id, position)
+    this.scale = scale
   }
-  
-  // Set where each player's cards go in the play area
-  setPlayerPosition(playerId: string, pos: { x: number; y: number; rotation: number }) {
-    this.playerPositions.set(playerId, pos)
-  }
-  
+
   getCardPosition(index: number): CardPosition {
-    // Default center stacking
+    const cardId = this.cards[index]?.card.id
+    if (cardId && this.cardPositions.has(cardId)) {
+      return this.cardPositions.get(cardId)!
+    }
+    // Default: stacked at pile center
     return {
-      x: this.position.x + index * 20,
+      x: this.position.x,
       y: this.position.y,
       rotation: 0,
-      zIndex: 300 + index,
+      zIndex: 200 + index,
+      scale: this.scale,
     }
   }
-  
-  // Get position for a specific player's played card
-  getPlayerCardPosition(playerId: string): CardPosition {
-    const pos = this.playerPositions.get(playerId)
-    if (!pos) {
-      return this.getCardPosition(this.cards.length)
-    }
-    return {
-      x: pos.x,
-      y: pos.y,
-      rotation: pos.rotation,
-      zIndex: 300 + this.cards.length,
-    }
+
+  setCardTargetPosition(cardId: string, pos: CardPosition) {
+    this.cardPositions.set(cardId, pos)
+  }
+
+  addManagedCard(managed: ManagedCard) {
+    this.cards.push(managed)
+  }
+
+  clear() {
+    this.cards = []
+    this.cardPositions.clear()
   }
 }
+

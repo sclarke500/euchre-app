@@ -75,7 +75,7 @@ import { useGameAdapter, type GameAdapter, type UnifiedPlayer } from '@/composab
 import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { GamePhase } from '@euchre/shared'
-import BackButton from './BackButton.vue'
+import BackButton from '../BackButton.vue'
 import ScoreBoard from './ScoreBoard.vue'
 import UnifiedPlayerHand from './UnifiedPlayerHand.vue'
 import UnifiedOpponentHand from './UnifiedOpponentHand.vue'
@@ -83,7 +83,7 @@ import UnifiedPlayerPlaque from './UnifiedPlayerPlaque.vue'
 import UnifiedPlayArea from './UnifiedPlayArea.vue'
 import TrumpSelection from './TrumpSelection.vue'
 import GameOver from './GameOver.vue'
-import Modal from './Modal.vue'
+import Modal from '../Modal.vue'
 
 const props = defineProps<{
   mode: 'singleplayer' | 'multiplayer'

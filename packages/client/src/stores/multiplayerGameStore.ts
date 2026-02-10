@@ -27,8 +27,34 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
   // Sync tracking
   const lastStateSeq = ref<number>(0)
-  let syncCheckInterval: ReturnType<typeof setInterval> | null = null
-  let lastStateReceivedAt = 0
+
+  // ── Message Queue ─────────────────────────────────────────────────────────
+  // When queue mode is enabled, messages are buffered instead of applied
+  // immediately. The director's processing loop dequeues and applies them
+  // one at a time, with animation pauses between each.
+
+  const messageQueue: ServerMessage[] = []
+  let queueMode = false
+
+  function enableQueueMode(): void {
+    queueMode = true
+  }
+
+  function disableQueueMode(): void {
+    queueMode = false
+    // Flush remaining messages directly
+    while (messageQueue.length > 0) {
+      applyMessage(messageQueue.shift()!)
+    }
+  }
+
+  function dequeueMessage(): ServerMessage | null {
+    return messageQueue.shift() ?? null
+  }
+
+  function getQueueLength(): number {
+    return messageQueue.length
+  }
 
   // Computed getters for easy access
   const phase = computed(() => gameState.value?.phase ?? GamePhase.Setup)
@@ -57,24 +83,45 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   const myHand = computed(() => myPlayer.value?.hand ?? [])
   const myTeamId = computed(() => myPlayer.value?.teamId ?? 0)
 
-  // Message handler for WebSocket messages
+  // Only update a ref if the array content actually changed (avoids triggering
+  // downstream reactivity from turn_reminder messages with identical data)
+  function updateIfChanged(target: { value: string[] }, incoming: string[]) {
+    if (target.value.length !== incoming.length ||
+        target.value.some((v, i) => v !== incoming[i])) {
+      target.value = incoming
+    }
+  }
+
+  // WebSocket message entry point — buffers in queue mode, applies directly otherwise
   function handleMessage(message: ServerMessage): void {
+    if (queueMode) {
+      // All messages queued — even turn_reminder. Bypassing the queue would
+      // set isMyTurn=true before earlier messages (like AI bids) are processed,
+      // causing premature "your turn" UI while the queue is still catching up.
+      messageQueue.push(message)
+    } else {
+      applyMessage(message)
+    }
+  }
+
+  // Actually mutates reactive state for a single message.
+  // In queue mode, called by the director's processing loop.
+  // In direct mode, called by handleMessage immediately.
+  function applyMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'game_state':
-        console.log('MP game_state received - trump:', message.state.trump, 'trumpCalledBy:', message.state.trumpCalledBy, 'seq:', message.state.stateSeq)
         // Clear lastTrickWinnerId when a new round starts (dealing phase)
         if (message.state.phase === GamePhase.Dealing) {
           lastTrickWinnerId.value = null
         }
         gameState.value = message.state
         lastStateSeq.value = message.state.stateSeq
-        lastStateReceivedAt = Date.now()
         break
 
       case 'your_turn':
         isMyTurn.value = true
-        validActions.value = message.validActions
-        validCards.value = message.validCards ?? []
+        updateIfChanged(validActions, message.validActions)
+        updateIfChanged(validCards, message.validCards ?? [])
         break
 
       case 'bid_made':
@@ -109,11 +156,12 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
         break
 
       case 'turn_reminder':
-        // Server reminder that it's still our turn - re-enable turn indicators
+        // Server reminder that it's still our turn — re-enable turn indicators.
+        // Only update validActions (for bid buttons). Do NOT update validCards —
+        // the server may recompute them with stale trick state, causing flicker.
+        // validCards are authoritatively set by your_turn only.
         isMyTurn.value = true
-        validActions.value = message.validActions
-        validCards.value = message.validCards ?? []
-        console.log('Turn reminder received - valid actions:', message.validActions)
+        updateIfChanged(validActions, message.validActions)
         break
     }
   }
@@ -151,11 +199,12 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
     isMyTurn.value = false
     validActions.value = []
+    validCards.value = []
   }
 
   function playCard(cardId: string): void {
     if (!isMyTurn.value) return
-    if (!validCards.value.includes(cardId)) return
+    if (validCards.value.length > 0 && !validCards.value.includes(cardId)) return
 
     websocket.send({
       type: 'play_card',
@@ -181,7 +230,6 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   }
 
   function requestStateResync(): void {
-    console.log('Requesting state resync from server')
     websocket.send({
       type: 'request_state',
     })
@@ -193,21 +241,6 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   function initialize(): void {
     if (unsubscribe) return
     unsubscribe = websocket.onMessage(handleMessage)
-
-    // Set up periodic sync check - if we haven't received state updates for too long
-    // while it's supposed to be our turn, request a resync
-    syncCheckInterval = setInterval(() => {
-      // Only check if we're in a game and it's our turn
-      if (!gameState.value || !isMyTurn.value) return
-
-      // If no state update in 10 seconds while it's our turn, something might be wrong
-      const timeSinceLastUpdate = Date.now() - lastStateReceivedAt
-      if (timeSinceLastUpdate > 10000) {
-        console.log('No state update for 10s while waiting for turn - requesting resync')
-        requestStateResync()
-        lastStateReceivedAt = Date.now() // Reset to avoid spamming
-      }
-    }, 5000) // Check every 5 seconds
   }
 
   function cleanup(): void {
@@ -215,16 +248,13 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
       unsubscribe()
       unsubscribe = null
     }
-    if (syncCheckInterval) {
-      clearInterval(syncCheckInterval)
-      syncCheckInterval = null
-    }
+    messageQueue.length = 0
+    queueMode = false
     gameState.value = null
     isMyTurn.value = false
     validActions.value = []
     validCards.value = []
     lastStateSeq.value = 0
-    lastStateReceivedAt = 0
   }
 
   return {
@@ -266,5 +296,12 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     initialize,
     cleanup,
     requestStateResync,
+
+    // Queue control (for director)
+    enableQueueMode,
+    disableQueueMode,
+    dequeueMessage,
+    getQueueLength,
+    applyMessage,
   }
 })

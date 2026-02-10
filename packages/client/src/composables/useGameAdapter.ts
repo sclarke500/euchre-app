@@ -9,8 +9,8 @@
 import { computed, type ComputedRef, type Ref } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
-import { GamePhase, Suit, BidAction, getLegalPlays } from '@euchre/shared'
-import type { Card, Trick, TeamScore, Bid } from '@euchre/shared'
+import { GamePhase, Suit, Rank, BidAction, getLegalPlays } from '@euchre/shared'
+import type { Card, Trick, TeamScore, Bid, ServerMessage } from '@euchre/shared'
 
 // Unified player interface that works for both modes
 export interface UnifiedPlayer {
@@ -67,6 +67,13 @@ export interface GameAdapter {
   
   // Multiplayer-specific
   requestResync?: () => void
+
+  // Queue control (multiplayer only — for director processing loop)
+  enableQueueMode?: () => void
+  disableQueueMode?: () => void
+  dequeueMessage?: () => ServerMessage | null
+  getQueueLength?: () => number
+  applyMessage?: (message: ServerMessage) => void
 }
 
 function createEmptyTrick(): Trick {
@@ -226,7 +233,13 @@ function createMultiplayerAdapter(): GameAdapter {
     return store.players.map(p => ({
       id: p.id,
       name: p.name,
-      hand: p.hand ?? [],
+      // Opponents don't have actual cards — create placeholders so hand.length is correct
+      // for the director to deal and fan the right number of cards
+      hand: p.hand ?? Array.from({ length: p.handSize }, (_, i) => ({
+        id: `placeholder-${p.id}-${i}`,
+        suit: Suit.Spades,
+        rank: Rank.Nine,
+      } as Card)),
       handSize: p.handSize,
       isHuman: p.isHuman,
       teamId: p.teamId,
@@ -234,7 +247,6 @@ function createMultiplayerAdapter(): GameAdapter {
   })
 
   const trump = computed<TrumpInfo | null>(() => {
-    console.log('MP trump computed - store.trump:', store.trump, 'store.trumpCalledBy:', store.trumpCalledBy)
     if (!store.trump || store.trumpCalledBy === null) return null
     return {
       suit: store.trump,
@@ -294,5 +306,12 @@ function createMultiplayerAdapter(): GameAdapter {
     requestResync: () => {
       store.requestStateResync()
     },
+
+    // Queue control for director
+    enableQueueMode: () => store.enableQueueMode(),
+    disableQueueMode: () => store.disableQueueMode(),
+    dequeueMessage: () => store.dequeueMessage(),
+    getQueueLength: () => store.getQueueLength(),
+    applyMessage: (message: ServerMessage) => store.applyMessage(message),
   }
 }

@@ -4,31 +4,40 @@ import { useGameStore } from './stores/gameStore'
 import { usePresidentGameStore } from './stores/presidentGameStore'
 import { useLobbyStore } from './stores/lobbyStore'
 import { GamePhase } from '@euchre/shared'
-import UnifiedGameBoard from './components/UnifiedGameBoard.vue'
+import UnifiedGameBoard from './components/legacy/UnifiedGameBoard.vue'
 import PresidentGameBoard from './components/president/PresidentGameBoard.vue'
+import PresidentEngineBoard from './components/PresidentEngineBoard.vue'
 import KlondikeGameBoard from './components/klondike/KlondikeGameBoard.vue'
 import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
 import SandboxTable from './components/sandbox/SandboxTable.vue'
+import EuchreEngineBoard from './components/EuchreEngineBoard.vue'
 
 const gameStore = useGameStore()
 const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
 
 // App view state
-type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox'
+type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox' | 'euchreLegacy'
 
-// Check for sandbox URL parameter
+// Check for dev URL parameters
 const urlParams = new URLSearchParams(window.location.search)
-const initialView: AppView = urlParams.get('sandbox') !== null ? 'sandbox' : 'menu'
+const initialView: AppView = urlParams.get('sandbox') !== null ? 'sandbox'
+  : urlParams.get('legacy') !== null ? 'euchreLegacy'
+  : 'menu'
 const currentView = ref<AppView>(initialView)
 const currentGame = ref<GameType>('euchre')
+
+// Auto-start game when using ?legacy dev parameter
+if (initialView === 'euchreLegacy') {
+  gameStore.startNewGame()
+}
 
 const phase = computed(() => gameStore.phase)
 
 // Only show landscape blocker on game boards, not menu/lobby
 const showLandscapeBlocker = computed(() => {
-  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'multiplayerGame'].includes(currentView.value)
+  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'multiplayerGame', 'euchreLegacy'].includes(currentView.value)
 })
 
 // PWA install prompt
@@ -251,15 +260,15 @@ function backToMenu() {
       @enter-multiplayer="enterMultiplayer"
     />
 
-    <!-- Euchre Single Player Game -->
-    <UnifiedGameBoard
+    <!-- Euchre Single Player Game (engine-based) -->
+    <EuchreEngineBoard
       v-else-if="currentView === 'euchreSinglePlayer'"
       mode="singleplayer"
       @leave-game="currentView = 'menu'"
     />
 
-    <!-- President Single Player Game -->
-    <PresidentGameBoard
+    <!-- President Single Player Game (engine-based) -->
+    <PresidentEngineBoard
       v-else-if="currentView === 'presidentSinglePlayer'"
       @leave-game="currentView = 'menu'"
     />
@@ -277,7 +286,7 @@ function backToMenu() {
     />
 
     <!-- Multiplayer Euchre Game -->
-    <UnifiedGameBoard
+    <EuchreEngineBoard
       v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'euchre'"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
@@ -286,6 +295,13 @@ function backToMenu() {
     <!-- Animation Sandbox (access via ?sandbox) -->
     <SandboxTable
       v-else-if="currentView === 'sandbox'"
+    />
+
+    <!-- Legacy Euchre board (access via ?legacy) -->
+    <UnifiedGameBoard
+      v-else-if="currentView === 'euchreLegacy'"
+      mode="singleplayer"
+      @leave-game="currentView = 'menu'"
     />
 
     <!-- Multiplayer President Game -->

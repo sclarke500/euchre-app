@@ -14,7 +14,7 @@ import {
   processPlay,
   processPass,
   processGiveBackCards,
-  getExchangeInfo,
+  getHumanExchangeInfo,
   assignRanks,
   startNewRound,
   getNextActivePlayer,
@@ -22,7 +22,7 @@ import {
   findValidPlays,
   canPlay,
   choosePresidentPlay,
-  chooseCardsToGive,
+  chooseCardsToGiveBack,
   getRankDisplayName,
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
@@ -122,6 +122,35 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     return 0
   })
 
+  // Deal animation callback — director signals when dealing visuals are done
+  let dealCompleteResolve: (() => void) | null = null
+
+  function dealAnimationComplete() {
+    if (dealCompleteResolve) {
+      const resolve = dealCompleteResolve
+      dealCompleteResolve = null
+      resolve()
+    }
+  }
+
+  // Play animation callbacks — director registers these so the store
+  // waits for card animations before advancing to the next turn
+  let playAnimationCallback: ((play: { cards: StandardCard[], playerId: number, playIndex: number }) => Promise<void>) | null = null
+  let pileClearedCallback: (() => Promise<void>) | null = null
+  let exchangeAnimationCallback: ((exchanges: PendingExchange[]) => Promise<void>) | null = null
+
+  function setPlayAnimationCallback(cb: typeof playAnimationCallback) {
+    playAnimationCallback = cb
+  }
+
+  function setPileClearedCallback(cb: typeof pileClearedCallback) {
+    pileClearedCallback = cb
+  }
+
+  function setExchangeAnimationCallback(cb: typeof exchangeAnimationCallback) {
+    exchangeAnimationCallback = cb
+  }
+
   // Actions
   function startNewGame(numPlayers: number = 4) {
     // Get random AI names
@@ -178,9 +207,12 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     awaitingGiveBack.value = state.awaitingGiveBack
     roundNumber.value = state.roundNumber
 
-    setTimeout(() => {
+    // Wait for deal animation to complete before advancing phase.
+    // The director calls dealAnimationComplete() when dealing visuals are done.
+    // Fallback timeout prevents stuck state if no director is listening.
+    const advancePhase = () => {
       phase.value = state.phase
-      
+
       if (state.phase === PresidentPhase.PresidentGiving) {
         // Card exchange phase - check if human needs to give cards
         handleGivingPhase()
@@ -189,52 +221,61 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
         currentPlayer.value = state.currentPlayer
         processAITurn()
       }
-    }, 1200)
+    }
+
+    dealCompleteResolve = advancePhase
+    // Fallback: if no director signals within 15s, advance anyway
+    setTimeout(() => {
+      if (dealCompleteResolve === advancePhase) {
+        dealCompleteResolve = null
+        advancePhase()
+      }
+    }, 15000)
   }
   
   function handleGivingPhase() {
     const human = humanPlayer.value
-    
+
     if (human && awaitingGiveBack.value === human.id) {
       // Human is President or VP - needs to select cards to give
-      // Get info about what they received
-      const info = getExchangeInfo(gameState.value, human.id)
-      
-      if (info) {
-        const scum = players.value.find(p => p.rank === PlayerRank.Scum)
-        const viceScum = players.value.find(p => 
-          p.finishOrder === players.value.length - 1 && p.rank !== PlayerRank.Scum
-        )
-        const recipient = human.rank === PlayerRank.President ? scum : viceScum
-        
-        exchangeInfo.value = {
-          youGive: [], // Will be filled by user selection
-          youReceive: info.receivedCards,
-          otherPlayerName: recipient?.name ?? 'Scum',
-          yourRole: info.yourRole,
-        }
-        waitingForExchangeAck.value = false // User needs to select, not just ack
-      }
+      waitingForExchangeAck.value = false
     } else {
       // AI is President/VP - let them give cards automatically
       processAIGiveBack()
     }
   }
   
-  function processAIGiveBack() {
-    // AI President/VP selects cards to give back
+  async function processAIGiveBack() {
+    // AI President/VP selects cards to give back (lowest cards)
     const givingPlayer = players.value.find(p => p.id === awaitingGiveBack.value)
     if (!givingPlayer) return
-    
-    // AI chooses lowest cards (simple strategy)
+
     const cardsCount = givingPlayer.rank === PlayerRank.President ? 2 : 1
-    const cardsToGive = chooseCardsToGive(givingPlayer, cardsCount)
-    
-    // Process the give back
+    const cardsToGive = chooseCardsToGiveBack(givingPlayer, cardsCount)
+
+    // Process the bidirectional exchange
+    const prevExchangeCount = pendingExchanges.value.length
     const state = processGiveBackCards(gameState.value, givingPlayer.id, cardsToGive)
+    const newExchanges = state.pendingExchanges.slice(prevExchangeCount)
     applyState(state)
-    
-    // Check if more giving needed or start playing
+
+    // Animate the card exchange between hands
+    if (exchangeAnimationCallback && newExchanges.length > 0) {
+      await exchangeAnimationCallback(newExchanges)
+    }
+
+    // Check if human was involved in this exchange (as Scum/ViceScum)
+    const human = humanPlayer.value
+    if (human) {
+      const info = getHumanExchangeInfo(state.pendingExchanges, human.id, state.players)
+      if (info && (info.youGive.length > 0 || info.youReceive.length > 0)) {
+        exchangeInfo.value = info
+        waitingForExchangeAck.value = true
+        return // Wait for human to acknowledge before continuing
+      }
+    }
+
+    // No human involvement — continue
     if (state.phase === PresidentPhase.PresidentGiving) {
       setTimeout(() => handleGivingPhase(), 500)
     } else if (state.phase === PresidentPhase.Playing) {
@@ -243,25 +284,30 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
   
   // Human President/VP gives cards back
-  function giveCardsBack(cards: StandardCard[]) {
+  async function giveCardsBack(cards: StandardCard[]) {
     const human = humanPlayer.value
     if (!human || awaitingGiveBack.value !== human.id) return
-    
+
     const expectedCount = human.rank === PlayerRank.President ? 2 : 1
     if (cards.length !== expectedCount) return
-    
-    // Process the give back
+
+    // Process the bidirectional exchange
+    const prevExchangeCount = pendingExchanges.value.length
     const state = processGiveBackCards(gameState.value, human.id, cards)
+    const newExchanges = state.pendingExchanges.slice(prevExchangeCount)
     applyState(state)
-    
-    // Clear exchange info
-    exchangeInfo.value = null
-    
-    // Check if VP also needs to give or start playing
-    if (state.phase === PresidentPhase.PresidentGiving) {
-      setTimeout(() => handleGivingPhase(), 500)
-    } else if (state.phase === PresidentPhase.Playing) {
-      setTimeout(() => processAITurn(), 500)
+
+    // Animate the card exchange between hands
+    if (exchangeAnimationCallback && newExchanges.length > 0) {
+      await exchangeAnimationCallback(newExchanges)
+    }
+
+    // Show notification with exchange details
+    const info = getHumanExchangeInfo(state.pendingExchanges, human.id, state.players)
+    if (info) {
+      exchangeInfo.value = info
+      waitingForExchangeAck.value = true
+      // Don't continue until human acknowledges
     }
   }
   
@@ -290,20 +336,20 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     return 0
   }
 
-  // acknowledgeExchange is used when human is Scum (just acknowledges what was taken/given)
+  // Acknowledge exchange notification — continue game after human dismisses modal
   function acknowledgeExchange() {
     waitingForExchangeAck.value = false
     exchangeInfo.value = null
 
-    // Continue with the giving phase or start playing
+    // Continue with the giving phase (VP exchange) or start playing
     if (phase.value === PresidentPhase.PresidentGiving) {
-      handleGivingPhase()
+      setTimeout(() => handleGivingPhase(), 500)
     } else if (phase.value === PresidentPhase.Playing) {
-      processAITurn()
+      setTimeout(() => processAITurn(), 500)
     }
   }
 
-  function playCards(cards: StandardCard[]) {
+  async function playCards(cards: StandardCard[]) {
     if (cards.length === 0) return
 
     const playingPlayer = currentPlayer.value
@@ -318,6 +364,12 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     lastPlayerId.value = state.lastPlayerId
     lastPlayedCards.value = cards
 
+    // Wait for play animation before continuing
+    if (playAnimationCallback) {
+      const playIndex = state.currentPile.plays.length - 1
+      await playAnimationCallback({ cards, playerId: playingPlayer, playIndex })
+    }
+
     // Check for round complete
     if (state.phase === PresidentPhase.RoundComplete) {
       handleRoundComplete()
@@ -327,16 +379,13 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     // Check if joker was played - auto-clear pile since nothing can beat it
     const playedJoker = cards.some(c => c.rank === 'Joker')
     if (playedJoker && rules.value.superTwosMode) {
-      // Brief pause to show the joker, then auto-clear
-      setTimeout(() => {
-        currentPile.value = createEmptyPile()
-        currentPlayer.value = playingPlayer // Joker player leads again
-        consecutivePasses.value = 0
-        lastPlayedCards.value = null
-        setTimeout(() => {
-          processAITurn()
-        }, 300)
-      }, 800)
+      await new Promise(r => setTimeout(r, 800))
+      currentPile.value = createEmptyPile()
+      currentPlayer.value = playingPlayer // Joker player leads again
+      consecutivePasses.value = 0
+      lastPlayedCards.value = null
+      if (pileClearedCallback) await pileClearedCallback()
+      processAITurn()
       return
     }
 
@@ -344,7 +393,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     processAITurn()
   }
 
-  function pass() {
+  async function pass() {
+    const hadCards = currentPile.value.currentRank !== null
     const state = processPass(gameState.value, currentPlayer.value)
 
     // Update state
@@ -353,15 +403,12 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     consecutivePasses.value = state.consecutivePasses
     lastPlayedCards.value = null
 
-    // If pile was cleared, show it briefly
-    if (state.currentPile.currentRank === null && gameState.value.currentPile.currentRank !== null) {
-      // Pile was cleared - brief pause
-      setTimeout(() => {
-        processAITurn()
-      }, 500)
-    } else {
-      processAITurn()
+    // Pile was cleared (everyone passed) — wait for sweep animation
+    if (hadCards && state.currentPile.currentRank === null) {
+      if (pileClearedCallback) await pileClearedCallback()
     }
+
+    processAITurn()
   }
 
   function handleRoundComplete() {
@@ -455,5 +502,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     giveCardsBack,
     getPlayerRankDisplay,
     acknowledgeExchange,
+    dealAnimationComplete,
+    setPlayAnimationCallback,
+    setPileClearedCallback,
+    setExchangeAnimationCallback,
   }
 })

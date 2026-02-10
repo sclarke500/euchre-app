@@ -62,8 +62,8 @@ import { computed, ref, inject } from 'vue'
 import type { GameAdapter } from '@/composables/useGameAdapter'
 import { GamePhase, BidAction, Suit } from '@euchre/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
-import Card from './Card.vue'
-import Modal from './Modal.vue'
+import Card from '../Card.vue'
+import Modal from '../Modal.vue'
 
 defineProps<{
   show: boolean
