@@ -84,8 +84,7 @@ export function usePresidentDirector(
 
   function getTableLayout(): TableLayoutResult | null {
     if (!boardRef.value) return null
-    const rect = boardRef.value.getBoundingClientRect()
-    return computeTableLayout(rect.width, rect.height, 'wide', playerCount.value)
+    return computeTableLayout(boardRef.value.offsetWidth, boardRef.value.offsetHeight, 'wide', playerCount.value)
   }
 
   /**
@@ -207,9 +206,8 @@ export function usePresidentDirector(
     const userHand = hands[0]
     const userCardCount = players[seatIndexToPlayerId(0)]?.hand.length ?? 13
     if (userHand && boardRef.value) {
-      const rect = boardRef.value.getBoundingClientRect()
-      const targetX = rect.width / 2
-      const targetY = rect.height - 20
+      const targetX = boardRef.value.offsetWidth / 2
+      const targetY = boardRef.value.offsetHeight - 20
       // Scale down slightly for larger hands
       const targetScale = userCardCount > 10 ? 1.5 : 1.7
 

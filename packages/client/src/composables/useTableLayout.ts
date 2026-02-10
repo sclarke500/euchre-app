@@ -164,10 +164,9 @@ export function useTableLayout(
 
   function recompute() {
     if (!boardRef.value) return
-    const rect = boardRef.value.getBoundingClientRect()
     layoutResult.value = computeTableLayout(
-      rect.width,
-      rect.height,
+      boardRef.value.offsetWidth,
+      boardRef.value.offsetHeight,
       layout.value,
       playerCount.value
     )

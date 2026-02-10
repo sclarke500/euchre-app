@@ -179,8 +179,7 @@ export function useEuchreDirector(
 
   function getTableLayout(): TableLayoutResult | null {
     if (!boardRef.value) return null
-    const rect = boardRef.value.getBoundingClientRect()
-    return computeTableLayout(rect.width, rect.height, layout, 4)
+    return computeTableLayout(boardRef.value.offsetWidth, boardRef.value.offsetHeight, layout, 4)
   }
 
   function getDealerDeckPosition(dealerSeatIndex: number, tl: TableLayoutResult): { x: number; y: number } {
@@ -427,9 +426,8 @@ export function useEuchreDirector(
     // Stage 1: Move user hand to bottom, enlarge, flip face-up
     const userHand = hands[0]
     if (userHand && boardRef.value) {
-      const rect = boardRef.value.getBoundingClientRect()
-      const targetX = rect.width / 2
-      const targetY = rect.height - 20
+      const targetX = boardRef.value.offsetWidth / 2
+      const targetY = boardRef.value.offsetHeight - 20
       const targetScale = 1.8
 
       userHand.position = { x: targetX, y: targetY }
@@ -746,16 +744,17 @@ export function useEuchreDirector(
 
     // Determine off-screen target based on next dealer's side
     const seat = tl.seats[nextDealerSeat]
-    const boardRect = boardRef.value?.getBoundingClientRect()
-    if (!boardRect) return
+    if (!boardRef.value) return
+    const boardW = boardRef.value.offsetWidth
+    const boardH = boardRef.value.offsetHeight
 
     let targetX: number, targetY: number
     switch (seat?.side ?? 'bottom') {
-      case 'bottom': targetX = tl.tableCenter.x; targetY = boardRect.height + 100; break
+      case 'bottom': targetX = tl.tableCenter.x; targetY = boardH + 100; break
       case 'top':    targetX = tl.tableCenter.x; targetY = -100; break
       case 'left':   targetX = -100; targetY = tl.tableCenter.y; break
-      case 'right':  targetX = boardRect.width + 100; targetY = tl.tableCenter.y; break
-      default:       targetX = tl.tableCenter.x; targetY = boardRect.height + 100; break
+      case 'right':  targetX = boardW + 100; targetY = tl.tableCenter.y; break
+      default:       targetX = tl.tableCenter.x; targetY = boardH + 100; break
     }
 
     await Promise.all(allCards.map((m, i) => {

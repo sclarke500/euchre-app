@@ -114,16 +114,20 @@ const avatarStyles = computed(() => {
 
 function computeLayout() {
   if (!boardRef.value) return
-  const rect = boardRef.value.getBoundingClientRect()
-  const result = computeTableLayout(rect.width, rect.height, props.layout, props.playerCount)
+  // Use offsetWidth/Height (layout dimensions) instead of getBoundingClientRect()
+  // because CSS transforms (e.g. scale(0.85) on small screens) cause getBCR to
+  // return visual dimensions, while absolute px positioning uses layout coordinates.
+  const w = boardRef.value.offsetWidth
+  const h = boardRef.value.offsetHeight
+  const result = computeTableLayout(w, h, props.layout, props.playerCount)
   seatData.value = result.seats
   lastLayoutResult.value = result
 
   // Set CSS vars so .table-surface position stays in sync with JS layout
   const { tableBounds } = result
   const el = boardRef.value
-  el.style.setProperty('--table-left', `${(tableBounds.left / rect.width * 100).toFixed(2)}%`)
-  el.style.setProperty('--table-right', `${((rect.width - tableBounds.right) / rect.width * 100).toFixed(2)}%`)
+  el.style.setProperty('--table-left', `${(tableBounds.left / w * 100).toFixed(2)}%`)
+  el.style.setProperty('--table-right', `${((w - tableBounds.right) / w * 100).toFixed(2)}%`)
 
   return result
 }

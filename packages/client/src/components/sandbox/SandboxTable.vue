@@ -88,11 +88,12 @@ const hasDeck = computed(() => {
 function initializeContainers() {
   if (!boardRef.value) return
 
-  const rect = boardRef.value.getBoundingClientRect()
+  const w = boardRef.value.offsetWidth
+  const h = boardRef.value.offsetHeight
   const isWide = tableLayout.value === 'wide'
   const playerCount = isWide ? 5 : 4
 
-  const layout = computeTableLayout(rect.width, rect.height, tableLayout.value, playerCount)
+  const layout = computeTableLayout(w, h, tableLayout.value, playerCount)
 
   engine.createDeck(layout.tableCenter, 1.0)
 
@@ -153,13 +154,12 @@ async function handleDeal() {
 
 async function handleFan() {
   if (!boardRef.value) return
-  const rect = boardRef.value.getBoundingClientRect()
   const hands = engine.getHands()
 
   const userHand = hands[0]
   if (userHand) {
-    const targetY = rect.height - 50
-    const targetX = rect.width / 2
+    const targetY = boardRef.value.offsetHeight - 50
+    const targetX = boardRef.value.offsetWidth / 2
     const targetScale = 1.4
 
     userHand.position = { x: targetX, y: targetY }
