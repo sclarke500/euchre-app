@@ -318,6 +318,8 @@ function backToMenu() {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 
   // Scale down for very small landscape screens (iPhone SE, etc.)
   // Design target: ~850px width (iPhone 15 landscape)

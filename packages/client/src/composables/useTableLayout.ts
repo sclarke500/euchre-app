@@ -84,7 +84,7 @@ export function computeTableLayout(
   seatOverrides?: SeatDefinition[]
 ): TableLayoutResult {
   const isWide = layout === 'wide'
-  const tableMarginX = isWide ? 0.10 : 0.30
+  const tableMarginX = isWide ? 0.10 : (boardWidth < 1000 ? 0.15 : 0.30)
   const tableMarginTop = 0.15
   const userAreaPct = 0.20
 

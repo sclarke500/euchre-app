@@ -118,6 +118,13 @@ function computeLayout() {
   const result = computeTableLayout(rect.width, rect.height, props.layout, props.playerCount)
   seatData.value = result.seats
   lastLayoutResult.value = result
+
+  // Set CSS vars so .table-surface position stays in sync with JS layout
+  const { tableBounds } = result
+  const el = boardRef.value
+  el.style.setProperty('--table-left', `${(tableBounds.left / rect.width * 100).toFixed(2)}%`)
+  el.style.setProperty('--table-right', `${((rect.width - tableBounds.right) / rect.width * 100).toFixed(2)}%`)
+
   return result
 }
 
@@ -190,16 +197,12 @@ defineExpose({
     pointer-events: none;
   }
 
-  // Wide layout (5+ players) - rectangular
-  &.wide {
-    left: 10%;
-    right: 10%;
-  }
+  // Horizontal position driven by JS layout via CSS vars
+  left: var(--table-left, 15%);
+  right: var(--table-right, 15%);
 
   // Normal layout (4 players) - more square
   &.normal {
-    left: 30%;
-    right: 30%;
     border-radius: 30px;
   }
 }
