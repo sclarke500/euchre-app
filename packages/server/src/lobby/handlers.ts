@@ -3,6 +3,8 @@ import type {
   LobbyState,
   Table,
   TableSettings,
+  GameType,
+  ServerMessage,
 } from '@euchre/shared'
 import type { Game } from '../Game.js'
 import type { PresidentGame } from '../PresidentGame.js'
@@ -28,9 +30,9 @@ export interface LobbyDependencies {
   games: Map<string, Game>
   presidentGames: Map<string, PresidentGame>
   generateId: () => string
-  send: (ws: WebSocket, message: { type: string; [key: string]: unknown }) => void
-  broadcast: (message: { type: string; [key: string]: unknown }, excludeWs?: WebSocket) => void
-  broadcastToTable: (tableId: string, message: { type: string; [key: string]: unknown }, excludeWs?: WebSocket) => void
+  send: (ws: WebSocket, message: ServerMessage) => void
+  broadcast: (message: ServerMessage, excludeWs?: WebSocket) => void
+  broadcastToTable: (tableId: string, message: ServerMessage, excludeWs?: WebSocket) => void
 }
 
 export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {

@@ -127,7 +127,7 @@ export function parseClientMessage(data: unknown): {
 } {
   const result = clientMessageSchema.safeParse(data)
   if (!result.success) {
-    return { success: false, error: result.error.errors.map((e) => e.message).join('; ') }
+    return { success: false, error: result.error.errors.map((e: { message: string }) => e.message).join('; ') }
   }
   return { success: true, message: result.data as ClientMessage }
 }

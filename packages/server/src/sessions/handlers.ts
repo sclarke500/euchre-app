@@ -9,6 +9,7 @@ import type {
   PlayerRank,
   PlayType,
   Table,
+  ServerMessage,
 } from '@euchre/shared'
 import { Game } from '../Game.js'
 import { PresidentGame } from '../PresidentGame.js'
@@ -30,10 +31,10 @@ export interface SessionDependencies {
   clients: Map<WebSocket, ConnectedClient>
   tables: Map<string, Table>
   generateId: () => string
-  send: (ws: WebSocket, message: { type: string; [key: string]: unknown }) => void
-  sendToPlayer: (odusId: string, message: { type: string; [key: string]: unknown }) => void
-  broadcast: (message: { type: string; [key: string]: unknown }, excludeWs?: WebSocket) => void
-  broadcastToGame: (gameId: string, message: { type: string; [key: string]: unknown }) => void
+  send: (ws: WebSocket, message: ServerMessage) => void
+  sendToPlayer: (odusId: string, message: ServerMessage) => void
+  broadcast: (message: ServerMessage, excludeWs?: WebSocket) => void
+  broadcastToGame: (gameId: string, message: ServerMessage) => void
 }
 
 export function createSessionHandlers(deps: SessionDependencies): SessionHandlers {

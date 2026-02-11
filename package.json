@@ -17,5 +17,8 @@
     "build:shared": "npm run build -w @euchre/shared",
     "start:server": "npm run start -w @euchre/server",
     "preview": "npm run preview -w @euchre/client"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }
