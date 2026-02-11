@@ -342,7 +342,7 @@ onUnmounted(() => {
 .scoreboard {
   position: absolute;
   top: 10px;
-  right: 12px;
+  right: max(12px, env(safe-area-inset-right));
   z-index: 500;
   background: rgba(20, 20, 30, 0.88);
   border: 1px solid #444;
@@ -413,7 +413,7 @@ onUnmounted(() => {
 .leave-btn {
   position: absolute;
   top: 10px;
-  left: 10px;
+  left: max(10px, env(safe-area-inset-left));
   z-index: 500;
   width: 40px;
   height: 40px;
@@ -456,7 +456,7 @@ onUnmounted(() => {
 .action-panel {
   position: absolute;
   bottom: 12px;
-  right: 12px;
+  right: max(12px, env(safe-area-inset-right));
   z-index: 600;
   background: rgba(20, 20, 30, 0.92);
   border: 1px solid #444;

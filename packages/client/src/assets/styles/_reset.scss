@@ -17,8 +17,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  // Match app background so safe area padding doesn't show white gaps on Android
-  background: #0d2818;
+  // Match the board surface bg so no colored gaps show behind safe-area insets
+  background: #181820;
 }
 
 body {

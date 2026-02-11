@@ -318,8 +318,6 @@ function backToMenu() {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
 }
 
 // Portrait orientation overlay - only shows on mobile portrait

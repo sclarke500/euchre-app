@@ -119,9 +119,14 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
         break
 
       case 'your_turn':
+        console.log('[MP] your_turn received, actions:', message.validActions)
         isMyTurn.value = true
         updateIfChanged(validActions, message.validActions)
         updateIfChanged(validCards, message.validCards ?? [])
+        break
+
+      case 'error':
+        console.error('[MP] Server error:', message.message)
         break
 
       case 'bid_made':
@@ -188,8 +193,12 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
   // Actions - send messages to server
   function makeBid(action: BidAction, suit?: Suit, goingAlone?: boolean): void {
-    if (!isMyTurn.value) return
+    if (!isMyTurn.value) {
+      console.warn('[MP] makeBid called but isMyTurn=false, ignoring:', action)
+      return
+    }
 
+    console.log('[MP] Sending bid:', action, 'phase:', phase.value, 'currentPlayer:', currentPlayer.value, 'myId:', myPlayerId.value)
     websocket.send({
       type: 'make_bid',
       action,

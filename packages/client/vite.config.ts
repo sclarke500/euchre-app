@@ -25,8 +25,8 @@ export default defineConfig({
         description: 'Play Euchre card game against AI opponents',
         start_url: '/',
         scope: '/',
-        theme_color: '#1e4d2b',
-        background_color: '#0d2818',
+        theme_color: '#181820',
+        background_color: '#181820',
         display: 'standalone',
         orientation: 'landscape',
         icons: [

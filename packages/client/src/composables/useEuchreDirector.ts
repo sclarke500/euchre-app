@@ -912,10 +912,15 @@ export function useEuchreDirector(
         break
 
       case GamePhase.DealerDiscard: {
-        // Trump called via order-up — animate turn-up to dealer
+        // Order-up: animate turn-up card to dealer's hand.
+        // Don't sweep the deck yet — the dealer still needs to discard.
         isAnimating.value = true
         try {
-          await handleTrumpCalledMP()
+          await animateTurnUpToDealer(dealerSeat.value)
+          if (dealerSeat.value === 0) {
+            // Local user is dealer — sort hand so they can pick a discard
+            await sortUserHand(400)
+          }
         } finally {
           isAnimating.value = false
         }
@@ -924,13 +929,16 @@ export function useEuchreDirector(
 
       case GamePhase.Playing: {
         if (oldPhase === GamePhase.DealerDiscard) {
-          // AI dealer completed discard — animate discard + deck exit + hide
-          isAnimating.value = true
-          try {
-            const dealerSeatIdx = dealerSeat.value
-            if (dealerSeatIdx !== 0) {
-              const discardedId = findAIDiscardedCard(dealerSeatIdx)
-              const dealerHand = engine.getHands()[dealerSeatIdx]
+          // Dealer finished discarding — sweep deck and hide opponent hands.
+          // For local user dealer, handleDealerDiscard() already did the animation.
+          if (dealerSeat.value === 0) {
+            // Local user already animated everything via handleDealerDiscard()
+          } else {
+            // Remote dealer discarded — animate discard card + deck exit + hide
+            isAnimating.value = true
+            try {
+              const discardedId = findAIDiscardedCard(dealerSeat.value)
+              const dealerHand = engine.getHands()[dealerSeat.value]
               const deck = engine.getDeck()
 
               if (discardedId && dealerHand && deck) {
@@ -941,16 +949,17 @@ export function useEuchreDirector(
                 await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
                 await dealerHand.setMode('fanned', 250)
               }
+              await new Promise(r => setTimeout(r, 400))
+              await Promise.all([sortUserHand(400), animateDeckOffscreen()])
+              await hideOpponentHands()
+            } finally {
+              isAnimating.value = false
             }
-            await new Promise(r => setTimeout(r, 400))
-            await Promise.all([sortUserHand(400), animateDeckOffscreen()])
-            await hideOpponentHands()
-          } finally {
-            isAnimating.value = false
           }
           clearPlayerStatuses()
         } else if (oldPhase === GamePhase.BiddingRound1 || oldPhase === GamePhase.BiddingRound2) {
-          // Trump called — server skipped DealerDiscard (AI dealer handled it)
+          // Trump called — server skipped DealerDiscard (AI dealer auto-discarded)
+          // or it was a round 2 call (no pickup needed)
           isAnimating.value = true
           try {
             await handleTrumpCalledMP()
@@ -1044,11 +1053,18 @@ export function useEuchreDirector(
 
       case 'bid_made': {
         // Show bid status on avatar, then apply to store
+        const bidSeatIdx = playerIdToSeatIndex(msg.playerId)
         setPlayerStatus(
-          playerIdToSeatIndex(msg.playerId),
+          bidSeatIdx,
           formatBidForDisplay(msg.action, msg.suit, msg.goingAlone),
         )
         game.applyMessage!(msg)
+
+        // Pause after non-user bids so the avatar highlight and bid status
+        // are visible to the player (especially when queued during deal animation)
+        if (bidSeatIdx !== 0) {
+          await new Promise(r => setTimeout(r, 800))
+        }
         break
       }
 
