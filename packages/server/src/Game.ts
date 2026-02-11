@@ -82,6 +82,10 @@ export class Game {
     this.events = events
   }
 
+  getStateSeq(): number {
+    return this.stateSeq
+  }
+
   /**
    * Initialize the game with players
    */

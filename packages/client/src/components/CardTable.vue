@@ -233,7 +233,7 @@ defineExpose({
     font-weight: bold;
     color: #ccc;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
   }
 
   .player-name {
@@ -260,7 +260,7 @@ defineExpose({
     background: rgba(0, 0, 0, 0.6);
     border-radius: 4px;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity var(--anim-slow) ease;
     pointer-events: none;
 
     &.visible {
@@ -298,7 +298,7 @@ defineExpose({
   justify-content: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transform: translate(-50%, -50%);
-  transition: left 0.6s ease, top 0.6s ease;
+  transition: left var(--anim-slower) ease, top var(--anim-slower) ease;
 
   // On-table, 50px offset to each player's left (from their perspective)
   &.dealer-seat-0 { left: calc(50% - 50px); top: calc(100% - 20px); }

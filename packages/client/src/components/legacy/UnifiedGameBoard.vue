@@ -328,7 +328,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.2s;
+  transition: background var(--anim-fast), transform var(--anim-fast);
 
   &:hover {
     background: rgba(255, 255, 255, 0.25);

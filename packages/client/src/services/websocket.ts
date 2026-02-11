@@ -15,6 +15,7 @@ class WebSocketService {
   private reconnectDelay = 1000
   private url: string = ''
   private wasConnected = false
+  private clientSeq = 0
 
   get isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN
@@ -87,7 +88,14 @@ class WebSocketService {
 
   send(message: ClientMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message))
+      const payload = message.clientSeq === undefined
+        ? {
+            ...message,
+            clientSeq: this.clientSeq++,
+            commandId: message.commandId ?? generateCommandId(),
+          }
+        : message
+      this.ws.send(JSON.stringify(payload))
     } else {
       console.error('WebSocket not connected, cannot send message:', message.type)
     }
@@ -97,7 +105,6 @@ class WebSocketService {
     this.handlers.add(handler)
     return () => this.handlers.delete(handler)
   }
-
   onReconnect(handler: ReconnectHandler): () => void {
     this.reconnectHandlers.add(handler)
     return () => this.reconnectHandlers.delete(handler)
@@ -122,6 +129,13 @@ class WebSocketService {
       }
     }, delay)
   }
+}
+
+function generateCommandId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 // Singleton instance

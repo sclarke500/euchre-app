@@ -244,7 +244,7 @@ function checkForUpdates() {
   border-radius: 12px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--anim-fast) ease;
 
   &:hover {
     background: #f0f0f0;
@@ -317,7 +317,7 @@ function checkForUpdates() {
 // Fade transition
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--anim-fast) ease;
 }
 
 .fade-enter-from,

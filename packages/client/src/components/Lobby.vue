@@ -371,7 +371,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   background: rgba(255, 255, 255, 0.1);
   color: white;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all var(--anim-fast);
 
   &:hover {
     background: rgba(255, 255, 255, 0.2);

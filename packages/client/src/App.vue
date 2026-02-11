@@ -368,7 +368,7 @@ function backToMenu() {
     position: absolute;
     top: -10px;
     right: -30px;
-    animation: rotateHint 2s ease-in-out infinite;
+    animation: rotateHint var(--anim-pulse) ease-in-out infinite;
 
     svg {
       width: 40px;
@@ -510,7 +510,7 @@ function backToMenu() {
 // Slide up animation
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.3s ease;
+  transition: all var(--anim-medium) ease;
 }
 
 .slide-up-enter-from,

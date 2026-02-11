@@ -452,7 +452,7 @@ onMounted(async () => {
   gap: 5px;
   width: 110px;
   min-height: 110px;
-  transition: box-shadow 0.5s ease, border-color 0.5s ease, background 0.5s ease;
+  transition: box-shadow var(--anim-slow) ease, border-color var(--anim-slow) ease, background var(--anim-slow) ease;
 
   &.is-my-turn {
     border: 2px solid rgba(255, 215, 0, 0.5);
@@ -512,7 +512,7 @@ onMounted(async () => {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--anim-fast);
   text-align: center;
 
   &:hover:not(:disabled) {

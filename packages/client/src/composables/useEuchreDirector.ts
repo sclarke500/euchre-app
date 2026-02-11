@@ -13,14 +13,15 @@ import type { GameAdapter } from './useGameAdapter'
 import type { CardTableEngine } from './useCardTable'
 import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
 import type { SandboxCard, CardPosition } from '@/components/cardContainers'
+import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
 
 // ── Animation timing ─────────────────────────────────────────────────────────
 
-const DEAL_FLIGHT_MS = 350
-const DEAL_DELAY_MS = 60
-const CARD_PLAY_MS = 300
-const TRICK_SWEEP_MS = 400
-const TRICK_PAUSE_MS = 1200
+const DEAL_FLIGHT_MS = AnimationDurations.medium
+const DEAL_DELAY_MS = AnimationDelays.dealStagger
+const CARD_PLAY_MS = AnimationDurations.medium
+const TRICK_SWEEP_MS = AnimationDurations.medium
+const TRICK_PAUSE_MS = AnimationDurations.longPause
 
 // Short card label: "9♥", "A♣", "J♦", "K♠"
 const SUIT_SYM: Record<string, string> = {
@@ -35,11 +36,11 @@ function logTrickResult(cards: Array<{ playerId: number; card: Card }>, winnerId
   const winnerName = playerNames[winnerId] ?? 'P' + winnerId
   console.log(`[Trick] ${plays} → ${winnerName} wins`)
 }
-const DECK_SLIDE_MS = 500
-const CARD_FLIP_MS = 350
-const DECK_EXIT_MS = 800
-const DISCARD_MS = 400
-const HAND_COLLAPSE_MS = 500
+const DECK_SLIDE_MS = AnimationDurations.slow
+const CARD_FLIP_MS = AnimationDurations.medium
+const DECK_EXIT_MS = AnimationDurations.slower
+const DISCARD_MS = AnimationDurations.medium
+const HAND_COLLAPSE_MS = AnimationDurations.slow
 const HAND_COLLAPSE_SCALE = 0.05
 
 // ── Scale constants ──────────────────────────────────────────────────────────
@@ -297,7 +298,7 @@ export function useEuchreDirector(
   /** Wait until isAnimating becomes false (polls every 50ms). */
   async function waitForAnimations(): Promise<void> {
     while (isAnimating.value) {
-      await new Promise(r => setTimeout(r, 50))
+      await sleep(AnimationDelays.shortDelay)
     }
   }
 
@@ -426,10 +427,10 @@ export function useEuchreDirector(
         const hand = hands[seatIdx]
         if (!hand || !deck.cards.length) continue
         await engine.dealCard(deck, hand, DEAL_FLIGHT_MS)
-        await new Promise(r => setTimeout(r, DEAL_DELAY_MS))
+        await sleep(DEAL_DELAY_MS)
       }
     }
-    await new Promise(r => setTimeout(r, DEAL_FLIGHT_MS))
+    await sleep(DEAL_FLIGHT_MS)
 
     // Stage 1: Move user hand to bottom, enlarge, flip face-up
     const userHand = hands[0]
@@ -449,10 +450,10 @@ export function useEuchreDirector(
           cardRef.moveTo({
             ...cardRef.getPosition(),
             x: targetX, y: targetY, scale: targetScale, flipY: 180,
-          }, 500)
+          }, AnimationDurations.slow)
         }
       }
-      await new Promise(r => setTimeout(r, 550))
+      await sleep(AnimationDurations.slow + AnimationBuffers.settle)
     }
 
     // Stage 2: Shrink opponents + fan all hands
@@ -460,7 +461,7 @@ export function useEuchreDirector(
       const h = hands[i]
       if (h) h.scale = 0.65
     }
-    await Promise.all(hands.map(h => h.setMode('fanned', 400)))
+    await Promise.all(hands.map(h => h.setMode('fanned', AnimationDurations.medium)))
 
     // Stage 3: Slide kitty to center, flip turn-up
     if (deck.cards.length > 0) {
@@ -485,7 +486,7 @@ export function useEuchreDirector(
     }
 
     // Stage 4: Sort user hand
-    await sortUserHand(300)
+    await sortUserHand(AnimationDurations.medium)
 
     engine.refreshCards()
     isAnimating.value = false
@@ -493,7 +494,7 @@ export function useEuchreDirector(
 
   // ── Sort user hand ──────────────────────────────────────────────────────
 
-  async function sortUserHand(duration: number = 300) {
+  async function sortUserHand(duration: number = AnimationDurations.medium) {
     const userHand = engine.getHands()[0]
     if (!userHand || userHand.cards.length === 0) return
 
@@ -569,7 +570,7 @@ export function useEuchreDirector(
 
     await engine.moveCard(cardId, deck, dealerHand, targetPos, 400)
     await deck.repositionAll(0)
-    await dealerHand.setMode('fanned', 300)
+    await dealerHand.setMode('fanned', AnimationDurations.medium)
   }
 
   // ── Dealer discard ──────────────────────────────────────────────────────
@@ -592,12 +593,12 @@ export function useEuchreDirector(
     const deckPos = deck.getCardPosition(deck.cards.length - 1)
     await Promise.all([
       cardRef?.moveTo({ ...deckPos, flipY: 0, scale: 1.0, zIndex: 1000 }, DISCARD_MS),
-      userHand.setMode('fanned', 300),
+      userHand.setMode('fanned', AnimationDurations.medium),
     ])
 
     game.discardCard(cardId)
 
-    await new Promise(r => setTimeout(r, 400))
+    await sleep(AnimationDurations.medium + AnimationBuffers.settle)
     await Promise.all([animateDeckOffscreen(), hideOpponentHands()])
 
     isAnimating.value = false
@@ -684,7 +685,7 @@ export function useEuchreDirector(
 
     // Only re-fan visible hands
     if (!isHidden) {
-      await hand.setMode('fanned', 250)
+      await hand.setMode('fanned', AnimationDurations.fast)
     }
   }
 
@@ -807,7 +808,7 @@ export function useEuchreDirector(
         if (trickCards.length > 0 && trickWinner !== null) {
           logTrickResult(trickCards, trickWinner, game.players.value.map(p => p.name))
         }
-        await new Promise(r => setTimeout(r, TRICK_PAUSE_MS))
+        await sleep(TRICK_PAUSE_MS)
         const winnerId = game.lastTrickWinnerId.value
         if (winnerId !== null) await animateTrickSweep(winnerId)
         lastAnimatedTrickCardCount.value = 0
@@ -862,7 +863,7 @@ export function useEuchreDirector(
       await animateTurnUpToDealer(dealerSeatIdx)
 
       if (isDealerUser) {
-        await sortUserHand(400)
+        await sortUserHand(AnimationDurations.medium)
         // User still needs to discard — processing loop continues,
         // your_turn message will arrive next to enable the UI
       } else {
@@ -876,16 +877,16 @@ export function useEuchreDirector(
             zIndex: 1000,
           }
           await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
-          await dealerHand.setMode('fanned', 250)
+          await dealerHand.setMode('fanned', AnimationDurations.fast)
         }
 
-        await new Promise(r => setTimeout(r, 400))
-        await Promise.all([sortUserHand(400), animateDeckOffscreen()])
+          await sleep(AnimationDurations.medium + AnimationBuffers.settle)
+        await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
         await hideOpponentHands()
       }
     } else {
       // Round 2 call — no order-up, just deck exit + hide
-      await Promise.all([sortUserHand(400), animateDeckOffscreen()])
+      await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
       await hideOpponentHands()
     }
   }
@@ -919,7 +920,7 @@ export function useEuchreDirector(
           await animateTurnUpToDealer(dealerSeat.value)
           if (dealerSeat.value === 0) {
             // Local user is dealer — sort hand so they can pick a discard
-            await sortUserHand(400)
+            await sortUserHand(AnimationDurations.medium)
           }
         } finally {
           isAnimating.value = false
@@ -947,10 +948,10 @@ export function useEuchreDirector(
                   zIndex: 1000,
                 }
                 await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
-                await dealerHand.setMode('fanned', 250)
+                await dealerHand.setMode('fanned', AnimationDurations.fast)
               }
-              await new Promise(r => setTimeout(r, 400))
-              await Promise.all([sortUserHand(400), animateDeckOffscreen()])
+              await sleep(AnimationDurations.medium + AnimationBuffers.settle)
+              await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
               await hideOpponentHands()
             } finally {
               isAnimating.value = false
@@ -1063,7 +1064,7 @@ export function useEuchreDirector(
         // Pause after non-user bids so the avatar highlight and bid status
         // are visible to the player (especially when queued during deal animation)
         if (bidSeatIdx !== 0) {
-          await new Promise(r => setTimeout(r, 800))
+          await sleep(AnimationDurations.pause)
         }
         break
       }
@@ -1147,7 +1148,7 @@ export function useEuchreDirector(
           await animateTurnUpToDealer(dealerSeatIdx)
 
           if (isDealerUser) {
-            await sortUserHand(400)
+            await sortUserHand(AnimationDurations.medium)
             keepAnimating = true
           } else {
             const discardedId = findAIDiscardedCard(dealerSeatIdx)
@@ -1160,15 +1161,15 @@ export function useEuchreDirector(
                 zIndex: 1000,
               }
               await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
-              await dealerHand.setMode('fanned', 250)
+              await dealerHand.setMode('fanned', AnimationDurations.fast)
             }
 
-            await new Promise(r => setTimeout(r, 400))
-            await Promise.all([sortUserHand(400), animateDeckOffscreen()])
+            await sleep(AnimationDurations.medium + AnimationBuffers.settle)
+            await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
             await hideOpponentHands()
           }
         } else {
-          await Promise.all([sortUserHand(400), animateDeckOffscreen()])
+          await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
           await hideOpponentHands()
         }
       } finally {

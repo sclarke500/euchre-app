@@ -135,34 +135,34 @@ function getCardPosition(playerId: number): number {
 
   // Sweep towards winner at position 0 (bottom/human player)
   &.sweeping-away.sweep-to-0 .played-card {
-    &.position-0 { animation: sweep-0-to-0 0.4s ease-in forwards; }
-    &.position-1 { animation: sweep-1-to-0 0.4s ease-in forwards; }
-    &.position-2 { animation: sweep-2-to-0 0.4s ease-in forwards; }
-    &.position-3 { animation: sweep-3-to-0 0.4s ease-in forwards; }
+    &.position-0 { animation: sweep-0-to-0 var(--anim-medium) ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-0 var(--anim-medium) ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-0 var(--anim-medium) ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-0 var(--anim-medium) ease-in forwards; }
   }
 
   // Sweep towards winner at position 1 (left)
   &.sweeping-away.sweep-to-1 .played-card {
-    &.position-0 { animation: sweep-0-to-1 0.4s ease-in forwards; }
-    &.position-1 { animation: sweep-1-to-1 0.4s ease-in forwards; }
-    &.position-2 { animation: sweep-2-to-1 0.4s ease-in forwards; }
-    &.position-3 { animation: sweep-3-to-1 0.4s ease-in forwards; }
+    &.position-0 { animation: sweep-0-to-1 var(--anim-medium) ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-1 var(--anim-medium) ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-1 var(--anim-medium) ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-1 var(--anim-medium) ease-in forwards; }
   }
 
   // Sweep towards winner at position 2 (top/partner)
   &.sweeping-away.sweep-to-2 .played-card {
-    &.position-0 { animation: sweep-0-to-2 0.4s ease-in forwards; }
-    &.position-1 { animation: sweep-1-to-2 0.4s ease-in forwards; }
-    &.position-2 { animation: sweep-2-to-2 0.4s ease-in forwards; }
-    &.position-3 { animation: sweep-3-to-2 0.4s ease-in forwards; }
+    &.position-0 { animation: sweep-0-to-2 var(--anim-medium) ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-2 var(--anim-medium) ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-2 var(--anim-medium) ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-2 var(--anim-medium) ease-in forwards; }
   }
 
   // Sweep towards winner at position 3 (right)
   &.sweeping-away.sweep-to-3 .played-card {
-    &.position-0 { animation: sweep-0-to-3 0.4s ease-in forwards; }
-    &.position-1 { animation: sweep-1-to-3 0.4s ease-in forwards; }
-    &.position-2 { animation: sweep-2-to-3 0.4s ease-in forwards; }
-    &.position-3 { animation: sweep-3-to-3 0.4s ease-in forwards; }
+    &.position-0 { animation: sweep-0-to-3 var(--anim-medium) ease-in forwards; }
+    &.position-1 { animation: sweep-1-to-3 var(--anim-medium) ease-in forwards; }
+    &.position-2 { animation: sweep-2-to-3 var(--anim-medium) ease-in forwards; }
+    &.position-3 { animation: sweep-3-to-3 var(--anim-medium) ease-in forwards; }
   }
 }
 
@@ -174,7 +174,7 @@ function getCardPosition(playerId: number): number {
     bottom: -35px;
     left: 50%;
     transform: translateX(-50%);
-    animation: play-card-bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: play-card-bottom var(--anim-medium) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   // Left player
@@ -182,7 +182,7 @@ function getCardPosition(playerId: number): number {
     left: -40px;
     top: 50%;
     transform: translateY(-50%);
-    animation: play-card-left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: play-card-left var(--anim-medium) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   // Top player (partner)
@@ -190,7 +190,7 @@ function getCardPosition(playerId: number): number {
     top: -35px;
     left: 50%;
     transform: translateX(-50%);
-    animation: play-card-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: play-card-top var(--anim-medium) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   // Right player
@@ -198,7 +198,7 @@ function getCardPosition(playerId: number): number {
     right: -40px;
     top: 50%;
     transform: translateY(-50%);
-    animation: play-card-right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: play-card-right var(--anim-medium) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @media (max-height: 500px) {
@@ -221,11 +221,11 @@ function getCardPosition(playerId: number): number {
   perspective: 600px;
 
   &:not(.dismissing):not(.flipping) {
-    animation: turn-up-reveal 0.5s ease-out;
+    animation: turn-up-reveal var(--anim-slow) ease-out;
   }
 
   &.dismissing {
-    animation: kitty-slide-off 0.8s ease-in 0.6s forwards;
+    animation: kitty-slide-off var(--anim-slower) ease-in var(--anim-pause) forwards;
   }
 
   .card-flipper {
@@ -233,7 +233,7 @@ function getCardPosition(playerId: number): number {
     width: 70px;
     height: 105px;
     transform-style: preserve-3d;
-    transition: transform 0.6s ease-in-out;
+    transition: transform var(--anim-slower) ease-in-out;
 
     @media (max-height: 500px) {
       width: 52px;
@@ -297,7 +297,7 @@ function getCardPosition(playerId: number): number {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: bold;
-    animation: label-fade-in 0.4s ease-out 0.3s both;
+    animation: label-fade-in var(--anim-medium) ease-out var(--anim-delay-short) both;
 
     @media (max-height: 500px) {
       font-size: 0.625rem;

@@ -281,10 +281,10 @@ function handleCardClick(card: CardType) {
   flex-direction: column;
   align-items: center;
   gap: $spacing-xs;
-  animation: picked-up-appear 0.4s ease-out;
+  animation: picked-up-appear var(--anim-medium) ease-out;
 
   &.discarding {
-    animation: discard-fly-away 0.4s ease-in forwards;
+    animation: discard-fly-away var(--anim-medium) ease-in forwards;
     pointer-events: none;
   }
 
@@ -326,11 +326,11 @@ function handleCardClick(card: CardType) {
   }
 
   &.dealing {
-    animation: slide-up-hand 0.6s ease-out;
+    animation: slide-up-hand var(--anim-slower) ease-out;
   }
 
   &.sliding-away {
-    animation: slide-down-hand 0.5s ease-in forwards;
+    animation: slide-down-hand var(--anim-slow) ease-in forwards;
     pointer-events: none;
   }
 
@@ -342,10 +342,10 @@ function handleCardClick(card: CardType) {
 .card-wrapper {
   position: absolute;
   top: 0;
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  transition: transform var(--anim-medium) ease-out, opacity var(--anim-medium) ease-out;
 
   &.discarding {
-    animation: discard-fly-away 0.4s ease-in forwards;
+    animation: discard-fly-away var(--anim-medium) ease-in forwards;
     pointer-events: none;
   }
 

@@ -106,7 +106,7 @@ const trumpColor = computed(() => {
     background: rgba(255, 255, 255, 0.2);
     padding: 2px $spacing-xs;
     border-radius: 4px;
-    animation: fadeInOut 1s ease-in-out;
+    animation: fadeInOut var(--anim-long) ease-in-out;
   }
 }
 

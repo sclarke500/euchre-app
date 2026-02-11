@@ -127,6 +127,9 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
       case 'error':
         console.error('[MP] Server error:', message.message)
+        if (message.code === 'sync_required') {
+          requestStateResync()
+        }
         break
 
       case 'bid_made':
@@ -204,6 +207,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
       action,
       suit,
       goingAlone,
+      expectedStateSeq: lastStateSeq.value,
     })
 
     isMyTurn.value = false
@@ -218,6 +222,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     websocket.send({
       type: 'play_card',
       cardId,
+      expectedStateSeq: lastStateSeq.value,
     })
 
     isMyTurn.value = false
@@ -231,6 +236,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     websocket.send({
       type: 'discard_card',
       cardId,
+      expectedStateSeq: lastStateSeq.value,
     })
 
     isMyTurn.value = false

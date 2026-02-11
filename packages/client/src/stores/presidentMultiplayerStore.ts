@@ -173,6 +173,13 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
         // Player booted and replaced with AI
         console.log(`Player ${message.playerName} was booted`)
         break
+
+      case 'error':
+        console.error('[MP] Server error:', message.message)
+        if (message.code === 'sync_required') {
+          requestStateResync()
+        }
+        break
     }
   }
 
@@ -193,6 +200,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     websocket.send({
       type: 'president_play_cards',
       cardIds,
+      expectedStateSeq: lastStateSeq.value,
     })
 
     isMyTurn.value = false
@@ -206,6 +214,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
     websocket.send({
       type: 'president_pass',
+      expectedStateSeq: lastStateSeq.value,
     })
 
     isMyTurn.value = false
@@ -225,6 +234,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     websocket.send({
       type: 'president_give_cards',
       cardIds,
+      expectedStateSeq: lastStateSeq.value,
     })
 
     // Clear state - server will send exchange_info after processing

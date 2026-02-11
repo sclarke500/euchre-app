@@ -189,7 +189,7 @@ function handleSeatClick(seatIndex: number) {
   border-radius: 8px;
   padding: $spacing-sm;
   border: 2px solid transparent;
-  transition: all 0.2s;
+  transition: all var(--anim-fast);
   min-height: 80px;
 
   &.occupied {

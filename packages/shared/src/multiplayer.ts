@@ -47,7 +47,13 @@ export interface LobbyState {
 // Client -> Server Messages
 // ============================================
 
-export type ClientMessage =
+export interface ClientMessageMeta {
+  clientSeq?: number // Client-side sequence number (monotonic)
+  commandId?: string // Optional unique command ID for idempotency
+  expectedStateSeq?: number // Client's last known state sequence
+}
+
+export type ClientMessage = (
   | JoinLobbyMessage
   | CreateTableMessage
   | JoinTableMessage
@@ -63,6 +69,7 @@ export type ClientMessage =
   | PresidentPlayCardsMessage
   | PresidentPassMessage
   | PresidentGiveCardsMessage
+) & ClientMessageMeta
 
 export interface JoinLobbyMessage {
   type: 'join_lobby'

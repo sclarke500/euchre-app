@@ -58,7 +58,7 @@ const showDealerChip = computed(() => props.isDealer && !props.hideDealer)
   border-radius: 10px;
   padding: $spacing-xs $spacing-md;
   backdrop-filter: blur(10px);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--anim-fast) ease, box-shadow var(--anim-fast) ease;
 
   &.current-turn {
     border-color: #f4d03f;

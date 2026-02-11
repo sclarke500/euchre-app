@@ -195,16 +195,16 @@ defineExpose({
   &.selected {
     margin-top: -12px;
     filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.6));
-    transition: margin-top 0.15s ease, filter 0.15s ease;
+    transition: margin-top var(--anim-fast) ease, filter var(--anim-fast) ease;
   }
 
   &.highlighted {
     filter: drop-shadow(0 0 8px rgba(0, 200, 150, 0.7)) drop-shadow(0 0 16px rgba(0, 200, 150, 0.3));
-    transition: filter 0.4s ease;
+    transition: filter var(--anim-medium) ease;
   }
 
   &:not(.selected):not(.highlighted) {
-    transition: margin-top 0.15s ease;
+    transition: margin-top var(--anim-fast) ease;
   }
 }
 

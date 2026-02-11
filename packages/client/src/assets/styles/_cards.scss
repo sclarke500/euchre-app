@@ -32,9 +32,9 @@
 }
 
 .dealing {
-  animation: deal-card 0.3s ease-out;
+  animation: deal-card var(--anim-medium) ease-out;
 }
 
 .playing {
-  animation: play-card 0.2s ease-out;
+  animation: play-card var(--anim-fast) ease-out;
 }

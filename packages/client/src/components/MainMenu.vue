@@ -509,7 +509,7 @@ const gameTitle = computed(() => {
   border-radius: 12px;
   min-width: 320px;
   border: 2px solid transparent;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--anim-fast) ease, box-shadow var(--anim-fast) ease;
 
   @media (max-height: 500px) {
     padding: $spacing-md;
@@ -525,7 +525,7 @@ const gameTitle = computed(() => {
   &.highlight {
     border-color: #f4d03f;
     box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
-    animation: pulse-highlight 0.3s ease-in-out 2;
+    animation: pulse-highlight var(--anim-medium) ease-in-out 2;
   }
 
   label {

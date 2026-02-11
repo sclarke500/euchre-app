@@ -714,7 +714,7 @@ const showRoundComplete = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, transform 0.2s;
+  transition: background var(--anim-fast), transform var(--anim-fast);
 
   &:hover {
     background: rgba(255, 255, 255, 0.25);
@@ -756,7 +756,7 @@ const showRoundComplete = computed(() =>
   padding: $spacing-sm;
   border-radius: 8px;
   border: 2px solid transparent;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--anim-fast) ease, box-shadow var(--anim-fast) ease;
 
   @media (max-height: 500px) {
     padding: $spacing-xs;
@@ -869,7 +869,7 @@ const showRoundComplete = computed(() =>
   justify-content: center;
 
   &.sweeping {
-    animation: sweepRight 0.4s ease-out forwards;
+    animation: sweepRight var(--anim-medium) ease-out forwards;
   }
 }
 
@@ -920,7 +920,7 @@ const showRoundComplete = computed(() =>
 .hand-card {
   // margin-left is now applied dynamically via inline style for responsive fit
   transform: translateY(50px); // Push cards down, showing only top ~55px
-  transition: transform 0.15s ease-out, margin-left 0.15s ease-out;
+  transition: transform var(--anim-fast) ease-out, margin-left var(--anim-fast) ease-out;
 
   &.selectable {
     cursor: pointer;
@@ -1002,7 +1002,7 @@ const showRoundComplete = computed(() =>
   gap: $spacing-sm;
   z-index: 100;
   border: 2px solid transparent;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--anim-fast) ease, box-shadow var(--anim-fast) ease;
 
   @media (max-height: 500px) {
     width: 150px;
@@ -1085,7 +1085,7 @@ const showRoundComplete = computed(() =>
   font-size: 0.95rem;
   font-weight: bold;
   border-radius: 8px;
-  transition: all 0.2s;
+  transition: all var(--anim-fast);
   width: 100%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   border: none;
@@ -1169,7 +1169,7 @@ const showRoundComplete = computed(() =>
     font-size: 1rem;
     font-weight: bold;
     text-align: center;
-    animation: pulse-glow 2s ease-in-out infinite;
+    animation: pulse-glow var(--anim-pulse) ease-in-out infinite;
     
     @media (max-height: 500px) {
       font-size: 0.9rem;

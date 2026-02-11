@@ -308,7 +308,7 @@ onMounted(() => {
     color: #fff;
     font-size: 12px;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background var(--anim-fast);
 
     &:hover:not(:disabled) { background: #5a5a8a; }
     &:disabled { opacity: 0.4; cursor: not-allowed; }

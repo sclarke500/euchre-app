@@ -65,18 +65,18 @@ defineEmits<{
 
 // Transition styles
 .modal-enter-active {
-  transition: opacity 0.25s ease-out;
+  transition: opacity var(--anim-medium) ease-out;
 
   .modal-content {
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease-out;
+    transition: transform var(--anim-medium) cubic-bezier(0.34, 1.56, 0.64, 1), opacity var(--anim-medium) ease-out;
   }
 }
 
 .modal-leave-active {
-  transition: opacity 0.2s ease-in;
+  transition: opacity var(--anim-fast) ease-in;
 
   .modal-content {
-    transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+    transition: transform var(--anim-fast) ease-in, opacity var(--anim-fast) ease-in;
   }
 }
 

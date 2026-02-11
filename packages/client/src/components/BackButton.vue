@@ -30,7 +30,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;
+  transition: background var(--anim-fast) ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.25);

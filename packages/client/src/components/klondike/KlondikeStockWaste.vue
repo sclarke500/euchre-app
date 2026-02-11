@@ -157,6 +157,6 @@ function handleWasteClick() {
   position: absolute;
   top: 0;
   left: calc(var(--fan-index, 0) * 20px);
-  transition: left 0.2s ease-out;
+  transition: left var(--anim-fast) ease-out;
 }
 </style>

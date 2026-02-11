@@ -4,6 +4,17 @@
 @use './layout';
 @use './cards';
 
+:root {
+  --anim-fast: 0.22s;
+  --anim-medium: 0.35s;
+  --anim-slow: 0.52s;
+  --anim-slower: 0.7s;
+  --anim-pause: 0.9s;
+  --anim-long: 1.2s;
+  --anim-pulse: 2s;
+  --anim-delay-short: 0.3s;
+}
+
 // Global clanker class for AI player names and clanker text
 .clanker {
   font-family: 'Audiowide', cursive;

@@ -14,15 +14,16 @@ import type { PresidentGameAdapter } from './usePresidentGameAdapter'
 import type { CardTableEngine } from './useCardTable'
 import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
 import type { SandboxCard, CardPosition } from '@/components/cardContainers'
+import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
 
 // ── Animation timing ─────────────────────────────────────────────────────────
 
-const DEAL_FLIGHT_MS = 250
-const DEAL_STAGGER_MS = 60
-const CARD_PLAY_MS = 500
-const PILE_SWEEP_MS = 400
-const PILE_SWEEP_PAUSE_MS = 600
-const DECK_EXIT_MS = 600
+const DEAL_FLIGHT_MS = AnimationDurations.fast
+const DEAL_STAGGER_MS = AnimationDelays.dealStagger
+const CARD_PLAY_MS = AnimationDurations.slow
+const PILE_SWEEP_MS = AnimationDurations.medium
+const PILE_SWEEP_PAUSE_MS = AnimationDurations.slow
+const DECK_EXIT_MS = AnimationDurations.slow
 
 // ── Scale constants ──────────────────────────────────────────────────────────
 
@@ -197,7 +198,7 @@ export function usePresidentDirector(
       allFlights.push(engine.dealCard(deck, hand, DEAL_FLIGHT_MS))
       // Stagger every full round of players
       if ((i + 1) % count === 0) {
-        await new Promise(r => setTimeout(r, DEAL_STAGGER_MS))
+        await sleep(DEAL_STAGGER_MS)
       }
     }
     await Promise.all(allFlights)
@@ -221,10 +222,10 @@ export function usePresidentDirector(
           cardRef.moveTo({
             ...cardRef.getPosition(),
             x: targetX, y: targetY, scale: targetScale, flipY: 180,
-          }, 500)
+          }, AnimationDurations.slow)
         }
       }
-      await new Promise(r => setTimeout(r, 550))
+      await sleep(AnimationDurations.slow + AnimationBuffers.settle)
     }
 
     // Stage 2: Shrink opponents + fan all hands
@@ -232,10 +233,10 @@ export function usePresidentDirector(
       const h = hands[i]
       if (h) h.scale = 0.5
     }
-    await Promise.all(hands.map(h => h.setMode('fanned', 400)))
+    await Promise.all(hands.map(h => h.setMode('fanned', AnimationDurations.medium)))
 
     // Stage 3: Sort user hand
-    await sortUserHand(300)
+    await sortUserHand(AnimationDurations.medium)
 
     // Stage 4: Slide deck offscreen
     await animateDeckOffscreen()
@@ -249,7 +250,7 @@ export function usePresidentDirector(
 
   // ── Sort user hand ────────────────────────────────────────────────────
 
-  async function sortUserHand(duration: number = 300) {
+  async function sortUserHand(duration: number = AnimationDurations.medium) {
     const userHand = engine.getHands()[0]
     if (!userHand || userHand.cards.length === 0) return
 
@@ -273,7 +274,7 @@ export function usePresidentDirector(
 
   // ── Card exchange animation ──────────────────────────────────────────
 
-  const EXCHANGE_MS = 600
+  const EXCHANGE_MS = AnimationDurations.slow
 
   async function animateExchange(exchanges: PendingExchange[]) {
     const hands = engine.getHands()
@@ -343,9 +344,9 @@ export function usePresidentDirector(
 
     // Phase 4: Re-sort user hand and re-fan all affected hands
     const refanPromises: Promise<void>[] = []
-    refanPromises.push(sortUserHand(300))
+    refanPromises.push(sortUserHand(AnimationDurations.medium))
     for (let i = 1; i < hands.length; i++) {
-      if (hands[i]) refanPromises.push(hands[i]!.setMode('fanned', 300))
+      if (hands[i]) refanPromises.push(hands[i]!.setMode('fanned', AnimationDurations.medium))
     }
     await Promise.all(refanPromises)
   }
@@ -405,9 +406,9 @@ export function usePresidentDirector(
 
     // Re-sort user hand or re-fan opponent hand
     if (seatIndex === 0) {
-      await sortUserHand(250)
+      await sortUserHand(AnimationDurations.fast)
     } else {
-      await hand.setMode('fanned', 250)
+      await hand.setMode('fanned', AnimationDurations.fast)
     }
   }
 
@@ -421,7 +422,7 @@ export function usePresidentDirector(
     if (!tl) return
 
     // Brief pause to show the final state of the pile
-    await new Promise(r => setTimeout(r, PILE_SWEEP_PAUSE_MS))
+    await sleep(PILE_SWEEP_PAUSE_MS)
 
     // Sweep all cards to the right offscreen
     const offX = tl.tableBounds.right + 300

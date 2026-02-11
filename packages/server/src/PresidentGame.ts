@@ -90,6 +90,10 @@ export class PresidentGame {
     this.superTwosMode = superTwosMode
   }
 
+  getStateSeq(): number {
+    return this.stateSeq
+  }
+
   /**
    * Initialize the game with players
    */

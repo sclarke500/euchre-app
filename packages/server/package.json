@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@euchre/shared": "*",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.10.4",
