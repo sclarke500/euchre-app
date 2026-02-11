@@ -6,6 +6,16 @@ import type {
 type MessageHandler = (message: ServerMessage) => void
 type ReconnectHandler = () => void
 
+type LoggedMessage<T> = {
+  ts: number
+  message: T
+}
+
+function pushRing<T>(arr: Array<LoggedMessage<T>>, item: LoggedMessage<T>, max: number) {
+  arr.push(item)
+  if (arr.length > max) arr.splice(0, arr.length - max)
+}
+
 class WebSocketService {
   private ws: WebSocket | null = null
   private handlers: Set<MessageHandler> = new Set()
@@ -16,6 +26,19 @@ class WebSocketService {
   private url: string = ''
   private wasConnected = false
   private clientSeq = 0
+
+  // Debug history (for bug reports)
+  private readonly maxHistory = 250
+  private readonly inboundHistory: Array<LoggedMessage<ServerMessage>> = []
+  private readonly outboundHistory: Array<LoggedMessage<ClientMessage>> = []
+
+  getRecentInbound(): Array<LoggedMessage<ServerMessage>> {
+    return [...this.inboundHistory]
+  }
+
+  getRecentOutbound(): Array<LoggedMessage<ClientMessage>> {
+    return [...this.outboundHistory]
+  }
 
   get isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN
@@ -57,6 +80,7 @@ class WebSocketService {
         this.ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data) as ServerMessage
+            pushRing(this.inboundHistory, { ts: Date.now(), message }, this.maxHistory)
             this.handlers.forEach((handler) => handler(message))
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error)
@@ -95,6 +119,8 @@ class WebSocketService {
             commandId: message.commandId ?? generateCommandId(),
           }
         : message
+
+      pushRing(this.outboundHistory, { ts: Date.now(), message: payload }, this.maxHistory)
       this.ws.send(JSON.stringify(payload))
     } else {
       console.error('WebSocket not connected, cannot send message:', message.type)

@@ -44,6 +44,15 @@
       </svg>
     </button>
 
+    <!-- Bug report / diagnostics -->
+    <button class="bug-btn" title="Report a bug" @click="openBugReport">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      </svg>
+    </button>
+
     <!-- Game Over overlay -->
     <div v-if="game.gameOver.value" class="game-over-overlay">
       <div class="game-over-panel">
@@ -80,11 +89,6 @@
       <div class="panel-name">
         <span v-if="userTrumpInfo" class="panel-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
         {{ userName }}
-      </div>
-
-      <div class="panel-tools">
-        <button v-if="mode === 'multiplayer'" class="tool-btn" @click="handleResync">Resync</button>
-        <button class="tool-btn" @click="openBugReport">Report</button>
       </div>
 
       <!-- Round 1: Pass or Order Up -->
@@ -167,6 +171,7 @@ import { useEuchreDirector } from '@/composables/useEuchreDirector'
 import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { useGameStore } from '@/stores/gameStore'
+import { websocket } from '@/services/websocket'
 
 const SUIT_SYMBOLS: Record<string, string> = {
   hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠',
@@ -264,6 +269,12 @@ function buildBugReportPayload() {
   const queueLen = game.getQueueLength?.() ?? null
   const rawMpState = props.mode === 'multiplayer' ? (mpStore?.gameState ?? null) : null
 
+  const wsInbound = websocket.getRecentInbound?.() ?? []
+  const wsOutbound = websocket.getRecentOutbound?.() ?? []
+  const mpRecentStates = props.mode === 'multiplayer'
+    ? (mpStore?.recentStateSummaries ?? [])
+    : []
+
   return {
     createdAt: now,
     description: bugDescription.value.trim(),
@@ -291,8 +302,13 @@ function buildBugReportPayload() {
           queueLength: queueLen,
           stateSeq: rawMpState?.stateSeq ?? null,
           timedOutPlayer: rawMpState?.timedOutPlayer ?? null,
+          recentStateSummaries: mpRecentStates,
         }
       : null,
+    websocket: {
+      inbound: wsInbound,
+      outbound: wsOutbound,
+    },
     rawState: rawMpState,
   }
 }
@@ -540,6 +556,34 @@ onUnmounted(() => {
   }
 }
 
+.bug-btn {
+  position: absolute;
+  top: 10px;
+  left: calc(max(10px, env(safe-area-inset-left)) + 48px);
+  z-index: 500;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  background: rgba(30, 30, 40, 0.85);
+  color: rgba(255, 215, 0, 0.95);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+
+  &:hover {
+    background: rgba(45, 45, 60, 0.9);
+    border-color: rgba(255, 215, 0, 0.55);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 .info-chip {
   width: 22px;
   height: 22px;
@@ -585,28 +629,6 @@ onUnmounted(() => {
   }
 }
 
-.panel-tools {
-  display: flex;
-  gap: 8px;
-}
-
-.tool-btn {
-  flex: 1;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #bbb;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background var(--anim-fast), color var(--anim-fast);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-  }
-}
 
 .bug-modal {
   width: min(520px, 92vw);

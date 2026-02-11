@@ -10,7 +10,7 @@ import type {
   ServerMessage,
   BidAction,
 } from '@euchre/shared'
-import { GamePhase } from '@euchre/shared'
+import { GamePhase, getLegalPlays, BidAction as BidActionEnum } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
 
 export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
@@ -27,6 +27,42 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
   // Sync tracking
   const lastStateSeq = ref<number>(0)
+
+  // ── Debug history (previous states) ─────────────────────────────────────
+
+  type GameStateSummary = {
+    ts: number
+    stateSeq: number
+    phase: ClientGameState['phase']
+    biddingRound: ClientGameState['biddingRound']
+    dealer: number
+    currentPlayer: number
+    trump: ClientGameState['trump']
+    trumpCalledBy: ClientGameState['trumpCalledBy']
+    goingAlone: boolean
+    trickCount: number
+    currentTrickCount: number
+  }
+
+  const recentStateSummaries = ref<GameStateSummary[]>([])
+  const MAX_STATE_SUMMARIES = 40
+
+  function pushStateSummary(state: ClientGameState) {
+    const summary: GameStateSummary = {
+      ts: Date.now(),
+      stateSeq: state.stateSeq,
+      phase: state.phase,
+      biddingRound: state.biddingRound,
+      dealer: state.dealer,
+      currentPlayer: state.currentPlayer,
+      trump: state.trump,
+      trumpCalledBy: state.trumpCalledBy,
+      goingAlone: state.goingAlone,
+      trickCount: state.completedTricks,
+      currentTrickCount: state.currentTrick?.cards?.length ?? 0,
+    }
+    recentStateSummaries.value = [...recentStateSummaries.value, summary].slice(-MAX_STATE_SUMMARIES)
+  }
 
   // ── Message Queue ─────────────────────────────────────────────────────────
   // When queue mode is enabled, messages are buffered instead of applied
@@ -129,6 +165,57 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
         }
         gameState.value = message.state
         lastStateSeq.value = message.state.stateSeq
+        pushStateSummary(message.state)
+
+        // Fallback: if a `your_turn` message was missed (can happen during view transitions),
+        // infer turn enablement from game_state so the user isn't hard-stuck.
+        // We only fill validActions/validCards when currently empty so the server's
+        // authoritative `your_turn` can still override cleanly when it arrives.
+        if (myPlayerId.value >= 0 && message.state.currentPlayer === myPlayerId.value) {
+          const phaseNow = message.state.phase
+          const shouldEnableTurn =
+            phaseNow === GamePhase.BiddingRound1 ||
+            phaseNow === GamePhase.BiddingRound2 ||
+            phaseNow === GamePhase.Playing ||
+            phaseNow === GamePhase.DealerDiscard
+
+          if (shouldEnableTurn) {
+            isMyTurn.value = true
+
+            if (validActions.value.length === 0) {
+              if (phaseNow === GamePhase.BiddingRound1) {
+                validActions.value = myPlayerId.value === message.state.dealer
+                  ? [BidActionEnum.PickUp, BidActionEnum.Pass]
+                  : [BidActionEnum.OrderUp, BidActionEnum.Pass]
+              } else if (phaseNow === GamePhase.BiddingRound2) {
+                // Without server passCount we can't know "stick the dealer" moment;
+                // allow pass and let server validate.
+                validActions.value = [BidActionEnum.CallTrump, BidActionEnum.Pass]
+              } else if (phaseNow === GamePhase.DealerDiscard) {
+                validActions.value = ['discard']
+              } else if (phaseNow === GamePhase.Playing) {
+                validActions.value = ['play_card']
+              }
+            }
+
+            if (validCards.value.length === 0) {
+              if (phaseNow === GamePhase.DealerDiscard) {
+                validCards.value = (myHand.value ?? []).map(c => c.id)
+              } else if (phaseNow === GamePhase.Playing) {
+                const trumpSuit = message.state.trump
+                const trick = message.state.currentTrick
+                if (trumpSuit && trick && myHand.value) {
+                  try {
+                    validCards.value = getLegalPlays(myHand.value, trick, trumpSuit).map(c => c.id)
+                  } catch {
+                    // If anything is inconsistent, allow clicks and let server validate.
+                    validCards.value = []
+                  }
+                }
+              }
+            }
+          }
+        }
         break
 
       case 'your_turn':
@@ -142,6 +229,43 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
         console.error('[MP] Server error:', message.message)
         if (message.code === 'sync_required') {
           requestStateResync()
+        } else {
+          // If the server rejected an action but state indicates it's still our turn,
+          // restore local turn state so the UI doesn't get stuck.
+          const state = gameState.value
+          if (state && myPlayerId.value >= 0 && state.currentPlayer === myPlayerId.value) {
+            isMyTurn.value = true
+
+            if (validActions.value.length === 0) {
+              if (state.phase === GamePhase.BiddingRound1) {
+                validActions.value = myPlayerId.value === state.dealer
+                  ? [BidActionEnum.PickUp, BidActionEnum.Pass]
+                  : [BidActionEnum.OrderUp, BidActionEnum.Pass]
+              } else if (state.phase === GamePhase.BiddingRound2) {
+                validActions.value = [BidActionEnum.CallTrump, BidActionEnum.Pass]
+              } else if (state.phase === GamePhase.DealerDiscard) {
+                validActions.value = ['discard']
+              } else if (state.phase === GamePhase.Playing) {
+                validActions.value = ['play_card']
+              }
+            }
+
+            if (validCards.value.length === 0) {
+              if (state.phase === GamePhase.DealerDiscard) {
+                validCards.value = (myHand.value ?? []).map(c => c.id)
+              } else if (state.phase === GamePhase.Playing) {
+                const trumpSuit = state.trump
+                const trick = state.currentTrick
+                if (trumpSuit && trick && myHand.value) {
+                  try {
+                    validCards.value = getLegalPlays(myHand.value, trick, trumpSuit).map(c => c.id)
+                  } catch {
+                    validCards.value = []
+                  }
+                }
+              }
+            }
+          }
         }
         break
 
@@ -214,6 +338,13 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
       return
     }
 
+    if (!websocket.isConnected) {
+      console.error('[MP] WebSocket not connected; cannot send bid:', action)
+      // Keep local turn enabled so the user can retry.
+      isMyTurn.value = true
+      return
+    }
+
     console.log('[MP] Sending bid:', action, 'phase:', phase.value, 'currentPlayer:', currentPlayer.value, 'myId:', myPlayerId.value)
     websocket.send({
       type: 'make_bid',
@@ -232,6 +363,13 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     if (!isMyTurn.value) return
     if (validCards.value.length > 0 && !validCards.value.includes(cardId)) return
 
+    if (!websocket.isConnected) {
+      console.error('[MP] WebSocket not connected; cannot play card:', cardId)
+      // Keep local turn enabled so the user can retry.
+      isMyTurn.value = true
+      return
+    }
+
     websocket.send({
       type: 'play_card',
       cardId,
@@ -245,6 +383,12 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
   function discardCard(cardId: string): void {
     if (!isMyTurn.value) return
+
+    if (!websocket.isConnected) {
+      console.error('[MP] WebSocket not connected; cannot discard card:', cardId)
+      isMyTurn.value = true
+      return
+    }
 
     websocket.send({
       type: 'discard_card',
@@ -324,6 +468,9 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     initialize,
     cleanup,
     requestStateResync,
+
+    // Debug
+    recentStateSummaries,
 
     // Queue control (for director)
     enableQueueMode,
