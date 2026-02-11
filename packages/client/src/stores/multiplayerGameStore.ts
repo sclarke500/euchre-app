@@ -95,6 +95,19 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   // WebSocket message entry point — buffers in queue mode, applies directly otherwise
   function handleMessage(message: ServerMessage): void {
     if (queueMode) {
+      // Keep state sequence tracking up to date even while buffering messages.
+      // Otherwise, outgoing actions can include a stale expectedStateSeq and be rejected,
+      // which looks like a "hang" after the user acts.
+      if (message.type === 'game_state') {
+        lastStateSeq.value = message.state.stateSeq
+      }
+
+      // If the server tells us we're out of sync, request a resync immediately.
+      // (The error message itself is still queued so UI can show it if needed.)
+      if (message.type === 'error' && message.code === 'sync_required') {
+        requestStateResync()
+      }
+
       // All messages queued — even turn_reminder. Bypassing the queue would
       // set isMyTurn=true before earlier messages (like AI bids) are processed,
       // causing premature "your turn" UI while the queue is still catching up.

@@ -82,6 +82,11 @@
         {{ userName }}
       </div>
 
+      <div class="panel-tools">
+        <button v-if="mode === 'multiplayer'" class="tool-btn" @click="handleResync">Resync</button>
+        <button class="tool-btn" @click="openBugReport">Report</button>
+      </div>
+
       <!-- Round 1: Pass or Order Up -->
       <template v-if="showBidding && game.biddingRound.value === 1">
         <button class="action-btn primary" @click="handleOrderUp">
@@ -126,12 +131,36 @@
       </template>
     </div>
   </CardTable>
+
+  <Modal :show="showBugReport" @close="showBugReport = false">
+    <div class="bug-modal">
+      <div class="bug-title">Bug Report</div>
+      <div class="bug-subtitle">Copies a snapshot you can paste into a GitHub issue or DM.</div>
+
+      <textarea
+        v-model="bugDescription"
+        class="bug-textarea"
+        rows="4"
+        placeholder="What happened? What did you expect? Rough steps to reproduce?"
+      />
+
+      <div class="bug-actions">
+        <button class="action-btn" @click="copyBugReport">Copy report</button>
+        <button class="action-btn" @click="downloadBugReport">Download JSON</button>
+        <button v-if="mode === 'multiplayer'" class="action-btn" @click="handleResync">Resync state</button>
+        <button class="action-btn primary" @click="showBugReport = false">Close</button>
+      </div>
+
+      <div v-if="copyStatus" class="bug-status">{{ copyStatus }}</div>
+    </div>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { GamePhase, BidAction, Suit, type TeamScore } from '@euchre/shared'
 import CardTable from './CardTable.vue'
+import Modal from './Modal.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useGameAdapter } from '@/composables/useGameAdapter'
 import { useEuchreDirector } from '@/composables/useEuchreDirector'
@@ -215,6 +244,82 @@ function handlePass() {
   director.setPlayerStatus(0, 'Pass')
   game.makeBid(BidAction.Pass)
   goAlone.value = false
+}
+
+function handleResync() {
+  game.requestResync?.()
+}
+
+const showBugReport = ref(false)
+const bugDescription = ref('')
+const copyStatus = ref<string>('')
+
+function openBugReport() {
+  copyStatus.value = ''
+  showBugReport.value = true
+}
+
+function buildBugReportPayload() {
+  const now = new Date().toISOString()
+  const queueLen = game.getQueueLength?.() ?? null
+  const rawMpState = props.mode === 'multiplayer' ? (mpStore?.gameState ?? null) : null
+
+  return {
+    createdAt: now,
+    description: bugDescription.value.trim(),
+    mode: props.mode,
+    ui: {
+      isAnimating: director.isAnimating.value,
+      showBidding: showBidding.value,
+      goAlone: goAlone.value,
+    },
+    adapter: {
+      phase: game.phase.value,
+      biddingRound: game.biddingRound.value,
+      dealer: game.dealer.value,
+      currentPlayer: game.currentPlayer.value,
+      myPlayerId: game.myPlayerId.value,
+      myTeamId: game.myTeamId.value,
+      isMyTurn: game.isMyTurn.value,
+      validCards: game.validCards.value,
+      lastBidAction: game.lastBidAction.value,
+      lastTrickWinnerId: game.lastTrickWinnerId.value,
+      tricksTaken: game.tricksTaken.value,
+    },
+    multiplayer: props.mode === 'multiplayer'
+      ? {
+          queueLength: queueLen,
+          stateSeq: rawMpState?.stateSeq ?? null,
+          timedOutPlayer: rawMpState?.timedOutPlayer ?? null,
+        }
+      : null,
+    rawState: rawMpState,
+  }
+}
+
+async function copyBugReport() {
+  try {
+    const payload = buildBugReportPayload()
+    await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+    copyStatus.value = 'Copied to clipboard.'
+    setTimeout(() => { copyStatus.value = '' }, 1500)
+  } catch (err) {
+    console.error('Failed to copy bug report:', err)
+    copyStatus.value = 'Copy failed (see console).'
+  }
+}
+
+function downloadBugReport() {
+  const payload = buildBugReportPayload()
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `euchre-bug-report-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
 
 function handleOrderUp() {
@@ -478,6 +583,69 @@ onUnmounted(() => {
       0 0 12px rgba(255, 215, 0, 0.2),
       0 0 30px rgba(255, 215, 0, 0.08);
   }
+}
+
+.panel-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.tool-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #bbb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--anim-fast), color var(--anim-fast);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+}
+
+.bug-modal {
+  width: min(520px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.bug-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222;
+}
+
+.bug-subtitle {
+  font-size: 12px;
+  color: rgba(20, 20, 20, 0.75);
+}
+
+.bug-textarea {
+  width: 100%;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.bug-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bug-status {
+  font-size: 12px;
+  color: rgba(20, 20, 20, 0.7);
 }
 
 .panel-name {

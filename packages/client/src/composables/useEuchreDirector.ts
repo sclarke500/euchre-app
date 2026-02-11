@@ -257,24 +257,24 @@ export function useEuchreDirector(
     let x: number, y: number, rotation: number
 
     switch (seat) {
-      case 0: // bottom (user) — left of center, near bottom edge, spread left
+      case 0: // bottom (user) — left of player (table left), near bottom edge, spread left
         x = tableBounds.centerX - 60 - trickNumber * gap
         y = tableBounds.bottom - inset
         rotation = 0
         break
-      case 1: // left — further left, spread downward
-        x = tableBounds.left - 40
-        y = tableBounds.centerY + trickNumber * gap
+      case 1: // left — left of player (upward), spread upward
+        x = tableBounds.left + inset
+        y = tableBounds.centerY - 40 - trickNumber * gap
         rotation = 90
         break
-      case 2: // top — left of center, near top edge, spread left
-        x = tableBounds.centerX - 60 - trickNumber * gap
+      case 2: // top — left of player (table right from their perspective), near top edge, spread right
+        x = tableBounds.centerX + 60 + trickNumber * gap
         y = tableBounds.top + inset
         rotation = 0
         break
-      case 3: // right — left of right edge, spread upward
-        x = tableBounds.right - inset - 40
-        y = tableBounds.centerY - trickNumber * gap
+      case 3: // right — left of player (downward), spread downward
+        x = tableBounds.right - inset
+        y = tableBounds.centerY + 40 + trickNumber * gap
         rotation = 90
         break
       default:
