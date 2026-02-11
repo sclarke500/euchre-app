@@ -456,13 +456,13 @@ onUnmounted(() => {
   background: rgba(20, 20, 30, 0.92);
   border: 1px solid #444;
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 5px;
-  width: 100px;
+  gap: 6px;
+  width: 120px;
   min-height: 135px;
   transition: box-shadow 0.5s ease, border-color 0.5s ease, background 0.5s ease;
 
@@ -476,7 +476,7 @@ onUnmounted(() => {
 }
 
 .panel-name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #eee;
   text-align: center;
@@ -492,18 +492,18 @@ onUnmounted(() => {
 }
 
 .panel-message {
-  font-size: 11px;
+  font-size: 12px;
   color: #aaa;
   text-align: center;
 }
 
 .action-btn {
-  padding: 5px 8px;
+  padding: 10px 8px;
   border-radius: 6px;
   border: 1px solid #555;
   background: rgba(50, 50, 65, 0.9);
   color: #ccc;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
@@ -525,8 +525,8 @@ onUnmounted(() => {
   }
 
   &.suit-btn {
-    font-size: 18px;
-    padding: 4px 0;
+    font-size: 22px;
+    padding: 8px 0;
     flex: 1;
     min-width: 0;
     background: rgba(240, 240, 245, 0.92);
@@ -547,8 +547,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 10px;
+  gap: 6px;
+  font-size: 12px;
   color: #999;
   cursor: pointer;
   user-select: none;
