@@ -113,9 +113,8 @@ export function useEuchreDirector(
   const lastAnimatedPhase = ref<GamePhase | null>(null)
   const isAnimating = ref(false)
 
-  // Track tricks won per team and which seat owns each team's trick pile
-  const tricksWonByTeam = ref<[number, number]>([0, 0])
-  const teamPileOwnerSeat = ref<[number, number]>([-1, -1])
+  // Track tricks won per player
+  const tricksWonByPlayer = ref<Record<number, number>>({ 0: 0, 1: 0, 2: 0, 3: 0 })
 
   // Hidden hands — opponent hands collapsed into avatars
   const hiddenHandOrigins = new Map<number, { x: number; y: number }>()
@@ -245,35 +244,36 @@ export function useEuchreDirector(
    * horizontal orientation (landscape cards) for left/right seats.
    * Successive tricks spread along the table edge away from center.
    */
-  function getTeamTrickPosition(
-    ownerSeat: number,
+  function getPlayerTrickPosition(
+    playerId: number,
     trickNumber: number,
     cardIndex: number,
     tl: TableLayoutResult
   ): CardPosition {
+    const seat = playerIdToSeatIndex(playerId)
     const { tableBounds } = tl
     const inset = 20  // how far inside the table edge
     const gap = 12    // spacing between successive tricks
     let x: number, y: number, rotation: number
 
-    switch (ownerSeat) {
-      case 0: // bottom (user) — centered horizontally, near bottom edge, spread right
-        x = tableBounds.centerX + trickNumber * gap
+    switch (seat) {
+      case 0: // bottom (user) — left of center, near bottom edge, spread left
+        x = tableBounds.centerX - 60 - trickNumber * gap
         y = tableBounds.bottom - inset
         rotation = 0
         break
-      case 1: // left — centered vertically at left edge, spread downward
-        x = tableBounds.left + inset
+      case 1: // left — further left, spread downward
+        x = tableBounds.left - 40
         y = tableBounds.centerY + trickNumber * gap
         rotation = 90
         break
-      case 2: // top — centered horizontally, near top edge, spread left
-        x = tableBounds.centerX - trickNumber * gap
+      case 2: // top — left of center, near top edge, spread left
+        x = tableBounds.centerX - 60 - trickNumber * gap
         y = tableBounds.top + inset
         rotation = 0
         break
-      case 3: // right — centered vertically at right edge, spread upward
-        x = tableBounds.right - inset
+      case 3: // right — left of right edge, spread upward
+        x = tableBounds.right - inset - 40
         y = tableBounds.centerY - trickNumber * gap
         rotation = 90
         break
@@ -354,17 +354,17 @@ export function useEuchreDirector(
     if (!tl) return
 
     engine.reset()
-    tricksWonByTeam.value = [0, 0]
-    teamPileOwnerSeat.value = [-1, -1]
+    tricksWonByPlayer.value = { 0: 0, 1: 0, 2: 0, 3: 0 }
     hiddenHandOrigins.clear()
 
     const dealerIdx = dealerSeat.value >= 0 ? dealerSeat.value : 0
     engine.createDeck(getDealerDeckPosition(dealerIdx, tl), CENTER_CARD_SCALE)
     engine.createPile('trick', tl.tableCenter, TRICK_PLAY_SCALE)
 
-    // Create trick-won piles for each team (positioned when first trick is won)
-    engine.createPile('tricks-won-team-0', tl.tableCenter, TRICK_WON_SCALE)
-    engine.createPile('tricks-won-team-1', tl.tableCenter, TRICK_WON_SCALE)
+    // Create trick-won piles for each player (positioned when tricks are won)
+    for (let i = 0; i < 4; i++) {
+      engine.createPile(`tricks-won-player-${i}`, tl.tableCenter, TRICK_WON_SCALE)
+    }
 
     for (let i = 0; i < tl.seats.length; i++) {
       const seat = tl.seats[i]!
@@ -698,28 +698,18 @@ export function useEuchreDirector(
     const tl = getTableLayout()
     if (!tl) return
 
-    // Team 0 = players 0,2; Team 1 = players 1,3
-    const teamId = winnerId % 2 as 0 | 1
-    const winnerSeat = playerIdToSeatIndex(winnerId)
-
-    // First trick for this team → assign pile owner to this seat
-    if (teamPileOwnerSeat.value[teamId] < 0) {
-      teamPileOwnerSeat.value[teamId] = winnerSeat
-    }
-
-    const ownerSeat = teamPileOwnerSeat.value[teamId]
-    const wonPile = engine.getPiles().find(p => p.id === `tricks-won-team-${teamId}`)
+    const wonPile = engine.getPiles().find(p => p.id === `tricks-won-player-${winnerId}`)
     if (!wonPile) return
 
-    const trickNum = tricksWonByTeam.value[teamId]
+    const trickNum = tricksWonByPlayer.value[winnerId] ?? 0
 
-    // Animate each trick card to the team's won-stack position
+    // Animate each trick card to the player's won-stack position
     const cardsToMove = [...trickPile.cards]
     await Promise.all(cardsToMove.map((m, i) => {
       const ref = engine.getCardRef(m.card.id)
       if (!ref) return Promise.resolve()
 
-      const targetPos = getTeamTrickPosition(ownerSeat, trickNum, i, tl)
+      const targetPos = getPlayerTrickPosition(winnerId, trickNum, i, tl)
       wonPile.setCardTargetPosition(m.card.id, targetPos)
 
       return ref.moveTo(targetPos, TRICK_SWEEP_MS)
@@ -733,7 +723,7 @@ export function useEuchreDirector(
     }
 
     trickPile.clear()
-    tricksWonByTeam.value[teamId] = trickNum + 1
+    tricksWonByPlayer.value[winnerId] = trickNum + 1
     engine.refreshCards()
   }
 
@@ -743,12 +733,8 @@ export function useEuchreDirector(
     const tl = getTableLayout()
     if (!tl) return
 
-    const team0Pile = engine.getPiles().find(p => p.id === 'tricks-won-team-0')
-    const team1Pile = engine.getPiles().find(p => p.id === 'tricks-won-team-1')
-    const allCards = [
-      ...(team0Pile?.cards ?? []),
-      ...(team1Pile?.cards ?? []),
-    ]
+    const playerPiles = [0, 1, 2, 3].map(pid => engine.getPiles().find(p => p.id === `tricks-won-player-${pid}`))
+    const allCards = playerPiles.flatMap(pile => pile?.cards ?? [])
     if (allCards.length === 0) return
 
     // Determine off-screen target based on next dealer's side
