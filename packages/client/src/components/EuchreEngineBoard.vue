@@ -23,12 +23,12 @@
       <div class="score-row">
         <span class="score-label">Us</span>
         <span class="score-value">{{ teamScore(0) }}</span>
-        <span class="score-tricks">{{ game.tricksTaken.value[0] }}</span>
+        <span class="score-tricks">{{ game.tricksTaken.value[myTeam] }}</span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
         <span class="score-value">{{ teamScore(1) }}</span>
-        <span class="score-tricks">{{ game.tricksTaken.value[1] }}</span>
+        <span class="score-tricks">{{ game.tricksTaken.value[opponentTeam] }}</span>
       </div>
       <div class="score-header">
         <span></span>
@@ -172,7 +172,12 @@ const userTrumpInfo = computed(() => {
   return { symbol: info.trumpSymbol, color: info.trumpColor }
 })
 
-function teamScore(teamId: number): number {
+// Map display row (0="Us", 1="Them") to actual team ID based on user's team
+const myTeam = computed(() => game.myTeamId.value)
+const opponentTeam = computed(() => 1 - game.myTeamId.value)
+
+function teamScore(displayRow: number): number {
+  const teamId = displayRow === 0 ? myTeam.value : opponentTeam.value
   return game.scores.value.find((s: TeamScore) => s.teamId === teamId)?.score ?? 0
 }
 

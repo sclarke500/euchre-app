@@ -129,19 +129,27 @@ export function useEuchreDirector(
 
   // ── Computed state for CardTable props ───────────────────────────────────
 
-  const playerNames = computed(() => game.players.value.map(p => p.name))
+  // Map by seat index (not server player ID) so names/info align with the UI.
+  // Seat 0 = user (bottom), 1 = left, 2 = top (partner), 3 = right.
+  const playerNames = computed(() =>
+    [0, 1, 2, 3].map(seat => {
+      const pid = seatIndexToPlayerId(seat)
+      return game.players.value[pid]?.name ?? `Player ${pid}`
+    })
+  )
 
   const playerInfo = computed(() =>
-    game.players.value.map((_p, i) => {
+    [0, 1, 2, 3].map(seat => {
+      const pid = seatIndexToPlayerId(seat)
       const trump = game.trump.value
-      const isCaller = trump && trump.calledBy === i
+      const isCaller = trump && trump.calledBy === pid
       return {
-        dealer: game.dealer.value === i,
-        currentTurn: game.currentPlayer.value === i,
+        dealer: game.dealer.value === pid,
+        currentTurn: game.currentPlayer.value === pid,
         trumpSymbol: isCaller ? SUIT_SYMBOLS[trump.suit] : undefined,
         trumpColor: isCaller ? SUIT_COLORS[trump.suit] : undefined,
-        tricksWon: game.tricksWonByPlayer.value[i] ?? 0,
-        goingAlone: trump?.goingAlone && trump?.calledBy === i,
+        tricksWon: game.tricksWonByPlayer.value[pid] ?? 0,
+        goingAlone: trump?.goingAlone && trump?.calledBy === pid,
       }
     })
   )
