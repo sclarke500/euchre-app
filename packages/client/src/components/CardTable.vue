@@ -202,8 +202,8 @@ defineExpose({
   }
 
   // Horizontal position driven by JS layout via CSS vars
-  left: var(--table-left, 15%);
-  right: var(--table-right, 15%);
+  left: var(--table-left, 22%);
+  right: var(--table-right, 22%);
 
   // Normal layout (4 players) - more square
   &.normal {
@@ -221,15 +221,15 @@ defineExpose({
   gap: 3px;
 
   .avatar-circle {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: #333344;
     border: 2px solid #4a4a60;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: bold;
     color: #ccc;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
@@ -237,8 +237,8 @@ defineExpose({
   }
 
   .player-name {
-    padding: 1px 8px;
-    font-size: 11px;
+    padding: 2px 10px;
+    font-size: 13px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
@@ -286,12 +286,12 @@ defineExpose({
 .dealer-chip {
   position: absolute;
   z-index: 310;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
   color: #2c3e50;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: bold;
   display: flex;
   align-items: center;

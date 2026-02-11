@@ -337,7 +337,7 @@ onUnmounted(() => {
 .scoreboard {
   position: absolute;
   top: 10px;
-  left: 10px;
+  right: 12px;
   z-index: 500;
   background: rgba(20, 20, 30, 0.88);
   border: 1px solid #444;
@@ -347,16 +347,16 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  font-size: 14px;
   color: #ccc;
-  min-width: 90px;
+  width: 130px;
 
   .score-header {
     display: grid;
-    grid-template-columns: 1fr 30px 30px;
+    grid-template-columns: 1fr 34px 34px;
     gap: 0;
-    padding: 2px 8px;
-    font-size: 9px;
+    padding: 3px 10px;
+    font-size: 10px;
     font-weight: 600;
     color: #888;
     text-transform: uppercase;
@@ -375,9 +375,9 @@ onUnmounted(() => {
 
   .score-row {
     display: grid;
-    grid-template-columns: 1fr 30px 30px;
+    grid-template-columns: 1fr 34px 34px;
     gap: 0;
-    padding: 3px 8px;
+    padding: 4px 10px;
     align-items: center;
 
     &:last-of-type {
@@ -387,20 +387,20 @@ onUnmounted(() => {
 
   .score-label {
     font-weight: 600;
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .score-value {
     text-align: center;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 15px;
     color: #fff;
   }
 
   .score-tricks {
     text-align: center;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 13px;
     color: #aaa;
   }
 }
@@ -408,10 +408,10 @@ onUnmounted(() => {
 .leave-btn {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   z-index: 500;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   border: 1px solid #444;
   background: rgba(30, 30, 40, 0.85);
@@ -461,8 +461,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
-  width: 120px;
+  gap: 8px;
+  width: 130px;
   min-height: 135px;
   transition: box-shadow 0.5s ease, border-color 0.5s ease, background 0.5s ease;
 
