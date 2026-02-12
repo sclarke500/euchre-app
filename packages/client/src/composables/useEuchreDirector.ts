@@ -7,7 +7,7 @@
  */
 
 import { watch, nextTick, computed, ref, type Ref } from 'vue'
-import { GamePhase, getEffectiveSuit, getCardValue } from '@euchre/shared'
+import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@euchre/shared'
 import type { Card, Suit, ServerMessage } from '@euchre/shared'
 import type { GameAdapter } from './useGameAdapter'
 import type { CardTableEngine } from './useCardTable'
@@ -348,6 +348,43 @@ export function useEuchreDirector(
     }
 
     await Promise.all(promises)
+  }
+
+  /**
+   * Handle alone visuals: if someone is going alone, dim the sitting-out
+   * player's avatar (or animate the user's hand offscreen if user sits out).
+   * Uses the same isPlayerSittingOut() logic that the turn-skipping uses.
+   */
+  async function handleAloneVisuals(trumpInfo: { calledBy: number; goingAlone: boolean }) {
+    if (!trumpInfo.goingAlone) return
+
+    const alonePlayerId = trumpInfo.calledBy
+
+    // Find which player sits out (partner of the alone caller)
+    for (let pid = 0; pid < 4; pid++) {
+      if (!isPlayerSittingOut(pid, alonePlayerId)) continue
+
+      const seat = playerIdToSeatIndex(pid)
+
+      if (seat === 0) {
+        // User sits out — animate hand off the bottom of the screen
+        const userHand = engine.getHands()[0]
+        if (userHand && boardRef.value) {
+          const offscreenY = boardRef.value.offsetHeight + 100
+          for (const m of userHand.cards) {
+            const cardRef = engine.getCardRef(m.card.id)
+            if (cardRef) {
+              const cur = cardRef.getPosition()
+              await cardRef.moveTo({ ...cur, y: offscreenY, zIndex: 1 }, HAND_COLLAPSE_MS)
+            }
+          }
+        }
+      } else {
+        // Opponent sits out — dim their avatar
+        alonePartnerSeat.value = seat
+      }
+      break // only one player sits out
+    }
   }
 
   // ── Setup ───────────────────────────────────────────────────────────────
@@ -1137,8 +1174,11 @@ export function useEuchreDirector(
         const isOrderUp = turnUp && newTrump.suit === turnUp.suit
         const dealerSeatIdx = dealerSeat.value
         const isDealerUser = dealerSeatIdx === 0
+        const dealerPlayerId = seatIndexToPlayerId(dealerSeatIdx)
+        const dealerSitsOut = isPlayerSittingOut(dealerPlayerId, newTrump.goingAlone ? newTrump.calledBy : null)
 
-        if (isOrderUp) {
+        if (isOrderUp && !dealerSitsOut) {
+          // Normal order-up: dealer exchanges a card
           await animateTurnUpToDealer(dealerSeatIdx)
 
           if (isDealerUser) {
@@ -1163,32 +1203,12 @@ export function useEuchreDirector(
             await hideOpponentHands()
           }
         } else {
+          // Round 2 call, or dealer's partner going alone — just sweep deck
           await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
           await hideOpponentHands()
         }
 
-        // Handle alone animations
-        if (newTrump.goingAlone) {
-          const alonePlayerId = newTrump.calledBy
-          const userPlayerId = game.myPlayerId.value
-          const alonePlayerTeam = alonePlayerId % 2
-          const userTeam = userPlayerId % 2
-
-          // Always dim the alone caller's partner avatar
-          const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
-          alonePartnerSeat.value = partnerSeat
-
-          // Only hide user hand when partner goes alone (same team, not user)
-          const partnerGoingAlone = alonePlayerTeam === userTeam && alonePlayerId !== userPlayerId
-          if (partnerGoingAlone) {
-            const userHand = engine.getHands()[0] // User is always seat 0
-            if (userHand) {
-              const offscreenPos = { x: userHand.position.x, y: boardRef.value!.offsetHeight + 100 }
-              userHand.position = offscreenPos
-              await userHand.repositionAll(HAND_COLLAPSE_MS)
-            }
-          }
-        }
+        await handleAloneVisuals(newTrump)
       } finally {
         if (!keepAnimating) isAnimating.value = false
       }
