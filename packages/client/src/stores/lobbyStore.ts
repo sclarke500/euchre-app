@@ -11,10 +11,7 @@ import type {
 import { websocket } from '@/services/websocket'
 import { useSettingsStore } from '@/stores/settingsStore'
 
-// In dev, hit local server. In prod, connect directly to Render backend.
-const WS_URL = import.meta.env.DEV 
-  ? 'ws://localhost:3001' 
-  : 'wss://euchre-app.onrender.com'
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
 
 // Storage keys
 const STORAGE_KEYS = {
