@@ -28,6 +28,7 @@ export interface MessageHandlers {
   presidentPass: (ws: WebSocket, client: ConnectedClient) => void
   presidentGiveCards: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
   bootPlayer: (ws: WebSocket, client: ConnectedClient, playerId: number) => void
+  bugReport: (ws: WebSocket, client: ConnectedClient, payload: string) => void
   unknownMessage: (ws: WebSocket) => void
 }
 
@@ -82,6 +83,9 @@ export function routeClientMessage(
       break
     case 'boot_player':
       handlers.bootPlayer(ws, client, message.playerId)
+      break
+    case 'bug_report':
+      handlers.bugReport(ws, client, message.payload)
       break
     default:
       handlers.unknownMessage(ws)

@@ -12,6 +12,8 @@ import type {
 } from '@euchre/shared'
 import { GamePhase, getLegalPlays, BidAction as BidActionEnum } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
+import { useToast } from '@/composables/useToast'
+import { sendBugReport } from '@/services/autoBugReport'
 
 export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   // State from server
@@ -238,6 +240,50 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
       case 'error':
         console.error('[MP] Server error:', message.message)
+
+        // Auto-report gameplay errors (not sync_required, not lobby/table errors)
+        if (message.code !== 'sync_required' && gameState.value) {
+          const toast = useToast()
+          toast.show(
+            'We ran into a snag. It has been reported. If the game stops working, please start another game.',
+            'error',
+            8000
+          )
+
+          try {
+            sendBugReport({
+              createdAt: new Date().toISOString(),
+              trigger: 'auto',
+              serverError: message.message,
+              serverErrorCode: message.code ?? null,
+              adapter: {
+                phase: phase.value,
+                biddingRound: biddingRound.value,
+                dealer: dealer.value,
+                currentPlayer: currentPlayer.value,
+                myPlayerId: myPlayerId.value,
+                myTeamId: myTeamId.value,
+                isMyTurn: isMyTurn.value,
+                validActions: validActions.value,
+                validCards: validCards.value,
+              },
+              multiplayer: {
+                stateSeq: lastStateSeq.value,
+                queueLength: messageQueue.length,
+                timedOutPlayer: gameState.value.timedOutPlayer ?? null,
+                recentStateSummaries: recentStateSummaries.value,
+              },
+              websocket: {
+                inbound: websocket.getRecentInbound(),
+                outbound: websocket.getRecentOutbound(),
+              },
+              rawState: gameState.value,
+            })
+          } catch (e) {
+            console.error('[BugReport] Failed to collect diagnostics:', e)
+          }
+        }
+
         if (message.code === 'sync_required') {
           requestStateResync()
         } else {
@@ -323,6 +369,12 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
         // the server may recompute them with stale trick state, causing flicker.
         // validCards are authoritatively set by your_turn only.
         updateIfChanged(validActions, message.validActions)
+        break
+
+      case 'bug_report_ack':
+        if (message.issueUrl) {
+          console.log('[BugReport] Issue created:', message.issueUrl)
+        }
         break
     }
   }

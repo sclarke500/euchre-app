@@ -107,6 +107,12 @@ const presidentGiveCardsSchema = z.object({
   ...clientMetaShape,
 }).strict()
 
+const bugReportSchema = z.object({
+  type: z.literal('bug_report'),
+  payload: z.string().max(500_000),
+  ...clientMetaShape,
+}).strict()
+
 const clientMessageSchema = z.discriminatedUnion('type', [
   joinLobbySchema,
   createTableSchema,
@@ -123,6 +129,7 @@ const clientMessageSchema = z.discriminatedUnion('type', [
   presidentPlayCardsSchema,
   presidentPassSchema,
   presidentGiveCardsSchema,
+  bugReportSchema,
 ])
 
 export function parseClientMessage(data: unknown): {

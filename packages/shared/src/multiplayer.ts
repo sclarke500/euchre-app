@@ -71,6 +71,7 @@ export type ClientMessage = (
   | PresidentPlayCardsMessage
   | PresidentPassMessage
   | PresidentGiveCardsMessage
+  | BugReportMessage
 ) & ClientMessageMeta
 
 export interface JoinLobbyMessage {
@@ -150,6 +151,11 @@ export interface PresidentGiveCardsMessage {
   cardIds: string[]
 }
 
+export interface BugReportMessage {
+  type: 'bug_report'
+  payload: string // JSON-stringified diagnostic data
+}
+
 // ============================================
 // Server -> Client Messages
 // ============================================
@@ -187,6 +193,7 @@ export type ServerMessage =
   | PresidentCardExchangeInfoMessage
   | PresidentAwaitingGiveCardsMessage
   | PresidentYourTurnMessage
+  | BugReportAckMessage
 
 export interface WelcomeMessage {
   type: 'welcome'
@@ -342,6 +349,12 @@ export interface ErrorMessage {
   type: 'error'
   message: string
   code?: string
+}
+
+export interface BugReportAckMessage {
+  type: 'bug_report_ack'
+  success: boolean
+  issueUrl?: string
 }
 
 // ============================================

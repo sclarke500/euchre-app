@@ -12,6 +12,7 @@ import { routeClientMessage } from './ws/router.js'
 import type { ConnectedClient } from './ws/types.js'
 import { createWebSocketServer } from './ws/transport.js'
 import { enqueueGameCommand } from './sessions/commandQueue.js'
+import { handleBugReport } from './bugReport.js'
 import { createLobbyHandlers } from './lobby/handlers.js'
 import { createSessionHandlers } from './sessions/handlers.js'
 import {
@@ -332,6 +333,11 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
     presidentPass: (socket, c) => routeGameCommand(() => handlePresidentPass(socket, c)),
     presidentGiveCards: (socket, c, cardIds) => routeGameCommand(() => handlePresidentGiveCards(socket, c, cardIds)),
     bootPlayer: (socket, c, playerId) => routeGameCommand(() => handleBootPlayer(socket, c, playerId)),
+    bugReport: async (socket, c, payload) => {
+      const clientId = c.player?.odusId ?? 'unknown'
+      const result = await handleBugReport(clientId, payload)
+      send(socket, { type: 'bug_report_ack', success: result.success, issueUrl: result.issueUrl })
+    },
     unknownMessage: (socket) => send(socket, { type: 'error', message: 'Unknown message type' }),
   })
 }

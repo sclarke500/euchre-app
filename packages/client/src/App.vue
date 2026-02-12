@@ -12,6 +12,7 @@ import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
 import SandboxTable from './components/sandbox/SandboxTable.vue'
 import EuchreEngineBoard from './components/EuchreEngineBoard.vue'
+import AppToast from './components/AppToast.vue'
 
 const gameStore = useGameStore()
 const presidentStore = usePresidentGameStore()
@@ -185,6 +186,8 @@ function backToMenu() {
 
 <template>
   <div id="app">
+    <AppToast />
+
     <!-- Portrait orientation overlay for mobile - only on game boards -->
     <div v-if="showLandscapeBlocker" class="rotate-device-overlay">
       <div class="rotate-content">
