@@ -359,31 +359,27 @@ export function useEuchreDirector(
     if (!trumpInfo.goingAlone) return
 
     const alonePlayerId = trumpInfo.calledBy
+    const sittingOutPid = (alonePlayerId + 2) % 4
+    const seat = playerIdToSeatIndex(sittingOutPid)
 
-    // Find which player sits out (partner of the alone caller)
-    for (let pid = 0; pid < 4; pid++) {
-      if (!isPlayerSittingOut(pid, alonePlayerId)) continue
-
-      const seat = playerIdToSeatIndex(pid)
-
-      if (seat === 0) {
-        // User sits out — animate hand off the bottom of the screen
-        const userHand = engine.getHands()[0]
-        if (userHand && boardRef.value) {
-          const offscreenY = boardRef.value.offsetHeight + 100
-          for (const m of userHand.cards) {
-            const cardRef = engine.getCardRef(m.card.id)
-            if (cardRef) {
-              const cur = cardRef.getPosition()
-              await cardRef.moveTo({ ...cur, y: offscreenY, zIndex: 1 }, HAND_COLLAPSE_MS)
-            }
+    if (seat === 0) {
+      // User sits out — animate hand off the bottom of the screen
+      const userHand = engine.getHands()[0]
+      if (userHand && boardRef.value) {
+        const offscreenY = boardRef.value.offsetHeight + 100
+        const promises: Promise<void>[] = []
+        for (const m of userHand.cards) {
+          const cardRef = engine.getCardRef(m.card.id)
+          if (cardRef) {
+            const cur = cardRef.getPosition()
+            promises.push(cardRef.moveTo({ ...cur, y: offscreenY, zIndex: 1 }, HAND_COLLAPSE_MS))
           }
         }
-      } else {
-        // Opponent sits out — dim their avatar
-        alonePartnerSeat.value = seat
+        await Promise.all(promises)
       }
-      break // only one player sits out
+    } else {
+      // Opponent sits out — dim their avatar
+      alonePartnerSeat.value = seat
     }
   }
 
@@ -646,6 +642,9 @@ export function useEuchreDirector(
     await sleep(AnimationDurations.medium + AnimationBuffers.settle)
     await Promise.all([animateDeckOffscreen(), hideOpponentHands()])
 
+    const trumpInfo = game.trump.value
+    if (trumpInfo) await handleAloneVisuals(trumpInfo)
+
     isAnimating.value = false
   }
 
@@ -889,8 +888,11 @@ export function useEuchreDirector(
     const isOrderUp = turnUp && trumpInfo.suit === turnUp.suit
     const dealerSeatIdx = dealerSeat.value
     const isDealerUser = dealerSeatIdx === 0
+    const dealerPlayerId = seatIndexToPlayerId(dealerSeatIdx)
+    const dealerSitsOut = isPlayerSittingOut(dealerPlayerId, trumpInfo.goingAlone ? trumpInfo.calledBy : null)
 
-    if (isOrderUp) {
+    if (isOrderUp && !dealerSitsOut) {
+      // Normal order-up: dealer exchanges a card
       await animateTurnUpToDealer(dealerSeatIdx)
 
       if (isDealerUser) {
@@ -911,15 +913,17 @@ export function useEuchreDirector(
           await dealerHand.setMode('fanned', AnimationDurations.fast)
         }
 
-          await sleep(AnimationDurations.medium + AnimationBuffers.settle)
+        await sleep(AnimationDurations.medium + AnimationBuffers.settle)
         await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
         await hideOpponentHands()
       }
     } else {
-      // Round 2 call — no order-up, just deck exit + hide
+      // Round 2 call, or dealer's partner going alone — just sweep deck
       await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
       await hideOpponentHands()
     }
+
+    await handleAloneVisuals(trumpInfo)
   }
 
   // ── Multiplayer: phase transition handler ─────────────────────────────
@@ -984,6 +988,8 @@ export function useEuchreDirector(
               await sleep(AnimationDurations.medium + AnimationBuffers.settle)
               await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
               await hideOpponentHands()
+              const trumpInfo = game.trump.value
+              if (trumpInfo) await handleAloneVisuals(trumpInfo)
             } finally {
               isAnimating.value = false
             }

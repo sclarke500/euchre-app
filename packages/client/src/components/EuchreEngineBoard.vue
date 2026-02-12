@@ -205,7 +205,7 @@ const avatarOpacities = computed(() => {
   const opacities = [1, 1, 1, 1] // Default full opacity
   const alonePartnerSeat = director.alonePartnerSeat.value
   if (alonePartnerSeat !== null) {
-    opacities[alonePartnerSeat] = 0.3 // Semi-transparent
+    opacities[alonePartnerSeat] = 0.5 // Semi-transparent
   }
   return opacities
 })
