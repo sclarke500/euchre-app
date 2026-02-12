@@ -359,6 +359,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     const oldGameId = client.gameId
     const hostId = gameHosts.get(oldGameId)
     const gameType = gameTypes.get(oldGameId) || 'euchre'
+    const previousSettings = gameSettings.get(oldGameId)
 
     if (!hostId) {
       send(ws, { type: 'error', message: 'Game host not found' })
@@ -404,6 +405,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     const newGameId = generateId()
     gameTypes.set(newGameId, gameType)
     gameHosts.set(newGameId, hostId)
+    gameSettings.set(newGameId, previousSettings)
 
     if (gameType === 'president') {
       // Create new President game
