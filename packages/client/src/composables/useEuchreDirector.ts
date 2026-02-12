@@ -376,7 +376,7 @@ export function useEuchreDirector(
       engine.createHand(`player-${i}`, seat.handPosition, {
         faceUp: false,
         fanDirection: 'horizontal',
-        fanSpacing: isUser ? 40 : 12,  // Increased spacing for easier clicking
+        fanSpacing: isUser ? 24 : 12,  // ~50% overlap at user hand scale
         rotation: seat.rotation,
         scale: 1.0,
         fanCurve: isUser ? 8 : 0,
@@ -449,7 +449,7 @@ export function useEuchreDirector(
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
-      userHand.fanSpacing = 40
+      userHand.fanSpacing = 24
       userHand.fanCurve = 0
 
       for (const managed of userHand.cards) {
