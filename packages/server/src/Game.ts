@@ -31,6 +31,11 @@ import {
   chooseCardToPlay,
   chooseDealerDiscard,
   isPartnerWinning,
+  GameTracker,
+  makeAIBidRound1Hard,
+  makeAIBidRound2Hard,
+  chooseCardToPlayHard,
+  isPartnerWinningHard,
 } from '@euchre/shared'
 import { getRandomAINames } from '@euchre/shared'
 
@@ -56,6 +61,10 @@ export interface GameEvents {
   onPlayerBooted: (playerId: number, playerName: string) => void
 }
 
+export interface GameOptions {
+  aiDifficulty?: 'easy' | 'hard'
+}
+
 export class Game {
   public readonly id: string
   private players: GamePlayer[] = []
@@ -76,10 +85,14 @@ export class Game {
   private turnReminderCount = 0 // Count reminders sent to current player
   private readonly TIMEOUT_AFTER_REMINDERS = 4 // Mark as timed out after 4 reminders (60 seconds)
   private timedOutPlayer: number | null = null // Seat index of player who timed out
+  private readonly aiDifficulty: 'easy' | 'hard'
+  private readonly aiTracker: GameTracker | null
 
-  constructor(id: string, events: GameEvents) {
+  constructor(id: string, events: GameEvents, options: GameOptions = {}) {
     this.id = id
     this.events = events
+    this.aiDifficulty = options.aiDifficulty === 'hard' ? 'hard' : 'easy'
+    this.aiTracker = this.aiDifficulty === 'hard' ? new GameTracker() : null
   }
 
   getStateSeq(): number {
@@ -297,6 +310,10 @@ export class Game {
   private startNewRound(): void {
     this.phase = GamePhase.Dealing
 
+    if (this.aiTracker) {
+      this.aiTracker.reset()
+    }
+
     // Create and deal deck
     const deck = createDeck()
     const [hand0, hand1, hand2, hand3, kitty] = dealCards(deck)
@@ -355,6 +372,10 @@ export class Game {
       console.log('Server trump set to:', this.currentRound.trump)
       this.currentRound.goingAlone = newTrump.goingAlone
       this.currentRound.alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
+
+      if (this.aiTracker) {
+        this.aiTracker.setTrump(newTrump.suit)
+      }
 
       // If dealer picked up, they need to discard
       if (bid.action === BidAction.PickUp || bid.action === BidAction.OrderUp) {
@@ -482,6 +503,10 @@ export class Game {
     const completedTrick = completeTrick(this.currentRound.currentTrick, this.currentRound.trump.suit)
     this.currentRound.tricks.push(completedTrick)
 
+    if (this.aiTracker) {
+      this.aiTracker.recordTrick(completedTrick)
+    }
+
     const winner = this.players[completedTrick.winnerId!]!
 
     // Broadcast trick complete
@@ -583,32 +608,47 @@ export class Game {
 
       if (this.phase === GamePhase.BiddingRound1) {
         if (!this.currentRound.turnUpCard) return
-        const bid = makeAIBidRound1(
-          { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId },
-          this.currentRound.turnUpCard,
-          this.currentRound.dealer
-        )
+        const aiPlayer = { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId }
+        const bid = this.aiDifficulty === 'hard'
+          ? makeAIBidRound1Hard(aiPlayer, this.currentRound.turnUpCard, this.currentRound.dealer)
+          : makeAIBidRound1(aiPlayer, this.currentRound.turnUpCard, this.currentRound.dealer)
         this.processBidInternal(bid)
       } else if (this.phase === GamePhase.BiddingRound2) {
         if (!this.currentRound.turnUpCard) return
-        const bid = makeAIBidRound2(
-          { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId },
-          this.currentRound.turnUpCard.suit,
-          this.currentRound.dealer
-        )
+        const aiPlayer = { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId }
+        const bid = this.aiDifficulty === 'hard'
+          ? makeAIBidRound2Hard(aiPlayer, this.currentRound.turnUpCard.suit, this.currentRound.dealer)
+          : makeAIBidRound2(aiPlayer, this.currentRound.turnUpCard.suit, this.currentRound.dealer)
         this.processBidInternal(bid)
       } else if (this.phase === GamePhase.Playing && this.currentRound.trump) {
-        const partnerWinning = isPartnerWinning(
-          this.currentRound.currentTrick,
-          player.seatIndex,
-          this.currentRound.trump.suit
-        )
-        const card = chooseCardToPlay(
-          { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId },
-          this.currentRound.currentTrick,
-          this.currentRound.trump.suit,
-          partnerWinning
-        )
+        const aiPlayer = { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId }
+        let card: Card
+        if (this.aiDifficulty === 'hard' && this.aiTracker) {
+          const partnerWinning = isPartnerWinningHard(
+            this.currentRound.currentTrick,
+            player.seatIndex,
+            this.currentRound.trump.suit
+          )
+          card = chooseCardToPlayHard(
+            aiPlayer,
+            this.currentRound.currentTrick,
+            this.currentRound.trump.suit,
+            partnerWinning,
+            this.aiTracker
+          )
+        } else {
+          const partnerWinning = isPartnerWinning(
+            this.currentRound.currentTrick,
+            player.seatIndex,
+            this.currentRound.trump.suit
+          )
+          card = chooseCardToPlay(
+            aiPlayer,
+            this.currentRound.currentTrick,
+            this.currentRound.trump.suit,
+            partnerWinning
+          )
+        }
         this.playCardInternal(player.seatIndex, card)
       }
     }, 800)

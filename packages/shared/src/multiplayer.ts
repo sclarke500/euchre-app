@@ -25,6 +25,7 @@ export type GameType = 'euchre' | 'president'
 export interface TableSettings {
   superTwosMode?: boolean // President only
   maxRounds?: number // President only (default 5)
+  aiDifficulty?: 'easy' | 'hard' // Euchre only
 }
 
 export interface Table {

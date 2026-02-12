@@ -19,6 +19,7 @@ import {
   presidentGames,
   gameHosts,
   gameTypes,
+  gameSettings,
 } from './registry.js'
 
 export interface SessionHandlers {
@@ -84,6 +85,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     // Track game type
     gameTypes.set(gameId, gameType)
     gameHosts.set(gameId, table.hostId)
+    gameSettings.set(gameId, table.settings)
 
     if (gameType === 'president') {
       // Create President game
@@ -517,6 +519,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       presidentGames.delete(oldGameId)
       gameHosts.delete(oldGameId)
       gameTypes.delete(oldGameId)
+      gameSettings.delete(oldGameId)
 
       console.log(`President game restarted: ${oldGameId} -> ${newGameId}`)
 
@@ -608,7 +611,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
           replacedWithAI: true,
         })
       },
-    })
+    }, { aiDifficulty: previousSettings?.aiDifficulty })
 
     newGame.initializePlayers(humanPlayers)
     games.set(newGameId, newGame)
@@ -624,6 +627,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     games.delete(oldGameId)
     gameHosts.delete(oldGameId)
     gameTypes.delete(oldGameId)
+    gameSettings.delete(oldGameId)
 
     console.log(`Euchre game restarted: ${oldGameId} -> ${newGameId}`)
 

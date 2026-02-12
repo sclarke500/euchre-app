@@ -9,6 +9,7 @@ import type {
   TableSettings,
 } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
 
@@ -19,6 +20,7 @@ const STORAGE_KEYS = {
 } as const
 
 export const useLobbyStore = defineStore('lobby', () => {
+  const settingsStore = useSettingsStore()
   // State
   const isConnected = ref(false)
   const isConnecting = ref(false)
@@ -213,7 +215,7 @@ export const useLobbyStore = defineStore('lobby', () => {
   function createTable(tableName?: string): void {
     const settings: TableSettings | undefined = selectedGameType.value === 'president'
       ? { superTwosMode: selectedSuperTwosMode.value }
-      : undefined
+      : { aiDifficulty: settingsStore.aiDifficulty }
 
     websocket.send({
       type: 'create_table',

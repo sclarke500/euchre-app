@@ -7,6 +7,7 @@ const gameTypeSchema = z.enum(['euchre', 'president'])
 const tableSettingsSchema = z.object({
   superTwosMode: z.boolean().optional(),
   maxRounds: z.number().int().min(1).optional(),
+  aiDifficulty: z.enum(['easy', 'hard']).optional(),
 }).strict()
 
 const clientMetaShape = {
