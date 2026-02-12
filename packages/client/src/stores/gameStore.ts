@@ -212,8 +212,9 @@ export const useGameStore = defineStore('game', () => {
 
       // If dealer picked up, they need to discard (unless sitting out because partner is going alone)
       if (bid.action === BidAction.PickUp || bid.action === BidAction.OrderUp) {
-        const dealerSittingOut = isPlayerSittingOut(currentDealer.value, currentRound.value.alonePlayer)
-        if (!dealerSittingOut) {
+        // Use local variable — not reactive state — to avoid proxy timing issues
+        const alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
+        if (!isPlayerSittingOut(currentDealer.value, alonePlayer)) {
           const needsHumanDiscard = handleDealerPickup()
           if (needsHumanDiscard) {
             // Wait for human dealer to discard before starting play
