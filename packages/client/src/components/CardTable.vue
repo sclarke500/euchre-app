@@ -9,7 +9,7 @@
           :key="'avatar-' + i"
           class="player-avatar"
           :class="{ 'is-user': seat.isUser, 'is-current-turn': currentTurnSeat === i }"
-          :style="avatarStyles[i]"
+          :style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
         >
           <div class="avatar-circle">{{ playerNames[i]?.[0] ?? '?' }}</div>
           <div class="player-name">{{ playerNames[i] }}</div>
@@ -63,11 +63,13 @@ const props = withDefaults(defineProps<{
   dimmedCardIds?: Set<string>
   selectedCardIds?: Set<string>
   highlightedCardIds?: Set<string>
+  avatarOpacities?: number[]
 }>(), {
   layout: 'normal',
   dealerSeat: -1,
   playerStatuses: () => [],
   currentTurnSeat: -1,
+  avatarOpacities: () => [],
 })
 
 defineEmits<{

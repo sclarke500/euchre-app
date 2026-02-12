@@ -4,6 +4,7 @@
     :player-count="4"
     :player-names="director.playerNames.value"
     :player-statuses="director.playerStatuses.value"
+    :avatar-opacities="avatarOpacities"
     :engine="engine"
     :dealer-seat="dealerSeat"
     :current-turn-seat="currentTurnSeat"
@@ -198,6 +199,16 @@ const director = useEuchreDirector(game, engine, { boardRef })
 const dealerSeat = computed(() => director.dealerSeat.value)
 const currentTurnSeat = computed(() => director.currentTurnSeat.value)
 const goAlone = ref(false)
+
+// Avatar opacities - make partner semi-transparent when someone else goes alone
+const avatarOpacities = computed(() => {
+  const opacities = [1, 1, 1, 1] // Default full opacity
+  const alonePartnerSeat = director.alonePartnerSeat.value
+  if (alonePartnerSeat !== null) {
+    opacities[alonePartnerSeat] = 0.3 // Semi-transparent
+  }
+  return opacities
+})
 
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
 const userTrumpInfo = computed(() => {

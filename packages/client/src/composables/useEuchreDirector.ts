@@ -122,6 +122,9 @@ export function useEuchreDirector(
   // Player status messages (bid actions, etc.) keyed by seat index
   const playerStatuses = ref<string[]>(['', '', '', ''])
 
+  // Seat index of partner who is sitting out (when someone else goes alone)
+  const alonePartnerSeat = ref<number | null>(null)
+
   // MP queue processing state
   let pendingTrickWinnerId: number | null = null
   let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -356,6 +359,7 @@ export function useEuchreDirector(
     engine.reset()
     tricksWonByPlayer.value = { 0: 0, 1: 0, 2: 0, 3: 0 }
     hiddenHandOrigins.clear()
+    alonePartnerSeat.value = null  // Reset alone state
 
     const dealerIdx = dealerSeat.value >= 0 ? dealerSeat.value : 0
     engine.createDeck(getDealerDeckPosition(dealerIdx, tl), CENTER_CARD_SCALE)
@@ -372,7 +376,7 @@ export function useEuchreDirector(
       engine.createHand(`player-${i}`, seat.handPosition, {
         faceUp: false,
         fanDirection: 'horizontal',
-        fanSpacing: isUser ? 30 : 12,
+        fanSpacing: isUser ? 40 : 12,  // Increased spacing for easier clicking
         rotation: seat.rotation,
         scale: 1.0,
         fanCurve: isUser ? 8 : 0,
@@ -1158,6 +1162,28 @@ export function useEuchreDirector(
           await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
           await hideOpponentHands()
         }
+
+        // Handle alone animations
+        if (newTrump.goingAlone) {
+          const alonePlayerId = newTrump.calledBy
+          const userPlayerId = game.myPlayerId.value
+          const alonePlayerTeam = alonePlayerId % 2
+          const userTeam = userPlayerId % 2
+
+          if (alonePlayerTeam === userTeam) {
+            // User's partner is going alone - animate user's hand down out of view
+            const userHand = engine.getHands()[0] // User is always seat 0
+            if (userHand) {
+              const offscreenPos = { x: userHand.position.x, y: boardRef.value!.offsetHeight + 100 }
+              userHand.position = offscreenPos
+              await userHand.repositionAll(HAND_COLLAPSE_MS)
+            }
+          } else {
+            // Opponent's partner is going alone - make their partner's avatar semi-transparent
+            const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
+            alonePartnerSeat.value = partnerSeat
+          }
+        }
       } finally {
         if (!keepAnimating) isAnimating.value = false
       }
@@ -1233,6 +1259,7 @@ export function useEuchreDirector(
     currentTurnSeat,
     validCardIds,
     isAnimating,
+    alonePartnerSeat,
     setupTable,
     setPlayerStatus,
     clearPlayerStatuses,
