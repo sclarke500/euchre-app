@@ -3,14 +3,9 @@ import { websocket } from './websocket'
 const RATE_LIMIT_MS = 60_000 // 1 report per minute
 let lastReportTime = 0
 
-// Get API base URL (same origin in prod, or explicit for dev)
+// In dev, hit local server directly. In prod, use relative URL (Netlify proxies to backend)
 function getApiBaseUrl(): string {
-  // In production, API is at same origin
-  if (import.meta.env.PROD) {
-    return import.meta.env.VITE_API_URL || ''
-  }
-  // In dev, default to local server
-  return import.meta.env.VITE_API_URL || 'http://localhost:3001'
+  return import.meta.env.DEV ? 'http://localhost:3001' : ''
 }
 
 export async function sendBugReport(payload: Record<string, unknown>): Promise<void> {
