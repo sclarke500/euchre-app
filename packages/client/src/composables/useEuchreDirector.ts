@@ -1174,18 +1174,19 @@ export function useEuchreDirector(
           const alonePlayerTeam = alonePlayerId % 2
           const userTeam = userPlayerId % 2
 
-          if (alonePlayerTeam !== userTeam) {
-            // Opponent is going alone - animate user's hand down out of view
+          // Always dim the alone caller's partner avatar
+          const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
+          alonePartnerSeat.value = partnerSeat
+
+          // Only hide user hand when partner goes alone (same team, not user)
+          const partnerGoingAlone = alonePlayerTeam === userTeam && alonePlayerId !== userPlayerId
+          if (partnerGoingAlone) {
             const userHand = engine.getHands()[0] // User is always seat 0
             if (userHand) {
               const offscreenPos = { x: userHand.position.x, y: boardRef.value!.offsetHeight + 100 }
               userHand.position = offscreenPos
               await userHand.repositionAll(HAND_COLLAPSE_MS)
             }
-          } else {
-            // User or partner is going alone - make the caller's partner avatar semi-transparent
-            const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
-            alonePartnerSeat.value = partnerSeat
           }
         }
       } finally {
