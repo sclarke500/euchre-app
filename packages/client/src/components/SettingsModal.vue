@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useSettingsStore, type AIDifficulty, type DealerPassRule } from '@/stores/settingsStore'
 import { sendBugReport } from '@/services/autoBugReport'
+import { websocket } from '@/services/websocket'
 
 defineProps<{
   show: boolean
@@ -13,6 +14,7 @@ const emit = defineEmits<{
 
 const settings = useSettingsStore()
 const testReportSent = ref(false)
+const testReportError = ref('')
 
 // Format build time for display
 const buildInfo = computed(() => {
@@ -39,6 +41,11 @@ function checkForUpdates() {
 }
 
 function sendTestBugReport() {
+  if (!websocket.isConnected) {
+    testReportError.value = 'Join a game first (websocket not connected)'
+    setTimeout(() => { testReportError.value = '' }, 3000)
+    return
+  }
   sendBugReport({
     createdAt: new Date().toISOString(),
     trigger: 'manual-test',
@@ -142,10 +149,11 @@ function sendTestBugReport() {
             <div class="settings-section">
               <button 
                 class="test-btn" 
+                :class="{ error: testReportError }"
                 :disabled="testReportSent"
                 @click="sendTestBugReport"
               >
-                {{ testReportSent ? '✓ Sent!' : 'Send Test Bug Report' }}
+                {{ testReportError || (testReportSent ? '✓ Sent!' : 'Send Test Bug Report') }}
               </button>
             </div>
           </div>
@@ -361,6 +369,10 @@ function sendTestBugReport() {
   &:disabled {
     background: #4caf50;
     cursor: default;
+  }
+
+  &.error {
+    background: #d32f2f;
   }
 }
 
