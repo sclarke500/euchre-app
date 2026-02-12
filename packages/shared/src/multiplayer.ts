@@ -59,6 +59,7 @@ export type ClientMessage = (
   | CreateTableMessage
   | JoinTableMessage
   | LeaveTableMessage
+  | LeaveGameMessage
   | StartGameMessage
   | RestartGameMessage
   | MakeBidMessage
@@ -94,6 +95,10 @@ export interface JoinTableMessage {
 
 export interface LeaveTableMessage {
   type: 'leave_table'
+}
+
+export interface LeaveGameMessage {
+  type: 'leave_game'
 }
 
 export interface StartGameMessage {

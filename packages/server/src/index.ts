@@ -260,6 +260,31 @@ function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardId
   }
 }
 
+function replacePlayerWithAI(client: ConnectedClient): void {
+  if (!client.player || !client.gameId) return
+
+  const odusId = client.player.odusId
+  const gameType = gameTypes.get(client.gameId)
+
+  if (gameType === 'president') {
+    const game = presidentGames.get(client.gameId)
+    if (!game) return
+    const idx = game.findPlayerIndexByOdusId(odusId)
+    if (idx >= 0) game.replaceWithAI(idx)
+  } else {
+    const game = games.get(client.gameId)
+    if (!game) return
+    const idx = game.findPlayerIndexByOdusId(odusId)
+    if (idx >= 0) game.replaceWithAI(idx)
+  }
+
+  client.gameId = null
+}
+
+function handleLeaveGame(ws: WebSocket, client: ConnectedClient): void {
+  replacePlayerWithAI(client)
+}
+
 function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMessage): void {
   if (isDuplicateCommand(client, message.commandId)) {
     console.warn('Ignoring duplicate command', message.type, message.commandId)
@@ -296,6 +321,7 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
     createTable: lobbyHandlers.handleCreateTable,
     joinTable: lobbyHandlers.handleJoinTable,
     leaveTable: lobbyHandlers.handleLeaveTable,
+    leaveGame: (socket, c) => routeGameCommand(() => handleLeaveGame(socket, c)),
     startGame: sessionHandlers.handleStartGame,
     restartGame: sessionHandlers.handleRestartGame,
     makeBid: (socket, c, action, suit, goingAlone) => routeGameCommand(() => handleMakeBid(socket, c, action, suit, goingAlone)),
@@ -352,7 +378,10 @@ createWebSocketServer({
     if (client.tableId) {
       lobbyHandlers.handleLeaveTable(ws, client)
     }
-    // TODO: Handle game disconnect (replace with AI, hold seat for reconnect)
+    // Replace disconnected player with AI if they were in a game
+    if (client.gameId) {
+      replacePlayerWithAI(client)
+    }
     clients.delete(ws)
     console.log(`Client disconnected. Total: ${clients.size}`)
   },

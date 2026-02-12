@@ -755,25 +755,22 @@ export class Game {
   }
 
   /**
-   * Boot a timed-out player and replace with AI
+   * Replace a human player with AI. Used for both voluntary leaves and boots.
    */
-  bootPlayer(playerIndex: number): boolean {
-    // Can only boot the player who has timed out
-    if (this.timedOutPlayer !== playerIndex) {
-      return false
-    }
-
+  replaceWithAI(playerIndex: number): boolean {
     const player = this.players[playerIndex]
     if (!player || !player.isHuman) {
       return false
     }
 
-    console.log(`Booting player ${playerIndex} (${player.name}) and replacing with AI`)
+    console.log(`Replacing player ${playerIndex} (${player.name}) with AI`)
 
-    // Clear timeout state
+    // Clear any pending turn timeout
     this.clearTurnReminderTimeout()
     this.turnReminderCount = 0
-    this.timedOutPlayer = null
+    if (this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
 
     // Convert player to AI
     const aiNames = getRandomAINames(1)
@@ -781,7 +778,7 @@ export class Game {
     player.name = aiNames[0] ?? 'Bot'
     player.odusId = null
 
-    // Notify about the boot
+    // Notify about the replacement
     this.events.onPlayerBooted(playerIndex, player.name)
 
     // Broadcast updated state
@@ -793,6 +790,24 @@ export class Game {
     }
 
     return true
+  }
+
+  /**
+   * Boot a timed-out player and replace with AI
+   */
+  bootPlayer(playerIndex: number): boolean {
+    if (this.timedOutPlayer !== playerIndex) {
+      return false
+    }
+    this.timedOutPlayer = null
+    return this.replaceWithAI(playerIndex)
+  }
+
+  /**
+   * Find a player's seat index by their odusId. Returns -1 if not found.
+   */
+  findPlayerIndexByOdusId(odusId: string): number {
+    return this.players.findIndex(p => p.odusId === odusId)
   }
 
   /**

@@ -264,6 +264,9 @@ export const useLobbyStore = defineStore('lobby', () => {
   }
 
   function leaveGame(): void {
+    websocket.send({
+      type: 'leave_game',
+    })
     gameId.value = null
     currentTable.value = null
     currentSeat.value = null

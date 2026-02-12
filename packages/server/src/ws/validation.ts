@@ -44,6 +44,11 @@ const leaveTableSchema = z.object({
   ...clientMetaShape,
 }).strict()
 
+const leaveGameSchema = z.object({
+  type: z.literal('leave_game'),
+  ...clientMetaShape,
+}).strict()
+
 const startGameSchema = z.object({
   type: z.literal('start_game'),
   ...clientMetaShape,
@@ -107,6 +112,7 @@ const clientMessageSchema = z.discriminatedUnion('type', [
   createTableSchema,
   joinTableSchema,
   leaveTableSchema,
+  leaveGameSchema,
   startGameSchema,
   restartGameSchema,
   makeBidSchema,

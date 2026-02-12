@@ -17,6 +17,7 @@ export interface MessageHandlers {
   ) => void
   joinTable: (ws: WebSocket, client: ConnectedClient, tableId: string, seatIndex: number) => void
   leaveTable: (ws: WebSocket, client: ConnectedClient) => void
+  leaveGame: (ws: WebSocket, client: ConnectedClient) => void
   startGame: (ws: WebSocket, client: ConnectedClient) => void
   restartGame: (ws: WebSocket, client: ConnectedClient) => void
   makeBid: (ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Suit, goingAlone?: boolean) => void
@@ -48,6 +49,9 @@ export function routeClientMessage(
       break
     case 'leave_table':
       handlers.leaveTable(ws, client)
+      break
+    case 'leave_game':
+      handlers.leaveGame(ws, client)
       break
     case 'start_game':
       handlers.startGame(ws, client)

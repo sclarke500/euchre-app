@@ -215,11 +215,22 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
               }
             }
           }
+        } else {
+          // Not our turn — clear any stale turn state (guards against stale
+          // your_turn / turn_reminder messages from reconnection or race conditions)
+          isMyTurn.value = false
+          validActions.value = []
+          validCards.value = []
         }
         break
 
       case 'your_turn':
         console.log('[MP] your_turn received, actions:', message.validActions)
+        // Guard: reject stale your_turn if game state says it's not our turn
+        if (gameState.value && gameState.value.currentPlayer !== myPlayerId.value) {
+          console.warn('[MP] Ignoring stale your_turn — currentPlayer:', gameState.value.currentPlayer, 'myPlayerId:', myPlayerId.value)
+          break
+        }
         isMyTurn.value = true
         updateIfChanged(validActions, message.validActions)
         updateIfChanged(validCards, message.validCards ?? [])
@@ -302,10 +313,15 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
       case 'turn_reminder':
         // Server reminder that it's still our turn — re-enable turn indicators.
+        // Guard: reject stale reminders if game state says it's not our turn
+        if (gameState.value && gameState.value.currentPlayer !== myPlayerId.value) {
+          console.warn('[MP] Ignoring stale turn_reminder — currentPlayer:', gameState.value.currentPlayer, 'myPlayerId:', myPlayerId.value)
+          break
+        }
+        isMyTurn.value = true
         // Only update validActions (for bid buttons). Do NOT update validCards —
         // the server may recompute them with stale trick state, causing flicker.
         // validCards are authoritatively set by your_turn only.
-        isMyTurn.value = true
         updateIfChanged(validActions, message.validActions)
         break
     }
