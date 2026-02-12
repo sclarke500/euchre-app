@@ -439,13 +439,15 @@ export function useEuchreDirector(
     // Stage 1: Move user hand to bottom, enlarge, flip face-up
     const userHand = hands[0]
     if (userHand && boardRef.value) {
-      const targetX = boardRef.value.offsetWidth / 2
-      const targetY = boardRef.value.offsetHeight - 20
+      const tl = getTableLayout()
+      const seatPos = tl?.seats[0]?.handPosition
+      const targetX = seatPos?.x ?? boardRef.value.offsetWidth / 2
+      const targetY = seatPos?.y ?? boardRef.value.offsetHeight - 20
       const targetScale = 1.8
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
-      userHand.fanSpacing = 20
+      userHand.fanSpacing = 40
       userHand.fanCurve = 0
 
       for (const managed of userHand.cards) {
@@ -1167,12 +1169,10 @@ export function useEuchreDirector(
         if (newTrump.goingAlone) {
           const alonePlayerId = newTrump.calledBy
           const userPlayerId = game.myPlayerId.value
-          
-          if (alonePlayerId === userPlayerId) {
-            // User is going alone - make user's partner's avatar semi-transparent
-            const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
-            alonePartnerSeat.value = partnerSeat
-          } else {
+          const alonePlayerTeam = alonePlayerId % 2
+          const userTeam = userPlayerId % 2
+
+          if (alonePlayerTeam !== userTeam) {
             // Opponent is going alone - animate user's hand down out of view
             const userHand = engine.getHands()[0] // User is always seat 0
             if (userHand) {
@@ -1180,6 +1180,10 @@ export function useEuchreDirector(
               userHand.position = offscreenPos
               await userHand.repositionAll(HAND_COLLAPSE_MS)
             }
+          } else {
+            // User or partner is going alone - make the caller's partner avatar semi-transparent
+            const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
+            alonePartnerSeat.value = partnerSeat
           }
         }
       } finally {
