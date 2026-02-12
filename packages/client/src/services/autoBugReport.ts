@@ -3,9 +3,9 @@ import { websocket } from './websocket'
 const RATE_LIMIT_MS = 60_000 // 1 report per minute
 let lastReportTime = 0
 
-// In dev, hit local server directly. In prod, use relative URL (Netlify proxies to backend)
+// Always use relative URL - Vite (dev) and Netlify (prod) both proxy /api to backend
 function getApiBaseUrl(): string {
-  return import.meta.env.DEV ? 'http://localhost:3001' : ''
+  return ''
 }
 
 export async function sendBugReport(payload: Record<string, unknown>): Promise<void> {
