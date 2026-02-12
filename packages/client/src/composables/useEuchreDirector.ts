@@ -1167,21 +1167,19 @@ export function useEuchreDirector(
         if (newTrump.goingAlone) {
           const alonePlayerId = newTrump.calledBy
           const userPlayerId = game.myPlayerId.value
-          const alonePlayerTeam = alonePlayerId % 2
-          const userTeam = userPlayerId % 2
-
-          if (alonePlayerTeam === userTeam) {
-            // User's partner is going alone - animate user's hand down out of view
+          
+          if (alonePlayerId === userPlayerId) {
+            // User is going alone - make user's partner's avatar semi-transparent
+            const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
+            alonePartnerSeat.value = partnerSeat
+          } else {
+            // Opponent is going alone - animate user's hand down out of view
             const userHand = engine.getHands()[0] // User is always seat 0
             if (userHand) {
               const offscreenPos = { x: userHand.position.x, y: boardRef.value!.offsetHeight + 100 }
               userHand.position = offscreenPos
               await userHand.repositionAll(HAND_COLLAPSE_MS)
             }
-          } else {
-            // Opponent's partner is going alone - make their partner's avatar semi-transparent
-            const partnerSeat = (alonePlayerId + 2) % 4 // Partner is 2 seats away
-            alonePartnerSeat.value = partnerSeat
           }
         }
       } finally {
