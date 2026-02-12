@@ -4,6 +4,8 @@ const RATE_LIMIT_MS = 60_000
 
 const lastReportTime = new Map<string, number>()
 
+export type ReportType = 'auto' | 'user'
+
 export async function handleBugReport(
   clientId: string,
   payload: string
@@ -31,8 +33,10 @@ export async function handleBugReport(
 
   try {
     const diag = JSON.parse(payload) as Record<string, unknown>
-    const title = formatIssueTitle(diag)
-    const body = formatIssueBody(diag)
+    const reportType = (diag.reportType as ReportType) ?? 'auto'
+    const title = formatIssueTitle(diag, reportType)
+    const body = formatIssueBody(diag, reportType)
+    const label = reportType === 'user' ? 'user-report' : 'auto-bug-report'
 
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
       method: 'POST',
@@ -45,7 +49,7 @@ export async function handleBugReport(
       body: JSON.stringify({
         title,
         body,
-        labels: ['auto-bug-report'],
+        labels: [label],
       }),
     })
 
@@ -64,29 +68,51 @@ export async function handleBugReport(
   }
 }
 
-export function formatIssueTitle(diag: Record<string, unknown>): string {
-  const error = (diag.serverError as string) ?? 'Unknown error'
+export function formatIssueTitle(diag: Record<string, unknown>, reportType: ReportType): string {
+  const prefix = reportType === 'user' ? '[User]' : '[Auto]'
+  const userDesc = diag.userDescription as string | undefined
+  
+  if (reportType === 'user' && userDesc) {
+    // Use first line of user description as title
+    const firstLine = userDesc.split('\n')[0].slice(0, 80)
+    return `${prefix} ${firstLine}`
+  }
+  
+  const error = (diag.serverError as string) ?? 'User report'
   const adapter = diag.adapter as Record<string, unknown> | undefined
   const phase = adapter?.phase ?? '?'
-  return `[Auto] ${error} during ${phase}`
+  return `${prefix} ${error} during ${phase}`
 }
 
-export function formatIssueBody(diag: Record<string, unknown>): string {
+export function formatIssueBody(diag: Record<string, unknown>, reportType: ReportType): string {
   const adapter = diag.adapter as Record<string, unknown> | undefined
   const mp = diag.multiplayer as Record<string, unknown> | undefined
   const ws = diag.websocket as Record<string, unknown> | undefined
 
   const sections: string[] = []
 
-  sections.push('> Auto-generated bug report from client')
+  if (reportType === 'user') {
+    sections.push('> User-submitted report from in-game bug button')
+  } else {
+    sections.push('> Auto-generated bug report from client')
+  }
   sections.push('')
 
+  // User description (for user reports)
+  const userDesc = diag.userDescription as string | undefined
+  if (userDesc) {
+    sections.push('## User Description')
+    sections.push(userDesc)
+    sections.push('')
+  }
+
   // Error info
-  sections.push('## Error')
-  sections.push(`- **Server error**: \`${diag.serverError ?? 'unknown'}\``)
+  sections.push('## Error Info')
+  sections.push(`- **Server error**: \`${diag.serverError ?? 'none'}\``)
   sections.push(`- **Error code**: \`${diag.serverErrorCode ?? 'none'}\``)
   sections.push(`- **Timestamp**: ${diag.createdAt ?? new Date().toISOString()}`)
   sections.push(`- **Trigger**: ${diag.trigger ?? 'unknown'}`)
+  sections.push(`- **Report type**: ${reportType}`)
   sections.push('')
 
   // Game state

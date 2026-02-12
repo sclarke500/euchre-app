@@ -150,10 +150,13 @@
       />
 
       <div class="bug-actions">
-        <button class="action-btn" @click="copyBugReport">Copy report</button>
-        <button class="action-btn" @click="downloadBugReport">Download JSON</button>
-        <button v-if="mode === 'multiplayer'" class="action-btn" @click="handleResync">Resync state</button>
-        <button class="action-btn primary" @click="showBugReport = false">Close</button>
+        <button class="action-btn primary" :disabled="sendingReport" @click="sendUserReport">
+          {{ sendingReport ? 'Sending...' : 'Send Report' }}
+        </button>
+        <button class="action-btn" @click="copyBugReport">Copy</button>
+        <button class="action-btn" @click="downloadBugReport">Download</button>
+        <button v-if="mode === 'multiplayer'" class="action-btn" @click="handleResync">Resync</button>
+        <button class="action-btn" @click="showBugReport = false">Close</button>
       </div>
 
       <div v-if="copyStatus" class="bug-status">{{ copyStatus }}</div>
@@ -173,6 +176,7 @@ import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { useGameStore } from '@/stores/gameStore'
 import { websocket } from '@/services/websocket'
+import { sendBugReport } from '@/services/autoBugReport'
 
 const SUIT_SYMBOLS: Record<string, string> = {
   hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠',
@@ -269,6 +273,7 @@ function handleResync() {
 const showBugReport = ref(false)
 const bugDescription = ref('')
 const copyStatus = ref<string>('')
+const sendingReport = ref(false)
 
 function openBugReport() {
   copyStatus.value = ''
@@ -347,6 +352,31 @@ function downloadBugReport() {
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
+}
+
+async function sendUserReport() {
+  if (sendingReport.value) return
+  sendingReport.value = true
+  copyStatus.value = 'Sending...'
+  
+  try {
+    const payload = buildBugReportPayload()
+    await sendBugReport({
+      ...payload,
+      reportType: 'user',
+      userDescription: bugDescription.value.trim() || 'No description provided',
+    })
+    copyStatus.value = 'Sent! Thanks for the report.'
+    setTimeout(() => { 
+      copyStatus.value = ''
+      showBugReport.value = false
+    }, 2000)
+  } catch (err) {
+    console.error('Failed to send report:', err)
+    copyStatus.value = 'Send failed. Try copying instead.'
+  } finally {
+    sendingReport.value = false
+  }
 }
 
 function handleOrderUp() {

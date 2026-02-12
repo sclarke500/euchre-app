@@ -2,22 +2,36 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { handleBugReport, formatIssueTitle, formatIssueBody } from './bugReport.js'
 
 describe('formatIssueTitle', () => {
-  it('includes error message and phase', () => {
+  it('includes error message and phase for auto reports', () => {
     const title = formatIssueTitle({
       serverError: 'Invalid bid',
       adapter: { phase: 'bidding_round_1' },
-    })
+    }, 'auto')
     expect(title).toBe('[Auto] Invalid bid during bidding_round_1')
   })
 
   it('handles missing fields gracefully', () => {
-    const title = formatIssueTitle({})
-    expect(title).toBe('[Auto] Unknown error during ?')
+    const title = formatIssueTitle({}, 'auto')
+    expect(title).toBe('[Auto] User report during ?')
   })
 
   it('handles missing adapter', () => {
-    const title = formatIssueTitle({ serverError: 'Some error' })
+    const title = formatIssueTitle({ serverError: 'Some error' }, 'auto')
     expect(title).toBe('[Auto] Some error during ?')
+  })
+
+  it('uses user description for user reports', () => {
+    const title = formatIssueTitle({
+      userDescription: 'The game froze when I clicked',
+    }, 'user')
+    expect(title).toBe('[User] The game froze when I clicked')
+  })
+
+  it('truncates long user descriptions', () => {
+    const title = formatIssueTitle({
+      userDescription: 'A'.repeat(100),
+    }, 'user')
+    expect(title.length).toBeLessThanOrEqual(88) // [User] + 80 chars
   })
 })
 
@@ -28,8 +42,8 @@ describe('formatIssueBody', () => {
       serverErrorCode: 'invalid_action',
       createdAt: '2025-01-01T00:00:00Z',
       trigger: 'auto',
-    })
-    expect(body).toContain('## Error')
+    }, 'auto')
+    expect(body).toContain('## Error Info')
     expect(body).toContain('`Invalid bid`')
     expect(body).toContain('`invalid_action`')
     expect(body).toContain('2025-01-01T00:00:00Z')
@@ -48,7 +62,7 @@ describe('formatIssueBody', () => {
         validActions: [],
         validCards: [],
       },
-    })
+    }, 'auto')
     expect(body).toContain('## Game State')
     expect(body).toContain('| Phase | `playing` |')
     expect(body).toContain('| Dealer | `2` |')
@@ -63,7 +77,7 @@ describe('formatIssueBody', () => {
         timedOutPlayer: null,
         recentStateSummaries: [{ ts: 1, phase: 'playing' }],
       },
-    })
+    }, 'auto')
     expect(body).toContain('## Multiplayer')
     expect(body).toContain('`42`')
     expect(body).toContain('## Recent State Summaries')
@@ -73,7 +87,7 @@ describe('formatIssueBody', () => {
     const summaries = Array.from({ length: 10 }, (_, i) => ({ seq: i }))
     const body = formatIssueBody({
       multiplayer: { recentStateSummaries: summaries },
-    })
+    }, 'auto')
     // Should only contain the last 5
     expect(body).toContain('"seq": 5')
     expect(body).toContain('"seq": 9')
@@ -85,7 +99,7 @@ describe('formatIssueBody', () => {
     const outbound = Array.from({ length: 10 }, (_, i) => ({ msg: `out-${i}` }))
     const body = formatIssueBody({
       websocket: { inbound, outbound },
-    })
+    }, 'auto')
     expect(body).toContain('last 10 of 20')
     expect(body).toContain('last 5 of 10')
     expect(body).toContain('"msg": "in-19"')
@@ -97,18 +111,27 @@ describe('formatIssueBody', () => {
   it('wraps raw state in collapsed details', () => {
     const body = formatIssueBody({
       rawState: { phase: 'playing', dealer: 1 },
-    })
+    }, 'auto')
     expect(body).toContain('<details>')
     expect(body).toContain('Full raw game state')
     expect(body).toContain('"phase": "playing"')
   })
 
   it('omits sections when data is absent', () => {
-    const body = formatIssueBody({})
-    expect(body).toContain('## Error')
+    const body = formatIssueBody({}, 'auto')
+    expect(body).toContain('## Error Info')
     expect(body).not.toContain('## Game State')
     expect(body).not.toContain('## Multiplayer')
     expect(body).not.toContain('## Recent Inbound')
+  })
+
+  it('includes user description for user reports', () => {
+    const body = formatIssueBody({
+      userDescription: 'The game is broken',
+    }, 'user')
+    expect(body).toContain('User-submitted report')
+    expect(body).toContain('## User Description')
+    expect(body).toContain('The game is broken')
   })
 })
 
