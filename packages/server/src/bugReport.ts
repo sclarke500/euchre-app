@@ -64,14 +64,14 @@ export async function handleBugReport(
   }
 }
 
-function formatIssueTitle(diag: Record<string, unknown>): string {
+export function formatIssueTitle(diag: Record<string, unknown>): string {
   const error = (diag.serverError as string) ?? 'Unknown error'
   const adapter = diag.adapter as Record<string, unknown> | undefined
   const phase = adapter?.phase ?? '?'
   return `[Auto] ${error} during ${phase}`
 }
 
-function formatIssueBody(diag: Record<string, unknown>): string {
+export function formatIssueBody(diag: Record<string, unknown>): string {
   const adapter = diag.adapter as Record<string, unknown> | undefined
   const mp = diag.multiplayer as Record<string, unknown> | undefined
   const ws = diag.websocket as Record<string, unknown> | undefined
