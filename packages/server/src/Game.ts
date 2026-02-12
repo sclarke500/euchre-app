@@ -377,10 +377,13 @@ export class Game {
         this.aiTracker.setTrump(newTrump.suit)
       }
 
-      // If dealer picked up, they need to discard
+      // If dealer picked up, they need to discard (unless partner is going alone)
       if (bid.action === BidAction.PickUp || bid.action === BidAction.OrderUp) {
-        this.handleDealerPickup()
-        return
+        const alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
+        if (!isPlayerSittingOut(this.currentRound.dealer, alonePlayer)) {
+          this.handleDealerPickup()
+          return
+        }
       }
 
       // Start playing phase
