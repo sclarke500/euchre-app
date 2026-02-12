@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import { createServer, type Server as HttpServer } from 'http'
 import express, { type Express } from 'express'
+import cors from 'cors'
 
 export interface WebSocketTransportOptions {
   port: number
@@ -28,6 +29,7 @@ export function createWebSocketServer(options: WebSocketTransportOptions): Trans
   } = options
 
   const app = express()
+  app.use(cors())
   app.use(express.json())
   
   const httpServer = createServer(app)
