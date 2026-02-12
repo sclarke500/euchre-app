@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useSettingsStore, type AIDifficulty, type DealerPassRule } from '@/stores/settingsStore'
+import { sendBugReport } from '@/services/autoBugReport'
 
 defineProps<{
   show: boolean
@@ -11,6 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const settings = useSettingsStore()
+const testReportSent = ref(false)
 
 // Format build time for display
 const buildInfo = computed(() => {
@@ -34,6 +36,19 @@ function selectDealerRule(rule: DealerPassRule) {
 
 function checkForUpdates() {
   window.location.reload()
+}
+
+function sendTestBugReport() {
+  sendBugReport({
+    createdAt: new Date().toISOString(),
+    trigger: 'manual-test',
+    serverError: 'Test bug report from settings',
+    serverErrorCode: 'TEST_001',
+    adapter: { phase: 'testing', myPlayerId: 'test-user' },
+    multiplayer: { stateSeq: 0, queueLength: 0 },
+  })
+  testReportSent.value = true
+  setTimeout(() => { testReportSent.value = false }, 3000)
 }
 </script>
 
@@ -119,6 +134,19 @@ function checkForUpdates() {
                   <span class="option-desc">Jokers beat all, 2 twos beat 3 aces</span>
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div class="dev-section">
+            <div class="game-header">Developer</div>
+            <div class="settings-section">
+              <button 
+                class="test-btn" 
+                :disabled="testReportSent"
+                @click="sendTestBugReport"
+              >
+                {{ testReportSent ? '✓ Sent!' : 'Send Test Bug Report' }}
+              </button>
             </div>
           </div>
 
@@ -311,6 +339,28 @@ function checkForUpdates() {
 
   &:hover {
     background: #2a6b3d;
+  }
+}
+
+.dev-section {
+  border-top: 1px solid #eee;
+}
+
+.test-btn {
+  padding: $spacing-sm $spacing-md;
+  background: #666;
+  color: white;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #555;
+  }
+
+  &:disabled {
+    background: #4caf50;
+    cursor: default;
   }
 }
 
