@@ -442,7 +442,9 @@ export function useEuchreDirector(
       const tl = getTableLayout()
       const seatPos = tl?.seats[0]?.handPosition
       const targetX = seatPos?.x ?? boardRef.value.offsetWidth / 2
-      const targetY = seatPos?.y ?? boardRef.value.offsetHeight - 20
+      // Keep the hand centered under the table, but offset down so only the top
+      // ~2/3 of the cards are visible at the bottom of the view.
+      const targetY = boardRef.value.offsetHeight - 20
       const targetScale = 1.8
 
       userHand.position = { x: targetX, y: targetY }
