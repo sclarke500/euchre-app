@@ -1,4 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws'
+import { createServer, type Server as HttpServer } from 'http'
+import express, { type Express } from 'express'
 
 export interface WebSocketTransportOptions {
   port: number
@@ -9,7 +11,13 @@ export interface WebSocketTransportOptions {
   heartbeatIntervalMs?: number
 }
 
-export function createWebSocketServer(options: WebSocketTransportOptions): WebSocketServer {
+export interface TransportServer {
+  wss: WebSocketServer
+  httpServer: HttpServer
+  app: Express
+}
+
+export function createWebSocketServer(options: WebSocketTransportOptions): TransportServer {
   const {
     port,
     onConnection,
@@ -19,7 +27,15 @@ export function createWebSocketServer(options: WebSocketTransportOptions): WebSo
     heartbeatIntervalMs = 30_000,
   } = options
 
-  const wss = new WebSocketServer({ port })
+  const app = express()
+  app.use(express.json())
+  
+  const httpServer = createServer(app)
+  const wss = new WebSocketServer({ server: httpServer })
+  
+  httpServer.listen(port, () => {
+    console.log(`HTTP + WebSocket server listening on port ${port}`)
+  })
 
   wss.on('connection', (ws: WebSocket) => {
     ;(ws as { isAlive?: boolean }).isAlive = true
@@ -58,5 +74,5 @@ export function createWebSocketServer(options: WebSocketTransportOptions): WebSo
     clearInterval(interval)
   })
 
-  return wss
+  return { wss, httpServer, app }
 }

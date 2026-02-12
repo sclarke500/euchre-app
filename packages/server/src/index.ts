@@ -346,7 +346,7 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
 // Server Setup
 // ============================================
 
-createWebSocketServer({
+const { app } = createWebSocketServer({
   port: PORT,
   onConnection: (ws: WebSocket) => {
     const client: ConnectedClient = {
@@ -396,4 +396,21 @@ createWebSocketServer({
   },
 })
 
-console.log(`Euchre/President WebSocket server running on port ${PORT}`)
+// HTTP endpoint for bug reports (works without websocket connection)
+app.post('/api/bug-report', async (req, res) => {
+  try {
+    const payload = JSON.stringify(req.body)
+    const result = await handleBugReport('http-client', payload)
+    res.json(result)
+  } catch (error) {
+    console.error('[HTTP BugReport] Error:', error)
+    res.status(500).json({ success: false, error: 'Internal server error' })
+  }
+})
+
+// Health check
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', clients: clients.size })
+})
+
+console.log(`Euchre/President HTTP + WebSocket server running on port ${PORT}`)

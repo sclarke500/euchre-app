@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import { useSettingsStore, type AIDifficulty, type DealerPassRule } from '@/stores/settingsStore'
 import { sendBugReport } from '@/services/autoBugReport'
-import { websocket } from '@/services/websocket'
 
 defineProps<{
   show: boolean
@@ -40,22 +39,22 @@ function checkForUpdates() {
   window.location.reload()
 }
 
-function sendTestBugReport() {
-  if (!websocket.isConnected) {
-    testReportError.value = 'Join a game first (websocket not connected)'
+async function sendTestBugReport() {
+  try {
+    await sendBugReport({
+      createdAt: new Date().toISOString(),
+      trigger: 'manual-test',
+      serverError: 'Test bug report from settings',
+      serverErrorCode: 'TEST_001',
+      adapter: { phase: 'testing', myPlayerId: 'test-user' },
+      multiplayer: { stateSeq: 0, queueLength: 0 },
+    })
+    testReportSent.value = true
+    setTimeout(() => { testReportSent.value = false }, 3000)
+  } catch (err) {
+    testReportError.value = 'Failed to send report'
     setTimeout(() => { testReportError.value = '' }, 3000)
-    return
   }
-  sendBugReport({
-    createdAt: new Date().toISOString(),
-    trigger: 'manual-test',
-    serverError: 'Test bug report from settings',
-    serverErrorCode: 'TEST_001',
-    adapter: { phase: 'testing', myPlayerId: 'test-user' },
-    multiplayer: { stateSeq: 0, queueLength: 0 },
-  })
-  testReportSent.value = true
-  setTimeout(() => { testReportSent.value = false }, 3000)
 }
 </script>
 
