@@ -32,6 +32,7 @@ const emit = defineEmits<{
 // Timer state
 const visible = ref(false)
 const remainingMs = ref(props.countdownMs)
+const hasPlayedWhistle = ref(false)
 const hasPlayedDing = ref(false)
 
 let graceTimer: ReturnType<typeof setTimeout> | null = null
@@ -48,32 +49,86 @@ const phase = computed(() => {
   return 'green'
 })
 
-// Play ding sound when entering yellow phase
-function playDing() {
-  if (hasPlayedDing.value) return
-  hasPlayedDing.value = true
+// Play "yoo-hoo" whistle when timer first appears
+function playWhistle() {
+  if (hasPlayedWhistle.value) return
+  hasPlayedWhistle.value = true
   
-  // Create a simple ding using Web Audio API
   try {
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const oscillator = audioCtx.createOscillator()
-    const gainNode = audioCtx.createGain()
     
-    oscillator.connect(gainNode)
-    gainNode.connect(audioCtx.destination)
+    // First note (higher) - "yoo"
+    const osc1 = audioCtx.createOscillator()
+    const gain1 = audioCtx.createGain()
+    osc1.connect(gain1)
+    gain1.connect(audioCtx.destination)
+    osc1.frequency.setValueAtTime(880, audioCtx.currentTime) // A5
+    osc1.frequency.exponentialRampToValueAtTime(660, audioCtx.currentTime + 0.15) // Slide down
+    osc1.type = 'sine'
+    gain1.gain.setValueAtTime(0.25, audioCtx.currentTime)
+    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2)
+    osc1.start(audioCtx.currentTime)
+    osc1.stop(audioCtx.currentTime + 0.2)
     
-    oscillator.frequency.value = 880 // A5 note
-    oscillator.type = 'sine'
-    
-    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3)
-    
-    oscillator.start(audioCtx.currentTime)
-    oscillator.stop(audioCtx.currentTime + 0.3)
+    // Second note (lower) - "hoo"
+    const osc2 = audioCtx.createOscillator()
+    const gain2 = audioCtx.createGain()
+    osc2.connect(gain2)
+    gain2.connect(audioCtx.destination)
+    osc2.frequency.setValueAtTime(660, audioCtx.currentTime + 0.2) // E5
+    osc2.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.35) // Slide up
+    osc2.type = 'sine'
+    gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.2)
+    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4)
+    osc2.start(audioCtx.currentTime + 0.2)
+    osc2.stop(audioCtx.currentTime + 0.4)
   } catch (e) {
     // Audio not available, fail silently
   }
 }
+
+// Play "ding ding" bell when entering yellow phase
+function playDing() {
+  if (hasPlayedDing.value) return
+  hasPlayedDing.value = true
+  
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    
+    // First ding
+    const osc1 = audioCtx.createOscillator()
+    const gain1 = audioCtx.createGain()
+    osc1.connect(gain1)
+    gain1.connect(audioCtx.destination)
+    osc1.frequency.value = 1200 // High bell tone
+    osc1.type = 'sine'
+    gain1.gain.setValueAtTime(0.3, audioCtx.currentTime)
+    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25)
+    osc1.start(audioCtx.currentTime)
+    osc1.stop(audioCtx.currentTime + 0.25)
+    
+    // Second ding (slightly delayed)
+    const osc2 = audioCtx.createOscillator()
+    const gain2 = audioCtx.createGain()
+    osc2.connect(gain2)
+    gain2.connect(audioCtx.destination)
+    osc2.frequency.value = 1200
+    osc2.type = 'sine'
+    gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.3)
+    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.55)
+    osc2.start(audioCtx.currentTime + 0.3)
+    osc2.stop(audioCtx.currentTime + 0.55)
+  } catch (e) {
+    // Audio not available, fail silently
+  }
+}
+
+// Watch for timer becoming visible to play whistle
+watch(visible, (isVisible) => {
+  if (isVisible) {
+    playWhistle()
+  }
+})
 
 // Watch for yellow phase to play ding
 watch(phase, (newPhase) => {
@@ -85,6 +140,7 @@ watch(phase, (newPhase) => {
 function startGracePeriod() {
   cleanup()
   visible.value = false
+  hasPlayedWhistle.value = false
   hasPlayedDing.value = false
   remainingMs.value = props.countdownMs
   
@@ -123,6 +179,7 @@ function cleanup() {
 function reset() {
   cleanup()
   visible.value = false
+  hasPlayedWhistle.value = false
   hasPlayedDing.value = false
   remainingMs.value = props.countdownMs
 }
