@@ -122,9 +122,11 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             }
           }
         }
+      } else {
+        // Grace period expired - clean up
+        disconnectedPlayers.delete(odusId)
       }
-      // Grace period expired or game no longer exists - clean up
-      disconnectedPlayers.delete(odusId)
+      // If restore failed within grace period, keep entry for retry
     }
 
     // Check President games (for players who weren't replaced by AI)
