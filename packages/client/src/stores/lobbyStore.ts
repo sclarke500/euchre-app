@@ -32,6 +32,10 @@ export const useLobbyStore = defineStore('lobby', () => {
   // Flag to indicate we're waiting for welcome after a reconnect
   const pendingReconnectResync = ref(false)
 
+  // Flag to block game actions during reconnect handshake
+  // True while we're waiting for the server to re-establish our identity
+  const isReconnecting = ref(false)
+
   const tables = ref<Table[]>([])
   const connectedPlayers = ref(0)
 
@@ -69,6 +73,9 @@ export const useLobbyStore = defineStore('lobby', () => {
       case 'welcome':
         odusId.value = message.odusId
         localStorage.setItem(STORAGE_KEYS.odusId, message.odusId)
+        
+        // Clear reconnecting flag - server has re-established our identity
+        isReconnecting.value = false
         
         // If we were waiting for welcome after reconnect, now it's safe to request state resync
         // (The server has re-associated our client with our game at this point)
@@ -176,6 +183,9 @@ export const useLobbyStore = defineStore('lobby', () => {
       websocket.onReconnect(() => {
         console.log('Reconnected - re-identifying to server')
         if (hasNickname.value) {
+          // Block game actions until server has re-established our identity
+          isReconnecting.value = true
+          
           // If we're in a game, mark that we need to request state resync
           // AFTER the welcome message confirms join_lobby was processed.
           // This avoids a race condition where request_state arrives before
@@ -296,6 +306,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     // State
     isConnected,
     isConnecting,
+    isReconnecting,
     connectionError,
     odusId,
     nickname,

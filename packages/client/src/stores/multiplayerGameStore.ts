@@ -14,6 +14,7 @@ import { GamePhase, getLegalPlays, BidAction as BidActionEnum } from '@euchre/sh
 import { websocket } from '@/services/websocket'
 import { useToast } from '@/composables/useToast'
 import { sendBugReport } from '@/services/autoBugReport'
+import { useLobbyStore } from '@/stores/lobbyStore'
 
 export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   // State from server
@@ -406,6 +407,15 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
       return
     }
 
+    const lobbyStore = useLobbyStore()
+    
+    // Block actions during reconnection handshake to avoid "Not in a game" errors
+    if (lobbyStore.isReconnecting) {
+      console.warn('[MP] makeBid blocked - reconnecting to server, waiting for identity restoration')
+      // Keep turn enabled so user can retry after reconnect completes
+      return
+    }
+
     if (!websocket.isConnected) {
       console.error('[MP] WebSocket not connected; cannot send bid:', action)
       // Keep local turn enabled so the user can retry.
@@ -431,6 +441,14 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     if (!isMyTurn.value) return
     if (validCards.value.length > 0 && !validCards.value.includes(cardId)) return
 
+    const lobbyStore = useLobbyStore()
+    
+    // Block actions during reconnection handshake to avoid "Not in a game" errors
+    if (lobbyStore.isReconnecting) {
+      console.warn('[MP] playCard blocked - reconnecting to server, waiting for identity restoration')
+      return
+    }
+
     if (!websocket.isConnected) {
       console.error('[MP] WebSocket not connected; cannot play card:', cardId)
       // Keep local turn enabled so the user can retry.
@@ -451,6 +469,14 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
   function discardCard(cardId: string): void {
     if (!isMyTurn.value) return
+
+    const lobbyStore = useLobbyStore()
+    
+    // Block actions during reconnection handshake to avoid "Not in a game" errors
+    if (lobbyStore.isReconnecting) {
+      console.warn('[MP] discardCard blocked - reconnecting to server, waiting for identity restoration')
+      return
+    }
 
     if (!websocket.isConnected) {
       console.error('[MP] WebSocket not connected; cannot discard card:', cardId)
