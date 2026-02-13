@@ -49,6 +49,40 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     broadcastToGame,
   } = deps
 
+  /**
+   * Try to recover client.gameId if the player is in a game but gameId wasn't set properly.
+   * This handles race conditions during reconnection where the gameId association was lost.
+   * Returns true if client is now confirmed in a game, false otherwise.
+   */
+  function ensureGameIdRecovered(client: ConnectedClient): boolean {
+    if (client.gameId) return true
+    if (!client.player?.odusId) return false
+
+    const odusId = client.player.odusId
+
+    // Check President games first
+    for (const [gameId, game] of presidentGames) {
+      const playerInfo = game.getPlayerInfo(odusId)
+      if (playerInfo) {
+        console.log(`[Recovery] Restored gameId for ${client.player.nickname} in President game ${gameId}`)
+        client.gameId = gameId
+        return true
+      }
+    }
+
+    // Check Euchre games
+    for (const [gameId, game] of games) {
+      const playerInfo = game.getPlayerInfo(odusId)
+      if (playerInfo) {
+        console.log(`[Recovery] Restored gameId for ${client.player.nickname} in Euchre game ${gameId}`)
+        client.gameId = gameId
+        return true
+      }
+    }
+
+    return false
+  }
+
   function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
     if (!client.player || !client.tableId) {
       send(ws, { type: 'error', message: 'Not at a table' })
@@ -324,22 +358,22 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   }
 
   function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
-    if (!client.player || !client.gameId) {
+    if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
       send(ws, { type: 'error', message: 'Not in a game' })
       return
     }
 
-    const gameType = gameTypes.get(client.gameId)
+    const gameType = gameTypes.get(client.gameId!)
 
     if (gameType === 'president') {
-      const presidentGame = presidentGames.get(client.gameId)
+      const presidentGame = presidentGames.get(client.gameId!)
       if (!presidentGame) {
         send(ws, { type: 'error', message: 'Game not found' })
         return
       }
       presidentGame.resendStateToPlayer(client.player.odusId)
     } else {
-      const game = games.get(client.gameId)
+      const game = games.get(client.gameId!)
       if (!game) {
         send(ws, { type: 'error', message: 'Game not found' })
         return
@@ -351,12 +385,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   }
 
   function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
-    if (!client.player || !client.gameId) {
+    if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
       send(ws, { type: 'error', message: 'Not in a game' })
       return
     }
 
-    const oldGameId = client.gameId
+    const oldGameId = client.gameId!
     const hostId = gameHosts.get(oldGameId)
     const gameType = gameTypes.get(oldGameId) || 'euchre'
     const previousSettings = gameSettings.get(oldGameId)

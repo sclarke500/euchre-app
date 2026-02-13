@@ -122,13 +122,47 @@ const sessionHandlers = createSessionHandlers({
   broadcastToGame,
 })
 
+/**
+ * Try to recover client.gameId if the player is in a game but gameId wasn't set properly.
+ * This handles race conditions during reconnection where the gameId association was lost.
+ * Returns true if client is now confirmed in a game, false otherwise.
+ */
+function ensureGameIdRecovered(client: ConnectedClient): boolean {
+  if (client.gameId) return true
+  if (!client.player?.odusId) return false
+
+  const odusId = client.player.odusId
+
+  // Check President games first
+  for (const [gameId, game] of presidentGames) {
+    const playerInfo = game.getPlayerInfo(odusId)
+    if (playerInfo) {
+      console.log(`[Recovery] Restored gameId for ${client.player.nickname} in President game ${gameId}`)
+      client.gameId = gameId
+      return true
+    }
+  }
+
+  // Check Euchre games
+  for (const [gameId, game] of games) {
+    const playerInfo = game.getPlayerInfo(odusId)
+    if (playerInfo) {
+      console.log(`[Recovery] Restored gameId for ${client.player.nickname} in Euchre game ${gameId}`)
+      client.gameId = gameId
+      return true
+    }
+  }
+
+  return false
+}
+
 function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Bid['suit'], goingAlone?: boolean): void {
-  if (!client.player || !client.gameId) {
+  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
     send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const game = games.get(client.gameId)
+  const game = games.get(client.gameId!)
   if (!game) {
     send(ws, { type: 'error', message: 'Game not found' })
     return
@@ -141,12 +175,12 @@ function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['acti
 }
 
 function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
-  if (!client.player || !client.gameId) {
+  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
     send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const game = games.get(client.gameId)
+  const game = games.get(client.gameId!)
   if (!game) {
     send(ws, { type: 'error', message: 'Game not found' })
     return
@@ -159,12 +193,12 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
 }
 
 function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
-  if (!client.player || !client.gameId) {
+  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
     send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const game = games.get(client.gameId)
+  const game = games.get(client.gameId!)
   if (!game) {
     send(ws, { type: 'error', message: 'Game not found' })
     return
@@ -177,23 +211,23 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
 }
 
 function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: number): void {
-  if (!client.player || !client.gameId) {
+  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
     send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const gameType = gameTypes.get(client.gameId)
+  const gameType = gameTypes.get(client.gameId!)
   let success = false
 
   if (gameType === 'president') {
-    const presidentGame = presidentGames.get(client.gameId)
+    const presidentGame = presidentGames.get(client.gameId!)
     if (!presidentGame) {
       send(ws, { type: 'error', message: 'Game not found' })
       return
     }
     success = presidentGame.bootPlayer(playerId)
   } else {
-    const game = games.get(client.gameId)
+    const game = games.get(client.gameId!)
     if (!game) {
       send(ws, { type: 'error', message: 'Game not found' })
       return
@@ -210,12 +244,12 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
 }
 
 function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
-  if (!client.player || !client.gameId) {
+  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
     send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const presidentGame = presidentGames.get(client.gameId)
+  const presidentGame = presidentGames.get(client.gameId!)
   if (!presidentGame) {
     send(ws, { type: 'error', message: 'President game not found' })
     return
@@ -228,12 +262,12 @@ function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardId
 }
 
 function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
-  if (!client.player || !client.gameId) {
+  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
     send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const presidentGame = presidentGames.get(client.gameId)
+  const presidentGame = presidentGames.get(client.gameId!)
   if (!presidentGame) {
     send(ws, { type: 'error', message: 'President game not found' })
     return
@@ -246,12 +280,12 @@ function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
 }
 
 function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
-  if (!client.player || !client.gameId) {
+  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
     send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const presidentGame = presidentGames.get(client.gameId)
+  const presidentGame = presidentGames.get(client.gameId!)
   if (!presidentGame) {
     send(ws, { type: 'error', message: 'President game not found' })
     return
