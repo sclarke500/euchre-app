@@ -804,6 +804,38 @@ export class Game {
   }
 
   /**
+   * Restore a disconnected player to their seat, replacing the AI that took over.
+   */
+  restoreHumanPlayer(seatIndex: number, odusId: string, nickname: string): boolean {
+    const player = this.players[seatIndex]
+    if (!player) {
+      console.log(`restoreHumanPlayer: seat ${seatIndex} not found`)
+      return false
+    }
+
+    // Only restore if the seat is currently AI-controlled
+    if (player.isHuman) {
+      console.log(`restoreHumanPlayer: seat ${seatIndex} is already human`)
+      return false
+    }
+
+    console.log(`Restoring player ${nickname} to seat ${seatIndex} (was ${player.name})`)
+
+    // Convert AI back to human
+    player.isHuman = true
+    player.name = nickname
+    player.odusId = odusId
+
+    // Notify about the restoration
+    this.events.onPlayerBooted(seatIndex, nickname) // Reuse this event to notify of player change
+
+    // Broadcast updated state
+    this.broadcastState()
+
+    return true
+  }
+
+  /**
    * Find a player's seat index by their odusId. Returns -1 if not found.
    */
   findPlayerIndexByOdusId(odusId: string): number {

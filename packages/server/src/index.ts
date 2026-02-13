@@ -13,7 +13,7 @@ import type { ConnectedClient } from './ws/types.js'
 import { createWebSocketServer } from './ws/transport.js'
 import { enqueueGameCommand } from './sessions/commandQueue.js'
 import { handleBugReport } from './bugReport.js'
-import { createLobbyHandlers } from './lobby/handlers.js'
+import { createLobbyHandlers, type DisconnectedPlayer } from './lobby/handlers.js'
 import { createSessionHandlers } from './sessions/handlers.js'
 import {
   games,
@@ -35,6 +35,7 @@ const PORT = parseInt(process.env.PORT || '3001', 10)
 
 const clients = new Map<WebSocket, ConnectedClient>()
 const tables = new Map<string, Table>()
+const disconnectedPlayers = new Map<string, DisconnectedPlayer>()
 
 // ============================================
 // Helpers
@@ -88,6 +89,7 @@ const lobbyHandlers = createLobbyHandlers({
   tables,
   games,
   presidentGames,
+  disconnectedPlayers,
   generateId,
   send,
   broadcast,
@@ -261,29 +263,55 @@ function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardId
   }
 }
 
-function replacePlayerWithAI(client: ConnectedClient): void {
+function replacePlayerWithAI(client: ConnectedClient, trackForReconnect: boolean = false): void {
   if (!client.player || !client.gameId) return
 
   const odusId = client.player.odusId
-  const gameType = gameTypes.get(client.gameId)
+  const gameId = client.gameId
+  const gameType = gameTypes.get(gameId) || 'euchre'
 
   if (gameType === 'president') {
-    const game = presidentGames.get(client.gameId)
+    const game = presidentGames.get(gameId)
     if (!game) return
     const idx = game.findPlayerIndexByOdusId(odusId)
-    if (idx >= 0) game.replaceWithAI(idx)
+    if (idx >= 0) {
+      // Track for reconnection before replacing
+      if (trackForReconnect) {
+        disconnectedPlayers.set(odusId, {
+          gameId,
+          seatIndex: idx,
+          gameType: 'president',
+          disconnectTime: Date.now(),
+        })
+        console.log(`Tracking ${client.player.nickname} for reconnection (President, seat ${idx})`)
+      }
+      game.replaceWithAI(idx)
+    }
   } else {
-    const game = games.get(client.gameId)
+    const game = games.get(gameId)
     if (!game) return
     const idx = game.findPlayerIndexByOdusId(odusId)
-    if (idx >= 0) game.replaceWithAI(idx)
+    if (idx >= 0) {
+      // Track for reconnection before replacing
+      if (trackForReconnect) {
+        disconnectedPlayers.set(odusId, {
+          gameId,
+          seatIndex: idx,
+          gameType: 'euchre',
+          disconnectTime: Date.now(),
+        })
+        console.log(`Tracking ${client.player.nickname} for reconnection (Euchre, seat ${idx})`)
+      }
+      game.replaceWithAI(idx)
+    }
   }
 
   client.gameId = null
 }
 
 function handleLeaveGame(ws: WebSocket, client: ConnectedClient): void {
-  replacePlayerWithAI(client)
+  // Voluntary leave - don't track for reconnection
+  replacePlayerWithAI(client, false)
 }
 
 function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMessage): void {
@@ -385,8 +413,9 @@ const { app } = createWebSocketServer({
       lobbyHandlers.handleLeaveTable(ws, client)
     }
     // Replace disconnected player with AI if they were in a game
+    // Track for reconnection so they can rejoin within the grace period
     if (client.gameId) {
-      replacePlayerWithAI(client)
+      replacePlayerWithAI(client, true)
     }
     clients.delete(ws)
     console.log(`Client disconnected. Total: ${clients.size}`)

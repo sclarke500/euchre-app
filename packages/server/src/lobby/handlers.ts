@@ -24,16 +24,27 @@ export interface LobbyHandlers {
   handleLeaveTable: (ws: WebSocket, client: ConnectedClient) => void
 }
 
+export interface DisconnectedPlayer {
+  gameId: string
+  seatIndex: number
+  gameType: 'euchre' | 'president'
+  disconnectTime: number
+}
+
 export interface LobbyDependencies {
   clients: Map<WebSocket, ConnectedClient>
   tables: Map<string, Table>
   games: Map<string, Game>
   presidentGames: Map<string, PresidentGame>
+  disconnectedPlayers: Map<string, DisconnectedPlayer>
   generateId: () => string
   send: (ws: WebSocket, message: ServerMessage) => void
   broadcast: (message: ServerMessage, excludeWs?: WebSocket) => void
   broadcastToTable: (tableId: string, message: ServerMessage, excludeWs?: WebSocket) => void
 }
+
+// Grace period for reconnection (5 minutes)
+const RECONNECT_GRACE_PERIOD_MS = 5 * 60 * 1000
 
 export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
   const {
@@ -41,6 +52,7 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     tables,
     games,
     presidentGames,
+    disconnectedPlayers,
     generateId,
     send,
     broadcast,
@@ -65,17 +77,55 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
 
     // Check if this player is in an active game (reconnecting)
     let reconnectedToGame = false
-    for (const [gameId, game] of presidentGames) {
-      const playerInfo = game.getPlayerInfo(playerId)
-      if (playerInfo) {
-        // Found their game - restore the connection
-        client.gameId = gameId
-        console.log(`Player ${nickname} reconnected to President game ${gameId}`)
-        reconnectedToGame = true
+    
+    // First, check if they disconnected recently and their seat was converted to AI
+    const disconnectedInfo = disconnectedPlayers.get(playerId)
+    if (disconnectedInfo) {
+      const elapsed = Date.now() - disconnectedInfo.disconnectTime
+      if (elapsed <= RECONNECT_GRACE_PERIOD_MS) {
+        // Try to restore their seat
+        if (disconnectedInfo.gameType === 'president') {
+          const game = presidentGames.get(disconnectedInfo.gameId)
+          if (game) {
+            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
+            if (restored) {
+              client.gameId = disconnectedInfo.gameId
+              console.log(`Player ${nickname} restored to President game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
+              reconnectedToGame = true
+              game.resendStateToPlayer(playerId)
+            }
+          }
+        } else {
+          const game = games.get(disconnectedInfo.gameId)
+          if (game) {
+            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
+            if (restored) {
+              client.gameId = disconnectedInfo.gameId
+              console.log(`Player ${nickname} restored to Euchre game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
+              reconnectedToGame = true
+              game.resendStateToPlayer(playerId)
+            }
+          }
+        }
+      }
+      // Remove from disconnected players map (either restored or expired)
+      disconnectedPlayers.delete(playerId)
+    }
+    
+    // Also check if they're still in a game with their odusId intact (didn't disconnect long enough to be replaced)
+    if (!reconnectedToGame) {
+      for (const [gameId, game] of presidentGames) {
+        const playerInfo = game.getPlayerInfo(playerId)
+        if (playerInfo) {
+          // Found their game - restore the connection
+          client.gameId = gameId
+          console.log(`Player ${nickname} reconnected to President game ${gameId}`)
+          reconnectedToGame = true
 
-        // Immediately send them the current game state
-        game.resendStateToPlayer(playerId)
-        break
+          // Immediately send them the current game state
+          game.resendStateToPlayer(playerId)
+          break
+        }
       }
     }
 
