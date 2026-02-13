@@ -96,7 +96,7 @@ function playWhistle() {
   }
 }
 
-// Play "ding ding" bell when entering yellow phase
+// Play "ding ding" bell with reverb when entering yellow phase
 function playDing() {
   if (hasPlayedDing.value) return
   hasPlayedDing.value = true
@@ -105,32 +105,52 @@ function playDing() {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
     const now = ctx.currentTime
     
-    // Bell-like sound using multiple harmonics
-    function createBell(startTime: number) {
-      const fundamental = 1400 // Higher, brighter bell
-      const harmonics = [1, 2.4, 3, 4.5] // Bell-like harmonic series
-      const gains = [0.5, 0.3, 0.2, 0.1]
-      
-      harmonics.forEach((mult, i) => {
+    // Create simple reverb impulse response
+    function createReverb(seconds = 1.5) {
+      const sampleRate = ctx.sampleRate
+      const length = sampleRate * seconds
+      const impulse = ctx.createBuffer(2, length, sampleRate)
+      const left = impulse.getChannelData(0)
+      const right = impulse.getChannelData(1)
+      for (let i = 0; i < length; i++) {
+        const decay = Math.pow(1 - i / length, 2) // exponential decay
+        left[i] = (Math.random() * 2 - 1) * decay
+        right[i] = (Math.random() * 2 - 1) * decay
+      }
+      const convolver = ctx.createConvolver()
+      convolver.buffer = impulse
+      return convolver
+    }
+    
+    const reverb = createReverb(1.8)
+    const wetGain = ctx.createGain()
+    wetGain.gain.value = 0.6 // reverb level
+    reverb.connect(wetGain).connect(ctx.destination)
+    
+    // Bell ding with inharmonic partials
+    function ding(time: number, baseFreq: number, volume = 0.5) {
+      const partials = [1.0, 2.0, 2.7, 4.0] // classic bell ratios
+      partials.forEach(ratio => {
         const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
         osc.type = 'sine'
-        osc.frequency.value = fundamental * mult
+        osc.frequency.setValueAtTime(baseFreq * ratio, time)
+        
+        const gain = ctx.createGain()
+        gain.gain.setValueAtTime(volume / partials.length, time)
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 2.5)
+        
         osc.connect(gain)
-        gain.connect(ctx.destination)
+        // Dry + wet paths
+        gain.connect(ctx.destination) // dry
+        gain.connect(reverb)          // wet
         
-        // Bell envelope - fast attack, medium decay
-        gain.gain.setValueAtTime(0, startTime)
-        gain.gain.linearRampToValueAtTime((gains[i] ?? 0.1) * 0.4, startTime + 0.01)
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5)
-        
-        osc.start(startTime)
-        osc.stop(startTime + 0.6)
+        osc.start(time)
+        osc.stop(time + 3)
       })
     }
     
-    createBell(now)        // First ding
-    createBell(now + 0.35) // Second ding
+    ding(now, 880, 0.5)        // First ding (A5)
+    ding(now + 0.15, 659, 0.45) // Second ding (E5)
   } catch (e) {
     // Audio not available, fail silently
   }

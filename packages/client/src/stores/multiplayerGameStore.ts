@@ -477,6 +477,13 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     validCards.value = []
   }
 
+  function bootPlayer(playerId: number): void {
+    websocket.send({
+      type: 'boot_player',
+      playerId,
+    })
+  }
+
   function requestStateResync(): void {
     websocket.send({
       type: 'request_state',
@@ -543,6 +550,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     makeBid,
     playCard,
     discardCard,
+    bootPlayer,
     initialize,
     cleanup,
     requestStateResync,

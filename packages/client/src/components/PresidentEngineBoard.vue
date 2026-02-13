@@ -413,8 +413,12 @@ function confirmGiveBack() {
 }
 
 function handleTurnTimeout() {
-  // Server will boot the player — client just acknowledges
-  console.warn('[TurnTimer] Timeout reached — server will boot player')
+  // Auto-boot self when timer runs out
+  const playerId = game.humanPlayer.value?.id
+  if (playerId !== undefined && props.mode === 'multiplayer') {
+    console.warn('[TurnTimer] Timeout reached — auto-booting player', playerId)
+    game.bootPlayer?.(playerId)
+  }
 }
 
 // ── Bug Report ──────────────────────────────────────────────────────────

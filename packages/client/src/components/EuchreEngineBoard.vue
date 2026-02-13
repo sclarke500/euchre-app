@@ -281,9 +281,12 @@ function handleResync() {
 }
 
 function handleTurnTimeout() {
-  // Server will boot the player — client just acknowledges
-  console.warn('[TurnTimer] Timeout reached — server will boot player')
-  // Optionally show a toast or let the server's boot message handle it
+  // Auto-boot self when timer runs out
+  const playerId = game.myPlayerId.value
+  if (playerId >= 0 && props.mode === 'multiplayer') {
+    console.warn('[TurnTimer] Timeout reached — auto-booting player', playerId)
+    mpStore?.bootPlayer(playerId)
+  }
 }
 
 const showBugReport = ref(false)
