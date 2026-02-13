@@ -47,7 +47,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   }
 
   const recentStateSummaries = ref<GameStateSummary[]>([])
-  const MAX_STATE_SUMMARIES = 40
+  const MAX_STATE_SUMMARIES = 10
 
   function pushStateSummary(state: ClientGameState) {
     const summary: GameStateSummary = {
@@ -251,6 +251,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
           )
 
           try {
+            // Slim payload to avoid 500KB limit - don't send rawState or full WS history
             sendBugReport({
               createdAt: new Date().toISOString(),
               trigger: 'auto',
@@ -270,14 +271,13 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
               multiplayer: {
                 stateSeq: lastStateSeq.value,
                 queueLength: messageQueue.length,
-                timedOutPlayer: gameState.value.timedOutPlayer ?? null,
-                recentStateSummaries: recentStateSummaries.value,
+                timedOutPlayer: gameState.value?.timedOutPlayer ?? null,
+                recentStateSummaries: recentStateSummaries.value.slice(-5), // Last 5 only
               },
-              websocket: {
-                inbound: websocket.getRecentInbound(),
-                outbound: websocket.getRecentOutbound(),
-              },
-              rawState: gameState.value,
+              recentWsMessages: websocket.getRecentInbound().slice(-10).map(m => ({
+                ts: m.ts,
+                type: m.message.type,
+              })),
             })
           } catch (e) {
             console.error('[BugReport] Failed to collect diagnostics:', e)

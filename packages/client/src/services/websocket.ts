@@ -27,8 +27,8 @@ class WebSocketService {
   private wasConnected = false
   private clientSeq = 0
 
-  // Debug history (for bug reports)
-  private readonly maxHistory = 250
+  // Debug history (for bug reports) - keep small to avoid huge payloads
+  private readonly maxHistory = 30
   private readonly inboundHistory: Array<LoggedMessage<ServerMessage>> = []
   private readonly outboundHistory: Array<LoggedMessage<ClientMessage>> = []
 
