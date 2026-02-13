@@ -55,33 +55,42 @@ function playWhistle() {
   hasPlayedWhistle.value = true
   
   try {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const now = ctx.currentTime
     
-    // First note (higher) - "yoo"
-    const osc1 = audioCtx.createOscillator()
-    const gain1 = audioCtx.createGain()
-    osc1.connect(gain1)
-    gain1.connect(audioCtx.destination)
-    osc1.frequency.setValueAtTime(880, audioCtx.currentTime) // A5
-    osc1.frequency.exponentialRampToValueAtTime(660, audioCtx.currentTime + 0.15) // Slide down
+    // "Yoo" note (~800 Hz)
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
     osc1.type = 'sine'
-    gain1.gain.setValueAtTime(0.25, audioCtx.currentTime)
-    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2)
-    osc1.start(audioCtx.currentTime)
-    osc1.stop(audioCtx.currentTime + 0.2)
+    osc1.connect(gain1)
+    gain1.connect(ctx.destination)
+    osc1.frequency.setValueAtTime(800, now)
     
-    // Second note (lower) - "hoo"
-    const osc2 = audioCtx.createOscillator()
-    const gain2 = audioCtx.createGain()
-    osc2.connect(gain2)
-    gain2.connect(audioCtx.destination)
-    osc2.frequency.setValueAtTime(660, audioCtx.currentTime + 0.2) // E5
-    osc2.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.35) // Slide up
+    // Natural whistle envelope for "yoo"
+    gain1.gain.setValueAtTime(0, now)
+    gain1.gain.linearRampToValueAtTime(0.5, now + 0.05) // quick attack
+    gain1.gain.linearRampToValueAtTime(0.4, now + 0.4)  // sustain
+    gain1.gain.linearRampToValueAtTime(0, now + 0.7)    // fade out
+    
+    osc1.start(now)
+    osc1.stop(now + 0.8)
+    
+    // "Hoo" note (~500 Hz) - overlaps with yoo
+    const osc2 = ctx.createOscillator()
+    const gain2 = ctx.createGain()
     osc2.type = 'sine'
-    gain2.gain.setValueAtTime(0.25, audioCtx.currentTime + 0.2)
-    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4)
-    osc2.start(audioCtx.currentTime + 0.2)
-    osc2.stop(audioCtx.currentTime + 0.4)
+    osc2.connect(gain2)
+    gain2.connect(ctx.destination)
+    osc2.frequency.setValueAtTime(500, now + 0.35)
+    
+    // Natural envelope for "hoo"
+    gain2.gain.setValueAtTime(0, now + 0.35)
+    gain2.gain.linearRampToValueAtTime(0.45, now + 0.4)  // quick attack
+    gain2.gain.linearRampToValueAtTime(0.35, now + 0.8)  // sustain
+    gain2.gain.linearRampToValueAtTime(0, now + 1.2)     // longer fade
+    
+    osc2.start(now + 0.35)
+    osc2.stop(now + 1.3)
   } catch (e) {
     // Audio not available, fail silently
   }
@@ -93,31 +102,35 @@ function playDing() {
   hasPlayedDing.value = true
   
   try {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const now = ctx.currentTime
     
-    // First ding
-    const osc1 = audioCtx.createOscillator()
-    const gain1 = audioCtx.createGain()
-    osc1.connect(gain1)
-    gain1.connect(audioCtx.destination)
-    osc1.frequency.value = 1200 // High bell tone
-    osc1.type = 'sine'
-    gain1.gain.setValueAtTime(0.3, audioCtx.currentTime)
-    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25)
-    osc1.start(audioCtx.currentTime)
-    osc1.stop(audioCtx.currentTime + 0.25)
+    // Bell-like sound using multiple harmonics
+    function createBell(startTime: number) {
+      const fundamental = 1400 // Higher, brighter bell
+      const harmonics = [1, 2.4, 3, 4.5] // Bell-like harmonic series
+      const gains = [0.5, 0.3, 0.2, 0.1]
+      
+      harmonics.forEach((mult, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.value = fundamental * mult
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        
+        // Bell envelope - fast attack, medium decay
+        gain.gain.setValueAtTime(0, startTime)
+        gain.gain.linearRampToValueAtTime((gains[i] ?? 0.1) * 0.4, startTime + 0.01)
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5)
+        
+        osc.start(startTime)
+        osc.stop(startTime + 0.6)
+      })
+    }
     
-    // Second ding (slightly delayed)
-    const osc2 = audioCtx.createOscillator()
-    const gain2 = audioCtx.createGain()
-    osc2.connect(gain2)
-    gain2.connect(audioCtx.destination)
-    osc2.frequency.value = 1200
-    osc2.type = 'sine'
-    gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.3)
-    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.55)
-    osc2.start(audioCtx.currentTime + 0.3)
-    osc2.stop(audioCtx.currentTime + 0.55)
+    createBell(now)        // First ding
+    createBell(now + 0.35) // Second ding
   } catch (e) {
     // Audio not available, fail silently
   }
