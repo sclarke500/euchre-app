@@ -87,9 +87,17 @@
 
     <!-- User action panel — always visible -->
     <div class="action-panel" :class="{ 'is-my-turn': game.isMyTurn.value && !director.isAnimating.value }">
-      <div class="panel-name">
-        <span v-if="userTrumpInfo" class="panel-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
-        {{ userName }}
+      <div class="panel-header">
+        <div class="panel-name">
+          <span v-if="userTrumpInfo" class="panel-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
+          {{ userName }}
+        </div>
+        <TurnTimer 
+          v-if="mode === 'multiplayer'"
+          ref="turnTimerRef"
+          :active="game.isMyTurn.value && !director.isAnimating.value"
+          @timeout="handleTurnTimeout"
+        />
       </div>
 
       <!-- Round 1: Pass or Order Up -->
@@ -168,6 +176,7 @@
 import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { GamePhase, BidAction, Suit, type TeamScore } from '@euchre/shared'
 import CardTable from './CardTable.vue'
+import TurnTimer from './TurnTimer.vue'
 import Modal from './Modal.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useGameAdapter } from '@/composables/useGameAdapter'
@@ -190,6 +199,7 @@ const props = defineProps<{
 }>()
 
 const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
+const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 // Create engine externally — shared between CardTable and Director
 const engine = useCardTable()
@@ -268,6 +278,12 @@ function handlePass() {
 
 function handleResync() {
   game.requestResync?.()
+}
+
+function handleTurnTimeout() {
+  // Server will boot the player — client just acknowledges
+  console.warn('[TurnTimer] Timeout reached — server will boot player')
+  // Optionally show a toast or let the server's boot message handle it
 }
 
 const showBugReport = ref(false)
@@ -678,6 +694,12 @@ onUnmounted(() => {
   }
 }
 
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
 
 .bug-modal {
   width: min(520px, 92vw);

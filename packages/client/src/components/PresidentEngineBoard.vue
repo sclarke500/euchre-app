@@ -45,9 +45,17 @@
 
     <!-- User action panel — bottom right -->
     <div class="action-panel" :class="{ 'is-my-turn': game.isHumanTurn.value || game.isHumanGivingCards.value }">
-      <div class="panel-name">
-        <span v-if="userRankBadge" class="panel-badge">{{ userRankBadge }}</span>
-        {{ userName }}
+      <div class="panel-header">
+        <div class="panel-name">
+          <span v-if="userRankBadge" class="panel-badge">{{ userRankBadge }}</span>
+          {{ userName }}
+        </div>
+        <TurnTimer 
+          v-if="props.mode === 'multiplayer'"
+          ref="turnTimerRef"
+          :active="game.isHumanTurn.value && !director.isAnimating.value"
+          @timeout="handleTurnTimeout"
+        />
       </div>
 
       <!-- Give-back phase -->
@@ -177,6 +185,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { PresidentPhase, isValidPlay, sortHandByRank, type StandardCard } from '@euchre/shared'
 import CardTable from './CardTable.vue'
+import TurnTimer from './TurnTimer.vue'
 import Modal from './Modal.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { usePresidentGameAdapter } from '@/composables/usePresidentGameAdapter'
@@ -195,6 +204,7 @@ const emit = defineEmits<{
 }>()
 
 const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
+const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 // Create engine — shared between CardTable and Director
 const engine = useCardTable()
@@ -402,6 +412,11 @@ function confirmGiveBack() {
   selectedCardIds.value = new Set()
 }
 
+function handleTurnTimeout() {
+  // Server will boot the player — client just acknowledges
+  console.warn('[TurnTimer] Timeout reached — server will boot player')
+}
+
 // ── Bug Report ──────────────────────────────────────────────────────────
 
 function openBugReport() {
@@ -594,6 +609,13 @@ onUnmounted(() => {
       0 0 12px rgba(255, 215, 0, 0.2),
       0 0 30px rgba(255, 215, 0, 0.08);
   }
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .panel-name {
