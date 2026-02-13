@@ -358,8 +358,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   }
 
   function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
-    if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-      send(ws, { type: 'error', message: 'Not in a game' })
+    if (!client.player) {
+      send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_request' })
+      return
+    }
+    if (!client.gameId && !ensureGameIdRecovered(client)) {
+      send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_request' })
       return
     }
 
@@ -385,8 +389,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   }
 
   function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
-    if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-      send(ws, { type: 'error', message: 'Not in a game' })
+    if (!client.player) {
+      send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_restart' })
+      return
+    }
+    if (!client.gameId && !ensureGameIdRecovered(client)) {
+      send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_restart' })
       return
     }
 

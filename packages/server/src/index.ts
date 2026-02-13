@@ -129,7 +129,10 @@ const sessionHandlers = createSessionHandlers({
  */
 function ensureGameIdRecovered(client: ConnectedClient): boolean {
   if (client.gameId) return true
-  if (!client.player?.odusId) return false
+  if (!client.player?.odusId) {
+    console.log(`[Recovery] Cannot recover - no player odusId`)
+    return false
+  }
 
   const odusId = client.player.odusId
 
@@ -153,12 +156,49 @@ function ensureGameIdRecovered(client: ConnectedClient): boolean {
     }
   }
 
+  // Also check disconnectedPlayers - they might be reconnecting
+  const disconnectedInfo = disconnectedPlayers.get(odusId)
+  if (disconnectedInfo) {
+    const elapsed = Date.now() - disconnectedInfo.disconnectTime
+    console.log(`[Recovery] Found ${client.player.nickname} in disconnectedPlayers (elapsed: ${elapsed}ms, gameId: ${disconnectedInfo.gameId}, seat: ${disconnectedInfo.seatIndex})`)
+    
+    // Try to restore them to the game
+    if (disconnectedInfo.gameType === 'president') {
+      const game = presidentGames.get(disconnectedInfo.gameId)
+      if (game) {
+        const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
+        if (restored) {
+          client.gameId = disconnectedInfo.gameId
+          disconnectedPlayers.delete(odusId)
+          console.log(`[Recovery] Restored ${client.player.nickname} to President game via disconnectedPlayers`)
+          return true
+        }
+      }
+    } else {
+      const game = games.get(disconnectedInfo.gameId)
+      if (game) {
+        const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
+        if (restored) {
+          client.gameId = disconnectedInfo.gameId
+          disconnectedPlayers.delete(odusId)
+          console.log(`[Recovery] Restored ${client.player.nickname} to Euchre game via disconnectedPlayers`)
+          return true
+        }
+      }
+    }
+  }
+
+  console.log(`[Recovery] Failed to find game for ${client.player.nickname} (odusId: ${odusId}) - President games: ${presidentGames.size}, Euchre games: ${games.size}`)
   return false
 }
 
 function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Bid['suit'], goingAlone?: boolean): void {
-  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_bid' })
+    return
+  }
+  if (!client.gameId && !ensureGameIdRecovered(client)) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_bid' })
     return
   }
 
@@ -175,8 +215,12 @@ function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['acti
 }
 
 function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
-  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_play' })
+    return
+  }
+  if (!client.gameId && !ensureGameIdRecovered(client)) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_play' })
     return
   }
 
@@ -193,8 +237,12 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
 }
 
 function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
-  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_discard' })
+    return
+  }
+  if (!client.gameId && !ensureGameIdRecovered(client)) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_discard' })
     return
   }
 
@@ -211,8 +259,12 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
 }
 
 function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: number): void {
-  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_boot' })
+    return
+  }
+  if (!client.gameId && !ensureGameIdRecovered(client)) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_boot' })
     return
   }
 
@@ -244,8 +296,12 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
 }
 
 function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
-  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_play' })
+    return
+  }
+  if (!client.gameId && !ensureGameIdRecovered(client)) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_pres_play' })
     return
   }
 
@@ -262,8 +318,12 @@ function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardId
 }
 
 function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
-  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_pass' })
+    return
+  }
+  if (!client.gameId && !ensureGameIdRecovered(client)) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_pres_pass' })
     return
   }
 
@@ -280,8 +340,12 @@ function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
 }
 
 function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
-  if (!client.player || (!client.gameId && !ensureGameIdRecovered(client))) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_give' })
+    return
+  }
+  if (!client.gameId && !ensureGameIdRecovered(client)) {
+    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_pres_give' })
     return
   }
 
