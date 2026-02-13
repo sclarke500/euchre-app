@@ -414,8 +414,25 @@ const { app } = createWebSocketServer({
     }
     // Replace disconnected player with AI if they were in a game
     // Track for reconnection so they can rejoin within the grace period
-    if (client.gameId) {
-      replacePlayerWithAI(client, true)
+    if (client.gameId && client.player) {
+      // Check if another client has already reconnected with this odusId.
+      // This prevents a race condition where the old connection's onClose fires
+      // after the new connection has already re-established the player.
+      let hasReconnected = false
+      for (const [otherWs, otherClient] of clients) {
+        if (otherWs !== ws &&
+            otherClient.player?.odusId === client.player.odusId &&
+            otherClient.gameId === client.gameId) {
+          hasReconnected = true
+          break
+        }
+      }
+
+      if (!hasReconnected) {
+        replacePlayerWithAI(client, true)
+      } else {
+        console.log(`Skipping AI replacement for ${client.player.odusId} - already reconnected`)
+      }
     }
     clients.delete(ws)
     console.log(`Client disconnected. Total: ${clients.size}`)
