@@ -150,6 +150,14 @@ function ensureGameIdRecovered(client: ConnectedClient): boolean {
       if (disconnectedInfo.gameType === 'president') {
         const game = presidentGames.get(disconnectedInfo.gameId)
         if (game) {
+          // First check if player is already in game (concurrent reconnect scenario)
+          const existingPlayer = game.getPlayerInfo(odusId)
+          if (existingPlayer) {
+            client.gameId = disconnectedInfo.gameId
+            disconnectedPlayers.delete(odusId)
+            console.log(`[Recovery] ${client.player.nickname} already in President game (concurrent reconnect)`)
+            return true
+          }
           const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
           if (restored) {
             client.gameId = disconnectedInfo.gameId
@@ -162,6 +170,14 @@ function ensureGameIdRecovered(client: ConnectedClient): boolean {
       } else {
         const game = games.get(disconnectedInfo.gameId)
         if (game) {
+          // First check if player is already in game (concurrent reconnect scenario)
+          const existingPlayer = game.getPlayerInfo(odusId)
+          if (existingPlayer) {
+            client.gameId = disconnectedInfo.gameId
+            disconnectedPlayers.delete(odusId)
+            console.log(`[Recovery] ${client.player.nickname} already in Euchre game (concurrent reconnect)`)
+            return true
+          }
           const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
           if (restored) {
             client.gameId = disconnectedInfo.gameId
