@@ -514,24 +514,39 @@ const { app } = createWebSocketServer({
     // Replace disconnected player with AI if they were in a game
     // Track for reconnection so they can rejoin within the grace period
     if (client.gameId && client.player) {
-      // Check if another client has already reconnected with this odusId.
-      // This prevents a race condition where the old connection's onClose fires
-      // after the new connection has already re-established the player.
-      // NOTE: We only check odusId, not gameId, because the new connection's
-      // gameId may still be null if handleJoinLobby hasn't completed yet.
-      let hasReconnected = false
-      for (const [otherWs, otherClient] of clients) {
-        if (otherWs !== ws &&
-            otherClient.player?.odusId === client.player.odusId) {
-          hasReconnected = true
-          break
+      const odusId = client.player.odusId
+      const nickname = client.player.nickname
+
+      // Helper to check if player has reconnected on another WebSocket
+      const checkHasReconnected = (): boolean => {
+        for (const [otherWs, otherClient] of clients) {
+          if (otherWs !== ws && otherClient.player?.odusId === odusId) {
+            return true
+          }
         }
+        return false
       }
 
-      if (!hasReconnected) {
-        replacePlayerWithAI(client, true)
+      // Check immediately first
+      if (checkHasReconnected()) {
+        console.log(`Skipping AI replacement for ${odusId} - already reconnected`)
       } else {
-        console.log(`Skipping AI replacement for ${client.player.odusId} - already reconnected`)
+        // Delay AI replacement to allow pending join_lobby messages to be processed.
+        // This fixes a race condition where:
+        // 1. New WebSocket connects (client created with player: null)
+        // 2. New client sends join_lobby (queued for processing)
+        // 3. Old WebSocket's onClose fires (this handler)
+        // 4. hasReconnected check fails because otherClient.player is still null
+        // 5. Player gets replaced by AI prematurely
+        // The 500ms delay allows the event loop to process pending messages.
+        setTimeout(() => {
+          if (checkHasReconnected()) {
+            console.log(`Skipping AI replacement for ${odusId} - reconnected during grace period`)
+          } else {
+            console.log(`Replacing ${nickname} (${odusId}) with AI after disconnect grace period`)
+            replacePlayerWithAI(client, true)
+          }
+        }, 500)
       }
     }
     clients.delete(ws)
