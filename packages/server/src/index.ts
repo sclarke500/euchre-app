@@ -136,8 +136,49 @@ function ensureGameIdRecovered(client: ConnectedClient): boolean {
   }
 
   const odusId = client.player.odusId
+  const RECONNECT_GRACE_PERIOD_MS = 5 * 60 * 1000
 
-  // Check President games first
+  // Check disconnectedPlayers FIRST (handles players replaced by AI)
+  // This must happen before checking games because replaced players have null odusId in the game
+  const disconnectedInfo = disconnectedPlayers.get(odusId)
+  if (disconnectedInfo) {
+    const elapsed = Date.now() - disconnectedInfo.disconnectTime
+    console.log(`[Recovery] Found ${client.player.nickname} in disconnectedPlayers (elapsed: ${elapsed}ms, gameId: ${disconnectedInfo.gameId}, seat: ${disconnectedInfo.seatIndex})`)
+    
+    if (elapsed <= RECONNECT_GRACE_PERIOD_MS) {
+      // Try to restore them to the game
+      if (disconnectedInfo.gameType === 'president') {
+        const game = presidentGames.get(disconnectedInfo.gameId)
+        if (game) {
+          const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
+          if (restored) {
+            client.gameId = disconnectedInfo.gameId
+            disconnectedPlayers.delete(odusId)
+            console.log(`[Recovery] Restored ${client.player.nickname} to President game via disconnectedPlayers`)
+            return true
+          }
+          // If restore failed, keep entry for retry
+        }
+      } else {
+        const game = games.get(disconnectedInfo.gameId)
+        if (game) {
+          const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
+          if (restored) {
+            client.gameId = disconnectedInfo.gameId
+            disconnectedPlayers.delete(odusId)
+            console.log(`[Recovery] Restored ${client.player.nickname} to Euchre game via disconnectedPlayers`)
+            return true
+          }
+          // If restore failed, keep entry for retry
+        }
+      }
+    } else {
+      // Grace period expired - clean up
+      disconnectedPlayers.delete(odusId)
+    }
+  }
+
+  // Check President games (for players who weren't replaced by AI)
   for (const [gameId, game] of presidentGames) {
     const playerInfo = game.getPlayerInfo(odusId)
     if (playerInfo) {
@@ -154,38 +195,6 @@ function ensureGameIdRecovered(client: ConnectedClient): boolean {
       console.log(`[Recovery] Restored gameId for ${client.player.nickname} in Euchre game ${gameId}`)
       client.gameId = gameId
       return true
-    }
-  }
-
-  // Also check disconnectedPlayers - they might be reconnecting
-  const disconnectedInfo = disconnectedPlayers.get(odusId)
-  if (disconnectedInfo) {
-    const elapsed = Date.now() - disconnectedInfo.disconnectTime
-    console.log(`[Recovery] Found ${client.player.nickname} in disconnectedPlayers (elapsed: ${elapsed}ms, gameId: ${disconnectedInfo.gameId}, seat: ${disconnectedInfo.seatIndex})`)
-    
-    // Try to restore them to the game
-    if (disconnectedInfo.gameType === 'president') {
-      const game = presidentGames.get(disconnectedInfo.gameId)
-      if (game) {
-        const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
-        if (restored) {
-          client.gameId = disconnectedInfo.gameId
-          disconnectedPlayers.delete(odusId)
-          console.log(`[Recovery] Restored ${client.player.nickname} to President game via disconnectedPlayers`)
-          return true
-        }
-      }
-    } else {
-      const game = games.get(disconnectedInfo.gameId)
-      if (game) {
-        const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
-        if (restored) {
-          client.gameId = disconnectedInfo.gameId
-          disconnectedPlayers.delete(odusId)
-          console.log(`[Recovery] Restored ${client.player.nickname} to Euchre game via disconnectedPlayers`)
-          return true
-        }
-      }
     }
   }
 

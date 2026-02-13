@@ -92,9 +92,12 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
               client.gameId = disconnectedInfo.gameId
               console.log(`Player ${nickname} restored to President game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
               reconnectedToGame = true
+              disconnectedPlayers.delete(playerId)
               game.resendStateToPlayer(playerId)
             }
+            // If restore failed (e.g., seat already human), keep the entry so ensureGameIdRecovered can retry
           }
+          // If game doesn't exist, keep the entry - might be a race condition
         } else {
           const game = games.get(disconnectedInfo.gameId)
           if (game) {
@@ -103,13 +106,17 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
               client.gameId = disconnectedInfo.gameId
               console.log(`Player ${nickname} restored to Euchre game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
               reconnectedToGame = true
+              disconnectedPlayers.delete(playerId)
               game.resendStateToPlayer(playerId)
             }
+            // If restore failed (e.g., seat already human), keep the entry so ensureGameIdRecovered can retry
           }
+          // If game doesn't exist, keep the entry - might be a race condition
         }
+      } else {
+        // Grace period expired - clean up
+        disconnectedPlayers.delete(playerId)
       }
-      // Remove from disconnected players map (either restored or expired)
-      disconnectedPlayers.delete(playerId)
     }
     
     // Also check if they're still in a game with their odusId intact (didn't disconnect long enough to be replaced)
