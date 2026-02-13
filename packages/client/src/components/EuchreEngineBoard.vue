@@ -281,11 +281,11 @@ function handleResync() {
 }
 
 function handleTurnTimeout() {
-  // Auto-boot self when timer runs out
-  const playerId = game.myPlayerId.value
-  if (playerId >= 0 && props.mode === 'multiplayer') {
-    console.warn('[TurnTimer] Timeout reached — auto-booting player', playerId)
-    mpStore?.bootPlayer(playerId)
+  // When the player times out on their own turn, leave the game
+  // (bootPlayer only works for booting OTHER players who timed out server-side)
+  if (props.mode === 'multiplayer') {
+    console.warn('[TurnTimer] Timeout reached — leaving game')
+    emit('leave-game')
   }
 }
 

@@ -49,117 +49,42 @@ const phase = computed(() => {
   return 'green'
 })
 
-// Play "yoo-hoo" whistle when timer first appears
-function playWhistle() {
+// Play attention sound when timer first appears
+function playAttention() {
   if (hasPlayedWhistle.value) return
   hasPlayedWhistle.value = true
   
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const now = ctx.currentTime
-    
-    // "Yoo" note (~800 Hz)
-    const osc1 = ctx.createOscillator()
-    const gain1 = ctx.createGain()
-    osc1.type = 'sine'
-    osc1.connect(gain1)
-    gain1.connect(ctx.destination)
-    osc1.frequency.setValueAtTime(800, now)
-    
-    // Natural whistle envelope for "yoo"
-    gain1.gain.setValueAtTime(0, now)
-    gain1.gain.linearRampToValueAtTime(0.5, now + 0.05) // quick attack
-    gain1.gain.linearRampToValueAtTime(0.4, now + 0.4)  // sustain
-    gain1.gain.linearRampToValueAtTime(0, now + 0.7)    // fade out
-    
-    osc1.start(now)
-    osc1.stop(now + 0.8)
-    
-    // "Hoo" note (~500 Hz) - overlaps with yoo
-    const osc2 = ctx.createOscillator()
-    const gain2 = ctx.createGain()
-    osc2.type = 'sine'
-    osc2.connect(gain2)
-    gain2.connect(ctx.destination)
-    osc2.frequency.setValueAtTime(500, now + 0.35)
-    
-    // Natural envelope for "hoo"
-    gain2.gain.setValueAtTime(0, now + 0.35)
-    gain2.gain.linearRampToValueAtTime(0.45, now + 0.4)  // quick attack
-    gain2.gain.linearRampToValueAtTime(0.35, now + 0.8)  // sustain
-    gain2.gain.linearRampToValueAtTime(0, now + 1.2)     // longer fade
-    
-    osc2.start(now + 0.35)
-    osc2.stop(now + 1.3)
+    const audio = new Audio('/audio/attention.mp3')
+    audio.volume = 0.6
+    audio.play().catch(() => {
+      // Audio not available or blocked, fail silently
+    })
   } catch (e) {
     // Audio not available, fail silently
   }
 }
 
-// Play "ding ding" bell with reverb when entering yellow phase
+// Play bell ding when entering yellow phase
 function playDing() {
   if (hasPlayedDing.value) return
   hasPlayedDing.value = true
   
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const now = ctx.currentTime
-    
-    // Create simple reverb impulse response
-    function createReverb(seconds = 1.5) {
-      const sampleRate = ctx.sampleRate
-      const length = sampleRate * seconds
-      const impulse = ctx.createBuffer(2, length, sampleRate)
-      const left = impulse.getChannelData(0)
-      const right = impulse.getChannelData(1)
-      for (let i = 0; i < length; i++) {
-        const decay = Math.pow(1 - i / length, 2) // exponential decay
-        left[i] = (Math.random() * 2 - 1) * decay
-        right[i] = (Math.random() * 2 - 1) * decay
-      }
-      const convolver = ctx.createConvolver()
-      convolver.buffer = impulse
-      return convolver
-    }
-    
-    const reverb = createReverb(1.8)
-    const wetGain = ctx.createGain()
-    wetGain.gain.value = 0.6 // reverb level
-    reverb.connect(wetGain).connect(ctx.destination)
-    
-    // Bell ding with inharmonic partials
-    function ding(time: number, baseFreq: number, volume = 0.5) {
-      const partials = [1.0, 2.0, 2.7, 4.0] // classic bell ratios
-      partials.forEach(ratio => {
-        const osc = ctx.createOscillator()
-        osc.type = 'sine'
-        osc.frequency.setValueAtTime(baseFreq * ratio, time)
-        
-        const gain = ctx.createGain()
-        gain.gain.setValueAtTime(volume / partials.length, time)
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 2.5)
-        
-        osc.connect(gain)
-        // Dry + wet paths
-        gain.connect(ctx.destination) // dry
-        gain.connect(reverb)          // wet
-        
-        osc.start(time)
-        osc.stop(time + 3)
-      })
-    }
-    
-    ding(now, 880, 0.5)        // First ding (A5)
-    ding(now + 0.15, 659, 0.45) // Second ding (E5)
+    const audio = new Audio('/audio/ding.mp3')
+    audio.volume = 0.7
+    audio.play().catch(() => {
+      // Audio not available or blocked, fail silently
+    })
   } catch (e) {
     // Audio not available, fail silently
   }
 }
 
-// Watch for timer becoming visible to play whistle
+// Watch for timer becoming visible to play attention sound
 watch(visible, (isVisible) => {
   if (isVisible) {
-    playWhistle()
+    playAttention()
   }
 })
 
