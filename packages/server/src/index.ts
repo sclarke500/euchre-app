@@ -115,6 +115,7 @@ function isDuplicateCommand(client: ConnectedClient, commandId?: string): boolea
 const sessionHandlers = createSessionHandlers({
   clients,
   tables,
+  disconnectedPlayers,
   generateId,
   send,
   sendToPlayer,
@@ -516,11 +517,12 @@ const { app } = createWebSocketServer({
       // Check if another client has already reconnected with this odusId.
       // This prevents a race condition where the old connection's onClose fires
       // after the new connection has already re-established the player.
+      // NOTE: We only check odusId, not gameId, because the new connection's
+      // gameId may still be null if handleJoinLobby hasn't completed yet.
       let hasReconnected = false
       for (const [otherWs, otherClient] of clients) {
         if (otherWs !== ws &&
-            otherClient.player?.odusId === client.player.odusId &&
-            otherClient.gameId === client.gameId) {
+            otherClient.player?.odusId === client.player.odusId) {
           hasReconnected = true
           break
         }

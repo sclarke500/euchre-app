@@ -10,6 +10,7 @@ import type {
 } from '@euchre/shared'
 import { PresidentPhase } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
+import { useLobbyStore } from '@/stores/lobbyStore'
 
 export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', () => {
   // State from server
@@ -277,6 +278,14 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   }
 
   function requestStateResync(): void {
+    const lobbyStore = useLobbyStore()
+    
+    // Block resync requests during reconnection handshake to avoid "Not in a game" errors
+    if (lobbyStore.isReconnecting) {
+      console.warn('[President MP] requestStateResync blocked - reconnecting to server, waiting for identity restoration')
+      return
+    }
+    
     console.log('Requesting President state resync from server')
     websocket.send({
       type: 'request_state',

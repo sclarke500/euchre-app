@@ -3,6 +3,7 @@ import type {
   Bid,
   Card,
   ClientGameState,
+  GameType,
   TeamScore,
   PresidentClientGameState,
   StandardCard,
@@ -22,6 +23,13 @@ import {
   gameSettings,
 } from './registry.js'
 
+export interface DisconnectedPlayer {
+  gameId: string
+  seatIndex: number
+  gameType: GameType
+  disconnectTime: number
+}
+
 export interface SessionHandlers {
   handleStartGame: (ws: WebSocket, client: ConnectedClient) => void
   handleRestartGame: (ws: WebSocket, client: ConnectedClient) => void
@@ -31,6 +39,7 @@ export interface SessionHandlers {
 export interface SessionDependencies {
   clients: Map<WebSocket, ConnectedClient>
   tables: Map<string, Table>
+  disconnectedPlayers: Map<string, DisconnectedPlayer>
   generateId: () => string
   send: (ws: WebSocket, message: ServerMessage) => void
   sendToPlayer: (odusId: string, message: ServerMessage) => void
@@ -42,6 +51,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   const {
     clients,
     tables,
+    disconnectedPlayers,
     generateId,
     send,
     sendToPlayer,
@@ -559,6 +569,18 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
         }
       }
 
+      // Update disconnected players tracking to point to the new game
+      // This allows players who disconnected during the restart to rejoin
+      for (const [odusId, info] of disconnectedPlayers) {
+        if (info.gameId === oldGameId) {
+          disconnectedPlayers.set(odusId, {
+            ...info,
+            gameId: newGameId,
+          })
+          console.log(`Updated disconnected player ${odusId} gameId: ${oldGameId} -> ${newGameId}`)
+        }
+      }
+
       // Clean up old game
       presidentGames.delete(oldGameId)
       gameHosts.delete(oldGameId)
@@ -664,6 +686,18 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     for (const [, c] of clients) {
       if (c.gameId === oldGameId) {
         c.gameId = newGameId
+      }
+    }
+
+    // Update disconnected players tracking to point to the new game
+    // This allows players who disconnected during the restart to rejoin
+    for (const [odusId, info] of disconnectedPlayers) {
+      if (info.gameId === oldGameId) {
+        disconnectedPlayers.set(odusId, {
+          ...info,
+          gameId: newGameId,
+        })
+        console.log(`Updated disconnected player ${odusId} gameId: ${oldGameId} -> ${newGameId}`)
       }
     }
 

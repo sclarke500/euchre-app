@@ -496,6 +496,14 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   }
 
   function requestStateResync(): void {
+    const lobbyStore = useLobbyStore()
+    
+    // Block resync requests during reconnection handshake to avoid "Not in a game" errors
+    if (lobbyStore.isReconnecting) {
+      console.warn('[MP] requestStateResync blocked - reconnecting to server, waiting for identity restoration')
+      return
+    }
+    
     websocket.send({
       type: 'request_state',
     })
