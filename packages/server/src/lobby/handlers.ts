@@ -87,56 +87,29 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
         if (disconnectedInfo.gameType === 'president') {
           const game = presidentGames.get(disconnectedInfo.gameId)
           if (game) {
-            // First check if player is already in game (concurrent reconnect scenario)
-            const existingPlayer = game.getPlayerInfo(playerId)
-            if (existingPlayer) {
+            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
+            if (restored) {
               client.gameId = disconnectedInfo.gameId
-              console.log(`Player ${nickname} already in President game ${disconnectedInfo.gameId} (concurrent reconnect)`)
+              console.log(`Player ${nickname} restored to President game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
               reconnectedToGame = true
-              disconnectedPlayers.delete(playerId)
               game.resendStateToPlayer(playerId)
-            } else {
-              const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
-              if (restored) {
-                client.gameId = disconnectedInfo.gameId
-                console.log(`Player ${nickname} restored to President game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
-                reconnectedToGame = true
-                disconnectedPlayers.delete(playerId)
-                game.resendStateToPlayer(playerId)
-              }
-              // If restore failed (e.g., seat already human by different player), keep entry for cleanup
             }
           }
-          // If game doesn't exist, keep the entry - might be a race condition
         } else {
           const game = games.get(disconnectedInfo.gameId)
           if (game) {
-            // First check if player is already in game (concurrent reconnect scenario)
-            const existingPlayer = game.getPlayerInfo(playerId)
-            if (existingPlayer) {
+            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
+            if (restored) {
               client.gameId = disconnectedInfo.gameId
-              console.log(`Player ${nickname} already in Euchre game ${disconnectedInfo.gameId} (concurrent reconnect)`)
+              console.log(`Player ${nickname} restored to Euchre game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
               reconnectedToGame = true
-              disconnectedPlayers.delete(playerId)
               game.resendStateToPlayer(playerId)
-            } else {
-              const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
-              if (restored) {
-                client.gameId = disconnectedInfo.gameId
-                console.log(`Player ${nickname} restored to Euchre game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
-                reconnectedToGame = true
-                disconnectedPlayers.delete(playerId)
-                game.resendStateToPlayer(playerId)
-              }
-              // If restore failed (e.g., seat already human by different player), keep entry for cleanup
             }
           }
-          // If game doesn't exist, keep the entry - might be a race condition
         }
-      } else {
-        // Grace period expired - clean up
-        disconnectedPlayers.delete(playerId)
       }
+      // Remove from disconnected players map (either restored or expired)
+      disconnectedPlayers.delete(playerId)
     }
     
     // Also check if they're still in a game with their odusId intact (didn't disconnect long enough to be replaced)

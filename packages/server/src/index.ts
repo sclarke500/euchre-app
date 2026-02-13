@@ -115,7 +115,6 @@ function isDuplicateCommand(client: ConnectedClient, commandId?: string): boolea
 const sessionHandlers = createSessionHandlers({
   clients,
   tables,
-  disconnectedPlayers,
   generateId,
   send,
   sendToPlayer,
@@ -123,115 +122,13 @@ const sessionHandlers = createSessionHandlers({
   broadcastToGame,
 })
 
-/**
- * Try to recover client.gameId if the player is in a game but gameId wasn't set properly.
- * This handles race conditions during reconnection where the gameId association was lost.
- * Returns true if client is now confirmed in a game, false otherwise.
- */
-function ensureGameIdRecovered(client: ConnectedClient): boolean {
-  if (client.gameId) return true
-  if (!client.player?.odusId) {
-    console.log(`[Recovery] Cannot recover - no player odusId`)
-    return false
-  }
-
-  const odusId = client.player.odusId
-  const RECONNECT_GRACE_PERIOD_MS = 5 * 60 * 1000
-
-  // Check disconnectedPlayers FIRST (handles players replaced by AI)
-  // This must happen before checking games because replaced players have null odusId in the game
-  const disconnectedInfo = disconnectedPlayers.get(odusId)
-  if (disconnectedInfo) {
-    const elapsed = Date.now() - disconnectedInfo.disconnectTime
-    console.log(`[Recovery] Found ${client.player.nickname} in disconnectedPlayers (elapsed: ${elapsed}ms, gameId: ${disconnectedInfo.gameId}, seat: ${disconnectedInfo.seatIndex})`)
-    
-    if (elapsed <= RECONNECT_GRACE_PERIOD_MS) {
-      // Try to restore them to the game
-      if (disconnectedInfo.gameType === 'president') {
-        const game = presidentGames.get(disconnectedInfo.gameId)
-        if (game) {
-          // First check if player is already in game (concurrent reconnect scenario)
-          const existingPlayer = game.getPlayerInfo(odusId)
-          if (existingPlayer) {
-            client.gameId = disconnectedInfo.gameId
-            disconnectedPlayers.delete(odusId)
-            console.log(`[Recovery] ${client.player.nickname} already in President game (concurrent reconnect)`)
-            return true
-          }
-          const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
-          if (restored) {
-            client.gameId = disconnectedInfo.gameId
-            disconnectedPlayers.delete(odusId)
-            console.log(`[Recovery] Restored ${client.player.nickname} to President game via disconnectedPlayers`)
-            return true
-          }
-          // If restore failed, keep entry for retry
-        }
-      } else {
-        const game = games.get(disconnectedInfo.gameId)
-        if (game) {
-          // First check if player is already in game (concurrent reconnect scenario)
-          const existingPlayer = game.getPlayerInfo(odusId)
-          if (existingPlayer) {
-            client.gameId = disconnectedInfo.gameId
-            disconnectedPlayers.delete(odusId)
-            console.log(`[Recovery] ${client.player.nickname} already in Euchre game (concurrent reconnect)`)
-            return true
-          }
-          const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
-          if (restored) {
-            client.gameId = disconnectedInfo.gameId
-            disconnectedPlayers.delete(odusId)
-            console.log(`[Recovery] Restored ${client.player.nickname} to Euchre game via disconnectedPlayers`)
-            return true
-          }
-          // If restore failed, keep entry for retry
-        }
-      }
-    } else {
-      // Grace period expired - clean up
-      disconnectedPlayers.delete(odusId)
-    }
-  }
-
-  // Check President games (for players who weren't replaced by AI)
-  for (const [gameId, game] of presidentGames) {
-    const playerInfo = game.getPlayerInfo(odusId)
-    if (playerInfo) {
-      console.log(`[Recovery] Restored gameId for ${client.player.nickname} in President game ${gameId}`)
-      client.gameId = gameId
-      return true
-    }
-  }
-
-  // Check Euchre games
-  for (const [gameId, game] of games) {
-    const playerInfo = game.getPlayerInfo(odusId)
-    if (playerInfo) {
-      console.log(`[Recovery] Restored gameId for ${client.player.nickname} in Euchre game ${gameId}`)
-      client.gameId = gameId
-      return true
-    }
-  }
-
-  console.log(`[Recovery] Failed to find game for ${client.player.nickname} (odusId: ${odusId}) - President games: ${presidentGames.size}, Euchre games: ${games.size}`)
-  return false
-}
-
 function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Bid['suit'], goingAlone?: boolean): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
-  if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_bid' })
-    return
-  }
-  if (!client.gameId && !ensureGameIdRecovered(client)) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_bid' })
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const game = games.get(client.gameId!)
+  const game = games.get(client.gameId)
   if (!game) {
     send(ws, { type: 'error', message: 'Game not found' })
     return
@@ -244,19 +141,12 @@ function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['acti
 }
 
 function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
-  if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_play' })
-    return
-  }
-  if (!client.gameId && !ensureGameIdRecovered(client)) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_play' })
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const game = games.get(client.gameId!)
+  const game = games.get(client.gameId)
   if (!game) {
     send(ws, { type: 'error', message: 'Game not found' })
     return
@@ -269,19 +159,12 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
 }
 
 function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
-  if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_discard' })
-    return
-  }
-  if (!client.gameId && !ensureGameIdRecovered(client)) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_discard' })
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const game = games.get(client.gameId!)
+  const game = games.get(client.gameId)
   if (!game) {
     send(ws, { type: 'error', message: 'Game not found' })
     return
@@ -294,30 +177,23 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
 }
 
 function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: number): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
-  if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_boot' })
-    return
-  }
-  if (!client.gameId && !ensureGameIdRecovered(client)) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_boot' })
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const gameType = gameTypes.get(client.gameId!)
+  const gameType = gameTypes.get(client.gameId)
   let success = false
 
   if (gameType === 'president') {
-    const presidentGame = presidentGames.get(client.gameId!)
+    const presidentGame = presidentGames.get(client.gameId)
     if (!presidentGame) {
       send(ws, { type: 'error', message: 'Game not found' })
       return
     }
     success = presidentGame.bootPlayer(playerId)
   } else {
-    const game = games.get(client.gameId!)
+    const game = games.get(client.gameId)
     if (!game) {
       send(ws, { type: 'error', message: 'Game not found' })
       return
@@ -334,19 +210,12 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
 }
 
 function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
-  if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_play' })
-    return
-  }
-  if (!client.gameId && !ensureGameIdRecovered(client)) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_pres_play' })
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const presidentGame = presidentGames.get(client.gameId!)
+  const presidentGame = presidentGames.get(client.gameId)
   if (!presidentGame) {
     send(ws, { type: 'error', message: 'President game not found' })
     return
@@ -359,19 +228,12 @@ function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardId
 }
 
 function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
-  if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_pass' })
-    return
-  }
-  if (!client.gameId && !ensureGameIdRecovered(client)) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_pres_pass' })
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const presidentGame = presidentGames.get(client.gameId!)
+  const presidentGame = presidentGames.get(client.gameId)
   if (!presidentGame) {
     send(ws, { type: 'error', message: 'President game not found' })
     return
@@ -384,19 +246,12 @@ function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
 }
 
 function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
-  if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_give' })
-    return
-  }
-  if (!client.gameId && !ensureGameIdRecovered(client)) {
-    send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_pres_give' })
+  if (!client.player || !client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
     return
   }
 
-  const presidentGame = presidentGames.get(client.gameId!)
+  const presidentGame = presidentGames.get(client.gameId)
   if (!presidentGame) {
     send(ws, { type: 'error', message: 'President game not found' })
     return
@@ -455,9 +310,6 @@ function replacePlayerWithAI(client: ConnectedClient, trackForReconnect: boolean
 }
 
 function handleLeaveGame(ws: WebSocket, client: ConnectedClient): void {
-  // If this action was queued and the client disconnected before execution, bail out
-  if (!clients.has(ws)) return
-
   // Voluntary leave - don't track for reconnection
   replacePlayerWithAI(client, false)
 }
@@ -563,39 +415,23 @@ const { app } = createWebSocketServer({
     // Replace disconnected player with AI if they were in a game
     // Track for reconnection so they can rejoin within the grace period
     if (client.gameId && client.player) {
-      const odusId = client.player.odusId
-      const nickname = client.player.nickname
-
-      // Helper to check if player has reconnected on another WebSocket
-      const checkHasReconnected = (): boolean => {
-        for (const [otherWs, otherClient] of clients) {
-          if (otherWs !== ws && otherClient.player?.odusId === odusId) {
-            return true
-          }
+      // Check if another client has already reconnected with this odusId.
+      // This prevents a race condition where the old connection's onClose fires
+      // after the new connection has already re-established the player.
+      let hasReconnected = false
+      for (const [otherWs, otherClient] of clients) {
+        if (otherWs !== ws &&
+            otherClient.player?.odusId === client.player.odusId &&
+            otherClient.gameId === client.gameId) {
+          hasReconnected = true
+          break
         }
-        return false
       }
 
-      // Check immediately first
-      if (checkHasReconnected()) {
-        console.log(`Skipping AI replacement for ${odusId} - already reconnected`)
+      if (!hasReconnected) {
+        replacePlayerWithAI(client, true)
       } else {
-        // Delay AI replacement to allow pending join_lobby messages to be processed.
-        // This fixes a race condition where:
-        // 1. New WebSocket connects (client created with player: null)
-        // 2. New client sends join_lobby (queued for processing)
-        // 3. Old WebSocket's onClose fires (this handler)
-        // 4. hasReconnected check fails because otherClient.player is still null
-        // 5. Player gets replaced by AI prematurely
-        // The 500ms delay allows the event loop to process pending messages.
-        setTimeout(() => {
-          if (checkHasReconnected()) {
-            console.log(`Skipping AI replacement for ${odusId} - reconnected during grace period`)
-          } else {
-            console.log(`Replacing ${nickname} (${odusId}) with AI after disconnect grace period`)
-            replacePlayerWithAI(client, true)
-          }
-        }, 500)
+        console.log(`Skipping AI replacement for ${client.player.odusId} - already reconnected`)
       }
     }
     clients.delete(ws)

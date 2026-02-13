@@ -3,7 +3,6 @@ import type {
   Bid,
   Card,
   ClientGameState,
-  GameType,
   TeamScore,
   PresidentClientGameState,
   StandardCard,
@@ -23,13 +22,6 @@ import {
   gameSettings,
 } from './registry.js'
 
-export interface DisconnectedPlayer {
-  gameId: string
-  seatIndex: number
-  gameType: GameType
-  disconnectTime: number
-}
-
 export interface SessionHandlers {
   handleStartGame: (ws: WebSocket, client: ConnectedClient) => void
   handleRestartGame: (ws: WebSocket, client: ConnectedClient) => void
@@ -39,7 +31,6 @@ export interface SessionHandlers {
 export interface SessionDependencies {
   clients: Map<WebSocket, ConnectedClient>
   tables: Map<string, Table>
-  disconnectedPlayers: Map<string, DisconnectedPlayer>
   generateId: () => string
   send: (ws: WebSocket, message: ServerMessage) => void
   sendToPlayer: (odusId: string, message: ServerMessage) => void
@@ -51,106 +42,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   const {
     clients,
     tables,
-    disconnectedPlayers,
     generateId,
     send,
     sendToPlayer,
     broadcast,
     broadcastToGame,
   } = deps
-
-  /**
-   * Try to recover client.gameId if the player is in a game but gameId wasn't set properly.
-   * This handles race conditions during reconnection where the gameId association was lost.
-   * Also checks disconnectedPlayers map for players who were replaced by AI during disconnect.
-   * Returns true if client is now confirmed in a game, false otherwise.
-   */
-  function ensureGameIdRecovered(client: ConnectedClient): boolean {
-    if (client.gameId) return true
-    if (!client.player?.odusId) return false
-
-    const odusId = client.player.odusId
-    const RECONNECT_GRACE_PERIOD_MS = 5 * 60 * 1000
-
-    // Check disconnectedPlayers first (handles players replaced by AI)
-    // This fixes race conditions where request_state arrives before join_lobby finishes
-    const disconnectedInfo = disconnectedPlayers.get(odusId)
-    if (disconnectedInfo) {
-      const elapsed = Date.now() - disconnectedInfo.disconnectTime
-      if (elapsed <= RECONNECT_GRACE_PERIOD_MS) {
-        // Found them - they were replaced by AI but can still reconnect
-        if (disconnectedInfo.gameType === 'president') {
-          const game = presidentGames.get(disconnectedInfo.gameId)
-          if (game) {
-            // First check if player is already in game (concurrent reconnect scenario)
-            const existingPlayer = game.getPlayerInfo(odusId)
-            if (existingPlayer) {
-              client.gameId = disconnectedInfo.gameId
-              disconnectedPlayers.delete(odusId)
-              console.log(`[Recovery] ${client.player.nickname} already in President game (concurrent reconnect)`)
-              game.resendStateToPlayer(odusId)
-              return true
-            }
-            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
-            if (restored) {
-              client.gameId = disconnectedInfo.gameId
-              disconnectedPlayers.delete(odusId)
-              console.log(`[Recovery] Restored ${client.player.nickname} to President game via ensureGameIdRecovered`)
-              game.resendStateToPlayer(odusId)
-              return true
-            }
-          }
-        } else {
-          const game = games.get(disconnectedInfo.gameId)
-          if (game) {
-            // First check if player is already in game (concurrent reconnect scenario)
-            const existingPlayer = game.getPlayerInfo(odusId)
-            if (existingPlayer) {
-              client.gameId = disconnectedInfo.gameId
-              disconnectedPlayers.delete(odusId)
-              console.log(`[Recovery] ${client.player.nickname} already in Euchre game (concurrent reconnect)`)
-              game.resendStateToPlayer(odusId)
-              return true
-            }
-            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, odusId, client.player.nickname)
-            if (restored) {
-              client.gameId = disconnectedInfo.gameId
-              disconnectedPlayers.delete(odusId)
-              console.log(`[Recovery] Restored ${client.player.nickname} to Euchre game via ensureGameIdRecovered`)
-              game.resendStateToPlayer(odusId)
-              return true
-            }
-          }
-        }
-      } else {
-        // Grace period expired - clean up
-        disconnectedPlayers.delete(odusId)
-      }
-      // If restore failed within grace period, keep entry for retry
-    }
-
-    // Check President games (for players who weren't replaced by AI)
-    for (const [gameId, game] of presidentGames) {
-      const playerInfo = game.getPlayerInfo(odusId)
-      if (playerInfo) {
-        console.log(`[Recovery] Restored gameId for ${client.player.nickname} in President game ${gameId}`)
-        client.gameId = gameId
-        return true
-      }
-    }
-
-    // Check Euchre games
-    for (const [gameId, game] of games) {
-      const playerInfo = game.getPlayerInfo(odusId)
-      if (playerInfo) {
-        console.log(`[Recovery] Restored gameId for ${client.player.nickname} in Euchre game ${gameId}`)
-        client.gameId = gameId
-        return true
-      }
-    }
-
-    return false
-  }
 
   function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
     if (!client.player || !client.tableId) {
@@ -427,32 +324,22 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   }
 
   function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
-    // If this action was queued and the client disconnected before execution,
-    // silently bail out - no point sending errors to a closed socket
-    if (!clients.has(ws)) {
+    if (!client.player || !client.gameId) {
+      send(ws, { type: 'error', message: 'Not in a game' })
       return
     }
 
-    if (!client.player) {
-      send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_request' })
-      return
-    }
-    if (!client.gameId && !ensureGameIdRecovered(client)) {
-      send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_request' })
-      return
-    }
-
-    const gameType = gameTypes.get(client.gameId!)
+    const gameType = gameTypes.get(client.gameId)
 
     if (gameType === 'president') {
-      const presidentGame = presidentGames.get(client.gameId!)
+      const presidentGame = presidentGames.get(client.gameId)
       if (!presidentGame) {
         send(ws, { type: 'error', message: 'Game not found' })
         return
       }
       presidentGame.resendStateToPlayer(client.player.odusId)
     } else {
-      const game = games.get(client.gameId!)
+      const game = games.get(client.gameId)
       if (!game) {
         send(ws, { type: 'error', message: 'Game not found' })
         return
@@ -464,16 +351,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   }
 
   function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
-    if (!client.player) {
-      send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_restart' })
-      return
-    }
-    if (!client.gameId && !ensureGameIdRecovered(client)) {
-      send(ws, { type: 'error', message: 'Not in a game', code: 'no_game_restart' })
+    if (!client.player || !client.gameId) {
+      send(ws, { type: 'error', message: 'Not in a game' })
       return
     }
 
-    const oldGameId = client.gameId!
+    const oldGameId = client.gameId
     const hostId = gameHosts.get(oldGameId)
     const gameType = gameTypes.get(oldGameId) || 'euchre'
     const previousSettings = gameSettings.get(oldGameId)
@@ -634,18 +517,6 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
         }
       }
 
-      // Update disconnected players tracking to point to the new game
-      // This allows players who disconnected during the restart to rejoin
-      for (const [odusId, info] of disconnectedPlayers) {
-        if (info.gameId === oldGameId) {
-          disconnectedPlayers.set(odusId, {
-            ...info,
-            gameId: newGameId,
-          })
-          console.log(`Updated disconnected player ${odusId} gameId: ${oldGameId} -> ${newGameId}`)
-        }
-      }
-
       // Clean up old game
       presidentGames.delete(oldGameId)
       gameHosts.delete(oldGameId)
@@ -751,18 +622,6 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     for (const [, c] of clients) {
       if (c.gameId === oldGameId) {
         c.gameId = newGameId
-      }
-    }
-
-    // Update disconnected players tracking to point to the new game
-    // This allows players who disconnected during the restart to rejoin
-    for (const [odusId, info] of disconnectedPlayers) {
-      if (info.gameId === oldGameId) {
-        disconnectedPlayers.set(odusId, {
-          ...info,
-          gameId: newGameId,
-        })
-        console.log(`Updated disconnected player ${odusId} gameId: ${oldGameId} -> ${newGameId}`)
       }
     }
 

@@ -65,15 +65,7 @@ export function usePresidentDirector(
 
   const playerCount = computed(() => game.players.value.length)
 
-  // Map by seat index (not player ID) so names align with the UI
-  // Seat 0 = user (bottom), then clockwise around the table
-  const playerNames = computed(() => {
-    const count = playerCount.value
-    return Array.from({ length: count }, (_, seat) => {
-      const pid = seatIndexToPlayerId(seat)
-      return game.players.value[pid]?.name ?? `Player ${pid}`
-    })
-  })
+  const playerNames = computed(() => game.players.value.map(p => p.name))
 
   const currentTurnSeat = computed(() => {
     const cp = game.currentPlayer.value
