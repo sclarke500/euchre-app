@@ -368,6 +368,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
   }
 
   function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
+    // If this action was queued and the client disconnected before execution,
+    // silently bail out - no point sending errors to a closed socket
+    if (!clients.has(ws)) {
+      return
+    }
+
     if (!client.player) {
       send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_request' })
       return

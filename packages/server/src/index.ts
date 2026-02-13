@@ -194,6 +194,9 @@ function ensureGameIdRecovered(client: ConnectedClient): boolean {
 }
 
 function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Bid['suit'], goingAlone?: boolean): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   if (!client.player) {
     send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_bid' })
     return
@@ -216,6 +219,9 @@ function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['acti
 }
 
 function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   if (!client.player) {
     send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_play' })
     return
@@ -238,6 +244,9 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
 }
 
 function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   if (!client.player) {
     send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_discard' })
     return
@@ -260,6 +269,9 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
 }
 
 function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: number): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   if (!client.player) {
     send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_boot' })
     return
@@ -297,6 +309,9 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
 }
 
 function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   if (!client.player) {
     send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_play' })
     return
@@ -319,6 +334,9 @@ function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardId
 }
 
 function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   if (!client.player) {
     send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_pass' })
     return
@@ -341,6 +359,9 @@ function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
 }
 
 function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   if (!client.player) {
     send(ws, { type: 'error', message: 'Not in a game', code: 'no_player_pres_give' })
     return
@@ -409,6 +430,9 @@ function replacePlayerWithAI(client: ConnectedClient, trackForReconnect: boolean
 }
 
 function handleLeaveGame(ws: WebSocket, client: ConnectedClient): void {
+  // If this action was queued and the client disconnected before execution, bail out
+  if (!clients.has(ws)) return
+
   // Voluntary leave - don't track for reconnection
   replacePlayerWithAI(client, false)
 }
