@@ -139,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { PresidentPhase, isValidPlay, sortHandByRank, type StandardCard } from '@euchre/shared'
 import CardTable from './CardTable.vue'
 import Modal from './Modal.vue'
@@ -365,6 +365,16 @@ onMounted(async () => {
   await nextTick()
   if (tableRef.value) {
     boardRef.value = tableRef.value.boardRef
+  }
+  if (props.mode === 'multiplayer') {
+    game.initialize?.()
+  }
+})
+
+onUnmounted(() => {
+  director.cleanup?.()
+  if (props.mode === 'multiplayer') {
+    game.cleanup?.()
   }
 })
 </script>

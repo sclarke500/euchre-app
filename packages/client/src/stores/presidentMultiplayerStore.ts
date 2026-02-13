@@ -42,6 +42,12 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   let syncCheckInterval: ReturnType<typeof setInterval> | null = null
   let lastStateReceivedAt = 0
 
+  // Message queue — when enabled, messages are buffered instead of applied
+  // immediately. The director's processing loop dequeues and applies them
+  // one at a time, with animation pauses between each.
+  const messageQueue: ServerMessage[] = []
+  let queueMode = false
+
   // Computed getters for easy access
   const phase = computed(() => gameState.value?.phase ?? PresidentPhase.Setup)
   const players = computed(() => gameState.value?.players ?? [])
@@ -68,8 +74,30 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   // Active players (not yet finished)
   const activePlayers = computed(() => players.value.filter(p => p.finishOrder === null))
 
-  // Message handler for WebSocket messages
+  // WebSocket message entry point — buffers in queue mode, applies directly otherwise
   function handleMessage(message: ServerMessage): void {
+    if (queueMode) {
+      // Keep state sequence tracking up to date even while buffering.
+      // Otherwise, outgoing actions can include a stale expectedStateSeq and be rejected.
+      if (message.type === 'president_game_state') {
+        lastStateSeq.value = message.state.stateSeq
+      }
+
+      // If server tells us we're out of sync, request resync immediately.
+      if (message.type === 'error' && message.code === 'sync_required') {
+        requestStateResync()
+      }
+
+      messageQueue.push(message)
+    } else {
+      applyMessage(message)
+    }
+  }
+
+  // Actually mutates reactive state for a single message.
+  // In queue mode, called by the director's processing loop.
+  // In direct mode, called by handleMessage immediately.
+  function applyMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'president_game_state':
         const myPlayerInState = message.state.players.find(p => p.hand !== undefined)
@@ -255,6 +283,26 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     })
   }
 
+  function enableQueueMode(): void {
+    queueMode = true
+  }
+
+  function disableQueueMode(): void {
+    queueMode = false
+    // Flush remaining messages directly
+    while (messageQueue.length > 0) {
+      applyMessage(messageQueue.shift()!)
+    }
+  }
+
+  function dequeueMessage(): ServerMessage | null {
+    return messageQueue.shift() ?? null
+  }
+
+  function getQueueLength(): number {
+    return messageQueue.length
+  }
+
   // Initialize - set up WebSocket listener
   let unsubscribe: (() => void) | null = null
 
@@ -301,6 +349,8 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     giveBackRole.value = ''
     lastStateSeq.value = 0
     lastStateReceivedAt = 0
+    messageQueue.length = 0
+    queueMode = false
   }
 
   return {
@@ -348,5 +398,12 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     requestStateResync,
     initialize,
     cleanup,
+
+    // Queue control (for director)
+    enableQueueMode,
+    disableQueueMode,
+    dequeueMessage,
+    getQueueLength,
+    applyMessage,
   }
 })

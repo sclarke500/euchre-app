@@ -9,7 +9,7 @@
 
 import { watch, nextTick, computed, ref, type Ref } from 'vue'
 import { PresidentPhase, sortHandByRank } from '@euchre/shared'
-import type { StandardCard, PendingExchange } from '@euchre/shared'
+import type { StandardCard, PendingExchange, ServerMessage } from '@euchre/shared'
 import type { PresidentGameAdapter } from './usePresidentGameAdapter'
 import type { CardTableEngine } from './useCardTable'
 import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
@@ -52,6 +52,11 @@ export function usePresidentDirector(
   // Animation dedup state
   const lastAnimatedPhase = ref<PresidentPhase | null>(null)
   const isAnimating = ref(false)
+
+  // MP queue processing state
+  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let processingActive = false
+  let mpPilePlayCount = 0  // Tracks pile play count for position calculations in MP
 
   // Player status messages keyed by seat index
   const playerStatuses = ref<string[]>([])
@@ -412,6 +417,62 @@ export function usePresidentDirector(
     }
   }
 
+  // ── MP card play animation ───────────────────────────────────────────
+
+  async function animateCardPlayMP(cards: StandardCard[], playerId: number) {
+    const tl = getTableLayout()
+    if (!tl) return
+
+    const seatIndex = playerIdToSeatIndex(playerId)
+    const hand = engine.getHands()[seatIndex]
+    const centerPile = engine.getPiles().find(p => p.id === 'center')
+    if (!hand || !centerPile) return
+
+    const playIndex = mpPilePlayCount
+    mpPilePlayCount++
+
+    // For user's own play: cards are real cards already in hand
+    // For opponent play: consume placeholder cards, replace with real card data
+    const cardIdsToMove: string[] = []
+
+    for (const card of cards) {
+      const hasCard = hand.cards.some(m => m.card.id === card.id)
+      if (hasCard) {
+        cardIdsToMove.push(card.id)
+      } else if (seatIndex !== 0 && hand.cards.length > 0) {
+        // Opponent placeholder — consume last placeholder, swap visual data
+        const managed = hand.cards[hand.cards.length - 1]!
+        const effectiveId = managed.card.id
+        managed.card = { id: effectiveId, suit: card.suit, rank: card.rank }
+        engine.refreshCards()
+        cardIdsToMove.push(effectiveId)
+      }
+    }
+
+    // Disable arc fan for user cards being played
+    if (seatIndex === 0) {
+      for (const id of cardIdsToMove) {
+        engine.getCardRef(id)?.setArcFan(false)
+      }
+    }
+
+    // Animate all cards to pile position
+    const movePromises = cardIdsToMove.map((cardId, i) => {
+      const targetPos = getPileCardPosition(playIndex, i, cards.length)
+      targetPos.rotation = 180 + (targetPos.rotation ?? 0)
+      centerPile.setCardTargetPosition(cardId, targetPos)
+      return engine.moveCard(cardId, hand, centerPile, targetPos, CARD_PLAY_MS)
+    })
+    await Promise.all(movePromises)
+
+    // Re-sort user hand or re-fan opponent hand
+    if (seatIndex === 0) {
+      await sortUserHand(AnimationDurations.fast)
+    } else {
+      await hand.setMode('fanned', AnimationDurations.fast)
+    }
+  }
+
   // ── Pile sweep animation ──────────────────────────────────────────────
 
   async function animatePileSweep() {
@@ -480,50 +541,191 @@ export function usePresidentDirector(
     }
   }
 
-  // ── Watchers ──────────────────────────────────────────────────────────
+  // ── MP phase transition handler ──────────────────────────────────────
 
-  // Phase changes
-  watch(() => game.phase.value, (newPhase) => {
-    handlePhase(newPhase)
-  })
+  async function handlePhaseTransitionMP(newPhase: PresidentPhase, oldPhase: PresidentPhase) {
+    if (newPhase === lastAnimatedPhase.value) return
+    lastAnimatedPhase.value = newPhase
 
-  // Board mount — handle mid-game join
-  watch(boardRef, (newRef) => {
-    if (newRef && lastAnimatedPhase.value === null) {
-      const phase = game.phase.value
-      if (phase !== PresidentPhase.Setup) handlePhase(phase)
+    switch (newPhase) {
+      case PresidentPhase.Dealing:
+        clearPlayerStatuses()
+        setupTable()
+        await nextTick()
+        await animateDeal()
+        mpPilePlayCount = 0
+        break
+
+      case PresidentPhase.PresidentGiving:
+        // Exchange phase — no extra animation needed yet
+        break
+
+      case PresidentPhase.Playing:
+        mpPilePlayCount = 0
+        break
+
+      case PresidentPhase.RoundComplete:
+        updateFinishStatuses()
+        break
     }
-  })
+  }
 
-  // Register animation callbacks — store awaits these before advancing turns
-  game.setPlayAnimationCallback?.(async (play) => {
-    isAnimating.value = true
-    await animateCardPlay(play, play.playIndex)
-    isAnimating.value = false
-  })
+  // ── MP message processing loop ─────────────────────────────────────
 
-  game.setPileClearedCallback?.(async () => {
-    isAnimating.value = true
-    await animatePileSweep()
-    isAnimating.value = false
-  })
+  async function processMessageQueue() {
+    if (processingActive) return
+    if (!boardRef.value) return
+    if (!game.getQueueLength || game.getQueueLength() === 0) return
 
-  game.setExchangeAnimationCallback?.(async (exchanges) => {
-    isAnimating.value = true
-    await animateExchange(exchanges)
-    isAnimating.value = false
-  })
-
-  // Player finish tracking
-  watch(() => game.finishedPlayers.value.length, (newLen, oldLen) => {
-    if (newLen > oldLen) {
-      const lastFinished = game.finishedPlayers.value[newLen - 1]
-      if (lastFinished !== undefined) {
-        const seat = playerIdToSeatIndex(lastFinished)
-        setPlayerStatus(seat, 'Out!')
+    processingActive = true
+    try {
+      while (game.getQueueLength!() > 0) {
+        const msg = game.dequeueMessage!()
+        if (!msg) break
+        await processOneMessage(msg)
       }
+    } catch (err) {
+      console.error('[PresidentDirector] Error processing message queue:', err)
+    } finally {
+      processingActive = false
     }
-  })
+  }
+
+  async function processOneMessage(msg: ServerMessage) {
+    switch (msg.type) {
+      case 'president_play_made': {
+        isAnimating.value = true
+        try {
+          await animateCardPlayMP(msg.cards, msg.playerId)
+        } finally {
+          isAnimating.value = false
+        }
+        game.applyMessage!(msg)
+        break
+      }
+
+      case 'president_passed': {
+        const seat = playerIdToSeatIndex(msg.playerId)
+        setPlayerStatus(seat, 'Pass', 1500)
+        game.applyMessage!(msg)
+        // Brief pause so "Pass" is visible
+        if (seat !== 0) {
+          await sleep(800)
+        }
+        break
+      }
+
+      case 'president_pile_cleared': {
+        isAnimating.value = true
+        try {
+          await animatePileSweep()
+          mpPilePlayCount = 0
+        } finally {
+          isAnimating.value = false
+        }
+        game.applyMessage!(msg)
+        break
+      }
+
+      case 'president_player_finished': {
+        const seat = playerIdToSeatIndex(msg.playerId)
+        setPlayerStatus(seat, 'Out!')
+        game.applyMessage!(msg)
+        break
+      }
+
+      case 'president_game_state': {
+        const oldPhase = game.phase.value
+        game.applyMessage!(msg)
+        const newPhase = msg.state.phase as PresidentPhase
+        if (newPhase !== oldPhase) {
+          await handlePhaseTransitionMP(newPhase, oldPhase)
+        }
+        // Sync pile play count from game state
+        mpPilePlayCount = msg.state.currentPile?.plays?.length ?? 0
+        break
+      }
+
+      case 'president_round_complete': {
+        updateFinishStatuses()
+        game.applyMessage!(msg)
+        break
+      }
+
+      default:
+        // president_your_turn, exchange messages, error, player_timed_out, etc.
+        game.applyMessage!(msg)
+        break
+    }
+  }
+
+  // ── Watchers / MP setup ─────────────────────────────────────────────
+
+  if (game.isMultiplayer) {
+    // ── Multiplayer: queue-based processing ──
+    game.enableQueueMode?.()
+    pollTimer = setInterval(processMessageQueue, 16)
+
+    // Handle boardRef becoming available (component mount)
+    watch(boardRef, async (newRef) => {
+      if (!newRef) return
+      // If state already exists (messages arrived before mount), catch up
+      const phase = game.phase.value
+      if (phase !== PresidentPhase.Setup && lastAnimatedPhase.value === null) {
+        setupTable()
+        await nextTick()
+        if (phase === PresidentPhase.Dealing) {
+          await animateDeal()
+        }
+        lastAnimatedPhase.value = phase
+      }
+    })
+  } else {
+    // ── Singleplayer: watcher-based reactivity ──
+
+    // Phase changes
+    watch(() => game.phase.value, (newPhase) => {
+      handlePhase(newPhase)
+    })
+
+    // Board mount — handle mid-game join
+    watch(boardRef, (newRef) => {
+      if (newRef && lastAnimatedPhase.value === null) {
+        const phase = game.phase.value
+        if (phase !== PresidentPhase.Setup) handlePhase(phase)
+      }
+    })
+
+    // Register animation callbacks — store awaits these before advancing turns
+    game.setPlayAnimationCallback?.(async (play) => {
+      isAnimating.value = true
+      await animateCardPlay(play, play.playIndex)
+      isAnimating.value = false
+    })
+
+    game.setPileClearedCallback?.(async () => {
+      isAnimating.value = true
+      await animatePileSweep()
+      isAnimating.value = false
+    })
+
+    game.setExchangeAnimationCallback?.(async (exchanges) => {
+      isAnimating.value = true
+      await animateExchange(exchanges)
+      isAnimating.value = false
+    })
+
+    // Player finish tracking
+    watch(() => game.finishedPlayers.value.length, (newLen, oldLen) => {
+      if (newLen > oldLen) {
+        const lastFinished = game.finishedPlayers.value[newLen - 1]
+        if (lastFinished !== undefined) {
+          const seat = playerIdToSeatIndex(lastFinished)
+          setPlayerStatus(seat, 'Out!')
+        }
+      }
+    })
+  }
 
   // ── Player status management ──────────────────────────────────────────
 
@@ -550,6 +752,19 @@ export function usePresidentDirector(
     playerStatuses.value = new Array(playerCount.value).fill('')
   }
 
+  // ── Cleanup ──────────────────────────────────────────────────────────
+
+  function cleanup() {
+    if (pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
+    game.disableQueueMode?.()
+    for (const timer of statusTimers) {
+      if (timer) clearTimeout(timer)
+    }
+  }
+
   // ── Public API ────────────────────────────────────────────────────────
 
   return {
@@ -557,5 +772,6 @@ export function usePresidentDirector(
     playerStatuses,
     currentTurnSeat,
     isAnimating,
+    cleanup,
   }
 }

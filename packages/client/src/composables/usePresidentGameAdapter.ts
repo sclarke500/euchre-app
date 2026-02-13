@@ -8,6 +8,7 @@ import type {
   StandardCard,
   PlayerRank,
   PendingExchange,
+  ServerMessage,
 } from '@euchre/shared'
 import { PresidentPhase as Phase } from '@euchre/shared'
 
@@ -56,6 +57,13 @@ export interface PresidentGameAdapter {
   initialize?: () => void
   cleanup?: () => void
   requestResync?: () => void  // Manual resync for when state gets out of sync
+
+  // Queue control (multiplayer only — for director processing loop)
+  enableQueueMode?: () => void
+  disableQueueMode?: () => void
+  dequeueMessage?: () => ServerMessage | null
+  getQueueLength?: () => number
+  applyMessage?: (message: ServerMessage) => void
 }
 
 export function usePresidentGameAdapter(mode: 'singleplayer' | 'multiplayer'): PresidentGameAdapter {
@@ -209,5 +217,12 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     initialize: () => store.initialize(),
     cleanup: () => store.cleanup(),
     requestResync: () => store.requestStateResync(),
+
+    // Queue control for director
+    enableQueueMode: () => store.enableQueueMode(),
+    disableQueueMode: () => store.disableQueueMode(),
+    dequeueMessage: () => store.dequeueMessage(),
+    getQueueLength: () => store.getQueueLength(),
+    applyMessage: (message: ServerMessage) => store.applyMessage(message),
   }
 }

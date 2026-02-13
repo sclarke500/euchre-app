@@ -5,7 +5,6 @@ import { usePresidentGameStore } from './stores/presidentGameStore'
 import { useLobbyStore } from './stores/lobbyStore'
 import { GamePhase } from '@euchre/shared'
 import UnifiedGameBoard from './components/legacy/UnifiedGameBoard.vue'
-import PresidentGameBoard from './components/president/PresidentGameBoard.vue'
 import PresidentEngineBoard from './components/PresidentEngineBoard.vue'
 import KlondikeGameBoard from './components/klondike/KlondikeGameBoard.vue'
 import MainMenu, { type GameType } from './components/MainMenu.vue'
@@ -308,7 +307,7 @@ function backToMenu() {
     />
 
     <!-- Multiplayer President Game -->
-    <PresidentGameBoard
+    <PresidentEngineBoard
       v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'president'"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
