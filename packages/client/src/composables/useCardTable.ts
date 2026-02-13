@@ -60,14 +60,28 @@ export function useCardTable(): CardTableEngine {
   const allCards = computed<ManagedCard[]>(() => {
     cardsTrigger.value // depend on trigger
     const cards: ManagedCard[] = []
+    const seenIds = new Set<string>()
+    
+    // Helper to add cards while filtering duplicates
+    const addCards = (containerCards: ManagedCard[]) => {
+      for (const managed of containerCards) {
+        if (!seenIds.has(managed.card.id)) {
+          seenIds.add(managed.card.id)
+          cards.push(managed)
+        } else {
+          console.warn(`[CardTable] Duplicate card ID detected: ${managed.card.id}`)
+        }
+      }
+    }
+    
     if (deck.value) {
-      cards.push(...deck.value.cards)
+      addCards(deck.value.cards)
     }
     for (const hand of hands.value) {
-      cards.push(...hand.cards)
+      addCards(hand.cards)
     }
     for (const pile of piles.value) {
-      cards.push(...pile.cards)
+      addCards(pile.cards)
     }
     return cards
   })
