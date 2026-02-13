@@ -435,6 +435,7 @@ export class Game {
     }
 
     // Human dealer needs to discard
+    this.currentRound.currentPlayer = this.currentRound.dealer
     this.phase = GamePhase.DealerDiscard
     this.broadcastState()
     this.notifyPlayerTurn(dealer.odusId!)
