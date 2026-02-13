@@ -29,6 +29,9 @@ export const useLobbyStore = defineStore('lobby', () => {
   const odusId = ref<string | null>(localStorage.getItem(STORAGE_KEYS.odusId))
   const nickname = ref<string>(localStorage.getItem(STORAGE_KEYS.nickname) || '')
 
+  // Flag to indicate we're waiting for welcome after a reconnect
+  const pendingReconnectResync = ref(false)
+
   const tables = ref<Table[]>([])
   const connectedPlayers = ref(0)
 
@@ -66,6 +69,14 @@ export const useLobbyStore = defineStore('lobby', () => {
       case 'welcome':
         odusId.value = message.odusId
         localStorage.setItem(STORAGE_KEYS.odusId, message.odusId)
+        
+        // If we were waiting for welcome after reconnect, now it's safe to request state resync
+        // (The server has re-associated our client with our game at this point)
+        if (pendingReconnectResync.value && gameId.value) {
+          console.log('Welcome received after reconnect - now requesting game state resync')
+          pendingReconnectResync.value = false
+          websocket.send({ type: 'request_state' })
+        }
         break
 
       case 'lobby_state':
@@ -165,14 +176,16 @@ export const useLobbyStore = defineStore('lobby', () => {
       websocket.onReconnect(() => {
         console.log('Reconnected - re-identifying to server')
         if (hasNickname.value) {
+          // If we're in a game, mark that we need to request state resync
+          // AFTER the welcome message confirms join_lobby was processed.
+          // This avoids a race condition where request_state arrives before
+          // the server has re-associated our client with our gameId.
+          if (gameId.value) {
+            pendingReconnectResync.value = true
+          }
+          
           // Re-join lobby to re-establish identity
           joinLobby()
-          
-          // If we were in a game, request state resync
-          if (gameId.value) {
-            console.log('Requesting game state resync after reconnect')
-            websocket.send({ type: 'request_state' })
-          }
         }
       })
 
