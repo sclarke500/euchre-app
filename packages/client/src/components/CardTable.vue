@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, provide } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
 import BoardCard from './BoardCard.vue'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
@@ -78,6 +78,7 @@ defineEmits<{
 
 const boardRef = ref<HTMLElement | null>(null)
 const tableRef = ref<HTMLElement | null>(null)
+let resizeObserver: ResizeObserver | null = null
 
 // Use provided engine or create our own
 const engine = props.engine ?? useCardTable()
@@ -136,6 +137,23 @@ function computeLayout() {
 
 onMounted(() => {
   computeLayout()
+  if (boardRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      computeLayout()
+    })
+    resizeObserver.observe(boardRef.value)
+  }
+})
+
+watch(() => [props.playerCount, props.layout], () => {
+  computeLayout()
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 
 // Provide engine and layout for director composables

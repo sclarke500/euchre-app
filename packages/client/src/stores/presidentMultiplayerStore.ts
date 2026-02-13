@@ -82,6 +82,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
       // Otherwise, outgoing actions can include a stale expectedStateSeq and be rejected.
       if (message.type === 'president_game_state') {
         lastStateSeq.value = message.state.stateSeq
+        lastStateReceivedAt = Date.now()
       }
 
       // If server tells us we're out of sync, request resync immediately.
@@ -109,6 +110,9 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
           myPlayerId: myPlayerInState?.id,
           myHand: myPlayerInState?.hand?.map(c => c.id),
         })
+        isMyTurn.value = false
+        validActions.value = []
+        validPlays.value = []
         gameState.value = message.state
         lastStateSeq.value = message.state.stateSeq
         lastStateReceivedAt = Date.now()
