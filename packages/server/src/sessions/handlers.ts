@@ -325,7 +325,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
   function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
     if (!client.player || !client.gameId) {
-      send(ws, { type: 'error', message: 'Not in a game' })
+      // Unrecoverable - tell client to bail
+      send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
       return
     }
 
@@ -334,14 +335,17 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     if (gameType === 'president') {
       const presidentGame = presidentGames.get(client.gameId)
       if (!presidentGame) {
-        send(ws, { type: 'error', message: 'Game not found' })
+        // Game was destroyed (server restart?) - tell client to bail
+        send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
+        client.gameId = null  // Clear stale reference
         return
       }
       presidentGame.resendStateToPlayer(client.player.odusId)
     } else {
       const game = games.get(client.gameId)
       if (!game) {
-        send(ws, { type: 'error', message: 'Game not found' })
+        send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
+        client.gameId = null
         return
       }
       game.resendStateToPlayer(client.player.odusId)
@@ -352,7 +356,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
   function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
     if (!client.player || !client.gameId) {
-      send(ws, { type: 'error', message: 'Not in a game' })
+      send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
       return
     }
 

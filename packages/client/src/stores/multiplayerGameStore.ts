@@ -26,6 +26,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   const lastBidAction = ref<{ playerId: number; message: string } | null>(null)
   const lastCardPlayed = ref<{ playerId: number; card: Card } | null>(null)
   const lastTrickWinnerId = ref<number | null>(null)
+  const gameLost = ref(false)  // Set when server says game is unrecoverable
 
   // Sync tracking
   const lastStateSeq = ref<number>(0)
@@ -240,6 +241,13 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
       case 'error':
         console.error('[MP] Server error:', message.message)
+
+        // Game is unrecoverable - tell UI to bail out
+        if (message.code === 'game_lost') {
+          console.warn('[MP] Game lost - returning to menu')
+          gameLost.value = true
+          return
+        }
 
         // Auto-report gameplay errors (not sync_required, not lobby/table errors)
         if (message.code !== 'sync_required' && gameState.value) {
@@ -495,6 +503,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     validActions.value = []
     validCards.value = []
     lastStateSeq.value = 0
+    gameLost.value = false
   }
 
   return {
@@ -506,6 +515,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     lastBidAction,
     lastCardPlayed,
     lastTrickWinnerId,
+    gameLost,
 
     // Computed
     phase,

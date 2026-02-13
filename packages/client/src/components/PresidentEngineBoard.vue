@@ -190,7 +190,7 @@ const props = withDefaults(defineProps<{
   mode: 'singleplayer',
 })
 
-defineEmits<{
+const emit = defineEmits<{
   'leave-game': []
 }>()
 
@@ -483,6 +483,14 @@ onMounted(async () => {
   }
   if (props.mode === 'multiplayer') {
     game.initialize?.()
+  }
+})
+
+// Watch for game_lost signal from server — bail out to menu
+watch(() => game.gameLost.value, (lost) => {
+  if (lost) {
+    console.warn('[PresidentBoard] Game lost — returning to menu')
+    emit('leave-game')
   }
 })
 

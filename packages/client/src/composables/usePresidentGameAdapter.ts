@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type Ref } from 'vue'
+import { computed, ref, toRef, type ComputedRef, type Ref } from 'vue'
 import { usePresidentGameStore } from '@/stores/presidentGameStore'
 import { usePresidentMultiplayerStore } from '@/stores/presidentMultiplayerStore'
 import type {
@@ -37,6 +37,7 @@ export interface PresidentGameAdapter {
   gameOver: ComputedRef<boolean>
   finishedPlayers: ComputedRef<number[]>
   timedOutPlayer: ComputedRef<number | null>
+  gameLost: Ref<boolean>  // True when server says game is unrecoverable
 
   // Actions
   playCards: (cards: StandardCard[]) => void
@@ -94,6 +95,7 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     gameOver: computed(() => store.gameOver),
     finishedPlayers: computed(() => store.finishedPlayers),
     timedOutPlayer: computed(() => null), // No timeout in single-player
+    gameLost: ref(false), // Never happens in single-player
 
     // Actions
     playCards: (cards: StandardCard[]) => store.playCards(cards),
@@ -185,6 +187,7 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     gameOver: computed(() => store.gameOver),
     finishedPlayers: computed(() => store.finishedPlayers),
     timedOutPlayer: computed(() => store.timedOutPlayer),
+    gameLost: toRef(store, 'gameLost'),
 
     // Actions
     playCards: (cards: StandardCard[]) => {

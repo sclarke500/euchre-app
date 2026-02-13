@@ -494,6 +494,14 @@ onMounted(async () => {
   }
 })
 
+// Watch for game_lost signal from server — bail out to menu
+watch(() => mpStore?.gameLost, (lost) => {
+  if (lost) {
+    console.warn('[EuchreBoard] Game lost — returning to menu')
+    emit('leave-game')
+  }
+})
+
 onUnmounted(() => {
   director.cleanup()
   mpStore?.cleanup()

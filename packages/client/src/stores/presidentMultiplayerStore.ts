@@ -36,6 +36,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   const lastPlayMade = ref<{ playerId: number; cards: StandardCard[]; playerName: string } | null>(null)
   const lastPass = ref<{ playerId: number; playerName: string } | null>(null)
   const pileCleared = ref(false)
+  const gameLost = ref(false)  // Set when server says game is unrecoverable
 
   // Sync tracking
   const lastStateSeq = ref<number>(0)
@@ -204,6 +205,11 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
       case 'error':
         console.error('[MP] Server error:', message.message)
+        if (message.code === 'game_lost') {
+          console.warn('[MP] Game lost - returning to menu')
+          gameLost.value = true
+          return
+        }
         if (message.code === 'sync_required') {
           requestStateResync()
         }
@@ -350,6 +356,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     lastStateSeq.value = 0
     lastStateReceivedAt = 0
     messageQueue.length = 0
+    gameLost.value = false
     queueMode = false
   }
 
@@ -363,6 +370,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     lastPlayMade,
     lastPass,
     pileCleared,
+    gameLost,
     
     // Give-back phase state
     isAwaitingGiveCards,
