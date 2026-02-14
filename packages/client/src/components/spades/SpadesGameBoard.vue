@@ -20,17 +20,22 @@
       </div>
     </template>
 
-    <!-- Scoreboard (simplified - just points and bags) -->
+    <!-- Scoreboard (points and bags with column headers) -->
     <div class="scoreboard spades-scoreboard">
       <div class="score-row">
         <span class="score-label">Us</span>
         <span class="score-value">{{ scores[0]?.score ?? 0 }}</span>
-        <span class="score-bags">{{ scores[0]?.bags ?? 0 }}🎒</span>
+        <span class="score-bags">{{ scores[0]?.bags ?? 0 }}</span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
         <span class="score-value">{{ scores[1]?.score ?? 0 }}</span>
-        <span class="score-bags">{{ scores[1]?.bags ?? 0 }}🎒</span>
+        <span class="score-bags">{{ scores[1]?.bags ?? 0 }}</span>
+      </div>
+      <div class="score-header">
+        <span></span>
+        <span>Pts</span>
+        <span>Bags</span>
       </div>
     </div>
 
@@ -629,6 +634,13 @@ watch(() => store.gameLost, (lost) => {
   }
 })
 
+// Reset bid selector to default (3) when bidding phase starts
+watch(() => store.phase, (newPhase) => {
+  if (newPhase === SpadesPhase.Bidding) {
+    selectedBid.value = 3
+  }
+})
+
 onMounted(async () => {
   await nextTick()
   // Ensure CardTable has mounted and boardRef is available
@@ -679,35 +691,51 @@ onUnmounted(() => {
 }
 
 .spades-scoreboard {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 130px;
+  
   .score-row {
-    display: flex;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr;
+    gap: 4px;
     align-items: center;
-    padding: 2px 0;
-    
-    &:first-child {
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 4px;
-      margin-bottom: 2px;
-    }
+    padding: 6px 10px;
   }
   
   .score-label {
     font-weight: 600;
-    min-width: 40px;
   }
   
   .score-value {
     font-weight: 700;
     font-size: 16px;
     color: #fff;
-    min-width: 40px;
-    text-align: right;
+    text-align: center;
   }
   
   .score-bags {
-    font-size: 12px;
+    font-size: 14px;
     color: #f39c12;
+    text-align: center;
+  }
+  
+  .score-header {
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    
+    span:first-child {
+      text-align: left;
+    }
   }
 }
 
