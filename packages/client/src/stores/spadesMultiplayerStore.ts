@@ -52,6 +52,15 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     return Math.max(stateSeqFromSnapshot, lastStateSeq.value)
   }
 
+  // Only update a ref if the array content actually changed (avoids triggering
+  // downstream reactivity and flickering from messages with identical data)
+  function updateIfChanged(target: { value: string[] }, incoming: string[]) {
+    if (target.value.length !== incoming.length ||
+        target.value.some((v, i) => v !== incoming[i])) {
+      target.value = incoming
+    }
+  }
+
   function handleMessage(message: ServerMessage): void {
     if (queueMode) {
       if (message.type === 'spades_game_state') {
@@ -72,16 +81,20 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
       case 'spades_game_state':
         gameState.value = message.state
         lastStateSeq.value = message.state.stateSeq
+        // Only clear turn state if it's definitely not our turn
+        // Use updateIfChanged to avoid flickering from redundant updates
         if (humanPlayer.value && message.state.currentPlayer !== humanPlayer.value.id) {
-          isMyTurn.value = false
-          validActions.value = []
-          validCards.value = []
+          if (isMyTurn.value) {
+            isMyTurn.value = false
+            updateIfChanged(validActions, [])
+            updateIfChanged(validCards, [])
+          }
         }
         break
       case 'spades_your_turn':
         isMyTurn.value = true
-        validActions.value = message.validActions
-        validCards.value = message.validCards ?? []
+        updateIfChanged(validActions, message.validActions)
+        updateIfChanged(validCards, message.validCards ?? [])
         break
       case 'error':
         if (message.code === 'game_lost') {
