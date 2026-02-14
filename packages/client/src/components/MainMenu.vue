@@ -4,7 +4,7 @@ import { useLobbyStore } from '@/stores/lobbyStore'
 import { getPlatformInfo } from '@/utils/platform'
 import SettingsModal from './SettingsModal.vue'
 
-export type GameType = 'euchre' | 'president' | 'klondike'
+export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 
 const showSettings = ref(false)
 
@@ -81,7 +81,8 @@ const emit = defineEmits<{
 const savedGame = localStorage.getItem('selectedGame') as GameType | null
 const selectedGame = ref<GameType>(
   savedGame === 'president' ? 'president' :
-  savedGame === 'klondike' ? 'klondike' : 'euchre'
+  savedGame === 'klondike' ? 'klondike' :
+  savedGame === 'spades' ? 'spades' : 'euchre'
 )
 
 // Save game selection when it changes
@@ -136,6 +137,7 @@ const gameTitle = computed(() => {
     case 'euchre': return 'Euchre'
     case 'president': return 'President'
     case 'klondike': return 'Klondike'
+    case 'spades': return 'Spades'
     default: return 'Euchre'
   }
 })
@@ -179,6 +181,12 @@ const gameTitle = computed(() => {
         >
           Klondike
         </button>
+        <button
+          :class="['game-tab', { active: selectedGame === 'spades' }]"
+          @click="selectedGame = 'spades'"
+        >
+          Spades
+        </button>
       </div>
 
       <div class="menu-options">
@@ -190,11 +198,12 @@ const gameTitle = computed(() => {
 
         <button
           class="menu-btn multiplayer"
-          :disabled="selectedGame === 'klondike'"
+          :disabled="selectedGame === 'klondike' || selectedGame === 'spades'"
           @click="handleMultiplayer"
         >
           Multiplayer
           <span v-if="selectedGame === 'klondike'" class="btn-subtitle">Solitaire is solo!</span>
+          <span v-else-if="selectedGame === 'spades'" class="btn-subtitle">Coming soon!</span>
           <span v-else class="btn-subtitle">Play with friends online</span>
         </button>
       </div>

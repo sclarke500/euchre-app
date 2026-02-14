@@ -1,0 +1,543 @@
+import type {
+  SpadesPlayer,
+  SpadesTrick,
+  SpadesGameState,
+  SpadesBid,
+  SpadesTeamScore,
+  SpadesClientGameState,
+  SpadesClientPlayer,
+  StandardCard,
+} from '@euchre/shared'
+import {
+  SpadesPhase,
+  SpadesBidType,
+  Spades,
+  getRandomAINames,
+} from '@euchre/shared'
+
+export interface SpadesGamePlayer {
+  odusId: string | null // null for AI players
+  seatIndex: number
+  name: string
+  isHuman: boolean
+  hand: StandardCard[]
+  teamId: number
+  bid: SpadesBid | null
+  tricksWon: number
+}
+
+export interface SpadesGameEvents {
+  onStateChange: (playerId: string | null, state: SpadesClientGameState) => void
+  onBidMade: (playerId: number, bid: SpadesBid, playerName: string) => void
+  onCardPlayed: (playerId: number, card: StandardCard, playerName: string) => void
+  onTrickComplete: (winnerId: number, winnerName: string, cards: Array<{ playerId: number; card: StandardCard }>) => void
+  onRoundComplete: (scores: SpadesTeamScore[], teamTricks: [number, number]) => void
+  onGameOver: (winningTeam: number, finalScores: SpadesTeamScore[]) => void
+  onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => void
+  onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => void
+  onPlayerTimedOut: (playerId: number, playerName: string) => void
+  onPlayerBooted: (playerId: number, playerName: string) => void
+}
+
+export class SpadesGame {
+  public readonly id: string
+  private players: SpadesGamePlayer[] = []
+  private phase: SpadesPhase = SpadesPhase.Setup
+  private currentTrick: SpadesTrick = Spades.createSpadesTrick()
+  private completedTricks: SpadesTrick[] = []
+  private currentPlayer = 0
+  private dealer = 0
+  private scores: SpadesTeamScore[] = [
+    { teamId: 0, score: 0, bags: 0 },
+    { teamId: 1, score: 0, bags: 0 },
+  ]
+  private roundNumber = 1
+  private gameOver = false
+  private winner: number | null = null
+  private spadesBroken = false
+  private bidsComplete = false
+  private winScore = 500
+  private loseScore = -200
+  private events: SpadesGameEvents
+  private stateSeq = 0
+  private turnReminderTimeout: ReturnType<typeof setTimeout> | null = null
+  private readonly TURN_REMINDER_DELAY = 15000
+  private turnReminderCount = 0
+  private readonly TIMEOUT_AFTER_REMINDERS = 4
+  private timedOutPlayer: number | null = null
+
+  constructor(id: string, events: SpadesGameEvents) {
+    this.id = id
+    this.events = events
+  }
+
+  getStateSeq(): number {
+    return this.stateSeq
+  }
+
+  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }>): void {
+    const aiCount = 4 - humanPlayers.length
+    const aiNames = getRandomAINames(aiCount)
+    let aiNameIndex = 0
+
+    for (let i = 0; i < 4; i++) {
+      const humanPlayer = humanPlayers.find((p) => p.seatIndex === i)
+
+      if (humanPlayer) {
+        this.players.push({
+          odusId: humanPlayer.odusId,
+          seatIndex: i,
+          name: humanPlayer.name,
+          isHuman: true,
+          hand: [],
+          teamId: i % 2,
+          bid: null,
+          tricksWon: 0,
+        })
+      } else {
+        this.players.push({
+          odusId: null,
+          seatIndex: i,
+          name: aiNames[aiNameIndex++] ?? 'Bot',
+          isHuman: false,
+          hand: [],
+          teamId: i % 2,
+          bid: null,
+          tricksWon: 0,
+        })
+      }
+    }
+  }
+
+  start(): void {
+    this.dealer = Math.floor(Math.random() * 4)
+    this.startNewRound()
+  }
+
+  getPlayerInfo(odusId: string): { seatIndex: number; name: string } | null {
+    const player = this.players.find((p) => p.odusId === odusId)
+    if (!player) return null
+    return { seatIndex: player.seatIndex, name: player.name }
+  }
+
+  private startNewRound(): void {
+    // Deal cards
+    const gameState = Spades.createSpadesGame(
+      this.players.map(p => p.name),
+      0,
+      this.winScore,
+      this.loseScore
+    )
+    const dealtState = Spades.dealSpadesCards({
+      ...gameState,
+      dealer: this.dealer,
+      scores: this.scores,
+      roundNumber: this.roundNumber,
+    })
+
+    // Update player hands
+    for (let i = 0; i < 4; i++) {
+      this.players[i]!.hand = dealtState.players[i]?.hand ?? []
+      this.players[i]!.bid = null
+      this.players[i]!.tricksWon = 0
+    }
+
+    this.phase = SpadesPhase.Dealing
+    this.currentTrick = Spades.createSpadesTrick()
+    this.completedTricks = []
+    this.currentPlayer = (this.dealer + 1) % 4
+    this.spadesBroken = false
+    this.bidsComplete = false
+
+    this.broadcastState()
+
+    // Start bidding after deal animation
+    setTimeout(() => {
+      this.phase = SpadesPhase.Bidding
+      this.broadcastState()
+      this.scheduleAITurn()
+    }, 1500)
+  }
+
+  makeBid(odusId: string, bid: SpadesBid): boolean {
+    const player = this.players.find((p) => p.odusId === odusId)
+    if (!player) return false
+    if (player.seatIndex !== this.currentPlayer) return false
+    if (this.phase !== SpadesPhase.Bidding) return false
+    if (player.bid !== null) return false
+
+    // Validate bid
+    if (!Spades.isValidBid(bid, player.hand)) return false
+
+    player.bid = bid
+    this.events.onBidMade(player.seatIndex, bid, player.name)
+
+    // Check if all players have bid
+    const allBid = this.players.every(p => p.bid !== null)
+    if (allBid) {
+      this.bidsComplete = true
+      this.phase = SpadesPhase.Playing
+      this.currentPlayer = (this.dealer + 1) % 4
+    } else {
+      this.currentPlayer = (this.currentPlayer + 1) % 4
+    }
+
+    this.broadcastState()
+    this.scheduleAITurn()
+    return true
+  }
+
+  playCard(odusId: string, cardId: string): boolean {
+    const player = this.players.find((p) => p.odusId === odusId)
+    if (!player) return false
+    if (player.seatIndex !== this.currentPlayer) return false
+    if (this.phase !== SpadesPhase.Playing) return false
+
+    const card = player.hand.find(c => c.id === cardId)
+    if (!card) return false
+
+    // Verify legal play
+    const legalPlays = Spades.getLegalPlays(player.hand, this.currentTrick, this.spadesBroken)
+    if (!legalPlays.some(c => c.id === cardId)) return false
+
+    // Remove card from hand
+    player.hand = player.hand.filter(c => c.id !== cardId)
+
+    // Add to trick
+    this.currentTrick.cards.push({ card, playerId: player.seatIndex })
+    if (this.currentTrick.cards.length === 1) {
+      this.currentTrick.leadingSuit = card.suit
+    }
+
+    // Break spades if spade was played
+    if (card.suit === 'spades') {
+      this.spadesBroken = true
+    }
+
+    this.events.onCardPlayed(player.seatIndex, card, player.name)
+
+    // Check if trick complete
+    if (this.currentTrick.cards.length === 4) {
+      const winnerId = Spades.determineTrickWinner(this.currentTrick)
+      this.currentTrick.winnerId = winnerId
+      this.completedTricks.push(this.currentTrick)
+
+      // Update winner's tricks won
+      const winner = this.players[winnerId]
+      if (winner) winner.tricksWon++
+
+      this.events.onTrickComplete(
+        winnerId,
+        this.players[winnerId]?.name ?? '',
+        this.currentTrick.cards.map(c => ({ playerId: c.playerId, card: c.card }))
+      )
+
+      this.phase = SpadesPhase.TrickComplete
+
+      // Check if round complete
+      if (this.completedTricks.length === 13) {
+        setTimeout(() => this.completeRound(), 1500)
+      } else {
+        // Continue playing
+        setTimeout(() => {
+          this.currentTrick = Spades.createSpadesTrick()
+          this.currentPlayer = winnerId
+          this.phase = SpadesPhase.Playing
+          this.broadcastState()
+          this.scheduleAITurn()
+        }, 1500)
+      }
+    } else {
+      this.currentPlayer = (this.currentPlayer + 1) % 4
+      this.scheduleAITurn()
+    }
+
+    this.broadcastState()
+    return true
+  }
+
+  private completeRound(): void {
+    // Calculate scores
+    const gameState = this.buildGameState()
+    const completedState = Spades.completeRound(gameState)
+
+    this.scores = completedState.scores
+    this.gameOver = completedState.gameOver
+    this.winner = completedState.winner
+
+    const teamTricks: [number, number] = [
+      this.players.filter(p => p.teamId === 0).reduce((s, p) => s + p.tricksWon, 0),
+      this.players.filter(p => p.teamId === 1).reduce((s, p) => s + p.tricksWon, 0),
+    ]
+
+    this.events.onRoundComplete(this.scores, teamTricks)
+
+    if (this.gameOver) {
+      this.phase = SpadesPhase.GameOver
+      this.events.onGameOver(this.winner ?? 0, this.scores)
+    } else {
+      this.phase = SpadesPhase.RoundComplete
+      // Start new round after delay
+      setTimeout(() => {
+        this.dealer = (this.dealer + 1) % 4
+        this.roundNumber++
+        this.startNewRound()
+      }, 3000)
+    }
+
+    this.broadcastState()
+  }
+
+  private scheduleAITurn(): void {
+    this.clearTurnTimer()
+
+    const currentPlayerObj = this.players[this.currentPlayer]
+    if (!currentPlayerObj) return
+
+    if (currentPlayerObj.isHuman) {
+      // Start turn reminder timer for human
+      this.scheduleTurnReminder()
+      return
+    }
+
+    // AI turn
+    setTimeout(() => {
+      if (this.phase === SpadesPhase.Bidding) {
+        this.processAIBid()
+      } else if (this.phase === SpadesPhase.Playing) {
+        this.processAIPlay()
+      }
+    }, 800)
+  }
+
+  private processAIBid(): void {
+    const player = this.players[this.currentPlayer]
+    if (!player || player.isHuman) return
+
+    const gameState = this.buildGameState()
+    const spadesPlayer = this.toSpadesPlayer(player)
+    const bid = Spades.chooseSpadesBid(spadesPlayer, gameState)
+
+    player.bid = bid
+    this.events.onBidMade(player.seatIndex, bid, player.name)
+
+    const allBid = this.players.every(p => p.bid !== null)
+    if (allBid) {
+      this.bidsComplete = true
+      this.phase = SpadesPhase.Playing
+      this.currentPlayer = (this.dealer + 1) % 4
+    } else {
+      this.currentPlayer = (this.currentPlayer + 1) % 4
+    }
+
+    this.broadcastState()
+    this.scheduleAITurn()
+  }
+
+  private processAIPlay(): void {
+    const player = this.players[this.currentPlayer]
+    if (!player || player.isHuman) return
+
+    const gameState = this.buildGameState()
+    const spadesPlayer = this.toSpadesPlayer(player)
+    const card = Spades.chooseSpadesCard(spadesPlayer, gameState)
+
+    // Play the card
+    player.hand = player.hand.filter(c => c.id !== card.id)
+    this.currentTrick.cards.push({ card, playerId: player.seatIndex })
+    if (this.currentTrick.cards.length === 1) {
+      this.currentTrick.leadingSuit = card.suit
+    }
+
+    if (card.suit === 'spades') {
+      this.spadesBroken = true
+    }
+
+    this.events.onCardPlayed(player.seatIndex, card, player.name)
+
+    if (this.currentTrick.cards.length === 4) {
+      const winnerId = Spades.determineTrickWinner(this.currentTrick)
+      this.currentTrick.winnerId = winnerId
+      this.completedTricks.push(this.currentTrick)
+
+      const winner = this.players[winnerId]
+      if (winner) winner.tricksWon++
+
+      this.events.onTrickComplete(
+        winnerId,
+        this.players[winnerId]?.name ?? '',
+        this.currentTrick.cards.map(c => ({ playerId: c.playerId, card: c.card }))
+      )
+
+      this.phase = SpadesPhase.TrickComplete
+
+      if (this.completedTricks.length === 13) {
+        setTimeout(() => this.completeRound(), 1500)
+      } else {
+        setTimeout(() => {
+          this.currentTrick = Spades.createSpadesTrick()
+          this.currentPlayer = winnerId
+          this.phase = SpadesPhase.Playing
+          this.broadcastState()
+          this.scheduleAITurn()
+        }, 1500)
+      }
+    } else {
+      this.currentPlayer = (this.currentPlayer + 1) % 4
+      this.scheduleAITurn()
+    }
+
+    this.broadcastState()
+  }
+
+  private scheduleTurnReminder(): void {
+    this.turnReminderTimeout = setTimeout(() => {
+      this.turnReminderCount++
+      const player = this.players[this.currentPlayer]
+      if (!player?.odusId) return
+
+      if (this.turnReminderCount >= this.TIMEOUT_AFTER_REMINDERS) {
+        this.timedOutPlayer = this.currentPlayer
+        this.events.onPlayerTimedOut(this.currentPlayer, player.name)
+        this.broadcastState()
+        return
+      }
+
+      const actions = this.getValidActionsForPlayer(player.seatIndex)
+      this.events.onTurnReminder(player.odusId, actions.actions, actions.cards)
+      this.scheduleTurnReminder()
+    }, this.TURN_REMINDER_DELAY)
+  }
+
+  private clearTurnTimer(): void {
+    if (this.turnReminderTimeout) {
+      clearTimeout(this.turnReminderTimeout)
+      this.turnReminderTimeout = null
+    }
+    this.turnReminderCount = 0
+  }
+
+  private getValidActionsForPlayer(seatIndex: number): { actions: string[]; cards?: string[] } {
+    if (this.phase === SpadesPhase.Bidding) {
+      return { actions: ['bid'] }
+    }
+    if (this.phase === SpadesPhase.Playing) {
+      const player = this.players[seatIndex]
+      if (!player) return { actions: [] }
+      const legalPlays = Spades.getLegalPlays(player.hand, this.currentTrick, this.spadesBroken)
+      return { actions: ['play'], cards: legalPlays.map(c => c.id) }
+    }
+    return { actions: [] }
+  }
+
+  private toSpadesPlayer(player: SpadesGamePlayer): SpadesPlayer {
+    return {
+      id: player.seatIndex,
+      name: player.name,
+      hand: player.hand,
+      isHuman: player.isHuman,
+      teamId: player.teamId,
+      bid: player.bid,
+      tricksWon: player.tricksWon,
+    }
+  }
+
+  private buildGameState(): SpadesGameState {
+    return {
+      gameType: 'spades',
+      players: this.players.map(p => this.toSpadesPlayer(p)),
+      phase: this.phase,
+      currentTrick: this.currentTrick,
+      completedTricks: this.completedTricks,
+      currentPlayer: this.currentPlayer,
+      dealer: this.dealer,
+      scores: this.scores,
+      roundNumber: this.roundNumber,
+      gameOver: this.gameOver,
+      winner: this.winner,
+      spadesBroken: this.spadesBroken,
+      bidsComplete: this.bidsComplete,
+      winScore: this.winScore,
+      loseScore: this.loseScore,
+    }
+  }
+
+  private buildClientState(forPlayerId: string | null): SpadesClientGameState {
+    this.stateSeq++
+
+    const clientPlayers: SpadesClientPlayer[] = this.players.map(p => {
+      const clientPlayer: SpadesClientPlayer = {
+        id: p.seatIndex,
+        name: p.name,
+        teamId: p.teamId,
+        bid: p.bid,
+        tricksWon: p.tricksWon,
+        handSize: p.hand.length,
+      }
+
+      // Only include hand for the requesting player
+      if (forPlayerId && p.odusId === forPlayerId) {
+        clientPlayer.hand = p.hand
+      }
+
+      return clientPlayer
+    })
+
+    return {
+      gameType: 'spades',
+      players: clientPlayers,
+      phase: this.phase,
+      currentTrick: this.currentTrick,
+      completedTricks: this.completedTricks,
+      currentPlayer: this.currentPlayer,
+      dealer: this.dealer,
+      scores: this.scores,
+      roundNumber: this.roundNumber,
+      gameOver: this.gameOver,
+      winner: this.winner,
+      spadesBroken: this.spadesBroken,
+      bidsComplete: this.bidsComplete,
+      winScore: this.winScore,
+      loseScore: this.loseScore,
+      stateSeq: this.stateSeq,
+      timedOutPlayer: this.timedOutPlayer,
+    }
+  }
+
+  private broadcastState(): void {
+    // Broadcast to each human player with their hand visible
+    for (const player of this.players) {
+      if (player.odusId) {
+        const state = this.buildClientState(player.odusId)
+        this.events.onStateChange(player.odusId, state)
+
+        // Notify if it's their turn
+        if (player.seatIndex === this.currentPlayer && !this.gameOver) {
+          const actions = this.getValidActionsForPlayer(player.seatIndex)
+          this.events.onYourTurn(player.odusId, actions.actions, actions.cards)
+        }
+      }
+    }
+
+    // Broadcast spectator view (no hands visible)
+    this.events.onStateChange(null, this.buildClientState(null))
+  }
+
+  // Public methods for game management
+  resetForNewGame(): void {
+    this.clearTurnTimer()
+    this.scores = [
+      { teamId: 0, score: 0, bags: 0 },
+      { teamId: 1, score: 0, bags: 0 },
+    ]
+    this.roundNumber = 1
+    this.gameOver = false
+    this.winner = null
+    this.timedOutPlayer = null
+    this.start()
+  }
+
+  cleanup(): void {
+    this.clearTurnTimer()
+  }
+}

@@ -7,6 +7,7 @@ import { GamePhase } from '@euchre/shared'
 import UnifiedGameBoard from './components/legacy/UnifiedGameBoard.vue'
 import PresidentEngineBoard from './components/PresidentEngineBoard.vue'
 import KlondikeGameBoard from './components/klondike/KlondikeGameBoard.vue'
+import SpadesGameBoard from './components/spades/SpadesGameBoard.vue'
 import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
 import SandboxTable from './components/sandbox/SandboxTable.vue'
@@ -18,7 +19,7 @@ const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
 
 // App view state
-type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox' | 'euchreLegacy'
+type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'spadesSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox' | 'euchreLegacy'
 
 // Check for dev URL parameters
 const urlParams = new URLSearchParams(window.location.search)
@@ -37,7 +38,7 @@ const phase = computed(() => gameStore.phase)
 
 // Only show landscape blocker on game boards, not menu/lobby
 const showLandscapeBlocker = computed(() => {
-  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'multiplayerGame', 'euchreLegacy'].includes(currentView.value)
+  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'euchreLegacy'].includes(currentView.value)
 })
 
 // PWA install prompt
@@ -166,6 +167,9 @@ function startSinglePlayer(game: GameType) {
   } else if (game === 'klondike') {
     currentView.value = 'klondikeSinglePlayer'
     // KlondikeGameBoard initializes the game in onMounted
+  } else if (game === 'spades') {
+    currentView.value = 'spadesSinglePlayer'
+    // SpadesGameBoard initializes the game in onMounted
   } else {
     currentView.value = 'euchreSinglePlayer'
     gameStore.startNewGame()
@@ -278,6 +282,12 @@ function backToMenu() {
     <!-- Klondike Single Player Game -->
     <KlondikeGameBoard
       v-else-if="currentView === 'klondikeSinglePlayer'"
+      @leave-game="currentView = 'menu'"
+    />
+
+    <!-- Spades Single Player Game -->
+    <SpadesGameBoard
+      v-else-if="currentView === 'spadesSinglePlayer'"
       @leave-game="currentView = 'menu'"
     />
 

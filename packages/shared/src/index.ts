@@ -22,3 +22,22 @@ export * from './president/index.js'
 
 // Klondike Solitaire
 export * from './klondike/index.js'
+
+// Spades game - namespaced to avoid conflicts
+export * as Spades from './spades/index.js'
+// Also export types directly (they don't conflict)
+export {
+  SpadesPhase,
+  SpadesBidType,
+  SpadesAction,
+  type SpadesGameState,
+  type SpadesPlayer,
+  type SpadesBid,
+  type SpadesTrick,
+  type SpadesTeamScore,
+  type SpadesRoundScore,
+  type SpadesClientGameState,
+  type SpadesClientPlayer,
+  type SpadesTeamRoundState,
+  type SpadesPlayerAction,
+} from './spades/index.js'
