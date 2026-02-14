@@ -404,24 +404,23 @@ function handleHint() {
   height: 100%;
   gap: $spacing-sm;
 
-  // Smaller cards for landscape to fit 4 foundations vertically
-  --card-width: 55px;
-  --card-height: 77px;
+  // Small cards for landscape to fit 4 foundations vertically on phones
+  // 4 cards * 56px + 3 gaps * 3px = 233px, should fit most landscape heights
+  --card-width: 40px;
+  --card-height: 56px;
 }
 
 .landscape-left {
   flex-shrink: 0;
   display: flex;
   align-items: flex-start;
-  padding-top: $spacing-xs;
-  overflow-y: auto;
-  max-height: 100%;
+  padding-top: 2px;
 }
 
 .foundations-column {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .landscape-center {
@@ -538,8 +537,19 @@ function handleHint() {
   }
 }
 
+// Medium landscape screens (tablets, larger phones)
+@media (orientation: landscape) and (min-height: 350px) {
+  .landscape-layout {
+    --card-width: 50px;
+    --card-height: 70px;
+  }
+  .foundations-column {
+    gap: 4px;
+  }
+}
+
 // Taller landscape screens - can fit bigger cards
-@media (orientation: landscape) and (min-height: 400px) {
+@media (orientation: landscape) and (min-height: 500px) {
   .landscape-layout {
     --card-width: 65px;
     --card-height: 91px;
