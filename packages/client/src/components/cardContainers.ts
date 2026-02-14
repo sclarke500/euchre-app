@@ -143,6 +143,10 @@ export class Hand extends CardContainer {
   
   getCardPosition(index: number): CardPosition {
     const cardCount = this.cards.length
+    // Use individual card's faceUp state (authoritative), fall back to hand default
+    const card = this.cards[index]
+    const cardFaceUp = card ? card.faceUp : this.faceUp
+    const flipY = cardFaceUp ? 180 : 0
     
     if (this.mode === 'looseStack') {
       // Deterministic pseudo-random scatter, scaled by hand scale
@@ -157,7 +161,7 @@ export class Hand extends CardContainer {
         rotation: this.rotation + randomRot,
         zIndex: 200 + index,
         scale: this.scale,
-        flipY: this.faceUp ? 180 : 0,  // Respect hand's faceUp setting
+        flipY,
       }
     }
     
@@ -174,7 +178,7 @@ export class Hand extends CardContainer {
         rotation: spreadAngle,
         zIndex: 200 + index,
         scale: this.scale,
-        flipY: this.faceUp ? 180 : 0,  // Respect hand's faceUp setting
+        flipY,
       }
     } else {
       // Play mode (user with fanCurve=0) or opponents: straight horizontal spread
@@ -191,7 +195,7 @@ export class Hand extends CardContainer {
         rotation: this.rotation,
         zIndex: 200 + index,
         scale: this.scale,
-        flipY: this.faceUp ? 180 : 0,  // Respect hand's faceUp setting
+        flipY,
       }
     }
   }
