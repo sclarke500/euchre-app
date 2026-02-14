@@ -280,9 +280,15 @@ export function useCardController(
     const moves = userHand.cards.map((managed, index) => {
       const ref = engine.getCardRef(managed.card.id)
       if (!ref) return null
-      const current = ref.getPosition()
       const target = userHand.getCardPosition(index)
-      return ref.moveTo({ ...target, flipY: current.flipY }, duration)
+      // Omit flipY - moveTo will preserve current flip state
+      return ref.moveTo({
+        x: target.x,
+        y: target.y,
+        rotation: target.rotation,
+        zIndex: target.zIndex,
+        scale: target.scale,
+      }, duration)
     })
 
     await Promise.all(moves)
@@ -427,9 +433,15 @@ export function useCardController(
       const moves = fromHand.cards.map((managed, index) => {
         const ref = engine.getCardRef(managed.card.id)
         if (!ref) return null
-        const current = ref.getPosition()
         const target = fromHand.getCardPosition(index)
-        return ref.moveTo({ ...target, flipY: current.flipY }, refanDuration)
+        // Omit flipY - moveTo will preserve current flip state
+        return ref.moveTo({
+          x: target.x,
+          y: target.y,
+          rotation: target.rotation,
+          zIndex: target.zIndex,
+          scale: target.scale,
+        }, refanDuration)
       })
       await Promise.all(moves)
     }
@@ -572,14 +584,13 @@ export function useCardController(
       for (const managed of hand.cards) {
         const ref = engine.getCardRef(managed.card.id)
         if (ref) {
-          const current = ref.getPosition()
+          // Omit flipY - moveTo will preserve current flip state
           promises.push(ref.moveTo({
             x: avatarPos.x,
             y: avatarPos.y,
             rotation: 0,
             zIndex: 50,
             scale,
-            flipY: current.flipY,
           }, duration))
         }
       }
