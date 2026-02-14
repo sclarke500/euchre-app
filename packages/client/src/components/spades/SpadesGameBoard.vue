@@ -493,8 +493,11 @@ onUnmounted(() => {
   min-width: 180px;
   
   &.is-my-turn {
-    border-color: #4CAF50;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    background: rgba(40, 38, 20, 0.92);
+    box-shadow:
+      0 0 12px rgba(255, 215, 0, 0.2),
+      0 0 30px rgba(255, 215, 0, 0.08);
   }
   
   .panel-header {
@@ -529,11 +532,11 @@ onUnmounted(() => {
   }
   
   &.primary {
-    background: #4CAF50;
-    color: white;
+    background: linear-gradient(135deg, #d4a84b 0%, #b8942f 100%);
+    color: #1a1a1a;
     
     &:hover {
-      background: #45a049;
+      background: linear-gradient(135deg, #e0b555 0%, #c9a340 100%);
     }
   }
 }
