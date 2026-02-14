@@ -169,7 +169,7 @@ function tryRecoverGameId(client: ConnectedClient): boolean {
 
 function handleSpadesMakeBid(ws: WebSocket, client: ConnectedClient, bidType: 'normal' | 'nil' | 'blind_nil', count: number): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -178,7 +178,7 @@ function handleSpadesMakeBid(ws: WebSocket, client: ConnectedClient, bidType: 'n
   }
 
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -196,7 +196,7 @@ function handleSpadesMakeBid(ws: WebSocket, client: ConnectedClient, bidType: 'n
 
 function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Bid['suit'], goingAlone?: boolean): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
   
@@ -206,7 +206,7 @@ function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['acti
   }
   
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -224,7 +224,7 @@ function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['acti
 
 function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
   
@@ -233,7 +233,7 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
   }
   
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -263,7 +263,7 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
 
 function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: string): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
   
@@ -272,7 +272,7 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
   }
   
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -290,7 +290,7 @@ function handleDiscardCard(ws: WebSocket, client: ConnectedClient, cardId: strin
 
 function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: number): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
   
@@ -299,7 +299,7 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
   }
   
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -339,7 +339,7 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
 
 function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
   
@@ -348,7 +348,7 @@ function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardId
   }
   
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -366,7 +366,7 @@ function handlePresidentPlayCards(ws: WebSocket, client: ConnectedClient, cardId
 
 function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
   
@@ -375,7 +375,7 @@ function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
   }
   
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 
@@ -393,7 +393,7 @@ function handlePresidentPass(ws: WebSocket, client: ConnectedClient): void {
 
 function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardIds: string[]): void {
   if (!client.player) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
   
@@ -402,7 +402,7 @@ function handlePresidentGiveCards(ws: WebSocket, client: ConnectedClient, cardId
   }
   
   if (!client.gameId) {
-    send(ws, { type: 'error', message: 'Not in a game' })
+    send(ws, { type: 'error', message: 'Not in a game', code: 'game_lost' })
     return
   }
 

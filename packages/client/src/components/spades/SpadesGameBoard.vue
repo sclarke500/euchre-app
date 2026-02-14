@@ -621,6 +621,14 @@ watch(
   }
 )
 
+// Watch for game_lost signal from server — bail out to menu
+watch(() => store.gameLost, (lost) => {
+  if (lost) {
+    console.warn('[SpadesBoard] Game lost — returning to menu')
+    emit('leave-game')
+  }
+})
+
 onMounted(async () => {
   await nextTick()
   // Ensure CardTable has mounted and boardRef is available

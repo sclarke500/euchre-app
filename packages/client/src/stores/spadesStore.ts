@@ -37,6 +37,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   const winner = ref<number | null>(null)
   const spadesBroken = ref(false)
   const bidsComplete = ref(false)
+  const gameLost = ref(false) // Always false for singleplayer, but keeps interface consistent
   const winScore = ref(500)
   const loseScore = ref(-200)
 
@@ -293,6 +294,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     winner,
     spadesBroken,
     bidsComplete,
+    gameLost,
     gameState,
 
     // Computed
