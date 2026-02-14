@@ -41,6 +41,35 @@
       </svg>
     </button>
 
+    <!-- Bug report button -->
+    <button class="bug-btn" title="Report a bug" @click="openBugReport">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </button>
+
+    <!-- Bug Report Modal -->
+    <Modal :show="showBugReport" @close="showBugReport = false">
+      <template #default>
+        <div class="bug-title">Bug Report</div>
+        <p class="bug-desc">{{ reportDescription }}</p>
+        <textarea 
+          v-model="reportDescription" 
+          class="bug-textarea" 
+          placeholder="Describe what went wrong..."
+          rows="3"
+        />
+        <div class="bug-status" :class="{ success: reportStatus.includes('Sent') }">{{ reportStatus }}</div>
+        <div class="bug-actions">
+          <button class="action-btn primary" :disabled="sendingReport" @click="sendBugReportAction">
+            {{ sendingReport ? 'Sending...' : 'Send Report' }}
+          </button>
+          <button class="action-btn" @click="copyBugReport">Copy</button>
+          <button class="action-btn" @click="showBugReport = false">Close</button>
+        </div>
+      </template>
+    </Modal>
+
     <!-- Spades Broken indicator -->
     <div v-if="store.spadesBroken" class="spades-broken-indicator">
       ♠ Broken
@@ -186,10 +215,12 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { SpadesPhase, SpadesBidType, Spades, type SpadesBid, type StandardCard } from '@euchre/shared'
 import CardTable from '../CardTable.vue'
+import Modal from '../Modal.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import { useSpadesStore } from '@/stores/spadesStore'
 import { useSpadesMultiplayerStore } from '@/stores/spadesMultiplayerStore'
+import { sendBugReport } from '@/services/autoBugReport'
 
 const props = withDefaults(defineProps<{
   mode?: 'singleplayer' | 'multiplayer'
@@ -223,6 +254,10 @@ const cardController = useCardController(engine, boardRef, {
   ...cardControllerPresets.spades,
 })
 const showRoundSummary = ref(false)
+const showBugReport = ref(false)
+const reportDescription = ref('')
+const reportStatus = ref('')
+const sendingReport = ref(false)
 const opponentsHidden = ref(false)
 const animatedTrickCardIds = ref<Set<string>>(new Set())
 const completedTricksAnimated = ref(0)
@@ -339,6 +374,67 @@ function handleLeaveClick() {
 function confirmLeave() {
   showLeaveConfirm.value = false
   emit('leave-game')
+}
+
+// ── Bug Report ──────────────────────────────────────────────────────────
+function openBugReport() {
+  reportStatus.value = ''
+  showBugReport.value = true
+}
+
+function buildBugReportPayload() {
+  return {
+    gameType: 'spades',
+    mode: props.mode,
+    phase: store.phase,
+    currentPlayer: store.currentPlayer,
+    roundNumber: store.roundNumber,
+    scores: store.scores,
+    spadesBroken: store.spadesBroken,
+    players: store.players.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      bid: p.bid,
+      tricksWon: p.tricksWon,
+      handSize: p.hand?.length ?? p.handSize ?? 0,
+    })),
+    currentTrick: store.currentTrick,
+    completedTricksCount: store.completedTricks?.length ?? 0,
+    description: reportDescription.value,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+  }
+}
+
+async function sendBugReportAction() {
+  sendingReport.value = true
+  reportStatus.value = 'Sending...'
+  try {
+    const payload = buildBugReportPayload()
+    await sendBugReport({
+      ...payload,
+      reportType: 'user',
+      userDescription: reportDescription.value.trim() || 'No description provided',
+    })
+    reportStatus.value = 'Sent! Thanks for reporting.'
+    setTimeout(() => { showBugReport.value = false }, 1500)
+  } catch (err) {
+    console.error('Failed to send report:', err)
+    reportStatus.value = 'Failed to send. Try copying instead.'
+  } finally {
+    sendingReport.value = false
+  }
+}
+
+async function copyBugReport() {
+  try {
+    const payload = buildBugReportPayload()
+    await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+    reportStatus.value = 'Copied to clipboard!'
+  } catch (err) {
+    console.error('Failed to copy:', err)
+    reportStatus.value = 'Failed to copy'
+  }
 }
 
 // Play again
@@ -765,6 +861,71 @@ onUnmounted(() => {
     width: 24px;
     height: 24px;
   }
+}
+
+.bug-btn {
+  position: absolute;
+  top: 10px;
+  right: max(58px, calc(env(safe-area-inset-right) + 48px));
+  z-index: 500;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: rgba(20, 20, 30, 0.8);
+  color: #ccc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(40, 40, 50, 0.9);
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.bug-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.bug-desc {
+  color: #aaa;
+  margin-bottom: 12px;
+}
+
+.bug-textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  resize: vertical;
+  margin-bottom: 8px;
+}
+
+.bug-status {
+  font-size: 0.875rem;
+  color: #aaa;
+  min-height: 20px;
+  margin-bottom: 8px;
+
+  &.success {
+    color: #4CAF50;
+  }
+}
+
+.bug-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .action-panel {
