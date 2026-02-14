@@ -418,6 +418,21 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+// Standard layout: scoreboard top-left, action panel bottom-left
+.scoreboard {
+  position: absolute;
+  top: 10px;
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 500;
+  background: rgba(20, 20, 30, 0.88);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px 10px;
+  backdrop-filter: blur(8px);
+  font-size: 14px;
+  color: #ccc;
+}
+
 .spades-scoreboard {
   .score-header {
     display: grid;
@@ -436,6 +451,90 @@ onUnmounted(() => {
   
   .score-bags {
     color: #f39c12;
+  }
+}
+
+.leave-btn {
+  position: absolute;
+  top: 10px;
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 500;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: rgba(20, 20, 30, 0.8);
+  color: #ccc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background: rgba(40, 40, 50, 0.9);
+  }
+  
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.action-panel {
+  position: absolute;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 500;
+  background: rgba(20, 20, 30, 0.9);
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 12px 16px;
+  backdrop-filter: blur(8px);
+  min-width: 180px;
+  
+  &.is-my-turn {
+    border-color: #4CAF50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+  }
+  
+  .panel-header {
+    margin-bottom: 8px;
+  }
+  
+  .panel-name {
+    font-weight: 600;
+    color: #fff;
+    font-size: 1rem;
+  }
+  
+  .panel-message {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  &.primary {
+    background: #4CAF50;
+    color: white;
+    
+    &:hover {
+      background: #45a049;
+    }
   }
 }
 
