@@ -120,6 +120,7 @@ function handleEmptyClick() {
   left: 0;
   width: var(--card-width, $card-width);
   height: var(--card-height, $card-height);
+  transition: top 0.2s ease-out;
 
   &.selected :deep(.card) {
     box-shadow: 0 0 0 3px $secondary-color, 0 4px 12px rgba(0, 0, 0, 0.4);

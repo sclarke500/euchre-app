@@ -92,6 +92,9 @@ function handleClick() {
   position: relative;
   user-select: none;
   flex-shrink: 0;
+  
+  // Subtle entrance animation
+  animation: card-appear 0.2s ease-out;
 
   &.selectable {
     cursor: pointer;
@@ -99,6 +102,17 @@ function handleClick() {
 
   &.dimmed {
     filter: brightness(0.85);
+  }
+}
+
+@keyframes card-appear {
+  from {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

@@ -55,6 +55,22 @@ function handleTap() {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+
+  // Animate card appearance in foundation
+  :deep(.card) {
+    animation: card-land 0.25s ease-out;
+  }
+}
+
+@keyframes card-land {
+  0% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .foundation-placeholder {
