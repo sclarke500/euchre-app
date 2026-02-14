@@ -54,7 +54,10 @@ export abstract class CardContainer {
   async repositionAll(duration: number = 350): Promise<void> {
     const promises = this.cards.map((managed, index) => {
       const pos = this.getCardPosition(index)
-      return managed.ref?.moveTo(pos, duration)
+      const ref = managed.ref
+      // Preserve current flipY to avoid accidental flips during layout changes
+      const currentFlipY = ref?.getPosition().flipY
+      return ref?.moveTo({ ...pos, flipY: currentFlipY ?? pos.flipY }, duration)
     })
     await Promise.all(promises)
   }
