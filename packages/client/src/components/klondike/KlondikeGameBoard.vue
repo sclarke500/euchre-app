@@ -404,8 +404,9 @@ function handleHint() {
   height: 100%;
   gap: $spacing-sm;
 
-  --card-width: 65px;
-  --card-height: 91px;
+  // Smaller cards for landscape to fit 4 foundations vertically
+  --card-width: 55px;
+  --card-height: 77px;
 }
 
 .landscape-left {
@@ -413,12 +414,14 @@ function handleHint() {
   display: flex;
   align-items: flex-start;
   padding-top: $spacing-xs;
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 .foundations-column {
   display: flex;
   flex-direction: column;
-  gap: $spacing-xs;
+  gap: 4px;
 }
 
 .landscape-center {
@@ -532,6 +535,17 @@ function handleHint() {
   }
   .portrait-tableau {
     gap: 4px;
+  }
+}
+
+// Taller landscape screens - can fit bigger cards
+@media (orientation: landscape) and (min-height: 400px) {
+  .landscape-layout {
+    --card-width: 65px;
+    --card-height: 91px;
+  }
+  .foundations-column {
+    gap: $spacing-xs;
   }
 }
 
