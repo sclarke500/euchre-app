@@ -17,27 +17,25 @@ test.describe('Spades', () => {
     // Start single player
     await page.locator('.menu-btn.single-player').click()
     
-    // Should see game board with cards
-    await expect(page.locator('.card').first()).toBeVisible({ timeout: 10000 })
+    // Should see the Spades scoreboard (Us/Them)
+    await expect(page.locator('.spades-scoreboard')).toBeVisible({ timeout: 10000 })
   })
 
   test('bidding phase shows bid selector', async ({ page }) => {
     await page.locator('.game-tab', { hasText: 'Spades' }).click()
     await page.locator('.menu-btn.single-player').click()
     
-    // Should see bidding UI (bid selector with numbers 0-13)
-    // The exact selector depends on implementation
-    await expect(
-      page.locator('[class*="bid"]').or(page.getByText(/Bid:/i))
-    ).toBeVisible({ timeout: 10000 })
+    // Should see bidding UI - the bid selector element
+    await expect(page.locator('.bid-selector')).toBeVisible({ timeout: 10000 })
   })
 
   test('shows team scores', async ({ page }) => {
     await page.locator('.game-tab', { hasText: 'Spades' }).click()
     await page.locator('.menu-btn.single-player').click()
     
-    // Should display scores for both teams
-    await expect(page.getByText(/Team|Score/i).first()).toBeVisible({ timeout: 10000 })
+    // Should display scores for both teams (Us/Them)
+    await expect(page.getByText('Us')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText('Them')).toBeVisible({ timeout: 10000 })
   })
 
   test('spades are always trump', async ({ page }) => {
