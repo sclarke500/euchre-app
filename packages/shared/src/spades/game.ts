@@ -269,16 +269,20 @@ export function completeRound(state: SpadesGameState): SpadesGameState {
   const team1Score = calculateRoundScore(state.players, 1, state.scores[1]?.bags ?? 0)
 
   // Update scores
+  // Bags only accumulate when you get MORE tricks than bid (overtricks)
+  const team0Overtricks = Math.max(0, team0Score.tricksWon - team0Score.baseBid)
+  const team1Overtricks = Math.max(0, team1Score.tricksWon - team1Score.baseBid)
+  
   const scores: SpadesTeamScore[] = [
     {
       teamId: 0,
       score: (state.scores[0]?.score ?? 0) + team0Score.roundPoints,
-      bags: ((state.scores[0]?.bags ?? 0) + (team0Score.tricksWon - team0Score.baseBid)) % 10,
+      bags: ((state.scores[0]?.bags ?? 0) + team0Overtricks) % 10,
     },
     {
       teamId: 1,
       score: (state.scores[1]?.score ?? 0) + team1Score.roundPoints,
-      bags: ((state.scores[1]?.bags ?? 0) + (team1Score.tricksWon - team1Score.baseBid)) % 10,
+      bags: ((state.scores[1]?.bags ?? 0) + team1Overtricks) % 10,
     },
   ]
 
