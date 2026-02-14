@@ -299,9 +299,11 @@ export function useCardController(
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
 
-    // IMPORTANT: Update the hand's faceUp state so getCardPosition returns correct flipY
-    userHand.faceUp = true
-    userHand.flipCards(true)
+    // NOTE: Do NOT call flipCards(true) here!
+    // BoardCard's showFaceUp logic: isFlipped XOR props.faceUp
+    // Cards start with managed.faceUp=false. Animating flipY 0→180 flips the visual,
+    // so showFaceUp = isFlipped(true) XOR faceUp(false) = true (shows face)
+    // If we also set managed.faceUp=true, it double-flips back to showing the back.
 
     const moves = userHand.cards.map((managed, index) => {
       const ref = engine.getCardRef(managed.card.id)
