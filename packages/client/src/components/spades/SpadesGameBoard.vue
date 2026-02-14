@@ -324,6 +324,35 @@ watch(() => store.phase, async (newPhase) => {
     // Fan hands after deal
     await Promise.all(engine.getHands().map(hand => hand.setMode('fanned', 250)))
 
+    // Flip user's cards face up and sort them
+    const userHand = engine.getHands().find(h => h.id === 'hand-0')
+    if (userHand) {
+      // Flip all user cards face up
+      for (const managed of userHand.cards) {
+        const ref = engine.getCardRef(managed.card.id)
+        if (ref) {
+          const pos = ref.getPosition()
+          await ref.moveTo({ ...pos, flipY: 180 }, 200)
+        }
+      }
+      
+      // Sort user's hand by suit (spades first) then rank
+      const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
+      const rankOrder: Record<string, number> = { 
+        '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+        'J': 11, 'Q': 12, 'K': 13, 'A': 14 
+      }
+      
+      userHand.cards.sort((a, b) => {
+        const suitDiff = (suitOrder[a.card.suit] ?? 99) - (suitOrder[b.card.suit] ?? 99)
+        if (suitDiff !== 0) return suitDiff
+        return (rankOrder[a.card.rank] ?? 0) - (rankOrder[b.card.rank] ?? 0)
+      })
+      
+      // Reposition after sort
+      await userHand.repositionAll(300)
+    }
+
     store.dealAnimationComplete()
   }
 }, { immediate: true })
