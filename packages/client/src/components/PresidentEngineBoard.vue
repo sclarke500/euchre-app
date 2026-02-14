@@ -835,6 +835,8 @@ onUnmounted(() => {
 
 .bug-textarea {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 6px;
