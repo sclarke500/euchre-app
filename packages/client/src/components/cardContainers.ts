@@ -55,9 +55,16 @@ export abstract class CardContainer {
     const promises = this.cards.map((managed, index) => {
       const pos = this.getCardPosition(index)
       const ref = managed.ref
-      // Preserve current flipY to avoid accidental flips during layout changes
-      const currentFlipY = ref?.getPosition().flipY
-      return ref?.moveTo({ ...pos, flipY: currentFlipY ?? pos.flipY }, duration)
+      // Omit flipY entirely - moveTo will preserve current visual flip state
+      // This prevents layout operations from accidentally flipping cards
+      return ref?.moveTo({
+        x: pos.x,
+        y: pos.y,
+        rotation: pos.rotation,
+        zIndex: pos.zIndex,
+        scale: pos.scale,
+        // flipY intentionally omitted
+      }, duration)
     })
     await Promise.all(promises)
   }
