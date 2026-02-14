@@ -70,7 +70,7 @@ function handleEmptyClick() {
     </div>
 
     <!-- Stacked cards with transition -->
-    <TransitionGroup v-else name="card-stack" tag="div" class="cards-container">
+    <TransitionGroup v-else name="card-stack" tag="div" class="cards-container" appear>
       <div
         v-for="(card, index) in column.cards"
         :key="card.id"
@@ -126,7 +126,7 @@ function handleEmptyClick() {
   left: 0;
   width: var(--card-width, $card-width);
   height: var(--card-height, $card-height);
-  transition: top 0.2s ease-out, transform 0.2s ease-out, opacity 0.2s ease-out;
+  transition: top 0.3s ease-out, transform 0.3s ease-out, opacity 0.3s ease-out;
 
   &.selected :deep(.card) {
     box-shadow: 0 0 0 3px $secondary-color, 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -135,11 +135,11 @@ function handleEmptyClick() {
 
 // Vue TransitionGroup classes
 .card-stack-enter-active {
-  transition: all 0.25s ease-out;
+  transition: all 0.35s ease-out;
 }
 
 .card-stack-leave-active {
-  transition: all 0.2s ease-in;
+  transition: all 0.25s ease-in;
   position: absolute;
 }
 
@@ -154,7 +154,7 @@ function handleEmptyClick() {
 }
 
 .card-stack-move {
-  transition: transform 0.25s ease-out;
+  transition: transform 0.35s ease-out;
 }
 
 .card-back {

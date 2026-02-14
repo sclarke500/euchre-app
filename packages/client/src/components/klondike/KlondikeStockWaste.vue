@@ -42,7 +42,7 @@ function handleWasteClick() {
       @click="handleWasteClick"
     >
       <div v-if="!hasWaste" class="waste-placeholder"></div>
-      <div v-else class="waste-fan" :class="{ vertical: isVertical }">
+      <TransitionGroup v-else name="waste-fan" tag="div" class="waste-fan" :class="{ vertical: isVertical }">
         <div
           v-for="(card, index) in visibleWasteCards"
           :key="card.id"
@@ -52,7 +52,7 @@ function handleWasteClick() {
         >
           <Card :card="card" :selectable="index === visibleWasteCards.length - 1" />
         </div>
-      </div>
+      </TransitionGroup>
     </div>
 
     <!-- Stock pile (draw pile) -->
@@ -76,7 +76,7 @@ function handleWasteClick() {
       @click="handleWasteClick"
     >
       <div v-if="!hasWaste" class="waste-placeholder"></div>
-      <div v-else class="waste-fan">
+      <TransitionGroup v-else name="waste-fan" tag="div" class="waste-fan">
         <div
           v-for="(card, index) in visibleWasteCards"
           :key="card.id"
@@ -85,7 +85,7 @@ function handleWasteClick() {
         >
           <Card :card="card" :selectable="index === visibleWasteCards.length - 1" />
         </div>
-      </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>
@@ -202,11 +202,26 @@ function handleWasteClick() {
   position: absolute;
   top: 0;
   left: calc(var(--fan-index, 0) * 18px);
-  transition: left var(--anim-fast) ease-out, top var(--anim-fast) ease-out;
+  transition: left var(--anim-medium) ease-out, top var(--anim-medium) ease-out, transform var(--anim-medium) ease-out;
 
   &.vertical {
     left: 0;
     top: calc(var(--fan-index, 0) * 18px);
   }
+}
+
+.waste-fan-enter-active,
+.waste-fan-leave-active {
+  transition: all var(--anim-medium) ease-out;
+}
+
+.waste-fan-enter-from,
+.waste-fan-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(-6px);
+}
+
+.waste-fan-move {
+  transition: transform var(--anim-medium) ease-out;
 }
 </style>
