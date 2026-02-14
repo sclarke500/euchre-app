@@ -36,6 +36,9 @@ export interface CardControllerConfig {
   playerIdToSeatIndex?: (playerId: number) => number
   playRefanDelayMs?: number
   playRefanDurationMs?: number
+  playMoveMs?: number
+  opponentCollapseScale?: number
+  opponentCollapseDurationMs?: number
 }
 
 export interface DealOptions {
@@ -46,6 +49,8 @@ export interface DealOptions {
   fanDurationMs?: number
   sortUserHand?: (cards: StandardCard[]) => StandardCard[]
   sortAfterDeal?: boolean
+  dealerSeatIndex?: number
+  dealerPlayerId?: number
 }
 
 export function useCardController(
@@ -62,8 +67,9 @@ export function useCardController(
   const tableCenter = ref({ x: 0, y: 0 })
   const tableLayout = ref<TableLayoutResult | null>(null)
   const tricksWonByPlayer = ref<Record<number, number>>({})
+  const hiddenSeatIndices = new Set<number>()
 
-  function setupTable() {
+  function setupTable(dealerSeatIndex?: number) {
     engine.reset()
 
     const board = boardRef.value
@@ -73,7 +79,10 @@ export function useCardController(
     tableLayout.value = layout
     tableCenter.value = layout.tableCenter
 
-    engine.createDeck({ x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
+    const deckPos = dealerSeatIndex !== undefined
+      ? getDealerDeckPosition(dealerSeatIndex, layout)
+      : { x: tableCenter.value.x, y: tableCenter.value.y }
+    engine.createDeck(deckPos, 0.8)
 
     const baseScale = config.opponentHandScale ?? 0.7
     for (let i = 0; i < config.playerCount; i++) {
@@ -112,6 +121,14 @@ export function useCardController(
     const deck = engine.getDeck()
     const hands = engine.getHands()
     if (!deck || hands.length === 0) return
+    const dealerSeat = options.dealerPlayerId !== undefined
+      ? playerIdToSeatIndex(options.dealerPlayerId)
+      : options.dealerSeatIndex
+    if (dealerSeat !== undefined && tableLayout.value) {
+      const dealerPos = getDealerDeckPosition(dealerSeat, tableLayout.value)
+      deck.position = dealerPos
+    }
+
 
     const revealUserHand = options.revealUserHand ?? true
     const focusUserHand = options.focusUserHand ?? true
@@ -201,6 +218,26 @@ export function useCardController(
     }
   }
 
+  function getDealerDeckPosition(dealerSeatIndex: number, layout: TableLayoutResult): { x: number; y: number } {
+    const seat = layout.seats[dealerSeatIndex]
+    if (!seat) return { x: layout.tableCenter.x, y: layout.tableCenter.y }
+
+    const { tableBounds } = layout
+    const off = 280
+    switch (seat.side) {
+      case 'bottom':
+        return { x: tableBounds.centerX, y: tableBounds.bottom + off }
+      case 'left':
+        return { x: tableBounds.left - off, y: tableBounds.centerY }
+      case 'top':
+        return { x: tableBounds.centerX, y: tableBounds.top - off }
+      case 'right':
+        return { x: tableBounds.right + off, y: tableBounds.centerY }
+      default:
+        return { x: layout.tableCenter.x, y: layout.tableCenter.y }
+    }
+  }
+
   async function sortUserHand(sorter: (cards: StandardCard[]) => StandardCard[], duration: number = 300) {
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
@@ -285,19 +322,21 @@ export function useCardController(
 
   async function playCard(cardId: string, playerId: number, cardIndex: number) {
     const pile = engine.getPiles().find(p => p.id === 'center')
-    const fromHand = engine.getHands().find(h => h.id === `hand-${playerIdToSeatIndex(playerId)}`)
+    const seatIndex = playerIdToSeatIndex(playerId)
+    const fromHand = engine.getHands().find(h => h.id === `hand-${seatIndex}`)
     if (!pile || !fromHand) return
 
     const target = playAreaMode === 'overlay'
       ? getOverlayCardPosition(cardIndex, 0, 1)
       : getTrickCardPosition(playerId, cardIndex)
 
-    await engine.moveCard(cardId, fromHand, pile, target, 300)
+    const moveDuration = config.playMoveMs ?? 300
+    await engine.moveCard(cardId, fromHand, pile, target, moveDuration)
 
     // Brief pause, then refan to close the gap after the card leaves the hand.
     const refanDelay = config.playRefanDelayMs ?? 120
     const refanDuration = config.playRefanDurationMs ?? 200
-    if (fromHand.cards.length > 0) {
+    if (fromHand.cards.length > 0 && !(seatIndex !== userSeatIndex && hiddenSeatIndices.has(seatIndex))) {
       await new Promise(r => setTimeout(r, refanDelay))
       fromHand.mode = 'fanned'
       const moves = fromHand.cards.map((managed, index) => {
@@ -372,6 +411,8 @@ export function useCardController(
     const pile = engine.getPiles().find(p => p.id === 'center')
     if (!pile || pile.cards.length === 0) return
 
+    const moveDuration = config.playMoveMs ?? 300
+
     if (trickCompleteMode === 'sweep') {
       const board = boardRef.value
       if (!board) return
@@ -386,7 +427,7 @@ export function useCardController(
           rotation: 20,
           zIndex: 100 + i,
           scale: 0.6,
-        }, 300)
+        }, moveDuration)
       })
       await Promise.all(moves)
       pile.clear()
@@ -401,7 +442,7 @@ export function useCardController(
     const cardsToMove = [...pile.cards]
     const movePromises = cardsToMove.map((managed, index) => {
       const targetPos = getPlayerTrickPosition(winnerId, tricksWon, index)
-      return engine.moveCard(managed.card.id, pile, targetPile, targetPos, 300)
+      return engine.moveCard(managed.card.id, pile, targetPile, targetPos, moveDuration)
     })
 
     await Promise.all(movePromises)
@@ -410,6 +451,55 @@ export function useCardController(
       [winnerId]: tricksWon + 1,
     }
     engine.refreshCards()
+  }
+
+  function getAvatarBoardPosition(seatIndex: number, layout: TableLayoutResult): { x: number; y: number } {
+    const { tableBounds } = layout
+    switch (seatIndex) {
+      case 1:
+        return { x: tableBounds.left - 40, y: tableBounds.centerY }
+      case 2:
+        return { x: tableBounds.centerX, y: tableBounds.top - 30 }
+      case 3:
+        return { x: tableBounds.right + 40, y: tableBounds.centerY }
+      default:
+        return layout.tableCenter
+    }
+  }
+
+  async function hideOpponentHands() {
+    const layout = tableLayout.value
+    if (!layout) return
+
+    const scale = config.opponentCollapseScale ?? 0.5
+    const duration = config.opponentCollapseDurationMs ?? 250
+    const hands = engine.getHands()
+    const promises: Promise<void>[] = []
+
+    for (let seatIndex = 0; seatIndex < config.playerCount; seatIndex++) {
+      if (seatIndex === userSeatIndex) continue
+      const hand = hands[seatIndex]
+      if (!hand || hand.cards.length === 0) continue
+
+      const avatarPos = getAvatarBoardPosition(seatIndex, layout)
+      hiddenSeatIndices.add(seatIndex)
+      for (const managed of hand.cards) {
+        const ref = engine.getCardRef(managed.card.id)
+        if (ref) {
+          const current = ref.getPosition()
+          promises.push(ref.moveTo({
+            x: avatarPos.x,
+            y: avatarPos.y,
+            rotation: 0,
+            zIndex: 50,
+            scale,
+            flipY: current.flipY,
+          }, duration))
+        }
+      }
+    }
+
+    await Promise.all(promises)
   }
 
   return {
@@ -421,5 +511,6 @@ export function useCardController(
     sortUserHand,
     playCard,
     completeTrick,
+    hideOpponentHands,
   }
 }

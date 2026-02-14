@@ -47,69 +47,71 @@
     </div>
 
     <!-- Round Summary Modal -->
-    <div v-if="showRoundSummary" class="game-over-overlay">
-      <div class="round-summary-panel">
-        <div class="round-summary-title">Round Complete</div>
-        <div class="round-summary-table">
-          <div class="summary-header">
-            <span></span>
-            <span>Us</span>
-            <span>Them</span>
+    <Transition name="modal-fade">
+      <div v-if="showRoundSummary" class="game-over-overlay">
+        <div class="round-summary-panel">
+          <div class="round-summary-title">Round Complete</div>
+          <div class="round-summary-table">
+            <div class="summary-header">
+              <span></span>
+              <span>Us</span>
+              <span>Them</span>
+            </div>
+            <div class="summary-row">
+              <span>Bid</span>
+              <span>{{ roundSummary.usBid }}</span>
+              <span>{{ roundSummary.themBid }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Tricks</span>
+              <span>{{ roundSummary.usTricks }}</span>
+              <span>{{ roundSummary.themTricks }}</span>
+            </div>
+            <div class="summary-row">
+              <span>Base Points</span>
+              <span :class="{ positive: roundSummary.usBasePoints > 0, negative: roundSummary.usBasePoints < 0 }">
+                {{ roundSummary.usBasePoints >= 0 ? '+' : '' }}{{ roundSummary.usBasePoints }}
+              </span>
+              <span :class="{ positive: roundSummary.themBasePoints > 0, negative: roundSummary.themBasePoints < 0 }">
+                {{ roundSummary.themBasePoints >= 0 ? '+' : '' }}{{ roundSummary.themBasePoints }}
+              </span>
+            </div>
+            <div v-if="roundSummary.usNilBonus || roundSummary.themNilBonus" class="summary-row">
+              <span>Nil Bonus</span>
+              <span class="positive">{{ roundSummary.usNilBonus ? '+' + roundSummary.usNilBonus : '' }}</span>
+              <span class="positive">{{ roundSummary.themNilBonus ? '+' + roundSummary.themNilBonus : '' }}</span>
+            </div>
+            <div v-if="roundSummary.usNilPenalty || roundSummary.themNilPenalty" class="summary-row">
+              <span>Nil Failed</span>
+              <span class="negative">{{ roundSummary.usNilPenalty ? '-' + roundSummary.usNilPenalty : '' }}</span>
+              <span class="negative">{{ roundSummary.themNilPenalty ? '-' + roundSummary.themNilPenalty : '' }}</span>
+            </div>
+            <div v-if="roundSummary.usBagPenalty || roundSummary.themBagPenalty" class="summary-row">
+              <span>Bag Penalty</span>
+              <span class="negative">{{ roundSummary.usBagPenalty ? '-' + roundSummary.usBagPenalty : '' }}</span>
+              <span class="negative">{{ roundSummary.themBagPenalty ? '-' + roundSummary.themBagPenalty : '' }}</span>
+            </div>
+            <div class="summary-row total">
+              <span>Round Total</span>
+              <span :class="{ positive: roundSummary.usTotal > 0, negative: roundSummary.usTotal < 0 }">
+                {{ roundSummary.usTotal >= 0 ? '+' : '' }}{{ roundSummary.usTotal }}
+              </span>
+              <span :class="{ positive: roundSummary.themTotal > 0, negative: roundSummary.themTotal < 0 }">
+                {{ roundSummary.themTotal >= 0 ? '+' : '' }}{{ roundSummary.themTotal }}
+              </span>
+            </div>
+            <div class="summary-row game-total">
+              <span>Game Score</span>
+              <span>{{ scores[0]?.score ?? 0 }}</span>
+              <span>{{ scores[1]?.score ?? 0 }}</span>
+            </div>
           </div>
-          <div class="summary-row">
-            <span>Bid</span>
-            <span>{{ roundSummary.usBid }}</span>
-            <span>{{ roundSummary.themBid }}</span>
+          <div class="game-over-actions">
+            <button class="action-btn primary" @click="dismissRoundSummary">Continue</button>
           </div>
-          <div class="summary-row">
-            <span>Tricks</span>
-            <span>{{ roundSummary.usTricks }}</span>
-            <span>{{ roundSummary.themTricks }}</span>
-          </div>
-          <div class="summary-row">
-            <span>Base Points</span>
-            <span :class="{ positive: roundSummary.usBasePoints > 0, negative: roundSummary.usBasePoints < 0 }">
-              {{ roundSummary.usBasePoints >= 0 ? '+' : '' }}{{ roundSummary.usBasePoints }}
-            </span>
-            <span :class="{ positive: roundSummary.themBasePoints > 0, negative: roundSummary.themBasePoints < 0 }">
-              {{ roundSummary.themBasePoints >= 0 ? '+' : '' }}{{ roundSummary.themBasePoints }}
-            </span>
-          </div>
-          <div v-if="roundSummary.usNilBonus || roundSummary.themNilBonus" class="summary-row">
-            <span>Nil Bonus</span>
-            <span class="positive">{{ roundSummary.usNilBonus ? '+' + roundSummary.usNilBonus : '' }}</span>
-            <span class="positive">{{ roundSummary.themNilBonus ? '+' + roundSummary.themNilBonus : '' }}</span>
-          </div>
-          <div v-if="roundSummary.usNilPenalty || roundSummary.themNilPenalty" class="summary-row">
-            <span>Nil Failed</span>
-            <span class="negative">{{ roundSummary.usNilPenalty ? '-' + roundSummary.usNilPenalty : '' }}</span>
-            <span class="negative">{{ roundSummary.themNilPenalty ? '-' + roundSummary.themNilPenalty : '' }}</span>
-          </div>
-          <div v-if="roundSummary.usBagPenalty || roundSummary.themBagPenalty" class="summary-row">
-            <span>Bag Penalty</span>
-            <span class="negative">{{ roundSummary.usBagPenalty ? '-' + roundSummary.usBagPenalty : '' }}</span>
-            <span class="negative">{{ roundSummary.themBagPenalty ? '-' + roundSummary.themBagPenalty : '' }}</span>
-          </div>
-          <div class="summary-row total">
-            <span>Round Total</span>
-            <span :class="{ positive: roundSummary.usTotal > 0, negative: roundSummary.usTotal < 0 }">
-              {{ roundSummary.usTotal >= 0 ? '+' : '' }}{{ roundSummary.usTotal }}
-            </span>
-            <span :class="{ positive: roundSummary.themTotal > 0, negative: roundSummary.themTotal < 0 }">
-              {{ roundSummary.themTotal >= 0 ? '+' : '' }}{{ roundSummary.themTotal }}
-            </span>
-          </div>
-          <div class="summary-row game-total">
-            <span>Game Score</span>
-            <span>{{ scores[0]?.score ?? 0 }}</span>
-            <span>{{ scores[1]?.score ?? 0 }}</span>
-          </div>
-        </div>
-        <div class="game-over-actions">
-          <button class="action-btn primary" @click="dismissRoundSummary">Continue</button>
         </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- Game Over overlay -->
     <div v-if="store.gameOver" class="game-over-overlay">
@@ -208,9 +210,11 @@ const cardController = useCardController(engine, boardRef, {
   userFanSpacing: 30,
   opponentFanSpacing: 16,
   userFanCurve: 0,
+  playMoveMs: 350,
   ...cardControllerPresets.spades,
 })
 const showRoundSummary = ref(false)
+const opponentsHidden = ref(false)
 const roundSummary = ref({
   usBid: 0,
   themBid: 0,
@@ -339,7 +343,7 @@ async function initializeBoard() {
     boardRef.value = tableRef.value.boardRef
   }
 
-  cardController.setupTable()
+  cardController.setupTable(store.dealer)
 }
 
 // Watch for game state changes and update cards
@@ -359,6 +363,7 @@ watch(() => store.phase, async (newPhase) => {
       dealDelayMs: 50,
       dealFlightMs: 200,
       fanDurationMs: 450,
+      dealerSeatIndex: store.dealer,
       sortAfterDeal: false,
       sortUserHand: (cards) => {
         const sorted = [...cards]
@@ -386,7 +391,7 @@ watch(() => store.phase, async (newPhase) => {
   
   // Show round summary modal when round completes
   if (newPhase === SpadesPhase.RoundComplete) {
-    await new Promise(r => setTimeout(r, 350))
+    await new Promise(r => setTimeout(r, 800))
     // Calculate round scores
     const usScore = Spades.calculateRoundScore(store.players, 0, store.scores[0]?.bags ?? 0)
     const themScore = Spades.calculateRoundScore(store.players, 1, store.scores[1]?.bags ?? 0)
@@ -412,6 +417,16 @@ watch(() => store.phase, async (newPhase) => {
   }
 }, { immediate: true })
 
+watch(
+  () => [store.phase, store.bidsComplete, store.currentTrick.cards.length],
+  async ([phase, bidsComplete, trickCount]) => {
+    if (phase === SpadesPhase.Playing && bidsComplete && trickCount === 0 && !opponentsHidden.value) {
+      await cardController.hideOpponentHands()
+      opponentsHidden.value = true
+    }
+  }
+)
+
 onMounted(async () => {
   await nextTick()
   // Ensure CardTable has mounted and boardRef is available
@@ -419,7 +434,7 @@ onMounted(async () => {
     boardRef.value = tableRef.value.boardRef
   }
 
-  cardController.setupTable()
+  cardController.setupTable(store.dealer)
 
   store.setPlayAnimationCallback(async ({ card, playerId }) => {
     const cardIndex = Math.max(0, store.currentTrick.cards.length - 1)
@@ -608,6 +623,17 @@ onUnmounted(() => {
   display: flex;
   gap: 8px;
   justify-content: center;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity var(--anim-medium) ease, transform var(--anim-medium) ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.92);
 }
 
 .leave-btn {

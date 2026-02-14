@@ -11,9 +11,16 @@ import {
   type SpadesTeamScore,
   type StandardCard,
   getRandomAINames,
+  SpadesTracker,
+  chooseSpadesCardHard,
+  chooseSpadesBidHard,
 } from '@euchre/shared'
+import { useSettingsStore } from './settingsStore'
 
 export const useSpadesStore = defineStore('spadesGame', () => {
+  const settingsStore = useSettingsStore()
+  const tracker = new SpadesTracker()
+
   // State
   const players = ref<SpadesPlayer[]>([])
   const phase = ref<SpadesPhase>(SpadesPhase.Setup)
@@ -128,6 +135,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   }
 
   function startRound() {
+    tracker.reset()
     const dealtState = Spades.dealSpadesCards(gameState.value)
     applyState(dealtState)
     phase.value = SpadesPhase.Dealing
@@ -193,12 +201,19 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     // Check if trick complete
     if (state.phase === SpadesPhase.TrickComplete) {
       const lastTrick = state.completedTricks[state.completedTricks.length - 1]
+
+      // Record completed trick for hard AI tracking
+      if (lastTrick) tracker.recordTrick(lastTrick)
+
       if (lastTrick && trickCompleteCallback) {
         await trickCompleteCallback(lastTrick.winnerId ?? 0)
       }
 
       // Check if round complete
       if (state.completedTricks.length === 13) {
+        // Wait for trick-complete animation to settle before showing modal
+        await new Promise(r => setTimeout(r, 1000))
+
         // Round is complete - apply final scoring
         const scoredState = Spades.completeRound(gameState.value)
         applyState(scoredState)
@@ -213,7 +228,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       }
 
       // Continue to next trick
-      await new Promise(r => setTimeout(r, 1000))
+      await new Promise(r => setTimeout(r, 500))
       const continueState = Spades.continuePlay(gameState.value)
       applyState(continueState)
       processAITurn()
@@ -229,15 +244,21 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     // Human player - wait for input
     if (player.isHuman) return
 
+    const hard = settingsStore.isHardAI()
+
     // AI turn
     setTimeout(async () => {
       if (phase.value === SpadesPhase.Bidding) {
-        const bid = Spades.chooseSpadesBid(player, gameState.value)
+        const bid = hard
+          ? chooseSpadesBidHard(player, gameState.value)
+          : Spades.chooseSpadesBid(player, gameState.value)
         const state = Spades.processBid(gameState.value, player.id, bid)
         applyState(state)
         processAITurn()
       } else if (phase.value === SpadesPhase.Playing) {
-        const card = Spades.chooseSpadesCard(player, gameState.value)
+        const card = hard
+          ? chooseSpadesCardHard(player, gameState.value, tracker)
+          : Spades.chooseSpadesCard(player, gameState.value)
         await executePlayCard(player.id, card)
       }
     }, 800)

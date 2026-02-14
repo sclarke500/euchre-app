@@ -40,4 +40,7 @@ export {
   type SpadesClientPlayer,
   type SpadesTeamRoundState,
   type SpadesPlayerAction,
+  SpadesTracker,
+  chooseSpadesCardHard,
+  chooseSpadesBidHard,
 } from './spades/index.js'
