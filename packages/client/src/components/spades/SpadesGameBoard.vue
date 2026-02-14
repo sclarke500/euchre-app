@@ -840,7 +840,7 @@ onUnmounted(() => {
 .leave-btn {
   position: absolute;
   top: 10px;
-  right: max(10px, env(safe-area-inset-right));
+  left: max(10px, env(safe-area-inset-left));
   z-index: 500;
   width: 40px;
   height: 40px;
@@ -866,7 +866,7 @@ onUnmounted(() => {
 .bug-btn {
   position: absolute;
   top: 10px;
-  right: max(58px, calc(env(safe-area-inset-right) + 48px));
+  left: calc(max(10px, env(safe-area-inset-left)) + 48px);
   z-index: 500;
   width: 40px;
   height: 40px;
