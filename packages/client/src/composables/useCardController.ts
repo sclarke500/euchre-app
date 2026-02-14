@@ -293,6 +293,10 @@ export function useCardController(
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
 
+    // IMPORTANT: Update the hand's faceUp state so getCardPosition returns correct flipY
+    userHand.faceUp = true
+    userHand.flipCards(true)
+
     const moves = userHand.cards.map((managed, index) => {
       const ref = engine.getCardRef(managed.card.id)
       if (!ref) return null
