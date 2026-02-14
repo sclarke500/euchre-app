@@ -393,22 +393,45 @@ watch(() => store.phase, async (newPhase) => {
     // Deal animation
     await engine.dealAll(13, 50, 200)
 
-    // Fan hands after deal
-    await Promise.all(engine.getHands().map(hand => hand.setMode('fanned', 250)))
-
-    // Flip user's cards face up and sort them
-    const userHand = engine.getHands().find(h => h.id === 'hand-0')
-    if (userHand) {
-      // Flip all user cards face up
+    const hands = engine.getHands()
+    const board = boardRef.value
+    
+    // Stage 1: Move user hand to bottom, enlarge, flip face-up (like Euchre)
+    const userHand = hands.find(h => h.id === 'hand-0')
+    if (userHand && board) {
+      const targetX = board.offsetWidth / 2
+      const targetY = board.offsetHeight - 20
+      const targetScale = 1.8
+      
+      userHand.position = { x: targetX, y: targetY }
+      userHand.scale = targetScale
+      userHand.fanSpacing = 30
+      userHand.fanCurve = 0
+      
+      // Move and flip all user cards
       for (const managed of userHand.cards) {
-        const ref = engine.getCardRef(managed.card.id)
-        if (ref) {
-          const pos = ref.getPosition()
-          await ref.moveTo({ ...pos, flipY: 180 }, 200)
+        const cardRef = engine.getCardRef(managed.card.id)
+        if (cardRef) {
+          cardRef.moveTo({
+            ...cardRef.getPosition(),
+            x: targetX, y: targetY, scale: targetScale, flipY: 180,
+          }, 400)
         }
       }
-      
-      // Sort user's hand by suit (spades first) then rank
+      await new Promise(r => setTimeout(r, 450))
+    }
+    
+    // Stage 2: Shrink opponent hands and fan all
+    for (let i = 0; i < hands.length; i++) {
+      const h = hands[i]
+      if (h && h.id !== 'hand-0') {
+        h.scale = 0.65
+      }
+    }
+    await Promise.all(hands.map(h => h.setMode('fanned', 250)))
+    
+    // Stage 3: Sort user's hand by suit (spades first) then rank
+    if (userHand) {
       const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
       const rankOrder: Record<string, number> = { 
         '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
@@ -424,7 +447,8 @@ watch(() => store.phase, async (newPhase) => {
       // Reposition after sort
       await userHand.repositionAll(300)
     }
-
+    
+    engine.refreshCards()
     store.dealAnimationComplete()
   }
   
@@ -668,9 +692,9 @@ onUnmounted(() => {
 
 .action-panel {
   position: absolute;
-  bottom: max(10px, env(safe-area-inset-bottom));
-  left: max(10px, env(safe-area-inset-left));
-  z-index: 500;
+  bottom: 12px;
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 600;
   background: rgba(20, 20, 30, 0.9);
   border: 1px solid #444;
   border-radius: 12px;
