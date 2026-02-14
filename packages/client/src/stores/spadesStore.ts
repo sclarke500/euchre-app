@@ -241,7 +241,8 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   }
 
   function processAITurn() {
-    const player = players.value[currentPlayer.value]
+    const playerId = currentPlayer.value
+    const player = players.value[playerId]
     if (!player) return
 
     // Human player - wait for input
@@ -249,20 +250,33 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
     const hard = settingsStore.isHardAI()
 
-    // AI turn
+    // AI turn - schedule with delay
     setTimeout(async () => {
+      // Guard: verify it's still this player's turn (state may have changed)
+      if (currentPlayer.value !== playerId) {
+        console.warn('[Spades] AI turn skipped - no longer this player\'s turn')
+        return
+      }
+
+      // Re-fetch player from current state
+      const currentPlayerObj = players.value[playerId]
+      if (!currentPlayerObj || currentPlayerObj.isHuman) {
+        console.warn('[Spades] AI turn skipped - player state changed')
+        return
+      }
+
       if (phase.value === SpadesPhase.Bidding) {
         const bid = hard
-          ? chooseSpadesBidHard(player, gameState.value)
-          : Spades.chooseSpadesBid(player, gameState.value)
-        const state = Spades.processBid(gameState.value, player.id, bid)
+          ? chooseSpadesBidHard(currentPlayerObj, gameState.value)
+          : Spades.chooseSpadesBid(currentPlayerObj, gameState.value)
+        const state = Spades.processBid(gameState.value, playerId, bid)
         applyState(state)
         processAITurn()
       } else if (phase.value === SpadesPhase.Playing) {
         const card = hard
-          ? chooseSpadesCardHard(player, gameState.value, tracker)
-          : Spades.chooseSpadesCard(player, gameState.value)
-        await executePlayCard(player.id, card)
+          ? chooseSpadesCardHard(currentPlayerObj, gameState.value, tracker)
+          : Spades.chooseSpadesCard(currentPlayerObj, gameState.value)
+        await executePlayCard(playerId, card)
       }
     }, 800)
   }
