@@ -279,7 +279,7 @@ async function initializeBoard() {
       faceUp: seat.isUser,
       rotation: seat.rotation,
       scale: seat.isUser ? 1.0 : 0.7,
-      fanCurve: seat.isUser ? 10 : 0,
+      fanCurve: 0,
       angleToCenter: seat.angleToCenter,
       isUser: seat.isUser,
     })
@@ -304,6 +304,17 @@ watch(() => store.phase, async (newPhase) => {
           suit: card.suit,
           rank: card.rank,
         }, false)
+      }
+    }
+
+    // Ensure card refs exist before dealing
+    engine.refreshCards()
+    await nextTick()
+
+    const deck = engine.getDeck()
+    if (deck) {
+      for (let i = 0; i < deck.cards.length; i++) {
+        deck.cards[i]?.ref?.setPosition(deck.getCardPosition(i))
       }
     }
     
