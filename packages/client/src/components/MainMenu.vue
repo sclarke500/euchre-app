@@ -42,7 +42,15 @@ async function installPWA() {
   showAndroidInstall.value = false
 }
 
+// 67 wobble animation on load
+const isWobbling = ref(true)
+
 onMounted(() => {
+  // Stop wobble after animation completes
+  setTimeout(() => {
+    isWobbling.value = false
+  }, 2000) // 4 cycles × 0.5s = 2s
+
   const platform = getPlatformInfo()
 
   if (platform.isStandalone) {
@@ -144,7 +152,7 @@ const gameTitle = computed(() => {
 </script>
 
 <template>
-  <div class="main-menu">
+  <div class="main-menu" :class="{ 'wobble-67': isWobbling }">
     <button class="settings-btn" @click="showSettings = true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3" />
@@ -258,6 +266,18 @@ const gameTitle = computed(() => {
 </template>
 
 <style scoped lang="scss">
+// 67 wobble Easter egg - seesaw effect like weighing options
+@keyframes wobble-67 {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-1.5deg); }
+  75% { transform: rotate(1.5deg); }
+}
+
+.wobble-67 {
+  animation: wobble-67 0.5s ease-in-out 4;
+  transform-origin: center center;
+}
+
 .settings-btn {
   position: absolute;
   top: $spacing-md;
