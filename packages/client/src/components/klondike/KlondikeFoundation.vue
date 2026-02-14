@@ -39,8 +39,10 @@ function handleTap() {
     <div v-if="!topCard" class="foundation-placeholder" :class="{ red: index === 1 || index === 2 }">
       {{ placeholderSuit }}
     </div>
-    <!-- Top card -->
-    <Card v-else :card="topCard" />
+    <!-- Top card with enter transition -->
+    <Transition v-else name="card-land" appear>
+      <Card :key="topCard.id" :card="topCard" />
+    </Transition>
   </div>
 </template>
 
@@ -55,22 +57,16 @@ function handleTap() {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-
-  // Animate card appearance in foundation
-  :deep(.card) {
-    animation: card-land 0.25s ease-out;
-  }
 }
 
-@keyframes card-land {
-  0% {
-    transform: scale(1.15);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+// Vue transition classes for card landing animation
+.card-land-enter-active {
+  transition: all 0.25s ease-out;
+}
+
+.card-land-enter-from {
+  transform: scale(1.2) translateY(-10px);
+  opacity: 0;
 }
 
 .foundation-placeholder {
