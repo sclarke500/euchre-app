@@ -140,12 +140,14 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     }
 
     dealCompleteResolve = advancePhase
+    // Fallback: if no deal animation callback arrives, advance anyway.
+    // Use a longer window so deal + reveal animations can finish.
     setTimeout(() => {
       if (dealCompleteResolve === advancePhase) {
         dealCompleteResolve = null
         advancePhase()
       }
-    }, 2000)
+    }, 6000)
   }
 
   function startNextRound() {

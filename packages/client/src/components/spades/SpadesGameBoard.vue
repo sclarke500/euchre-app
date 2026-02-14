@@ -15,10 +15,8 @@
     <!-- Player bid info tags -->
     <template v-for="(player, i) in store.players" :key="i" #[`player-info-${i}`]>
       <div v-if="player.bid" class="info-chip bid-chip">
+        <span v-if="player.isHuman">{{ player.name }}:</span>
         {{ getBidDisplay(player.bid) }}
-      </div>
-      <div v-if="store.phase === 'playing' || store.phase === 'trick_complete'" class="info-chip tricks-chip">
-        {{ player.tricksWon }}
       </div>
     </template>
 
@@ -143,7 +141,12 @@
     <!-- Action panel -->
     <div class="action-panel" :class="{ 'is-my-turn': store.isHumanTurn }">
       <div class="panel-header">
-        <div class="panel-name">{{ userName }}</div>
+        <div class="panel-name">
+          {{ userName }}
+          <span v-if="store.humanPlayer?.bid" class="info-chip bid-chip user-bid-chip">
+            {{ getBidDisplay(store.humanPlayer.bid) }}
+          </span>
+        </div>
       </div>
 
       <!-- Bidding phase -->
@@ -182,7 +185,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { SpadesPhase, SpadesBidType, Spades, type SpadesBid, type StandardCard } from '@euchre/shared'
 import CardTable from '../CardTable.vue'
 import { useCardTable } from '@/composables/useCardTable'
-import { computeTableLayout } from '@/composables/useTableLayout'
+import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import { useSpadesStore } from '@/stores/spadesStore'
 
 const emit = defineEmits<{
@@ -196,7 +199,17 @@ const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
 const showLeaveConfirm = ref(false)
 const selectedBid = ref(3)
 const boardRef = ref<HTMLElement | null>(null)
-const tableCenter = ref({ x: 0, y: 0 })
+const cardController = useCardController(engine, boardRef, {
+  layout: 'normal',
+  playerCount: 4,
+  userSeatIndex: 0,
+  userHandScale: 1.6,
+  opponentHandScale: 0.7,
+  userFanSpacing: 30,
+  opponentFanSpacing: 16,
+  userFanCurve: 0,
+  ...cardControllerPresets.spades,
+})
 const showRoundSummary = ref(false)
 const roundSummary = ref({
   usBid: 0,
@@ -220,12 +233,7 @@ const playerNames = computed(() => store.players.map(p => p.name))
 
 // Player statuses for display
 const playerStatuses = computed(() => {
-  return store.players.map(p => {
-    if (store.phase === SpadesPhase.Bidding) {
-      return p.bid ? getBidDisplay(p.bid) : ''
-    }
-    return ''
-  })
+  return store.players.map(() => '')
 })
 
 // Dealer seat (always player seat 0 in this simplified version)
@@ -324,43 +332,14 @@ function dismissRoundSummary() {
 
 // Initialize card engine with hands
 async function initializeBoard() {
-  engine.reset()
-  
   await nextTick()
-  
+
   // Get board reference from CardTable
   if (tableRef.value) {
     boardRef.value = tableRef.value.boardRef
   }
-  
-  // Get board dimensions
-  const board = boardRef.value
-  if (!board) return
 
-  const layout = computeTableLayout(board.offsetWidth, board.offsetHeight, 'normal', 4)
-  tableCenter.value = layout.tableCenter
-
-  // Create deck in center
-  engine.createDeck({ x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
-
-  // Create hands for 4 players based on table layout
-  for (let i = 0; i < 4; i++) {
-    const seat = layout.seats[i]!
-    engine.createHand(`hand-${i}`, seat.handPosition, {
-      fanSpacing: seat.isUser ? 30 : 16,
-      faceUp: seat.isUser,
-      rotation: seat.rotation,
-      scale: seat.isUser ? 1.0 : 0.7,
-      fanCurve: 0,
-      angleToCenter: seat.angleToCenter,
-      isUser: seat.isUser,
-    })
-  }
-
-  // Create center pile
-  engine.createPile('center', { x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
-  
-  engine.refreshCards()
+  cardController.setupTable()
 }
 
 // Watch for game state changes and update cards
@@ -368,93 +347,46 @@ watch(() => store.phase, async (newPhase) => {
   if (newPhase === SpadesPhase.Dealing) {
     await initializeBoard()
     
-    // Add cards to deck then deal
-    for (const player of store.players) {
-      for (const card of player.hand) {
-        engine.addCardToDeck({
-          id: card.id,
-          suit: card.suit,
-          rank: card.rank,
-        }, false)
-      }
+    const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
+    const rankOrder: Record<string, number> = {
+      '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+      'J': 11, 'Q': 12, 'K': 13, 'A': 14,
     }
 
-    // Ensure card refs exist before dealing
-    engine.refreshCards()
-    await nextTick()
+    await cardController.dealFromPlayers(store.players, {
+      revealUserHand: false,
+      focusUserHand: true,
+      dealDelayMs: 50,
+      dealFlightMs: 200,
+      fanDurationMs: 450,
+      sortAfterDeal: false,
+      sortUserHand: (cards) => {
+        const sorted = [...cards]
+        sorted.sort((a, b) => {
+          const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99)
+          if (suitDiff !== 0) return suitDiff
+          return (rankOrder[a.rank] ?? 0) - (rankOrder[b.rank] ?? 0)
+        })
+        return sorted
+      },
+    })
 
-    const deck = engine.getDeck()
-    if (deck) {
-      for (let i = 0; i < deck.cards.length; i++) {
-        deck.cards[i]?.ref?.setPosition(deck.getCardPosition(i))
-      }
-    }
-    
-    // Deal animation
-    await engine.dealAll(13, 50, 200)
-
-    const hands = engine.getHands()
-    const board = boardRef.value
-    
-    // Stage 1: Move user hand to bottom, enlarge, flip face-up (like Euchre)
-    const userHand = hands.find(h => h.id === 'hand-0')
-    if (userHand && board) {
-      const targetX = board.offsetWidth / 2
-      const targetY = board.offsetHeight - 20
-      const targetScale = 1.8
-      
-      userHand.position = { x: targetX, y: targetY }
-      userHand.scale = targetScale
-      userHand.fanSpacing = 30
-      userHand.fanCurve = 0
-      
-      // Move and flip all user cards
-      for (const managed of userHand.cards) {
-        const cardRef = engine.getCardRef(managed.card.id)
-        if (cardRef) {
-          cardRef.moveTo({
-            ...cardRef.getPosition(),
-            x: targetX, y: targetY, scale: targetScale, flipY: 180,
-          }, 400)
-        }
-      }
-      await new Promise(r => setTimeout(r, 450))
-    }
-    
-    // Stage 2: Shrink opponent hands
-    for (const h of hands) {
-      if (h.id !== 'hand-0') {
-        h.scale = 0.65
-      }
-    }
-    
-    // Stage 3: Fan all hands (Hand.getCardPosition now respects faceUp)
-    await Promise.all(hands.map(h => h.setMode('fanned', 250)))
-    
-    // Stage 4: Sort user's hand by suit (spades first) then rank
-    if (userHand) {
-      const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
-      const rankOrder: Record<string, number> = { 
-        '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-        'J': 11, 'Q': 12, 'K': 13, 'A': 14 
-      }
-      
-      userHand.cards.sort((a, b) => {
-        const suitDiff = (suitOrder[a.card.suit] ?? 99) - (suitOrder[b.card.suit] ?? 99)
+    await cardController.revealUserHand(350)
+    await cardController.sortUserHand((cards) => {
+      const sorted = [...cards]
+      sorted.sort((a, b) => {
+        const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99)
         if (suitDiff !== 0) return suitDiff
-        return (rankOrder[a.card.rank] ?? 0) - (rankOrder[b.card.rank] ?? 0)
+        return (rankOrder[a.rank] ?? 0) - (rankOrder[b.rank] ?? 0)
       })
-      
-      // Reposition after sort (Hand now preserves flipY automatically)
-      await userHand.repositionAll(300)
-    }
-    
-    engine.refreshCards()
+      return sorted
+    }, 300)
     store.dealAnimationComplete()
   }
   
   // Show round summary modal when round completes
   if (newPhase === SpadesPhase.RoundComplete) {
+    await new Promise(r => setTimeout(r, 350))
     // Calculate round scores
     const usScore = Spades.calculateRoundScore(store.players, 0, store.scores[0]?.bags ?? 0)
     const themScore = Spades.calculateRoundScore(store.players, 1, store.scores[1]?.bags ?? 0)
@@ -480,19 +412,6 @@ watch(() => store.phase, async (newPhase) => {
   }
 }, { immediate: true })
 
-function getTrickCardTarget(index: number) {
-  const radius = 18
-  const angle = (index / 4) * Math.PI * 2
-  return {
-    x: tableCenter.value.x + Math.cos(angle) * radius,
-    y: tableCenter.value.y + Math.sin(angle) * radius,
-    rotation: (index % 2 === 0 ? -6 : 6),
-    zIndex: 500 + index,
-    scale: 0.9,
-    flipY: 180,
-  }
-}
-
 onMounted(async () => {
   await nextTick()
   // Ensure CardTable has mounted and boardRef is available
@@ -500,36 +419,15 @@ onMounted(async () => {
     boardRef.value = tableRef.value.boardRef
   }
 
-  store.setPlayAnimationCallback(async ({ card, playerId }) => {
-    const pile = engine.getPiles().find(p => p.id === 'center')
-    const fromHand = engine.getHands().find(h => h.id === `hand-${playerId}`)
-    if (!pile || !fromHand) return
+  cardController.setupTable()
 
+  store.setPlayAnimationCallback(async ({ card, playerId }) => {
     const cardIndex = Math.max(0, store.currentTrick.cards.length - 1)
-    const target = getTrickCardTarget(cardIndex)
-    await engine.moveCard(card.id, fromHand, pile, target, 300)
+    await cardController.playCard(card.id, playerId, cardIndex)
   })
 
-  store.setTrickCompleteCallback(async () => {
-    const pile = engine.getPiles().find(p => p.id === 'center')
-    const board = boardRef.value
-    if (!pile || !board) return
-
-    const offX = board.offsetWidth + 200
-    const offY = tableCenter.value.y
-    const moves = pile.cards.map((managed, i) => {
-      const ref = engine.getCardRef(managed.card.id)
-      return ref?.moveTo({
-        x: offX,
-        y: offY,
-        rotation: 20,
-        zIndex: 100 + i,
-        scale: 0.6,
-      }, 300)
-    })
-    await Promise.all(moves)
-    pile.clear()
-    engine.refreshCards()
+  store.setTrickCompleteCallback(async (winnerId) => {
+    await cardController.completeTrick(winnerId)
   })
 
   store.startNewGame()
@@ -663,6 +561,53 @@ onUnmounted(() => {
   .negative {
     color: #e74c3c;
   }
+}
+
+.game-over-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.game-over-panel {
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid #555;
+  border-radius: 12px;
+  padding: 20px 28px;
+  text-align: center;
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+}
+
+.game-over-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.game-over-result {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd700;
+  margin-bottom: 4px;
+}
+
+.game-over-scores {
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 14px;
+}
+
+.game-over-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 .leave-btn {

@@ -304,6 +304,7 @@ function handleHint() {
 </template>
 
 <style scoped lang="scss">
+@use 'sass:color';
 .klondike-board {
   width: 100%;
   height: 100%;
@@ -495,7 +496,7 @@ function handleHint() {
     background: $secondary-color;
     
     &:hover {
-      background: lighten($secondary-color, 5%);
+      background: color.adjust($secondary-color, $lightness: 5%);
     }
   }
 
