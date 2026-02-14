@@ -10,6 +10,7 @@ import type {
 } from '@euchre/shared'
 import { PresidentPhase } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
+import { updateIfChanged } from './utils'
 
 export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', () => {
   // State from server
@@ -110,9 +111,9 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
           myPlayerId: myPlayerInState?.id,
           myHand: myPlayerInState?.hand?.map(c => c.id),
         })
-        isMyTurn.value = false
-        validActions.value = []
-        validPlays.value = []
+        updateIfChanged(isMyTurn, false)
+        updateIfChanged(validActions, [])
+        updateIfChanged(validPlays, [])
         gameState.value = message.state
         lastStateSeq.value = message.state.stateSeq
         lastStateReceivedAt = Date.now()
@@ -124,9 +125,9 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
           validPlays: message.validPlays,
           myHand: myHand.value.map(c => c.id),
         })
-        isMyTurn.value = true
-        validActions.value = message.validActions
-        validPlays.value = message.validPlays
+        updateIfChanged(isMyTurn, true)
+        updateIfChanged(validActions, message.validActions)
+        updateIfChanged(validPlays, message.validPlays)
         break
 
       case 'president_play_made':

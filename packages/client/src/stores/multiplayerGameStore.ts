@@ -226,7 +226,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
           console.warn('[MP] Ignoring stale your_turn — currentPlayer:', gameState.value.currentPlayer, 'myPlayerId:', myPlayerId.value)
           break
         }
-        isMyTurn.value = true
+        updateIfChanged(isMyTurn, true)
         updateIfChanged(validActions, message.validActions)
         updateIfChanged(validCards, message.validCards ?? [])
         break
@@ -364,7 +364,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
           console.warn('[MP] Ignoring stale turn_reminder — currentPlayer:', gameState.value.currentPlayer, 'myPlayerId:', myPlayerId.value)
           break
         }
-        isMyTurn.value = true
+        updateIfChanged(isMyTurn, true)
         // Only update validActions (for bid buttons). Do NOT update validCards —
         // the server may recompute them with stale trick state, causing flicker.
         // validCards are authoritatively set by your_turn only.
