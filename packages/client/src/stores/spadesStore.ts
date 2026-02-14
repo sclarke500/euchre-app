@@ -148,6 +148,12 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     }, 2000)
   }
 
+  function startNextRound() {
+    const newRoundState = Spades.startNewRound(gameState.value)
+    applyState(newRoundState)
+    startRound()
+  }
+
   function makeBid(bid: SpadesBid) {
     const human = humanPlayer.value
     if (!human || !isHumanBidding.value) return
@@ -191,16 +197,15 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
       // Check if round complete
       if (state.completedTricks.length === 13) {
-        // Round is complete - score is already calculated
-        if (state.gameOver) {
+        // Round is complete - apply final scoring
+        const scoredState = Spades.completeRound(gameState.value)
+        applyState(scoredState)
+        
+        if (scoredState.gameOver) {
           phase.value = SpadesPhase.GameOver
         } else {
-          // Start new round after delay
-          setTimeout(() => {
-            const newRoundState = Spades.startNewRound(gameState.value)
-            applyState(newRoundState)
-            startRound()
-          }, 2000)
+          // Show round summary (UI will call startNextRound when ready)
+          phase.value = SpadesPhase.RoundComplete
         }
         return
       }
@@ -279,6 +284,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     // Actions
     startNewGame,
     startRound,
+    startNextRound,
     makeBid,
     playCard,
     dealAnimationComplete,

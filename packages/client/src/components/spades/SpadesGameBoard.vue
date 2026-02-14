@@ -22,28 +22,17 @@
       </div>
     </template>
 
-    <!-- Scoreboard -->
+    <!-- Scoreboard (simplified - just points and bags) -->
     <div class="scoreboard spades-scoreboard">
-      <div class="score-header">
-        <span></span>
-        <span>Pts</span>
-        <span>Bid</span>
-        <span>Trk</span>
-        <span>Bag</span>
-      </div>
       <div class="score-row">
         <span class="score-label">Us</span>
         <span class="score-value">{{ scores[0]?.score ?? 0 }}</span>
-        <span class="score-tricks">{{ store.teamBids[0] }}</span>
-        <span class="score-tricks">{{ store.teamTricks[0] }}</span>
-        <span class="score-bags">{{ scores[0]?.bags ?? 0 }}</span>
+        <span class="score-bags">{{ scores[0]?.bags ?? 0 }}🎒</span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
         <span class="score-value">{{ scores[1]?.score ?? 0 }}</span>
-        <span class="score-tricks">{{ store.teamBids[1] }}</span>
-        <span class="score-tricks">{{ store.teamTricks[1] }}</span>
-        <span class="score-bags">{{ scores[1]?.bags ?? 0 }}</span>
+        <span class="score-bags">{{ scores[1]?.bags ?? 0 }}🎒</span>
       </div>
     </div>
 
@@ -59,9 +48,69 @@
       ♠ Broken
     </div>
 
-    <!-- Round indicator -->
-    <div class="round-indicator">
-      Round {{ store.roundNumber }}
+    <!-- Round Summary Modal -->
+    <div v-if="showRoundSummary" class="game-over-overlay">
+      <div class="round-summary-panel">
+        <div class="round-summary-title">Round Complete</div>
+        <div class="round-summary-table">
+          <div class="summary-header">
+            <span></span>
+            <span>Us</span>
+            <span>Them</span>
+          </div>
+          <div class="summary-row">
+            <span>Bid</span>
+            <span>{{ roundSummary.usBid }}</span>
+            <span>{{ roundSummary.themBid }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Tricks</span>
+            <span>{{ roundSummary.usTricks }}</span>
+            <span>{{ roundSummary.themTricks }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Base Points</span>
+            <span :class="{ positive: roundSummary.usBasePoints > 0, negative: roundSummary.usBasePoints < 0 }">
+              {{ roundSummary.usBasePoints >= 0 ? '+' : '' }}{{ roundSummary.usBasePoints }}
+            </span>
+            <span :class="{ positive: roundSummary.themBasePoints > 0, negative: roundSummary.themBasePoints < 0 }">
+              {{ roundSummary.themBasePoints >= 0 ? '+' : '' }}{{ roundSummary.themBasePoints }}
+            </span>
+          </div>
+          <div v-if="roundSummary.usNilBonus || roundSummary.themNilBonus" class="summary-row">
+            <span>Nil Bonus</span>
+            <span class="positive">{{ roundSummary.usNilBonus ? '+' + roundSummary.usNilBonus : '' }}</span>
+            <span class="positive">{{ roundSummary.themNilBonus ? '+' + roundSummary.themNilBonus : '' }}</span>
+          </div>
+          <div v-if="roundSummary.usNilPenalty || roundSummary.themNilPenalty" class="summary-row">
+            <span>Nil Failed</span>
+            <span class="negative">{{ roundSummary.usNilPenalty ? '-' + roundSummary.usNilPenalty : '' }}</span>
+            <span class="negative">{{ roundSummary.themNilPenalty ? '-' + roundSummary.themNilPenalty : '' }}</span>
+          </div>
+          <div v-if="roundSummary.usBagPenalty || roundSummary.themBagPenalty" class="summary-row">
+            <span>Bag Penalty</span>
+            <span class="negative">{{ roundSummary.usBagPenalty ? '-' + roundSummary.usBagPenalty : '' }}</span>
+            <span class="negative">{{ roundSummary.themBagPenalty ? '-' + roundSummary.themBagPenalty : '' }}</span>
+          </div>
+          <div class="summary-row total">
+            <span>Round Total</span>
+            <span :class="{ positive: roundSummary.usTotal > 0, negative: roundSummary.usTotal < 0 }">
+              {{ roundSummary.usTotal >= 0 ? '+' : '' }}{{ roundSummary.usTotal }}
+            </span>
+            <span :class="{ positive: roundSummary.themTotal > 0, negative: roundSummary.themTotal < 0 }">
+              {{ roundSummary.themTotal >= 0 ? '+' : '' }}{{ roundSummary.themTotal }}
+            </span>
+          </div>
+          <div class="summary-row game-total">
+            <span>Game Score</span>
+            <span>{{ scores[0]?.score ?? 0 }}</span>
+            <span>{{ scores[1]?.score ?? 0 }}</span>
+          </div>
+        </div>
+        <div class="game-over-actions">
+          <button class="action-btn primary" @click="dismissRoundSummary">Continue</button>
+        </div>
+      </div>
     </div>
 
     <!-- Game Over overlay -->
@@ -148,6 +197,23 @@ const showLeaveConfirm = ref(false)
 const selectedBid = ref(3)
 const boardRef = ref<HTMLElement | null>(null)
 const tableCenter = ref({ x: 0, y: 0 })
+const showRoundSummary = ref(false)
+const roundSummary = ref({
+  usBid: 0,
+  themBid: 0,
+  usTricks: 0,
+  themTricks: 0,
+  usBasePoints: 0,
+  themBasePoints: 0,
+  usNilBonus: 0,
+  themNilBonus: 0,
+  usNilPenalty: 0,
+  themNilPenalty: 0,
+  usBagPenalty: 0,
+  themBagPenalty: 0,
+  usTotal: 0,
+  themTotal: 0,
+})
 
 // Player names
 const playerNames = computed(() => store.players.map(p => p.name))
@@ -248,6 +314,12 @@ function confirmLeave() {
 function handlePlayAgain() {
   store.startNewGame()
   initializeBoard()
+}
+
+// Dismiss round summary and start next round
+function dismissRoundSummary() {
+  showRoundSummary.value = false
+  store.startNextRound()
 }
 
 // Initialize card engine with hands
@@ -355,6 +427,32 @@ watch(() => store.phase, async (newPhase) => {
 
     store.dealAnimationComplete()
   }
+  
+  // Show round summary modal when round completes
+  if (newPhase === SpadesPhase.RoundComplete) {
+    // Calculate round scores
+    const usScore = Spades.calculateRoundScore(store.players, 0, store.scores[0]?.bags ?? 0)
+    const themScore = Spades.calculateRoundScore(store.players, 1, store.scores[1]?.bags ?? 0)
+    
+    roundSummary.value = {
+      usBid: usScore.baseBid,
+      themBid: themScore.baseBid,
+      usTricks: usScore.tricksWon,
+      themTricks: themScore.tricksWon,
+      usBasePoints: usScore.tricksWon >= usScore.baseBid ? usScore.baseBid * 10 : -usScore.baseBid * 10,
+      themBasePoints: themScore.tricksWon >= themScore.baseBid ? themScore.baseBid * 10 : -themScore.baseBid * 10,
+      usNilBonus: usScore.nilBonus,
+      themNilBonus: themScore.nilBonus,
+      usNilPenalty: usScore.nilPenalty,
+      themNilPenalty: themScore.nilPenalty,
+      usBagPenalty: Math.abs(usScore.bagsPenalty),
+      themBagPenalty: Math.abs(themScore.bagsPenalty),
+      usTotal: usScore.roundPoints,
+      themTotal: themScore.roundPoints,
+    }
+    
+    showRoundSummary.value = true
+  }
 }, { immediate: true })
 
 function getTrickCardTarget(index: number) {
@@ -418,39 +516,127 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-// Standard layout: scoreboard top-left, action panel bottom-left
+// Standard layout: scoreboard top-right, action panel bottom-left
 .scoreboard {
   position: absolute;
   top: 10px;
-  left: max(10px, env(safe-area-inset-left));
+  right: max(60px, env(safe-area-inset-right) + 50px);
   z-index: 500;
   background: rgba(20, 20, 30, 0.88);
   border: 1px solid #444;
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   backdrop-filter: blur(8px);
   font-size: 14px;
   color: #ccc;
 }
 
 .spades-scoreboard {
-  .score-header {
-    display: grid;
-    grid-template-columns: 50px 40px 40px 30px 30px;
-    gap: 4px;
-    font-size: 0.7rem;
-    opacity: 0.7;
-    margin-bottom: 4px;
+  .score-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 2px 0;
+    
+    &:first-child {
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 4px;
+      margin-bottom: 2px;
+    }
   }
   
-  .score-row {
-    display: grid;
-    grid-template-columns: 50px 40px 40px 30px 30px;
-    gap: 4px;
+  .score-label {
+    font-weight: 600;
+    min-width: 40px;
+  }
+  
+  .score-value {
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    min-width: 40px;
+    text-align: right;
   }
   
   .score-bags {
+    font-size: 12px;
     color: #f39c12;
+  }
+}
+
+.round-summary-panel {
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid #555;
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 280px;
+  max-width: 90vw;
+}
+
+.round-summary-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.round-summary-table {
+  margin-bottom: 16px;
+}
+
+.summary-header {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #aaa;
+  text-align: center;
+  
+  span:first-child {
+    text-align: left;
+  }
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  gap: 8px;
+  padding: 4px 0;
+  color: #ccc;
+  text-align: center;
+  
+  span:first-child {
+    text-align: left;
+    color: #aaa;
+  }
+  
+  &.total {
+    border-top: 1px solid rgba(255,255,255,0.2);
+    margin-top: 8px;
+    padding-top: 8px;
+    font-weight: 700;
+    color: #fff;
+  }
+  
+  &.game-total {
+    border-top: 2px solid rgba(255,215,0,0.5);
+    margin-top: 8px;
+    padding-top: 8px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #ffd700;
+  }
+  
+  .positive {
+    color: #4CAF50;
+  }
+  
+  .negative {
+    color: #e74c3c;
   }
 }
 
