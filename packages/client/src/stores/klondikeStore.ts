@@ -143,33 +143,33 @@ export const useKlondikeStore = defineStore('klondike', () => {
         selection.value.cardIndex === cardIndex
       ) {
         const newState = clearSelection(gameState.value)
-        updateState(newState)
+        updateState(newState, false) // Don't save selection changes to history
         return
       }
 
       // Try to move selection to this column
       const result = moveToTableau(gameState.value, selection.value, columnIndex)
       if (result.success) {
-        updateState(result.state)
+        updateState(result.state) // Save actual moves to history
       } else {
         // Invalid move - try auto-play on tapped card, or select it
         const autoResult = tryAutoPlay(gameState.value, 'tableau', columnIndex, cardIndex)
         if (autoResult.success) {
-          updateState(autoResult.state)
+          updateState(autoResult.state) // Save actual moves to history
         } else {
           const newState = selectCard(gameState.value, 'tableau', columnIndex, cardIndex)
-          updateState(newState)
+          updateState(newState, false) // Don't save selection changes to history
         }
       }
     } else {
       // No selection - try auto-play first
       const autoResult = tryAutoPlay(gameState.value, 'tableau', columnIndex, cardIndex)
       if (autoResult.success) {
-        updateState(autoResult.state)
+        updateState(autoResult.state) // Save actual moves to history
       } else {
         // No auto-play available, select the card
         const newState = selectCard(gameState.value, 'tableau', columnIndex, cardIndex)
-        updateState(newState)
+        updateState(newState, false) // Don't save selection changes to history
       }
     }
   }
@@ -180,11 +180,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
 
     const result = moveToTableau(gameState.value, selection.value, columnIndex)
     if (result.success) {
-      updateState(result.state)
+      updateState(result.state) // Save actual moves to history
     } else {
       // Invalid move - clear selection
       const newState = clearSelection(gameState.value)
-      updateState(newState)
+      updateState(newState, false) // Don't save selection changes to history
     }
   }
 
@@ -197,11 +197,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
       // Try auto-play
       const autoResult = tryAutoPlay(gameState.value, 'waste')
       if (autoResult.success) {
-        updateState(autoResult.state)
+        updateState(autoResult.state) // Save actual moves to history
       } else {
         // No valid move, deselect
         const newState = clearSelection(gameState.value)
-        updateState(newState)
+        updateState(newState, false) // Don't save selection changes to history
       }
       return
     }
@@ -209,11 +209,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
     // Clear any existing selection and try auto-play on waste
     const autoResult = tryAutoPlay(gameState.value, 'waste')
     if (autoResult.success) {
-      updateState(autoResult.state)
+      updateState(autoResult.state) // Save actual moves to history
     } else {
       // No auto-play available, select the waste card
       const newState = selectCard(gameState.value, 'waste')
-      updateState(newState)
+      updateState(newState, false) // Don't save selection changes to history
     }
   }
 
@@ -223,11 +223,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
 
     const result = moveToFoundation(gameState.value, selection.value, foundationIndex)
     if (result.success) {
-      updateState(result.state)
+      updateState(result.state) // Save actual moves to history
     } else {
       // Invalid move - clear selection
       const newState = clearSelection(gameState.value)
-      updateState(newState)
+      updateState(newState, false) // Don't save selection changes to history
     }
   }
 
