@@ -421,15 +421,18 @@ watch(() => store.phase, async (newPhase) => {
       await new Promise(r => setTimeout(r, 450))
     }
     
-    // Stage 2: Shrink and fan opponent hands only (user hand already positioned)
-    const opponentHands = hands.filter(h => h.id !== 'hand-0')
-    for (const h of opponentHands) {
-      h.scale = 0.65
+    // Stage 2: Shrink opponent hands
+    for (const h of hands) {
+      if (h.id !== 'hand-0') {
+        h.scale = 0.65
+      }
     }
-    await Promise.all(opponentHands.map(h => h.setMode('fanned', 250)))
     
-    // Stage 3: Sort user's hand by suit (spades first) then rank
-    if (userHand && board) {
+    // Stage 3: Fan all hands (Hand.getCardPosition now respects faceUp)
+    await Promise.all(hands.map(h => h.setMode('fanned', 250)))
+    
+    // Stage 4: Sort user's hand by suit (spades first) then rank
+    if (userHand) {
       const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
       const rankOrder: Record<string, number> = { 
         '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
@@ -442,30 +445,8 @@ watch(() => store.phase, async (newPhase) => {
         return (rankOrder[a.card.rank] ?? 0) - (rankOrder[b.card.rank] ?? 0)
       })
       
-      // Reposition after sort, preserving face-up state
-      const targetX = board.offsetWidth / 2
-      const targetY = board.offsetHeight - 20
-      const targetScale = 1.8
-      const cardCount = userHand.cards.length
-      const middleIndex = (cardCount - 1) / 2
-      
-      for (let i = 0; i < userHand.cards.length; i++) {
-        const managed = userHand.cards[i]
-        if (!managed) continue
-        const cardRef = engine.getCardRef(managed.card.id)
-        if (cardRef) {
-          const spreadAmount = (i - middleIndex) * 30 // fanSpacing
-          cardRef.moveTo({
-            x: targetX + spreadAmount,
-            y: targetY,
-            rotation: 0,
-            zIndex: 200 + i,
-            scale: targetScale,
-            flipY: 180, // Keep face up!
-          }, 300)
-        }
-      }
-      await new Promise(r => setTimeout(r, 350))
+      // Reposition after sort (Hand now preserves flipY automatically)
+      await userHand.repositionAll(300)
     }
     
     engine.refreshCards()

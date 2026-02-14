@@ -156,7 +156,8 @@ export class Hand extends CardContainer {
         y: this.position.y + randomY - index * 0.5,
         rotation: this.rotation + randomRot,
         zIndex: 200 + index,
-        scale: this.scale,  // Use hand's scale
+        scale: this.scale,
+        flipY: this.faceUp ? 180 : 0,  // Respect hand's faceUp setting
       }
     }
     
@@ -173,6 +174,7 @@ export class Hand extends CardContainer {
         rotation: spreadAngle,
         zIndex: 200 + index,
         scale: this.scale,
+        flipY: this.faceUp ? 180 : 0,  // Respect hand's faceUp setting
       }
     } else {
       // Play mode (user with fanCurve=0) or opponents: straight horizontal spread
@@ -189,6 +191,7 @@ export class Hand extends CardContainer {
         rotation: this.rotation,
         zIndex: 200 + index,
         scale: this.scale,
+        flipY: this.faceUp ? 180 : 0,  // Respect hand's faceUp setting
       }
     }
   }
