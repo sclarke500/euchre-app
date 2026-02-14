@@ -134,22 +134,6 @@ function handleHint() {
   <div class="klondike-board">
     <BackButton @click="handleLeaveGame" />
 
-    <!-- Stats bar -->
-    <div class="stats-bar">
-      <div class="stat">
-        <span class="stat-label">Score</span>
-        <span class="stat-value">{{ score }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Time</span>
-        <span class="stat-value">{{ formattedTime }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Moves</span>
-        <span class="stat-value">{{ moveCount }}</span>
-      </div>
-    </div>
-
     <!-- Main game area -->
     <div class="game-area">
       <!-- PORTRAIT LAYOUT -->
@@ -236,43 +220,50 @@ function handleHint() {
       </div>
     </div>
 
-    <!-- Bottom toolbar -->
+    <!-- Bottom toolbar with stats -->
     <div class="bottom-toolbar">
-      <button class="toolbar-btn" @click="handleUndo" title="Undo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 10h10a5 5 0 0 1 5 5v2" />
-          <path d="M3 10l4-4" />
-          <path d="M3 10l4 4" />
-        </svg>
-        <span>Undo</span>
-      </button>
-      <button class="toolbar-btn" @click="handleHint" title="Hint">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
-          <path d="M9 21h6" />
-          <path d="M10 21v-1h4v1" />
-        </svg>
-        <span>Hint</span>
-      </button>
-      <button v-if="canAutoComplete && !isAutoCompleting" class="toolbar-btn auto" @click="handleAutoComplete" title="Auto Complete">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-        </svg>
-        <span>Auto</span>
-      </button>
-      <button class="toolbar-btn" @click="handleNewGame" title="New Game">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2v4" />
-          <path d="M12 18v4" />
-          <path d="M4.93 4.93l2.83 2.83" />
-          <path d="M16.24 16.24l2.83 2.83" />
-          <path d="M2 12h4" />
-          <path d="M18 12h4" />
-          <path d="M4.93 19.07l2.83-2.83" />
-          <path d="M16.24 7.76l2.83-2.83" />
-        </svg>
-        <span>New</span>
-      </button>
+      <!-- Stats section -->
+      <div class="toolbar-stats">
+        <span class="toolbar-stat">{{ score }}</span>
+        <span class="toolbar-stat-divider">•</span>
+        <span class="toolbar-stat">{{ formattedTime }}</span>
+        <span class="toolbar-stat-divider">•</span>
+        <span class="toolbar-stat">{{ moveCount }} moves</span>
+      </div>
+
+      <!-- Actions section -->
+      <div class="toolbar-actions">
+        <button class="toolbar-btn" @click="handleUndo" title="Undo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 10h10a5 5 0 0 1 5 5v2" />
+            <path d="M3 10l4-4" />
+            <path d="M3 10l4 4" />
+          </svg>
+        </button>
+        <button class="toolbar-btn" @click="handleHint" title="Hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+            <path d="M9 21h6" />
+          </svg>
+        </button>
+        <button v-if="canAutoComplete && !isAutoCompleting" class="toolbar-btn auto" @click="handleAutoComplete" title="Auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </button>
+        <button class="toolbar-btn" @click="handleNewGame" title="New Game">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4" />
+            <path d="M12 18v4" />
+            <path d="M4.93 4.93l2.83 2.83" />
+            <path d="M16.24 16.24l2.83 2.83" />
+            <path d="M2 12h4" />
+            <path d="M18 12h4" />
+            <path d="M4.93 19.07l2.83-2.83" />
+            <path d="M16.24 7.76l2.83-2.83" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Win modal -->
@@ -311,38 +302,6 @@ function handleHint() {
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
-}
-
-// ============================================
-// STATS BAR
-// ============================================
-.stats-bar {
-  display: flex;
-  justify-content: center;
-  gap: $spacing-lg;
-  padding: $spacing-xs $spacing-md;
-  padding-left: 50px; // Space for back button
-  background: rgba(0, 0, 0, 0.2);
-  flex-shrink: 0;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: white;
-}
-
-.stat-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.7;
-}
-
-.stat-value {
-  font-size: 1rem;
-  font-weight: bold;
 }
 
 // ============================================
@@ -453,25 +412,45 @@ function handleHint() {
 // ============================================
 .bottom-toolbar {
   display: flex;
-  justify-content: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm;
-  background: rgba(0, 0, 0, 0.3);
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
+}
+
+.toolbar-stats {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  color: white;
+  font-size: 0.8rem;
+}
+
+.toolbar-stat {
+  font-weight: 500;
+}
+
+.toolbar-stat-divider {
+  opacity: 0.4;
+  font-size: 0.6rem;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: $spacing-xs;
 }
 
 .toolbar-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: $spacing-xs $spacing-sm;
+  justify-content: center;
+  padding: $spacing-xs;
   background: rgba(255, 255, 255, 0.1);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   color: white;
   cursor: pointer;
-  min-width: 50px;
   transition: background 0.15s ease;
 
   &:hover {
@@ -493,12 +472,6 @@ function handleHint() {
   svg {
     width: 20px;
     height: 20px;
-  }
-
-  span {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 }
 
