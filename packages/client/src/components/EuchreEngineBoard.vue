@@ -38,21 +38,14 @@
       </div>
     </div>
 
-    <!-- Leave game button -->
-    <button class="leave-btn" @click="handleLeaveClick">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-    </button>
-
-    <!-- Bug report / diagnostics -->
-    <button class="bug-btn" title="Report a bug" @click="openBugReport">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      </svg>
-    </button>
+    <!-- HUD: Leave + Bug Report buttons -->
+    <GameHUD
+      game-type="euchre"
+      :build-payload="buildBugReportPayload"
+      :show-resync="mode === 'multiplayer'"
+      @leave="handleLeaveClick"
+      @resync="handleResync"
+    />
 
     <!-- Game Over overlay -->
     <div v-if="game.gameOver.value" class="game-over-overlay">
@@ -146,32 +139,6 @@
       </template>
     </div>
   </CardTable>
-
-  <Modal :show="showBugReport" @close="showBugReport = false">
-    <div class="bug-modal">
-      <div class="bug-title">Bug Report</div>
-      <div class="bug-subtitle">Copies a snapshot you can paste into a GitHub issue or DM.</div>
-
-      <textarea
-        v-model="bugDescription"
-        class="bug-textarea"
-        rows="4"
-        placeholder="What happened? What did you expect? Rough steps to reproduce?"
-      />
-
-      <div class="bug-actions">
-        <button class="action-btn primary" :disabled="sendingReport" @click="sendUserReport">
-          {{ sendingReport ? 'Sending...' : 'Send Report' }}
-        </button>
-        <button class="action-btn" @click="copyBugReport">Copy</button>
-        <button class="action-btn" @click="downloadBugReport">Download</button>
-        <button v-if="mode === 'multiplayer'" class="action-btn" @click="handleResync">Resync</button>
-        <button class="action-btn" @click="showBugReport = false">Close</button>
-      </div>
-
-      <div v-if="copyStatus" class="bug-status">{{ copyStatus }}</div>
-    </div>
-  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -179,7 +146,7 @@ import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } fr
 import { GamePhase, BidAction, Suit, type TeamScore } from '@euchre/shared'
 import CardTable from './CardTable.vue'
 import TurnTimer from './TurnTimer.vue'
-import Modal from './Modal.vue'
+import GameHUD from './GameHUD.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useGameAdapter } from '@/composables/useGameAdapter'
 import { useEuchreDirector } from '@/composables/useEuchreDirector'
@@ -187,7 +154,6 @@ import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { useGameStore } from '@/stores/gameStore'
 import { websocket } from '@/services/websocket'
-import { sendBugReport } from '@/services/autoBugReport'
 
 const SUIT_SYMBOLS: Record<string, string> = {
   hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠',
@@ -303,18 +269,7 @@ function handleTurnTimeout() {
   }
 }
 
-const showBugReport = ref(false)
-const bugDescription = ref('')
-const copyStatus = ref<string>('')
-const sendingReport = ref(false)
-
-function openBugReport() {
-  copyStatus.value = ''
-  showBugReport.value = true
-}
-
 function buildBugReportPayload() {
-  const now = new Date().toISOString()
   const queueLen = game.getQueueLength?.() ?? null
   const rawMpState = props.mode === 'multiplayer' ? (mpStore?.gameState ?? null) : null
 
@@ -325,8 +280,6 @@ function buildBugReportPayload() {
     : []
 
   return {
-    createdAt: now,
-    description: bugDescription.value.trim(),
     mode: props.mode,
     ui: {
       isAnimating: director.isAnimating.value,
@@ -359,56 +312,6 @@ function buildBugReportPayload() {
       outbound: wsOutbound,
     },
     rawState: rawMpState,
-  }
-}
-
-async function copyBugReport() {
-  try {
-    const payload = buildBugReportPayload()
-    await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
-    copyStatus.value = 'Copied to clipboard.'
-    setTimeout(() => { copyStatus.value = '' }, 1500)
-  } catch (err) {
-    console.error('Failed to copy bug report:', err)
-    copyStatus.value = 'Copy failed (see console).'
-  }
-}
-
-function downloadBugReport() {
-  const payload = buildBugReportPayload()
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `euchre-bug-report-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
-}
-
-async function sendUserReport() {
-  if (sendingReport.value) return
-  sendingReport.value = true
-  copyStatus.value = 'Sending...'
-  
-  try {
-    const payload = buildBugReportPayload()
-    await sendBugReport({
-      ...payload,
-      reportType: 'user',
-      userDescription: bugDescription.value.trim() || 'No description provided',
-    })
-    copyStatus.value = 'Sent! Thanks for the report.'
-    setTimeout(() => { 
-      copyStatus.value = ''
-      showBugReport.value = false
-    }, 2000)
-  } catch (err) {
-    console.error('Failed to send report:', err)
-    copyStatus.value = 'Send failed. Try copying instead.'
-  } finally {
-    sendingReport.value = false
   }
 }
 
@@ -613,59 +516,6 @@ onUnmounted(() => {
   }
 }
 
-.leave-btn {
-  position: absolute;
-  top: 10px;
-  left: max(10px, env(safe-area-inset-left));
-  z-index: 500;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid #444;
-  background: rgba(30, 30, 40, 0.85);
-  color: #ccc;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-
-  &:hover { background: rgba(50, 50, 65, 0.9); }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-.bug-btn {
-  position: absolute;
-  top: 10px;
-  left: calc(max(10px, env(safe-area-inset-left)) + 48px);
-  z-index: 500;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 215, 0, 0.35);
-  background: rgba(30, 30, 40, 0.85);
-  color: rgba(255, 215, 0, 0.95);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-
-  &:hover {
-    background: rgba(45, 45, 60, 0.9);
-    border-color: rgba(255, 215, 0, 0.55);
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
 .info-chip {
   width: 22px;
   height: 22px;
@@ -716,48 +566,6 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-}
-
-.bug-modal {
-  width: min(520px, 92vw);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  text-align: left;
-}
-
-.bug-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: #222;
-}
-
-.bug-subtitle {
-  font-size: 12px;
-  color: rgba(20, 20, 20, 0.75);
-}
-
-.bug-textarea {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  resize: vertical;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  padding: 10px;
-  font-size: 13px;
-  background: rgba(255, 255, 255, 0.75);
-}
-
-.bug-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.bug-status {
-  font-size: 12px;
-  color: rgba(20, 20, 20, 0.7);
 }
 
 .panel-name {

@@ -20,21 +20,14 @@
       </div>
     </template>
 
-    <!-- Leave game button -->
-    <button class="leave-btn" @click="showLeaveConfirm = true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-    </button>
-
-    <!-- Bug report button -->
-    <button class="bug-btn" title="Report a bug" @click="openBugReport">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      </svg>
-    </button>
+    <!-- HUD: Leave + Bug Report buttons -->
+    <GameHUD
+      game-type="president"
+      :build-payload="buildBugReportPayload"
+      :show-resync="mode === 'multiplayer'"
+      @leave="showLeaveConfirm = true"
+      @resync="game.requestResync?.()"
+    />
 
     <!-- Game info (top-left) -->
     <div class="game-info">
@@ -155,31 +148,6 @@
       </div>
     </Modal>
 
-    <!-- Bug report modal -->
-    <Modal :show="showBugReport" @close="showBugReport = false">
-      <div class="bug-modal">
-        <div class="bug-title">Bug Report</div>
-        <div class="bug-subtitle">Copies a snapshot you can paste into a GitHub issue or DM.</div>
-
-        <textarea
-          v-model="bugDescription"
-          class="bug-textarea"
-          rows="4"
-          placeholder="What happened? What did you expect? Rough steps to reproduce?"
-        />
-
-        <div class="bug-actions">
-          <button class="action-btn primary" :disabled="sendingReport" @click="sendUserReport">
-            {{ sendingReport ? 'Sending...' : 'Send Report' }}
-          </button>
-          <button class="action-btn" @click="copyBugReport">Copy</button>
-          <button class="action-btn" @click="downloadBugReport">Download</button>
-          <button class="action-btn" @click="showBugReport = false">Close</button>
-        </div>
-
-        <div v-if="copyStatus" class="bug-status">{{ copyStatus }}</div>
-      </div>
-    </Modal>
   </CardTable>
 </template>
 
@@ -189,11 +157,11 @@ import { PresidentPhase, isValidPlay, sortHandByRank, type StandardCard } from '
 import CardTable from './CardTable.vue'
 import TurnTimer from './TurnTimer.vue'
 import Modal from './Modal.vue'
+import GameHUD from './GameHUD.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { usePresidentGameAdapter } from '@/composables/usePresidentGameAdapter'
 import { usePresidentDirector } from '@/composables/usePresidentDirector'
 import { websocket } from '@/services/websocket'
-import { sendBugReport } from '@/services/autoBugReport'
 
 const props = withDefaults(defineProps<{
   mode?: 'singleplayer' | 'multiplayer'
@@ -235,12 +203,6 @@ const timerSettings = computed(() => {
   return { gracePeriodMs: 30000, countdownMs: 30000 }
 })
 const showLeaveConfirm = ref(false)
-
-// Bug report state
-const showBugReport = ref(false)
-const bugDescription = ref('')
-const copyStatus = ref('')
-const sendingReport = ref(false)
 
 // Card selection state (multi-select for same-rank cards)
 const selectedCardIds = ref<Set<string>>(new Set())
@@ -437,19 +399,10 @@ function handleTurnTimeout() {
 
 // ── Bug Report ──────────────────────────────────────────────────────────
 
-function openBugReport() {
-  copyStatus.value = ''
-  showBugReport.value = true
-}
-
 function buildBugReportPayload() {
-  const now = new Date().toISOString()
   const human = game.humanPlayer.value
 
   return {
-    createdAt: now,
-    description: bugDescription.value.trim(),
-    game: 'President',
     mode: props.mode,
     ui: {
       isAnimating: director.isAnimating.value,
@@ -472,39 +425,6 @@ function buildBugReportPayload() {
       outbound: websocket.getRecentOutbound?.().slice(-10).map(m => ({ ts: m.ts, type: m.message.type })) ?? [],
     } : null,
   }
-}
-
-async function sendUserReport() {
-  if (sendingReport.value) return
-  sendingReport.value = true
-  try {
-    const payload = buildBugReportPayload()
-    await sendBugReport({ ...payload, trigger: 'user' })
-    copyStatus.value = '✓ Report sent!'
-    setTimeout(() => { showBugReport.value = false }, 1500)
-  } catch {
-    copyStatus.value = '✗ Failed to send'
-  } finally {
-    sendingReport.value = false
-  }
-}
-
-function copyBugReport() {
-  const payload = buildBugReportPayload()
-  navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
-  copyStatus.value = '✓ Copied to clipboard!'
-}
-
-function downloadBugReport() {
-  const payload = buildBugReportPayload()
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `president-bug-report-${Date.now()}.json`
-  a.click()
-  URL.revokeObjectURL(url)
-  copyStatus.value = '✓ Downloaded!'
 }
 
 // ── Mount ───────────────────────────────────────────────────────────────
@@ -536,31 +456,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-.leave-btn {
-  position: absolute;
-  top: 10px;
-  right: max(10px, env(safe-area-inset-right));
-  z-index: 500;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid #444;
-  background: rgba(30, 30, 40, 0.85);
-  color: #ccc;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-
-  &:hover { background: rgba(50, 50, 65, 0.9); }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
 .game-info {
   position: absolute;
   top: 10px;
@@ -784,78 +679,4 @@ onUnmounted(() => {
   justify-content: center;
   gap: 12px;
 }
-
-// Bug report button and modal
-.bug-btn {
-  position: absolute;
-  top: 10px;
-  left: calc(max(10px, env(safe-area-inset-left)) + 48px);
-  z-index: 500;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 215, 0, 0.35);
-  background: rgba(30, 30, 40, 0.85);
-  color: rgba(255, 215, 0, 0.95);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-
-  &:hover {
-    background: rgba(45, 45, 60, 0.9);
-    border-color: rgba(255, 215, 0, 0.55);
-  }
-
-  svg {
-    width: 22px;
-    height: 22px;
-  }
-}
-
-.bug-modal {
-  padding: 16px;
-  color: #333;
-  min-width: 280px;
-  max-width: 400px;
-}
-
-.bug-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.bug-subtitle {
-  font-size: 12px;
-  opacity: 0.7;
-  margin-bottom: 12px;
-}
-
-.bug-textarea {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 13px;
-  resize: vertical;
-  margin-bottom: 12px;
-}
-
-.bug-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.bug-status {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #24735a;
-  text-align: center;
-}
-
 </style>
