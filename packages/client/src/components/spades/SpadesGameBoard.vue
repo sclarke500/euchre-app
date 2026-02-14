@@ -219,10 +219,23 @@ const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
 const showLeaveConfirm = ref(false)
 const selectedBid = ref(3)
 const boardRef = ref<HTMLElement | null>(null)
+
+// Seat rotation: User is always seat 0 (bottom), rotate others relative to user
+function playerIdToSeatIndex(playerId: number): number {
+  const myId = store.humanPlayer?.id ?? 0
+  return (playerId - myId + 4) % 4
+}
+
+function seatIndexToPlayerId(seatIndex: number): number {
+  const myId = store.humanPlayer?.id ?? 0
+  return (seatIndex + myId) % 4
+}
+
 const cardController = useCardController(engine, boardRef, {
   layout: 'normal',
   playerCount: 4,
-  userSeatIndex: () => store.humanPlayer?.id ?? 0,
+  userSeatIndex: 0, // User is always at bottom (seat 0)
+  playerIdToSeatIndex,
   userHandScale: 1.6,
   opponentHandScale: 0.7,
   userFanSpacing: 30,
@@ -254,24 +267,31 @@ const roundSummary = ref({
   themTotal: 0,
 })
 
-// Player names
-const playerNames = computed(() => store.players.map((p: { name: string }) => p.name))
+// Player names - rotated so user is always seat 0
+const playerNames = computed(() => {
+  const names: string[] = []
+  for (let seat = 0; seat < 4; seat++) {
+    const playerId = seatIndexToPlayerId(seat)
+    const player = store.players.find((p: { id: number }) => p.id === playerId)
+    names.push(player?.name ?? `Player ${playerId}`)
+  }
+  return names
+})
 
 // Player statuses for display
 const playerStatuses = computed(() => {
-  return store.players.map(() => '')
+  return [0, 1, 2, 3].map(() => '')
 })
 
-// Dealer seat (always player seat 0 in this simplified version)
+// Dealer seat - rotated
 const dealerSeat = computed(() => {
-  // Rotate based on dealer
-  return store.dealer
+  return playerIdToSeatIndex(store.dealer)
 })
 
-// Current turn seat
+// Current turn seat - rotated
 const currentTurnSeat = computed(() => {
   if (store.phase === SpadesPhase.Bidding || store.phase === SpadesPhase.Playing) {
-    return store.currentPlayer
+    return playerIdToSeatIndex(store.currentPlayer)
   }
   return -1
 })
@@ -384,10 +404,17 @@ function dismissRoundSummary() {
 }
 
 function buildDealPlayers() {
-  return store.players.map((player: { hand?: StandardCard[]; handSize?: number }) => ({
-    hand: player.hand,
-    handSize: player.handSize,
-  }))
+  // Return array indexed by SEAT (0=user, 1=left, 2=top, 3=right)
+  const result: { hand?: StandardCard[]; handSize?: number }[] = []
+  for (let seat = 0; seat < 4; seat++) {
+    const playerId = seatIndexToPlayerId(seat)
+    const player = store.players.find((p: { id: number }) => p.id === playerId)
+    result.push({
+      hand: player?.hand,
+      handSize: player?.handSize ?? player?.hand?.length ?? 0,
+    })
+  }
+  return result
 }
 
 async function animateCompletedTricksDelta() {
