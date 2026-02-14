@@ -49,36 +49,52 @@ const phase = computed(() => {
   return 'green'
 })
 
-// Play attention sound when timer first appears
-function playAttention() {
-  if (hasPlayedWhistle.value) return
-  hasPlayedWhistle.value = true
-  
+// Simple synth notification - two quick rising tones
+function playNotification() {
   try {
-    const audio = new Audio('/audio/attention.mp3')
-    audio.volume = 0.6
-    audio.play().catch(() => {
-      // Audio not available or blocked, fail silently
-    })
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const now = ctx.currentTime
+    
+    // First tone
+    const osc1 = ctx.createOscillator()
+    const gain1 = ctx.createGain()
+    osc1.type = 'sine'
+    osc1.frequency.setValueAtTime(880, now) // A5
+    osc1.connect(gain1)
+    gain1.connect(ctx.destination)
+    gain1.gain.setValueAtTime(0.3, now)
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15)
+    osc1.start(now)
+    osc1.stop(now + 0.15)
+    
+    // Second tone (higher)
+    const osc2 = ctx.createOscillator()
+    const gain2 = ctx.createGain()
+    osc2.type = 'sine'
+    osc2.frequency.setValueAtTime(1108, now + 0.12) // C#6
+    osc2.connect(gain2)
+    gain2.connect(ctx.destination)
+    gain2.gain.setValueAtTime(0.25, now + 0.12)
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.3)
+    osc2.start(now + 0.12)
+    osc2.stop(now + 0.3)
   } catch (e) {
     // Audio not available, fail silently
   }
 }
 
-// Play bell ding when entering yellow phase
+// Play notification when timer first appears
+function playAttention() {
+  if (hasPlayedWhistle.value) return
+  hasPlayedWhistle.value = true
+  playNotification()
+}
+
+// Play notification when entering yellow phase
 function playDing() {
   if (hasPlayedDing.value) return
   hasPlayedDing.value = true
-  
-  try {
-    const audio = new Audio('/audio/ding.mp3')
-    audio.volume = 0.7
-    audio.play().catch(() => {
-      // Audio not available or blocked, fail silently
-    })
-  } catch (e) {
-    // Audio not available, fail silently
-  }
+  playNotification()
 }
 
 // Watch for timer becoming visible to play attention sound
