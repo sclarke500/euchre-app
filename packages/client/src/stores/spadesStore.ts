@@ -207,6 +207,8 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       if (lastTrick) tracker.recordTrick(lastTrick)
 
       if (lastTrick && trickCompleteCallback) {
+        // Brief pause to let user see the completed trick before sweep
+        await new Promise(r => setTimeout(r, 600))
         await trickCompleteCallback(lastTrick.winnerId ?? 0)
       }
 
