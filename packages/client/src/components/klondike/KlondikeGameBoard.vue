@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useKlondikeStore } from '@/stores/klondikeStore'
 import BackButton from '../BackButton.vue'
 import KlondikeFoundation from './KlondikeFoundation.vue'
@@ -13,9 +13,49 @@ const emit = defineEmits<{
 
 const store = useKlondikeStore()
 
+// Timer
+const elapsedSeconds = ref(0)
+let timerInterval: ReturnType<typeof setInterval> | null = null
+
+function startTimer() {
+  elapsedSeconds.value = 0
+  timerInterval = setInterval(() => {
+    if (!store.isWon) {
+      elapsedSeconds.value++
+    }
+  }, 1000)
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
+
+const formattedTime = computed(() => {
+  const mins = Math.floor(elapsedSeconds.value / 60)
+  const secs = elapsedSeconds.value % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+})
+
+// Simple scoring: 10 points per card moved to foundation
+const score = computed(() => {
+  let total = 0
+  for (const foundation of store.foundations) {
+    total += foundation.cards.length * 10
+  }
+  return total
+})
+
 // Initialize game on mount
 onMounted(() => {
   store.startNewGame()
+  startTimer()
+})
+
+onUnmounted(() => {
+  stopTimer()
 })
 
 // Computed
@@ -67,11 +107,26 @@ function handleAutoComplete() {
 }
 
 function handleNewGame() {
+  stopTimer()
   store.startNewGame()
+  startTimer()
 }
 
 function handleLeaveGame() {
+  stopTimer()
   emit('leaveGame')
+}
+
+// TODO: Implement undo functionality in store
+function handleUndo() {
+  // store.undo()
+  console.log('Undo not yet implemented')
+}
+
+// TODO: Implement hint functionality
+function handleHint() {
+  // store.showHint()
+  console.log('Hint not yet implemented')
 }
 </script>
 
@@ -79,21 +134,28 @@ function handleLeaveGame() {
   <div class="klondike-board">
     <BackButton @click="handleLeaveGame" />
 
-    <!-- Header with game controls -->
-    <div class="game-header">
-      <div class="game-info">
-        <span class="move-count">Moves: {{ moveCount }}</span>
+    <!-- Stats bar -->
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-label">Score</span>
+        <span class="stat-value">{{ score }}</span>
       </div>
-      <button v-if="canAutoComplete && !isAutoCompleting" class="auto-btn" @click="handleAutoComplete">
-        Auto
-      </button>
+      <div class="stat">
+        <span class="stat-label">Time</span>
+        <span class="stat-value">{{ formattedTime }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Moves</span>
+        <span class="stat-value">{{ moveCount }}</span>
+      </div>
     </div>
 
-    <!-- Main game area - different layouts for portrait/landscape -->
+    <!-- Main game area -->
     <div class="game-area">
-      <!-- PORTRAIT: Foundations at top, tableau below, stock/waste at bottom -->
+      <!-- PORTRAIT LAYOUT -->
       <div class="portrait-layout">
-        <div class="portrait-top">
+        <!-- Top row: Foundations (left) + Stock/Waste (right) -->
+        <div class="portrait-top-row">
           <div class="foundations-row">
             <KlondikeFoundation
               v-for="(foundation, index) in foundations"
@@ -103,8 +165,19 @@ function handleLeaveGame() {
               @tap="handleFoundationTap"
             />
           </div>
+          <div class="stock-waste-area">
+            <KlondikeStockWaste
+              :stock="stock"
+              :waste="waste"
+              :visible-waste-cards="visibleWasteCards"
+              :is-waste-selected="isWasteSelected"
+              @draw-card="handleDrawCard"
+              @tap-waste="handleWasteTap"
+            />
+          </div>
         </div>
 
+        <!-- Tableau -->
         <div class="portrait-tableau">
           <KlondikeTableauColumn
             v-for="(column, index) in tableau"
@@ -116,22 +189,25 @@ function handleLeaveGame() {
             @tap-empty="handleEmptyTableauTap"
           />
         </div>
-
-        <div class="portrait-bottom">
-          <KlondikeStockWaste
-            :stock="stock"
-            :waste="waste"
-            :visible-waste-cards="visibleWasteCards"
-            :is-waste-selected="isWasteSelected"
-            @draw-card="handleDrawCard"
-            @tap-waste="handleWasteTap"
-          />
-        </div>
       </div>
 
-      <!-- LANDSCAPE: Tableau in center, foundations on right, stock/waste at bottom left -->
+      <!-- LANDSCAPE LAYOUT -->
       <div class="landscape-layout">
-        <div class="landscape-main">
+        <!-- Left sidebar: Foundations -->
+        <div class="landscape-left">
+          <div class="foundations-column">
+            <KlondikeFoundation
+              v-for="(foundation, index) in foundations"
+              :key="index"
+              :foundation="foundation"
+              :index="index"
+              @tap="handleFoundationTap"
+            />
+          </div>
+        </div>
+
+        <!-- Center: Tableau -->
+        <div class="landscape-center">
           <div class="landscape-tableau">
             <KlondikeTableauColumn
               v-for="(column, index) in tableau"
@@ -145,24 +221,14 @@ function handleLeaveGame() {
           </div>
         </div>
 
-        <div class="landscape-sidebar">
-          <div class="foundations-column">
-            <KlondikeFoundation
-              v-for="(foundation, index) in foundations"
-              :key="index"
-              :foundation="foundation"
-              :index="index"
-              @tap="handleFoundationTap"
-            />
-          </div>
-        </div>
-
-        <div class="landscape-stock-waste">
+        <!-- Right sidebar: Stock/Waste -->
+        <div class="landscape-right">
           <KlondikeStockWaste
             :stock="stock"
             :waste="waste"
             :visible-waste-cards="visibleWasteCards"
             :is-waste-selected="isWasteSelected"
+            layout="vertical"
             @draw-card="handleDrawCard"
             @tap-waste="handleWasteTap"
           />
@@ -170,11 +236,63 @@ function handleLeaveGame() {
       </div>
     </div>
 
+    <!-- Bottom toolbar -->
+    <div class="bottom-toolbar">
+      <button class="toolbar-btn" @click="handleUndo" title="Undo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 10h10a5 5 0 0 1 5 5v2" />
+          <path d="M3 10l4-4" />
+          <path d="M3 10l4 4" />
+        </svg>
+        <span>Undo</span>
+      </button>
+      <button class="toolbar-btn" @click="handleHint" title="Hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+          <path d="M9 21h6" />
+          <path d="M10 21v-1h4v1" />
+        </svg>
+        <span>Hint</span>
+      </button>
+      <button v-if="canAutoComplete && !isAutoCompleting" class="toolbar-btn auto" @click="handleAutoComplete" title="Auto Complete">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+        </svg>
+        <span>Auto</span>
+      </button>
+      <button class="toolbar-btn" @click="handleNewGame" title="New Game">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4" />
+          <path d="M12 18v4" />
+          <path d="M4.93 4.93l2.83 2.83" />
+          <path d="M16.24 16.24l2.83 2.83" />
+          <path d="M2 12h4" />
+          <path d="M18 12h4" />
+          <path d="M4.93 19.07l2.83-2.83" />
+          <path d="M16.24 7.76l2.83-2.83" />
+        </svg>
+        <span>New</span>
+      </button>
+    </div>
+
     <!-- Win modal -->
     <Modal :show="isWon">
       <div class="win-modal">
-        <h1>You Win!</h1>
-        <p>Completed in {{ moveCount }} moves</p>
+        <h1>🎉 You Win!</h1>
+        <div class="win-stats">
+          <div class="win-stat">
+            <span class="win-stat-value">{{ score }}</span>
+            <span class="win-stat-label">Score</span>
+          </div>
+          <div class="win-stat">
+            <span class="win-stat-value">{{ formattedTime }}</span>
+            <span class="win-stat-label">Time</span>
+          </div>
+          <div class="win-stat">
+            <span class="win-stat-value">{{ moveCount }}</span>
+            <span class="win-stat-label">Moves</span>
+          </div>
+        </div>
         <div class="win-actions">
           <button class="action-btn primary" @click="handleNewGame">Play Again</button>
           <button class="action-btn" @click="handleLeaveGame">Main Menu</button>
@@ -191,44 +309,50 @@ function handleLeaveGame() {
   background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
   display: flex;
   flex-direction: column;
-  padding: $spacing-sm;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-.game-header {
+// ============================================
+// STATS BAR
+// ============================================
+.stats-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $spacing-xs $spacing-sm;
-  padding-left: 50px; // Space for fixed back button
-  color: white;
+  justify-content: center;
+  gap: $spacing-lg;
+  padding: $spacing-xs $spacing-md;
+  padding-left: 50px; // Space for back button
+  background: rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
 }
 
-.game-info {
+.stat {
   display: flex;
-  gap: $spacing-md;
-}
-
-.move-count {
-  font-size: 0.875rem;
-  opacity: 0.9;
-}
-
-.auto-btn {
-  padding: $spacing-xs $spacing-md;
-  background: $secondary-color;
+  flex-direction: column;
+  align-items: center;
   color: white;
-  font-weight: bold;
-  border-radius: 6px;
-  font-size: 0.875rem;
 }
 
+.stat-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+// ============================================
+// GAME AREA
+// ============================================
 .game-area {
   flex: 1;
   min-height: 0;
-  position: relative;
+  padding: $spacing-xs;
+  overflow: hidden;
 }
 
 // ============================================
@@ -240,38 +364,36 @@ function handleLeaveGame() {
   height: 100%;
   gap: $spacing-sm;
 
-  // Smaller card sizes for portrait
-  --card-width: 48px;
-  --card-height: 67px;
+  --card-width: 44px;
+  --card-height: 62px;
 }
 
-.portrait-top {
-  flex-shrink: 0;
+.portrait-top-row {
   display: flex;
-  justify-content: flex-start;
-  padding-left: $spacing-sm;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 $spacing-xs;
+  flex-shrink: 0;
 }
 
 .foundations-row {
   display: flex;
-  gap: 4px;
+  gap: 3px;
+}
+
+.stock-waste-area {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .portrait-tableau {
   flex: 1;
   display: flex;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   min-height: 0;
   overflow-y: auto;
-  padding: $spacing-xs;
-}
-
-.portrait-bottom {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  padding: $spacing-sm;
+  padding: $spacing-xs 0;
 }
 
 // ============================================
@@ -280,35 +402,17 @@ function handleLeaveGame() {
 .landscape-layout {
   display: none;
   height: 100%;
-
-  // Standard card sizes for landscape
-  --card-width: 70px;
-  --card-height: 98px;
-}
-
-.landscape-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.landscape-tableau {
-  display: flex;
-  justify-content: center;
   gap: $spacing-sm;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: $spacing-sm;
+
+  --card-width: 65px;
+  --card-height: 91px;
 }
 
-.landscape-sidebar {
+.landscape-left {
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  padding: $spacing-sm;
+  align-items: flex-start;
+  padding-top: $spacing-xs;
 }
 
 .foundations-column {
@@ -317,10 +421,83 @@ function handleLeaveGame() {
   gap: $spacing-xs;
 }
 
-.landscape-stock-waste {
-  position: absolute;
-  bottom: $spacing-sm;
-  left: $spacing-sm;
+.landscape-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.landscape-tableau {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-xs;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: $spacing-xs;
+}
+
+.landscape-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding-top: $spacing-xs;
+}
+
+// ============================================
+// BOTTOM TOOLBAR
+// ============================================
+.bottom-toolbar {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  background: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.toolbar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: $spacing-xs $spacing-sm;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  min-width: 50px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  &.auto {
+    background: $secondary-color;
+    
+    &:hover {
+      background: lighten($secondary-color, 5%);
+    }
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  span {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
 }
 
 // ============================================
@@ -330,7 +507,6 @@ function handleLeaveGame() {
   .portrait-layout {
     display: flex;
   }
-
   .landscape-layout {
     display: none;
   }
@@ -340,14 +516,27 @@ function handleLeaveGame() {
   .portrait-layout {
     display: none;
   }
-
   .landscape-layout {
     display: flex;
   }
 }
 
+// Larger screens in portrait - bigger cards
+@media (orientation: portrait) and (min-width: 400px) {
+  .portrait-layout {
+    --card-width: 48px;
+    --card-height: 67px;
+  }
+  .foundations-row {
+    gap: 4px;
+  }
+  .portrait-tableau {
+    gap: 4px;
+  }
+}
+
 // ============================================
-// Win modal styles
+// WIN MODAL
 // ============================================
 .win-modal {
   text-align: center;
@@ -355,15 +544,34 @@ function handleLeaveGame() {
 
   h1 {
     font-size: 1.5rem;
-    margin-bottom: $spacing-sm;
+    margin-bottom: $spacing-md;
     color: $secondary-color;
   }
+}
 
-  p {
-    font-size: 1rem;
-    color: #555;
-    margin-bottom: $spacing-lg;
-  }
+.win-stats {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+}
+
+.win-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.win-stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.win-stat-label {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
 }
 
 .win-actions {
@@ -380,6 +588,7 @@ function handleLeaveGame() {
   cursor: pointer;
   background: #e0e0e0;
   color: #333;
+  border: none;
 
   &.primary {
     background: $secondary-color;
