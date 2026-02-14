@@ -12,6 +12,7 @@ import {
   moveToTableau,
   moveToFoundation,
   autoMoveToFoundation,
+  tryAutoPlay,
   clearSelection,
   getSelectedCards,
   canMoveToTableau,
@@ -99,9 +100,9 @@ export const useKlondikeStore = defineStore('klondike', () => {
     // If card is face-down, can't interact
     if (!card.faceUp) return
 
-    // If we have a selection, try to move
+    // If we have a selection, try to move to this column
     if (selection.value) {
-      // If tapping same card, deselect
+      // If tapping same card, try auto-play or deselect
       if (
         selection.value.source === 'tableau' &&
         selection.value.columnIndex === columnIndex &&
@@ -112,19 +113,30 @@ export const useKlondikeStore = defineStore('klondike', () => {
         return
       }
 
-      // Try to move to this column
+      // Try to move selection to this column
       const result = moveToTableau(gameState.value, selection.value, columnIndex)
       if (result.success) {
         updateState(result.state)
       } else {
-        // Invalid move - select this card instead
+        // Invalid move - try auto-play on tapped card, or select it
+        const autoResult = tryAutoPlay(gameState.value, 'tableau', columnIndex, cardIndex)
+        if (autoResult.success) {
+          updateState(autoResult.state)
+        } else {
+          const newState = selectCard(gameState.value, 'tableau', columnIndex, cardIndex)
+          updateState(newState)
+        }
+      }
+    } else {
+      // No selection - try auto-play first
+      const autoResult = tryAutoPlay(gameState.value, 'tableau', columnIndex, cardIndex)
+      if (autoResult.success) {
+        updateState(autoResult.state)
+      } else {
+        // No auto-play available, select the card
         const newState = selectCard(gameState.value, 'tableau', columnIndex, cardIndex)
         updateState(newState)
       }
-    } else {
-      // No selection - select this card
-      const newState = selectCard(gameState.value, 'tableau', columnIndex, cardIndex)
-      updateState(newState)
     }
   }
 
@@ -146,16 +158,29 @@ export const useKlondikeStore = defineStore('klondike', () => {
   function handleWasteTap() {
     if (waste.value.length === 0) return
 
-    // If we have a selection from waste, deselect
+    // If we have a selection from waste, try auto-play or deselect
     if (selection.value?.source === 'waste') {
-      const newState = clearSelection(gameState.value)
-      updateState(newState)
+      // Try auto-play
+      const autoResult = tryAutoPlay(gameState.value, 'waste')
+      if (autoResult.success) {
+        updateState(autoResult.state)
+      } else {
+        // No valid move, deselect
+        const newState = clearSelection(gameState.value)
+        updateState(newState)
+      }
       return
     }
 
-    // If we have a different selection, clear it first and select waste
-    const newState = selectCard(gameState.value, 'waste')
-    updateState(newState)
+    // Clear any existing selection and try auto-play on waste
+    const autoResult = tryAutoPlay(gameState.value, 'waste')
+    if (autoResult.success) {
+      updateState(autoResult.state)
+    } else {
+      // No auto-play available, select the waste card
+      const newState = selectCard(gameState.value, 'waste')
+      updateState(newState)
+    }
   }
 
   // Handle tapping a foundation pile

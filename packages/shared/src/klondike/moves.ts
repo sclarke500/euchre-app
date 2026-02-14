@@ -72,6 +72,25 @@ export function findValidFoundation(card: KlondikeCard, foundations: FoundationP
 }
 
 /**
+ * Find a tableau column that can accept this card
+ * Optionally exclude a source column (to avoid moving to same column)
+ * Returns the index, or -1 if none
+ */
+export function findValidTableau(
+  card: KlondikeCard, 
+  tableau: TableauColumn[], 
+  excludeColumn?: number
+): number {
+  for (let i = 0; i < tableau.length; i++) {
+    if (i === excludeColumn) continue
+    if (canMoveToTableau(card, tableau[i]!)) {
+      return i
+    }
+  }
+  return -1
+}
+
+/**
  * Draw card(s) from stock to waste
  * Respects the drawCount setting (1 or 3 cards at a time)
  */
@@ -239,6 +258,66 @@ export function autoMoveToFoundation(
   }
 
   return moveToFoundation(state, selection, foundationIndex)
+}
+
+/**
+ * Try to auto-play a card when tapped
+ * Priority: Foundation first (single cards only), then tableau
+ * Returns MoveResult with success=true if a move was made
+ */
+export function tryAutoPlay(
+  state: KlondikeState,
+  source: 'tableau' | 'waste',
+  columnIndex?: number,
+  cardIndex?: number
+): MoveResult {
+  // Build a selection for the tapped card
+  let selection: Selection
+  let cards: KlondikeCard[]
+  let sourceColumnIndex: number | undefined
+
+  if (source === 'waste') {
+    if (state.waste.length === 0) {
+      return { success: false, state }
+    }
+    selection = { source: 'waste', cardIndex: state.waste.length - 1 }
+    cards = [state.waste[state.waste.length - 1]!]
+  } else {
+    // Tableau
+    if (columnIndex === undefined || cardIndex === undefined) {
+      return { success: false, state }
+    }
+    const column = state.tableau[columnIndex]
+    if (!column || cardIndex >= column.cards.length) {
+      return { success: false, state }
+    }
+    const card = column.cards[cardIndex]
+    if (!card || !card.faceUp) {
+      return { success: false, state }
+    }
+    selection = { source: 'tableau', columnIndex, cardIndex }
+    cards = column.cards.slice(cardIndex)
+    sourceColumnIndex = columnIndex
+  }
+
+  // Single card: try foundation first
+  if (cards.length === 1) {
+    const card = cards[0]!
+    const foundationIndex = findValidFoundation(card, state.foundations)
+    if (foundationIndex !== -1) {
+      return moveToFoundation(state, selection, foundationIndex)
+    }
+  }
+
+  // Try to move to a tableau column
+  const bottomCard = cards[0]!
+  const tableauIndex = findValidTableau(bottomCard, state.tableau, sourceColumnIndex)
+  if (tableauIndex !== -1) {
+    return moveToTableau(state, selection, tableauIndex)
+  }
+
+  // No valid auto-play found
+  return { success: false, state }
 }
 
 /**
