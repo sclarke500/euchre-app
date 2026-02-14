@@ -133,6 +133,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { SpadesPhase, SpadesBidType, Spades, type SpadesBid, type StandardCard } from '@euchre/shared'
 import CardTable from '../CardTable.vue'
 import { useCardTable } from '@/composables/useCardTable'
+import { computeTableLayout } from '@/composables/useTableLayout'
 import { useSpadesStore } from '@/stores/spadesStore'
 
 const emit = defineEmits<{
@@ -146,6 +147,7 @@ const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
 const showLeaveConfirm = ref(false)
 const selectedBid = ref(3)
 const boardRef = ref<HTMLElement | null>(null)
+const tableCenter = ref({ x: 0, y: 0 })
 
 // Player names
 const playerNames = computed(() => store.players.map(p => p.name))
@@ -262,31 +264,29 @@ async function initializeBoard() {
   // Get board dimensions
   const board = boardRef.value
   if (!board) return
-  
-  const rect = board.getBoundingClientRect()
-  const centerX = rect.width / 2
-  const centerY = rect.height / 2
-  
+
+  const layout = computeTableLayout(board.offsetWidth, board.offsetHeight, 'normal', 4)
+  tableCenter.value = layout.tableCenter
+
   // Create deck in center
-  const deck = engine.createDeck({ x: centerX, y: centerY }, 0.8)
-  
-  // Create hands for 4 players
-  const handPositions = [
-    { x: centerX, y: rect.height - 80 },      // South (human)
-    { x: rect.width - 100, y: centerY },      // West
-    { x: centerX, y: 80 },                     // North
-    { x: 100, y: centerY },                    // East
-  ]
-  
+  engine.createDeck({ x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
+
+  // Create hands for 4 players based on table layout
   for (let i = 0; i < 4; i++) {
-    engine.createHand(`hand-${i}`, handPositions[i]!, {
-      fanSpacing: i === 0 ? 35 : 20,
-      faceUp: i === 0,
+    const seat = layout.seats[i]!
+    engine.createHand(`hand-${i}`, seat.handPosition, {
+      fanSpacing: seat.isUser ? 30 : 16,
+      faceUp: seat.isUser,
+      rotation: seat.rotation,
+      scale: seat.isUser ? 1.0 : 0.7,
+      fanCurve: seat.isUser ? 10 : 0,
+      angleToCenter: seat.angleToCenter,
+      isUser: seat.isUser,
     })
   }
-  
+
   // Create center pile
-  engine.createPile('center', { x: centerX, y: centerY }, 0.8)
+  engine.createPile('center', { x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
   
   engine.refreshCards()
 }
@@ -309,24 +309,26 @@ watch(() => store.phase, async (newPhase) => {
     
     // Deal animation
     await engine.dealAll(13, 50, 200)
-    
+
+    // Fan hands after deal
+    await Promise.all(engine.getHands().map(hand => hand.setMode('fanned', 250)))
+
     store.dealAnimationComplete()
   }
 }, { immediate: true })
 
-// Watch current trick and animate cards to center
-watch(() => store.currentTrick.cards, async (cards) => {
-  const pile = engine.getPiles().find(p => p.id === 'center')
-  if (!pile) return
-  
-  for (const played of cards) {
-    const cardId = played.card.id
-    const fromHand = engine.getHands().find(h => h.id === `hand-${played.playerId}`)
-    if (fromHand) {
-      await engine.moveCard(cardId, fromHand, pile, undefined, 300)
-    }
+function getTrickCardTarget(index: number) {
+  const radius = 18
+  const angle = (index / 4) * Math.PI * 2
+  return {
+    x: tableCenter.value.x + Math.cos(angle) * radius,
+    y: tableCenter.value.y + Math.sin(angle) * radius,
+    rotation: (index % 2 === 0 ? -6 : 6),
+    zIndex: 500 + index,
+    scale: 0.9,
+    flipY: 180,
   }
-})
+}
 
 onMounted(async () => {
   await nextTick()
@@ -334,6 +336,39 @@ onMounted(async () => {
   if (tableRef.value) {
     boardRef.value = tableRef.value.boardRef
   }
+
+  store.setPlayAnimationCallback(async ({ card, playerId }) => {
+    const pile = engine.getPiles().find(p => p.id === 'center')
+    const fromHand = engine.getHands().find(h => h.id === `hand-${playerId}`)
+    if (!pile || !fromHand) return
+
+    const cardIndex = Math.max(0, store.currentTrick.cards.length - 1)
+    const target = getTrickCardTarget(cardIndex)
+    await engine.moveCard(card.id, fromHand, pile, target, 300)
+  })
+
+  store.setTrickCompleteCallback(async () => {
+    const pile = engine.getPiles().find(p => p.id === 'center')
+    const board = boardRef.value
+    if (!pile || !board) return
+
+    const offX = board.offsetWidth + 200
+    const offY = tableCenter.value.y
+    const moves = pile.cards.map((managed, i) => {
+      const ref = engine.getCardRef(managed.card.id)
+      return ref?.moveTo({
+        x: offX,
+        y: offY,
+        rotation: 20,
+        zIndex: 100 + i,
+        scale: 0.6,
+      }, 300)
+    })
+    await Promise.all(moves)
+    pile.clear()
+    engine.refreshCards()
+  })
+
   store.startNewGame()
 })
 
