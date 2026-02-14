@@ -274,7 +274,7 @@ const gameTitle = computed(() => {
 }
 
 .wobble-67 {
-  animation: wobble-67 0.5s ease-in-out 4;
+  animation: wobble-67 0.5s ease-in-out 2;
   transform-origin: center center;
 }
 
