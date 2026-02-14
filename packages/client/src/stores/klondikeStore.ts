@@ -68,6 +68,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
   function saveToHistory() {
     const snapshot = JSON.stringify(gameState.value)
     history.value.push(snapshot)
+    console.log('[Klondike] Saved to history, depth:', history.value.length)
     // Limit history size
     if (history.value.length > MAX_HISTORY) {
       history.value.shift()
@@ -91,10 +92,15 @@ export const useKlondikeStore = defineStore('klondike', () => {
 
   // Undo last move
   function undo() {
-    if (history.value.length === 0) return
+    console.log('[Klondike] Undo called, history depth:', history.value.length)
+    if (history.value.length === 0) {
+      console.log('[Klondike] Nothing to undo')
+      return
+    }
     
     const previousSnapshot = history.value.pop()!
     const previousState = JSON.parse(previousSnapshot) as KlondikeState
+    console.log('[Klondike] Restoring state, waste length:', previousState.waste.length, 'stock length:', previousState.stock.length)
     updateState(previousState, false) // Don't add this restoration to history
   }
 
@@ -117,9 +123,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
 
   // Draw a card from stock to waste (or recycle waste)
   function handleDrawCard() {
+    console.log('[Klondike] Drawing card, current waste:', waste.value.length, 'stock:', stock.value.length)
     const result = drawCard(gameState.value)
     if (result.success) {
       updateState(result.state)
+      console.log('[Klondike] Drew card, new waste:', waste.value.length, 'stock:', stock.value.length)
     }
   }
 
