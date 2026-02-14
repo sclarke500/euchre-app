@@ -216,9 +216,9 @@ export function estimateTricksHard(hand: StandardCard[]): number {
     // Void = ruffing opportunity
     if (len === 0) {
       // Only count if we have spades to ruff with
-      if (spades.length > 0) tricks += 1.0
+      if (spades.length > 0) tricks += 0.7
     } else if (len === 1) {
-      if (spades.length > 0) tricks += 0.5
+      if (spades.length > 0) tricks += 0.3
     }
   }
 
@@ -278,8 +278,8 @@ function nilScore(hand: StandardCard[]): number {
 function adjustBidForScoreAndBags(estimate: number, teamScore: number, opponentScore: number, teamBags: number): number {
   let adjusted = estimate
 
-  // More aggressive when behind by more than 100
-  if (teamScore < opponentScore - 100) {
+  // More aggressive when behind by more than 200
+  if (teamScore < opponentScore - 200) {
     adjusted = Math.min(adjusted + 1, 13)
   }
   // Conservative when leading comfortably

@@ -105,14 +105,14 @@ export function estimateTricks(hand: StandardCard[]): number {
   const middleSpades = hand.filter(
     c => c.suit === Suit.Spades && [FullRank.Ten, FullRank.Jack].includes(c.rank)
   ).length
-  tricks += middleSpades * 0.7
+  tricks += middleSpades * 0.4
 
   // Low spades (2-9) can take tricks if we're long in spades
   const totalSpades = countSpades(hand)
   const highAndMiddleSpades = countHighSpades(hand) + middleSpades
   const lowSpades = totalSpades - highAndMiddleSpades
   // More spades = higher chance low ones take tricks
-  const lowSpadeValue = totalSpades >= 5 ? 0.6 : totalSpades >= 4 ? 0.4 : 0.2
+  const lowSpadeValue = totalSpades >= 5 ? 0.4 : totalSpades >= 4 ? 0.3 : 0.1
   tricks += lowSpades * lowSpadeValue
 
   // Analyze each non-spade suit for trick potential
@@ -132,7 +132,7 @@ export function estimateTricks(hand: StandardCard[]): number {
     // Kings are good if we have length or the ace
     if (hasKing) {
       if (hasAce || suitLength >= 3) {
-        tricks += 0.85
+        tricks += 0.7
       } else {
         tricks += 0.5
       }
@@ -148,12 +148,12 @@ export function estimateTricks(hand: StandardCard[]): number {
 
   // Voids let us trump - valuable especially with spades
   const voids = countVoids(hand)
-  const voidValue = totalSpades >= 3 ? 0.8 : 0.4
+  const voidValue = totalSpades >= 3 ? 0.6 : 0.3
   tricks += voids * voidValue
 
   // Singletons are almost as good as voids (will become voids)
   const singletons = Object.values(suitCounts).filter(c => c === 1).length
-  tricks += singletons * 0.3
+  tricks += singletons * 0.2
 
   // Don't bid more than 13
   return Math.min(Math.round(tricks), 13)
