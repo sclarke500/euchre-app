@@ -96,6 +96,8 @@
           v-if="mode === 'multiplayer'"
           ref="turnTimerRef"
           :active="game.isMyTurn.value && !director.isAnimating.value"
+          :grace-period-ms="timerSettings.gracePeriodMs"
+          :countdown-ms="timerSettings.countdownMs"
           @timeout="handleTurnTimeout"
         />
       </div>
@@ -225,6 +227,18 @@ const avatarOpacities = computed(() => {
 })
 
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
+
+// Timer settings - can be sped up via URL param for testing (e.g., ?timerSpeed=fast)
+const timerSettings = computed(() => {
+  const params = new URLSearchParams(window.location.search)
+  const speed = params.get('timerSpeed')
+  if (speed === 'fast') {
+    // Fast mode for E2E testing: 2s grace + 3s countdown = 5s total
+    return { gracePeriodMs: 2000, countdownMs: 3000 }
+  }
+  // Default: 30s grace + 30s countdown = 60s total
+  return { gracePeriodMs: 30000, countdownMs: 30000 }
+})
 const userTrumpInfo = computed(() => {
   const info = director.playerInfo.value[0]
   if (!info?.trumpSymbol) return null
