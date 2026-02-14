@@ -539,7 +539,8 @@ export class SpadesGame {
   }
 
   private buildClientState(forPlayerId: string | null): SpadesClientGameState {
-    this.stateSeq++
+    // Note: stateSeq is incremented in broadcastState(), not here
+    // This ensures all players receive the same stateSeq in a single broadcast
 
     const clientPlayers: SpadesClientPlayer[] = this.players.map(p => {
       const clientPlayer: SpadesClientPlayer = {
@@ -581,6 +582,9 @@ export class SpadesGame {
   }
 
   private broadcastState(): void {
+    // Increment state sequence once before broadcasting to all players
+    this.stateSeq++
+
     // Broadcast to each human player with their hand visible
     for (const player of this.players) {
       if (player.odusId) {
