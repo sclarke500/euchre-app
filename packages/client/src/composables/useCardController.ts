@@ -412,7 +412,8 @@ export function useCardController(
         }
       }
 
-      pile.addCard({ id: card.id, suit: card.suit, rank: card.rank }, true)
+      // faceUp must be false so that flipY=180 shows the face (XOR logic in BoardCard)
+      pile.addCard({ id: card.id, suit: card.suit, rank: card.rank }, false)
       engine.refreshCards()
       await nextTick()
 
