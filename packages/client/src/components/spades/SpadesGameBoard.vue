@@ -12,11 +12,10 @@
     layout="normal"
     @card-click="handleCardClick"
   >
-    <!-- Player bid info tags -->
-    <template v-for="(player, i) in store.players" :key="i" #[`player-info-${i}`]>
-      <div v-if="player.bid" class="info-chip bid-chip">
-        <span v-if="player.isHuman">{{ player.name }}:</span>
-        {{ getBidDisplay(player.bid) }}
+    <!-- Player bid info tags (indexed by seat, not player ID) -->
+    <template v-for="seat in [0, 1, 2, 3]" :key="seat" #[`player-info-${seat}`]>
+      <div v-if="getPlayerAtSeat(seat)?.bid" class="info-chip bid-chip">
+        {{ getBidDisplay(getPlayerAtSeat(seat)!.bid!) }}
       </div>
     </template>
 
@@ -229,6 +228,11 @@ function playerIdToSeatIndex(playerId: number): number {
 function seatIndexToPlayerId(seatIndex: number): number {
   const myId = store.humanPlayer?.id ?? 0
   return (seatIndex + myId) % 4
+}
+
+function getPlayerAtSeat(seatIndex: number) {
+  const playerId = seatIndexToPlayerId(seatIndex)
+  return store.players.find((p: { id: number }) => p.id === playerId)
 }
 
 const cardController = useCardController(engine, boardRef, {
@@ -506,7 +510,8 @@ watch(() => store.phase, async (newPhase) => {
         sorted.sort((a, b) => {
           const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99)
           if (suitDiff !== 0) return suitDiff
-          return (rankOrder[a.rank] ?? 0) - (rankOrder[b.rank] ?? 0)
+          // High cards on left (descending)
+          return (rankOrder[b.rank] ?? 0) - (rankOrder[a.rank] ?? 0)
         })
         return sorted
       },
@@ -518,7 +523,8 @@ watch(() => store.phase, async (newPhase) => {
       sorted.sort((a, b) => {
         const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99)
         if (suitDiff !== 0) return suitDiff
-        return (rankOrder[a.rank] ?? 0) - (rankOrder[b.rank] ?? 0)
+        // High cards on left (descending)
+        return (rankOrder[b.rank] ?? 0) - (rankOrder[a.rank] ?? 0)
       })
       return sorted
     }, 300)
