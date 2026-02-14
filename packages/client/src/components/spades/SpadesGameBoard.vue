@@ -24,12 +24,16 @@
       <div class="score-row">
         <span class="score-label">Us</span>
         <span class="score-value">{{ scores[0]?.score ?? 0 }}</span>
-        <span class="score-bags">{{ scores[0]?.bags ?? 0 }}</span>
+        <span class="score-bags">
+          {{ scores[0]?.bags ?? 0 }}<span v-if="(handBags[0] ?? 0) > 0" class="hand-bags">+{{ handBags[0] }}</span>
+        </span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
         <span class="score-value">{{ scores[1]?.score ?? 0 }}</span>
-        <span class="score-bags">{{ scores[1]?.bags ?? 0 }}</span>
+        <span class="score-bags">
+          {{ scores[1]?.bags ?? 0 }}<span v-if="(handBags[1] ?? 0) > 0" class="hand-bags">+{{ handBags[1] }}</span>
+        </span>
       </div>
       <div class="score-header">
         <span></span>
@@ -313,6 +317,33 @@ const dimmedCardIds = computed(() => {
 
 // Scores
 const scores = computed(() => store.scores)
+
+// Bags accumulated this hand (overtricks)
+const handBags = computed(() => {
+  const result = [0, 0]
+  
+  // Get team bids and tricks
+  for (let teamId = 0; teamId < 2; teamId++) {
+    let teamBid = 0
+    let teamTricks = 0
+    
+    for (const player of store.players) {
+      if (player.teamId !== teamId) continue
+      
+      // Only count normal bids (nil bids don't contribute to team bid)
+      if (player.bid?.type === 'normal') {
+        teamBid += player.bid.count
+      }
+      teamTricks += player.tricksWon ?? 0
+    }
+    
+    // Overtricks = tricks - bid (only if positive)
+    const overtricks = Math.max(0, teamTricks - teamBid)
+    result[teamId] = overtricks
+  }
+  
+  return result
+})
 
 // User info
 const userName = computed(() => store.humanPlayer?.name ?? 'You')
@@ -682,6 +713,12 @@ onUnmounted(() => {
     font-size: 14px;
     color: #f39c12;
     text-align: center;
+  }
+  
+  .hand-bags {
+    font-size: 11px;
+    color: #e74c3c;
+    margin-left: 2px;
   }
   
   .score-header {
