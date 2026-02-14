@@ -519,6 +519,9 @@ export function useCardController(
 
       const offX = board.offsetWidth + 200
       const offY = (tableLayout.value?.tableCenter ?? tableCenter.value).y
+      // Sweep covers more distance than card play, so use longer duration
+      // to match perceived speed (~2x distance = ~2x duration)
+      const sweepDuration = moveDuration * 2
       const moves = pile.cards.map((managed, i) => {
         const ref = engine.getCardRef(managed.card.id)
         return ref?.moveTo({
@@ -527,7 +530,7 @@ export function useCardController(
           rotation: 20,
           zIndex: 100 + i,
           scale: 0.6,
-        }, moveDuration)
+        }, sweepDuration)
       })
       await Promise.all(moves)
       pile.clear()
@@ -539,10 +542,13 @@ export function useCardController(
     const targetPile = engine.getPiles().find(p => p.id === `tricks-won-player-${playerIdToSeatIndex(winnerId)}`)
     if (!targetPile) return
 
+    // Stack moves cards from center to table edge - longer distance than card play
+    // Use ~1.5x duration to match perceived speed
+    const stackDuration = Math.round(moveDuration * 1.5)
     const cardsToMove = [...pile.cards]
     const movePromises = cardsToMove.map((managed, index) => {
       const targetPos = getPlayerTrickPosition(winnerId, tricksWon, index)
-      return engine.moveCard(managed.card.id, pile, targetPile, targetPos, moveDuration)
+      return engine.moveCard(managed.card.id, pile, targetPile, targetPos, stackDuration)
     })
 
     await Promise.all(movePromises)
