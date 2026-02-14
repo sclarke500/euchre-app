@@ -69,6 +69,8 @@ const moveCount = computed(() => store.moveCount)
 const isWon = computed(() => store.isWon)
 const canAutoComplete = computed(() => store.canRunAutoComplete)
 const isAutoCompleting = computed(() => store.isAutoCompleting)
+const canUndo = computed(() => store.canUndo)
+const noMovesAvailable = computed(() => store.noMovesAvailable && !isWon.value)
 
 // Check if waste is selected
 const isWasteSelected = computed(() => selection.value?.source === 'waste')
@@ -117,10 +119,9 @@ function handleLeaveGame() {
   emit('leaveGame')
 }
 
-// TODO: Implement undo functionality in store
+// Undo last move
 function handleUndo() {
-  // store.undo()
-  console.log('Undo not yet implemented')
+  store.undo()
 }
 
 // TODO: Implement hint functionality
@@ -224,16 +225,25 @@ function handleHint() {
     <div class="bottom-toolbar">
       <!-- Stats section -->
       <div class="toolbar-stats">
-        <span class="toolbar-stat">{{ score }}</span>
-        <span class="toolbar-stat-divider">•</span>
-        <span class="toolbar-stat">{{ formattedTime }}</span>
-        <span class="toolbar-stat-divider">•</span>
-        <span class="toolbar-stat">{{ moveCount }} moves</span>
+        <span v-if="noMovesAvailable" class="no-moves-indicator">No moves!</span>
+        <template v-else>
+          <span class="toolbar-stat">{{ score }}</span>
+          <span class="toolbar-stat-divider">•</span>
+          <span class="toolbar-stat">{{ formattedTime }}</span>
+          <span class="toolbar-stat-divider">•</span>
+          <span class="toolbar-stat">{{ moveCount }} moves</span>
+        </template>
       </div>
 
       <!-- Actions section -->
       <div class="toolbar-actions">
-        <button class="toolbar-btn" @click="handleUndo" title="Undo">
+        <button 
+          class="toolbar-btn" 
+          :class="{ disabled: !canUndo }"
+          :disabled="!canUndo"
+          @click="handleUndo" 
+          title="Undo"
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 10h10a5 5 0 0 1 5 5v2" />
             <path d="M3 10l4-4" />
@@ -436,6 +446,17 @@ function handleHint() {
   font-size: 0.6rem;
 }
 
+.no-moves-indicator {
+  color: #ff6b6b;
+  font-weight: 600;
+  animation: pulse-warning 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .toolbar-actions {
   display: flex;
   gap: $spacing-xs;
@@ -459,6 +480,15 @@ function handleHint() {
 
   &:active {
     background: rgba(255, 255, 255, 0.15);
+  }
+
+  &.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
   }
 
   &.auto {

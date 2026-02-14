@@ -391,3 +391,44 @@ export function clearSelection(state: KlondikeState): KlondikeState {
   newState.selection = null
   return newState
 }
+
+/**
+ * Check if any moves are available
+ * Returns true if there's at least one possible move
+ */
+export function hasAvailableMoves(state: KlondikeState): boolean {
+  // Can draw from stock or recycle waste?
+  if (state.stock.length > 0 || state.waste.length > 0) {
+    // Drawing is always an option if there are cards
+    return true
+  }
+
+  // Check waste top card
+  if (state.waste.length > 0) {
+    const wasteCard = state.waste[state.waste.length - 1]!
+    // Can move to foundation?
+    if (findValidFoundation(wasteCard, state.foundations) !== -1) return true
+    // Can move to tableau?
+    if (findValidTableau(wasteCard, state.tableau) !== -1) return true
+  }
+
+  // Check all face-up tableau cards
+  for (let colIdx = 0; colIdx < state.tableau.length; colIdx++) {
+    const column = state.tableau[colIdx]!
+    for (let cardIdx = 0; cardIdx < column.cards.length; cardIdx++) {
+      const card = column.cards[cardIdx]!
+      if (!card.faceUp) continue
+
+      // Single top card can go to foundation
+      if (cardIdx === column.cards.length - 1) {
+        if (findValidFoundation(card, state.foundations) !== -1) return true
+      }
+
+      // Any face-up card (and cards below it) can potentially move to another tableau
+      if (findValidTableau(card, state.tableau, colIdx) !== -1) return true
+    }
+  }
+
+  // No moves found
+  return false
+}

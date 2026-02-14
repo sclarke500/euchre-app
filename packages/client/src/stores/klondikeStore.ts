@@ -19,6 +19,7 @@ import {
   canMoveToFoundation,
   canAutoComplete,
   autoCompleteStep,
+  hasAvailableMoves,
 } from '@euchre/shared'
 
 export const useKlondikeStore = defineStore('klondike', () => {
@@ -32,6 +33,10 @@ export const useKlondikeStore = defineStore('klondike', () => {
   const isWon = ref(false)
   const isAutoCompleting = ref(false)
   const drawCount = ref<1 | 3>(3) // Default to draw 3
+  
+  // History for undo (store serialized states)
+  const history = ref<string[]>([])
+  const MAX_HISTORY = 50
 
   // Computed game state for operations
   const gameState = computed<KlondikeState>(() => ({
@@ -53,8 +58,27 @@ export const useKlondikeStore = defineStore('klondike', () => {
   // Check if auto-complete is available
   const canRunAutoComplete = computed(() => canAutoComplete(gameState.value))
 
-  // Update state from a new game state
-  function updateState(state: KlondikeState) {
+  // Check if undo is available
+  const canUndo = computed(() => history.value.length > 0)
+
+  // Check if there are any available moves
+  const noMovesAvailable = computed(() => !hasAvailableMoves(gameState.value))
+
+  // Save current state to history
+  function saveToHistory() {
+    const snapshot = JSON.stringify(gameState.value)
+    history.value.push(snapshot)
+    // Limit history size
+    if (history.value.length > MAX_HISTORY) {
+      history.value.shift()
+    }
+  }
+
+  // Update state from a new game state (optionally saving to history first)
+  function updateState(state: KlondikeState, addToHistory = true) {
+    if (addToHistory) {
+      saveToHistory()
+    }
     tableau.value = state.tableau
     foundations.value = state.foundations
     stock.value = state.stock
@@ -65,10 +89,20 @@ export const useKlondikeStore = defineStore('klondike', () => {
     drawCount.value = state.drawCount
   }
 
+  // Undo last move
+  function undo() {
+    if (history.value.length === 0) return
+    
+    const previousSnapshot = history.value.pop()!
+    const previousState = JSON.parse(previousSnapshot) as KlondikeState
+    updateState(previousState, false) // Don't add this restoration to history
+  }
+
   // Start a new game
   function startNewGame() {
+    history.value = [] // Clear history on new game
     const state = createNewGame(drawCount.value)
-    updateState(state)
+    updateState(state, false) // Don't save initial state to history
     isAutoCompleting.value = false
   }
 
@@ -267,6 +301,8 @@ export const useKlondikeStore = defineStore('klondike', () => {
     wasteTopCard,
     visibleWasteCards,
     canRunAutoComplete,
+    canUndo,
+    noMovesAvailable,
 
     // Actions
     startNewGame,
@@ -278,5 +314,6 @@ export const useKlondikeStore = defineStore('klondike', () => {
     handleAutoMoveToFoundation,
     runAutoComplete,
     isCardSelected,
+    undo,
   }
 })
