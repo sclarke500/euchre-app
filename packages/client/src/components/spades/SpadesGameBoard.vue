@@ -254,8 +254,13 @@ async function initializeBoard() {
   
   await nextTick()
   
+  // Get board reference from CardTable
+  if (tableRef.value) {
+    boardRef.value = tableRef.value.boardRef
+  }
+  
   // Get board dimensions
-  const board = tableRef.value?.$el?.querySelector('.board') as HTMLElement
+  const board = boardRef.value
   if (!board) return
   
   const rect = board.getBoundingClientRect()
