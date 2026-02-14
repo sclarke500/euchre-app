@@ -77,6 +77,11 @@
               <span>{{ roundSummary.usTricks }}</span>
               <span>{{ roundSummary.themTricks }}</span>
             </div>
+            <div v-if="roundSummary.usBags || roundSummary.themBags" class="summary-row">
+              <span>Bags</span>
+              <span class="bags">{{ roundSummary.usBags || '' }}</span>
+              <span class="bags">{{ roundSummary.themBags || '' }}</span>
+            </div>
             <div class="summary-row">
               <span>Base Points</span>
               <span :class="{ positive: roundSummary.usBasePoints > 0, negative: roundSummary.usBasePoints < 0 }">
@@ -263,6 +268,8 @@ const roundSummary = ref({
   themBid: 0,
   usTricks: 0,
   themTricks: 0,
+  usBags: 0,
+  themBags: 0,
   usBasePoints: 0,
   themBasePoints: 0,
   usNilBonus: 0,
@@ -574,11 +581,17 @@ watch(() => store.phase, async (newPhase) => {
     const usScore = Spades.calculateRoundScore(store.players, 0, store.scores[0]?.bags ?? 0)
     const themScore = Spades.calculateRoundScore(store.players, 1, store.scores[1]?.bags ?? 0)
     
+    // Calculate bags (overtricks) for this hand
+    const usBags = Math.max(0, usScore.tricksWon - usScore.baseBid)
+    const themBags = Math.max(0, themScore.tricksWon - themScore.baseBid)
+    
     roundSummary.value = {
       usBid: usScore.baseBid,
       themBid: themScore.baseBid,
       usTricks: usScore.tricksWon,
       themTricks: themScore.tricksWon,
+      usBags,
+      themBags,
       usBasePoints: usScore.tricksWon >= usScore.baseBid ? usScore.baseBid * 10 : -usScore.baseBid * 10,
       themBasePoints: themScore.tricksWon >= themScore.baseBid ? themScore.baseBid * 10 : -themScore.baseBid * 10,
       usNilBonus: usScore.nilBonus,
@@ -807,6 +820,10 @@ onUnmounted(() => {
   
   .positive {
     color: #4CAF50;
+  }
+  
+  .bags {
+    color: #f39c12;
   }
   
   .negative {
