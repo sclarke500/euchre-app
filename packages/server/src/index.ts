@@ -6,6 +6,7 @@ import type {
   TeamScore,
   Card,
   Bid,
+  SpadesBidType,
 } from '@euchre/shared'
 import { parseClientMessage } from './ws/validation.js'
 import { routeClientMessage } from './ws/router.js'
@@ -18,6 +19,7 @@ import { createSessionHandlers } from './sessions/handlers.js'
 import {
   games,
   presidentGames,
+  spadesGames,
   gameHosts,
   gameTypes,
   getCurrentStateSeq,
@@ -89,6 +91,7 @@ const lobbyHandlers = createLobbyHandlers({
   tables,
   games,
   presidentGames,
+  spadesGames,
   disconnectedPlayers,
   generateId,
   send,
@@ -151,7 +154,44 @@ function tryRecoverGameId(client: ConnectedClient): boolean {
     }
   }
 
+  // Check Spades games
+  for (const [gameId, game] of spadesGames) {
+    const playerInfo = game.getPlayerInfo(odusId)
+    if (playerInfo) {
+      console.log(`[Recovery] Restored gameId for ${client.player.nickname} -> Spades game ${gameId}`)
+      client.gameId = gameId
+      return true
+    }
+  }
+
   return false
+}
+
+function handleSpadesMakeBid(ws: WebSocket, client: ConnectedClient, bidType: 'normal' | 'nil' | 'blind_nil', count: number): void {
+  if (!client.player) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  if (!client.gameId) {
+    tryRecoverGameId(client)
+  }
+
+  if (!client.gameId) {
+    send(ws, { type: 'error', message: 'Not in a game' })
+    return
+  }
+
+  const spadesGame = spadesGames.get(client.gameId)
+  if (!spadesGame) {
+    send(ws, { type: 'error', message: 'Spades game not found' })
+    return
+  }
+
+  const success = spadesGame.handleBid(client.player.odusId, { type: bidType as SpadesBidType, count })
+  if (!success) {
+    send(ws, { type: 'error', message: 'Invalid Spades bid' })
+  }
 }
 
 function handleMakeBid(ws: WebSocket, client: ConnectedClient, action: Bid['action'], suit?: Bid['suit'], goingAlone?: boolean): void {
@@ -197,13 +237,25 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
     return
   }
 
-  const game = games.get(client.gameId)
-  if (!game) {
-    send(ws, { type: 'error', message: 'Game not found' })
-    return
+  const gameType = gameTypes.get(client.gameId)
+  let success = false
+
+  if (gameType === 'spades') {
+    const spadesGame = spadesGames.get(client.gameId)
+    if (!spadesGame) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+    success = spadesGame.handlePlayCard(client.player.odusId, cardId)
+  } else {
+    const game = games.get(client.gameId)
+    if (!game) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+    success = game.handlePlayCard(client.player.odusId, cardId)
   }
 
-  const success = game.handlePlayCard(client.player.odusId, cardId)
   if (!success) {
     send(ws, { type: 'error', message: 'Invalid card play' })
   }
@@ -261,6 +313,13 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
       return
     }
     success = presidentGame.bootPlayer(playerId)
+  } else if (gameType === 'spades') {
+    const spadesGame = spadesGames.get(client.gameId)
+    if (!spadesGame) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+    success = spadesGame.bootPlayer(playerId)
   } else {
     const game = games.get(client.gameId)
     if (!game) {
@@ -383,6 +442,22 @@ function replacePlayerWithAI(client: ConnectedClient, trackForReconnect: boolean
       }
       game.replaceWithAI(idx)
     }
+  } else if (gameType === 'spades') {
+    const game = spadesGames.get(gameId)
+    if (!game) return
+    const idx = game.findPlayerIndexByOdusId(odusId)
+    if (idx >= 0) {
+      if (trackForReconnect) {
+        disconnectedPlayers.set(odusId, {
+          gameId,
+          seatIndex: idx,
+          gameType: 'spades',
+          disconnectTime: Date.now(),
+        })
+        console.log(`Tracking ${client.player.nickname} for reconnection (Spades, seat ${idx})`)
+      }
+      game.replaceWithAI(idx)
+    }
   } else {
     const game = games.get(gameId)
     if (!game) return
@@ -456,6 +531,7 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
     presidentPlayCards: (socket, c, cardIds) => routeGameCommand(() => handlePresidentPlayCards(socket, c, cardIds)),
     presidentPass: (socket, c) => routeGameCommand(() => handlePresidentPass(socket, c)),
     presidentGiveCards: (socket, c, cardIds) => routeGameCommand(() => handlePresidentGiveCards(socket, c, cardIds)),
+    spadesMakeBid: (socket, c, bidType, count) => routeGameCommand(() => handleSpadesMakeBid(socket, c, bidType, count)),
     bootPlayer: (socket, c, playerId) => routeGameCommand(() => handleBootPlayer(socket, c, playerId)),
     bugReport: async (socket, c, payload) => {
       const clientId = c.player?.odusId ?? 'unknown'

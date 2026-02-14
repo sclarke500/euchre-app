@@ -198,12 +198,11 @@ const gameTitle = computed(() => {
 
         <button
           class="menu-btn multiplayer"
-          :disabled="selectedGame === 'klondike' || selectedGame === 'spades'"
+          :disabled="selectedGame === 'klondike'"
           @click="handleMultiplayer"
         >
           Multiplayer
           <span v-if="selectedGame === 'klondike'" class="btn-subtitle">Solitaire is solo!</span>
-          <span v-else-if="selectedGame === 'spades'" class="btn-subtitle">Coming soon!</span>
           <span v-else class="btn-subtitle">Play with friends online</span>
         </button>
       </div>

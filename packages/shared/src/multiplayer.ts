@@ -3,6 +3,14 @@
 import type { Suit, Card, GameState, Bid, GamePhase, TeamScore, Trick } from './game.js'
 import type { StandardCard } from './core/types.js'
 import type { PresidentPhase, PresidentPile, PlayerRank, PlayType } from './president/types.js'
+import type {
+  SpadesPhase,
+  SpadesBidType,
+  SpadesBid,
+  SpadesTeamScore,
+  SpadesTrick,
+  SpadesClientPlayer,
+} from './spades/types.js'
 
 // ============================================
 // Lobby & Table Types
@@ -20,7 +28,7 @@ export interface TableSeat {
   isHost: boolean
 }
 
-export type GameType = 'euchre' | 'president'
+export type GameType = 'euchre' | 'president' | 'spades'
 
 export interface TableSettings {
   superTwosMode?: boolean // President only
@@ -71,6 +79,7 @@ export type ClientMessage = (
   | PresidentPlayCardsMessage
   | PresidentPassMessage
   | PresidentGiveCardsMessage
+  | SpadesMakeBidMessage
   | BugReportMessage
 ) & ClientMessageMeta
 
@@ -151,6 +160,12 @@ export interface PresidentGiveCardsMessage {
   cardIds: string[]
 }
 
+export interface SpadesMakeBidMessage {
+  type: 'spades_make_bid'
+  bidType: SpadesBidType
+  count: number
+}
+
 export interface BugReportMessage {
   type: 'bug_report'
   payload: string // JSON-stringified diagnostic data
@@ -193,6 +208,8 @@ export type ServerMessage =
   | PresidentCardExchangeInfoMessage
   | PresidentAwaitingGiveCardsMessage
   | PresidentYourTurnMessage
+  | SpadesGameStateMessage
+  | SpadesYourTurnMessage
   | BugReportAckMessage
 
 export interface WelcomeMessage {
@@ -452,4 +469,39 @@ export interface PresidentYourTurnMessage {
   type: 'president_your_turn'
   validActions: string[] // 'play', 'pass'
   validPlays: string[][] // Array of valid card ID combinations
+}
+
+// ============================================
+// Spades-Specific Types
+// ============================================
+
+export interface SpadesClientGameState {
+  gameType: 'spades'
+  players: SpadesClientPlayer[]
+  phase: SpadesPhase
+  currentTrick: SpadesTrick
+  completedTricks: SpadesTrick[]
+  currentPlayer: number
+  dealer: number
+  scores: SpadesTeamScore[]
+  roundNumber: number
+  gameOver: boolean
+  winner: number | null
+  spadesBroken: boolean
+  bidsComplete: boolean
+  winScore: number
+  loseScore: number
+  stateSeq: number
+  timedOutPlayer: number | null
+}
+
+export interface SpadesGameStateMessage {
+  type: 'spades_game_state'
+  state: SpadesClientGameState
+}
+
+export interface SpadesYourTurnMessage {
+  type: 'spades_your_turn'
+  validActions: string[]
+  validCards?: string[]
 }

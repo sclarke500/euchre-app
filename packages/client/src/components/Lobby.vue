@@ -108,6 +108,12 @@ const checkGameStart = computed(() => lobbyStore.gameId)
           >
             President
           </button>
+          <button
+            :class="['game-type-btn', { active: lobbyStore.selectedGameType === 'spades' }]"
+            @click="selectGameType('spades')"
+          >
+            Spades
+          </button>
         </div>
 
         <div v-if="lobbyStore.selectedGameType === 'president'" class="president-options">

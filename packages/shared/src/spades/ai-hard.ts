@@ -226,7 +226,7 @@ export function estimateTricksHard(hand: StandardCard[]): number {
 }
 
 /**
- * Nil suitability score (higher = better nil candidate).
+ * Enhanced nil suitability score (higher = better nil candidate).
  * Returns a numeric score; threshold around 5-6 means good nil.
  */
 function nilScore(hand: StandardCard[]): number {
@@ -239,7 +239,7 @@ function nilScore(hand: StandardCard[]): number {
   }
   for (const c of hand) bySuit[c.suit].push(c)
 
-  // Penalize high spades heavily
+  // Heavy penalties for high spades
   for (const c of bySuit[Suit.Spades]) {
     if (c.rank === FullRank.Ace)   score -= 5
     if (c.rank === FullRank.King)  score -= 4
@@ -270,6 +270,29 @@ function nilScore(hand: StandardCard[]): number {
   }
 
   return score
+}
+
+/**
+ * Adjust bid based on score position and bag status
+ */
+function adjustBidForScoreAndBags(estimate: number, teamScore: number, opponentScore: number, teamBags: number): number {
+  let adjusted = estimate
+
+  // More aggressive when behind by more than 100
+  if (teamScore < opponentScore - 100) {
+    adjusted = Math.min(adjusted + 1, 13)
+  }
+  // Conservative when leading comfortably
+  else if (teamScore > opponentScore + 100) {
+    adjusted = Math.max(adjusted - 1, 1)
+  }
+
+  // Avoid bags when close to 10 (7+ bags)
+  if (teamBags >= 7 && adjusted > 0) {
+    adjusted = Math.max(adjusted - 1, 1)
+  }
+
+  return adjusted
 }
 
 /**
@@ -327,15 +350,8 @@ export function chooseSpadesBidHard(
     estimate = Math.max(estimate - 1, 1)
   }
 
-  // Bag awareness: if we have 7+ bags, bid 1 higher to convert potential bags into bid
-  if (teamBags >= 7 && estimate > 0) {
-    estimate = Math.min(estimate + 1, 13)
-  }
-
-  // Score awareness: when leading comfortably, bid conservatively
-  if (teamScore > opponentScore + 100) {
-    estimate = Math.max(estimate - 1, 1)
-  }
+  // Apply score and bag adjustments
+  estimate = adjustBidForScoreAndBags(estimate, teamScore, opponentScore, teamBags)
 
   // Never bid 0 unless nil (bid at least 1)
   estimate = Math.max(estimate, 1)
@@ -346,6 +362,44 @@ export function chooseSpadesBidHard(
 // ---------------------------------------------------------------------------
 // CARD PLAY
 // ---------------------------------------------------------------------------
+
+/**
+ * Check if we should cash an ace early
+ */
+function shouldCashAce(card: StandardCard, tracker: SpadesTracker, playerId: number, trickNumber: number): boolean {
+  if (card.rank !== FullRank.Ace) return false
+  // Cash safe aces early (tricks 1-4)
+  if (trickNumber <= 4 && !tracker.isOpponentVoid(playerId, card.suit)) {
+    return true
+  }
+  return false
+}
+
+/**
+ * Enhanced nil attacking strategy
+ */
+function attackNilOpponent(legalPlays: StandardCard[], opponentNil: SpadesPlayer, tracker: SpadesTracker): StandardCard | null {
+  // Lead suits opponent is NOT void in
+  for (const suit of [Suit.Hearts, Suit.Diamonds, Suit.Clubs]) {
+    if (!tracker.isPlayerVoid(opponentNil.id, suit)) {
+      const suitCards = legalPlays.filter(c => c.suit === suit)
+      if (suitCards.length > 0) {
+        return getLowest(suitCards, null) // Lead low to force following
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Endgame adjustment based on remaining tricks
+ */
+function endgameAdjustment(needTricks: boolean, tricksRemaining: number, teamTricksNeeded: number): 'aggressive' | 'conservative' | 'normal' {
+  if (tricksRemaining <= teamTricksNeeded) {
+    return needTricks ? 'aggressive' : 'conservative'
+  }
+  return 'normal'
+}
 
 /**
  * Hard AI card play — position-aware, tracking-based, with nil/bag strategies.
@@ -392,19 +446,22 @@ export function chooseSpadesCardHard(
   const teamBags = gameState.scores[player.teamId]?.bags ?? 0
   const shouldAvoidBags = !needMoreTricks && teamBags >= 7
   const trickNumber = gameState.completedTricks.length + 1 // 1-indexed
+  const tricksRemaining = 13 - gameState.completedTricks.length
+  const teamTricksNeeded = Math.max(0, teamBid - teamTricks)
+  const endgameStrategy = endgameAdjustment(needMoreTricks, tricksRemaining, teamTricksNeeded)
 
   // LEADING
   if (trick.cards.length === 0) {
     return leadCardHard(
       legalPlays, hand, gameState, player.id, tracker,
-      needMoreTricks, shouldAvoidBags, partnerBidNil, opponentNilBidder, trickNumber
+      needMoreTricks, shouldAvoidBags, partnerBidNil, opponentNilBidder, trickNumber, endgameStrategy
     )
   }
 
   // FOLLOWING
   return followCardHard(
     legalPlays, trick, hand, player.id, tracker,
-    needMoreTricks, shouldAvoidBags, partnerBidNil, trickNumber
+    needMoreTricks, shouldAvoidBags, partnerBidNil, trickNumber, endgameStrategy
   )
 }
 
@@ -423,6 +480,7 @@ function leadCardHard(
   partnerBidNil: boolean,
   opponentNil: SpadesPlayer | undefined,
   trickNumber: number,
+  endgameStrategy: 'aggressive' | 'conservative' | 'normal',
 ): StandardCard {
   const nonSpades = legalPlays.filter(c => c.suit !== Suit.Spades)
   const spades = legalPlays.filter(c => c.suit !== Suit.Spades ? false : true)
@@ -448,16 +506,8 @@ function leadCardHard(
 
   // --- Attacking opponent's nil: lead their short/dangerous suits ---
   if (opponentNil) {
-    // Lead suits the nil bidder is NOT void in (to force them to follow)
-    for (const suit of [Suit.Hearts, Suit.Diamonds, Suit.Clubs]) {
-      if (!tracker.isPlayerVoid(opponentNil.id, suit)) {
-        const suitCards = legalPlays.filter(c => c.suit === suit)
-        if (suitCards.length > 0) {
-          // Lead low to try to sneak under them, or high if we know they have high cards
-          return getLowest(suitCards, null)
-        }
-      }
-    }
+    const attackCard = attackNilOpponent(legalPlays, opponentNil, tracker)
+    if (attackCard) return attackCard
   }
 
   // --- Avoid bags: lead low garbage to lose the trick ---
@@ -470,13 +520,9 @@ function leadCardHard(
 
   // --- Need tricks ---
   if (needTricks) {
-    // Early game (tricks 1-4): cash off-suit aces before opponents void out
-    if (trickNumber <= 4) {
-      const safeAces = nonSpades.filter(c =>
-        c.rank === FullRank.Ace && !tracker.isOpponentVoid(playerId, c.suit)
-      )
-      if (safeAces.length > 0) return safeAces[0]!
-    }
+    // Cash safe aces early
+    const safeAces = legalPlays.filter(c => shouldCashAce(c, tracker, playerId, trickNumber))
+    if (safeAces.length > 0) return safeAces[0]!
 
     // Cash any ace that's guaranteed (highest remaining in suit)
     const masterCards = nonSpades.filter(c => tracker.isHighestRemaining(c, hand))
@@ -553,9 +599,20 @@ function followCardHard(
   avoidBags: boolean,
   partnerBidNil: boolean,
   trickNumber: number,
+  endgameStrategy: 'aggressive' | 'conservative' | 'normal',
 ): StandardCard {
   const seat = seatPosition(trick) // 1=2nd, 2=3rd, 3=4th
   const partnerWinning = isPartnerCurrentlyWinning(trick, playerId)
+
+  // Endgame adjustments
+  if (endgameStrategy === 'aggressive' && needTricks) {
+    // In endgame when we need tricks, be more aggressive about winning
+    const winner = cheapestWinner(legalPlays, trick)
+    if (winner) return winner
+  } else if (endgameStrategy === 'conservative' && !needTricks) {
+    // In endgame when we don't need tricks, be more conservative about dumping
+    return getLowest(legalPlays, trick.leadingSuit)
+  }
 
   // --- Partner bid nil and is currently winning (bad!) — overtake them ---
   if (partnerBidNil && isPartnerCurrentlyWinning(trick, playerId)) {

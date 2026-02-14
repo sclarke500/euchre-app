@@ -15,9 +15,8 @@ export function getCurrentStateSeq(gameId: string): number | null {
   if (gameType === 'president') {
     return presidentGames.get(gameId)?.getStateSeq() ?? null
   }
-  // Spades multiplayer support - uncomment when implemented
-  // if (gameType === 'spades') {
-  //   return spadesGames.get(gameId)?.getStateSeq() ?? null
-  // }
+  if (gameType === 'spades') {
+    return spadesGames.get(gameId)?.getStateSeq() ?? null
+  }
   return games.get(gameId)?.getStateSeq() ?? null
 }

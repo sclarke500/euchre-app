@@ -215,7 +215,9 @@ export const useLobbyStore = defineStore('lobby', () => {
   function createTable(tableName?: string): void {
     const settings: TableSettings | undefined = selectedGameType.value === 'president'
       ? { superTwosMode: selectedSuperTwosMode.value }
-      : { aiDifficulty: settingsStore.aiDifficulty }
+      : selectedGameType.value === 'euchre'
+        ? { aiDifficulty: settingsStore.aiDifficulty }
+        : undefined
 
     websocket.send({
       type: 'create_table',
@@ -229,7 +231,7 @@ export const useLobbyStore = defineStore('lobby', () => {
   function setGameType(gameType: GameType): void {
     selectedGameType.value = gameType
     // Reset to defaults when switching game type
-    if (gameType === 'euchre') {
+    if (gameType === 'euchre' || gameType === 'spades') {
       selectedMaxPlayers.value = 4
       selectedSuperTwosMode.value = false
     }

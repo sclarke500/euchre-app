@@ -189,12 +189,21 @@ import CardTable from '../CardTable.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import { useSpadesStore } from '@/stores/spadesStore'
+import { useSpadesMultiplayerStore } from '@/stores/spadesMultiplayerStore'
+
+const props = withDefaults(defineProps<{
+  mode?: 'singleplayer' | 'multiplayer'
+}>(), {
+  mode: 'singleplayer',
+})
 
 const emit = defineEmits<{
   'leave-game': []
 }>()
 
-const store = useSpadesStore()
+const singleStore = useSpadesStore()
+const multiplayerStore = useSpadesMultiplayerStore()
+const store = (props.mode === 'multiplayer' ? multiplayerStore : singleStore) as any
 const engine = useCardTable()
 const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
 
@@ -204,7 +213,7 @@ const boardRef = ref<HTMLElement | null>(null)
 const cardController = useCardController(engine, boardRef, {
   layout: 'normal',
   playerCount: 4,
-  userSeatIndex: 0,
+  userSeatIndex: () => store.humanPlayer?.id ?? 0,
   userHandScale: 1.6,
   opponentHandScale: 0.7,
   userFanSpacing: 30,
@@ -215,6 +224,10 @@ const cardController = useCardController(engine, boardRef, {
 })
 const showRoundSummary = ref(false)
 const opponentsHidden = ref(false)
+const animatedTrickCardIds = ref<Set<string>>(new Set())
+const completedTricksAnimated = ref(0)
+const processingMultiplayerAnimations = ref(false)
+const pendingMultiplayerAnimationPass = ref(false)
 const roundSummary = ref({
   usBid: 0,
   themBid: 0,
@@ -233,7 +246,7 @@ const roundSummary = ref({
 })
 
 // Player names
-const playerNames = computed(() => store.players.map(p => p.name))
+const playerNames = computed(() => store.players.map((p: { name: string }) => p.name))
 
 // Player statuses for display
 const playerStatuses = computed(() => {
@@ -258,11 +271,11 @@ const currentTurnSeat = computed(() => {
 const dimmedCardIds = computed(() => {
   if (!store.isHumanPlaying) return new Set<string>()
   
-  const human = store.humanPlayer
+  const human = store.humanPlayer as { hand: Array<{ id: string }> } | undefined
   if (!human) return new Set<string>()
   
-  const validIds = new Set(store.validPlays.map(c => c.id))
-  return new Set(human.hand.filter(c => !validIds.has(c.id)).map(c => c.id))
+  const validIds = new Set<string>(store.validPlays.map((c: { id: string }) => c.id))
+  return new Set<string>(human.hand.filter((c: { id: string }) => !validIds.has(c.id)).map((c: { id: string }) => c.id))
 })
 
 // Scores
@@ -274,6 +287,12 @@ const userName = computed(() => store.humanPlayer?.name ?? 'You')
 const currentPlayerName = computed(() => {
   return store.players[store.currentPlayer]?.name ?? ''
 })
+
+const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
+const rankOrder: Record<string, number> = {
+  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+  'J': 11, 'Q': 12, 'K': 13, 'A': 14,
+}
 
 // Winner text
 const winnerText = computed(() => {
@@ -294,11 +313,11 @@ function handleCardClick(cardId: string) {
   const human = store.humanPlayer
   if (!human) return
   
-  const card = human.hand.find(c => c.id === cardId)
+  const card = human.hand.find((c: { id: string }) => c.id === cardId)
   if (!card) return
   
   // Check if legal
-  if (!store.validPlays.some(c => c.id === cardId)) return
+  if (!store.validPlays.some((c: { id: string }) => c.id === cardId)) return
   
   store.playCard(card)
 }
@@ -334,6 +353,64 @@ function dismissRoundSummary() {
   store.startNextRound()
 }
 
+function buildDealPlayers() {
+  return store.players.map((player: { hand?: StandardCard[]; handSize?: number }) => ({
+    hand: player.hand,
+    handSize: player.handSize,
+  }))
+}
+
+async function animateCompletedTricksDelta() {
+  while (completedTricksAnimated.value < store.completedTricks.length) {
+    const trick = store.completedTricks[completedTricksAnimated.value]
+    if (!trick) {
+      completedTricksAnimated.value++
+      continue
+    }
+
+    const trickCards = trick.cards ?? []
+    for (let i = 0; i < trickCards.length; i++) {
+      const played = trickCards[i]
+      if (!played || animatedTrickCardIds.value.has(played.card.id)) continue
+      await cardController.playCard(played.card, played.playerId, i)
+      animatedTrickCardIds.value.add(played.card.id)
+    }
+
+    await cardController.completeTrick(trick.winnerId ?? 0)
+    completedTricksAnimated.value++
+  }
+}
+
+async function animateCurrentTrickDelta() {
+  const cards = store.currentTrick.cards ?? []
+  for (let i = 0; i < cards.length; i++) {
+    const played = cards[i]
+    if (!played || animatedTrickCardIds.value.has(played.card.id)) continue
+    await cardController.playCard(played.card, played.playerId, i)
+    animatedTrickCardIds.value.add(played.card.id)
+  }
+}
+
+async function processMultiplayerAnimationPass() {
+  if (props.mode !== 'multiplayer') return
+
+  if (processingMultiplayerAnimations.value) {
+    pendingMultiplayerAnimationPass.value = true
+    return
+  }
+
+  processingMultiplayerAnimations.value = true
+  try {
+    do {
+      pendingMultiplayerAnimationPass.value = false
+      await animateCompletedTricksDelta()
+      await animateCurrentTrickDelta()
+    } while (pendingMultiplayerAnimationPass.value)
+  } finally {
+    processingMultiplayerAnimations.value = false
+  }
+}
+
 // Initialize card engine with hands
 async function initializeBoard() {
   await nextTick()
@@ -349,15 +426,17 @@ async function initializeBoard() {
 // Watch for game state changes and update cards
 watch(() => store.phase, async (newPhase) => {
   if (newPhase === SpadesPhase.Dealing) {
-    await initializeBoard()
-    
-    const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
-    const rankOrder: Record<string, number> = {
-      '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-      'J': 11, 'Q': 12, 'K': 13, 'A': 14,
+    if (props.mode === 'multiplayer') {
+      store.enableQueueMode()
     }
 
-    await cardController.dealFromPlayers(store.players, {
+    await initializeBoard()
+
+    opponentsHidden.value = false
+    animatedTrickCardIds.value = new Set<string>()
+    completedTricksAnimated.value = 0
+
+    await cardController.dealFromPlayers(buildDealPlayers(), {
       revealUserHand: false,
       focusUserHand: true,
       dealDelayMs: 50,
@@ -386,6 +465,11 @@ watch(() => store.phase, async (newPhase) => {
       })
       return sorted
     }, 300)
+
+    if (props.mode === 'multiplayer') {
+      store.disableQueueMode()
+    }
+
     store.dealAnimationComplete()
   }
   
@@ -415,7 +499,21 @@ watch(() => store.phase, async (newPhase) => {
     
     showRoundSummary.value = true
   }
+
+  if (props.mode === 'multiplayer' && newPhase !== SpadesPhase.RoundComplete) {
+    showRoundSummary.value = false
+  }
 }, { immediate: true })
+
+watch(
+  () => [store.currentTrick.cards.length, store.completedTricks.length, store.phase],
+  async () => {
+    if (props.mode !== 'multiplayer') return
+    if (store.phase === SpadesPhase.Setup || store.phase === SpadesPhase.Dealing) return
+    await processMultiplayerAnimationPass()
+  },
+  { immediate: true }
+)
 
 watch(
   () => [store.phase, store.bidsComplete, store.currentTrick.cards.length],
@@ -436,19 +534,26 @@ onMounted(async () => {
 
   cardController.setupTable(store.dealer)
 
-  store.setPlayAnimationCallback(async ({ card, playerId }) => {
+  store.setPlayAnimationCallback(async ({ card, playerId }: { card: StandardCard; playerId: number }) => {
     const cardIndex = Math.max(0, store.currentTrick.cards.length - 1)
-    await cardController.playCard(card.id, playerId, cardIndex)
+    await cardController.playCard(card, playerId, cardIndex)
   })
 
-  store.setTrickCompleteCallback(async (winnerId) => {
+  store.setTrickCompleteCallback(async (winnerId: number) => {
     await cardController.completeTrick(winnerId)
   })
 
-  store.startNewGame()
+  if (props.mode === 'multiplayer') {
+    store.initialize()
+  } else {
+    store.startNewGame()
+  }
 })
 
 onUnmounted(() => {
+  if (props.mode === 'multiplayer') {
+    store.cleanup()
+  }
   engine.reset()
 })
 </script>

@@ -120,6 +120,82 @@ export class SpadesGame {
     return { seatIndex: player.seatIndex, name: player.name }
   }
 
+  resendStateToPlayer(odusId: string): void {
+    const player = this.players.find(p => p.odusId === odusId)
+    if (!player) return
+
+    const state = this.buildClientState(odusId)
+    this.events.onStateChange(odusId, state)
+
+    if (player.seatIndex === this.currentPlayer && !this.gameOver) {
+      const actions = this.getValidActionsForPlayer(player.seatIndex)
+      this.events.onYourTurn(odusId, actions.actions, actions.cards)
+    }
+  }
+
+  handleBid(odusId: string, bid: SpadesBid): boolean {
+    if (this.phase !== SpadesPhase.Bidding) return false
+    this.clearTurnTimer()
+    return this.makeBid(odusId, bid)
+  }
+
+  handlePlayCard(odusId: string, cardId: string): boolean {
+    if (this.phase !== SpadesPhase.Playing) return false
+    this.clearTurnTimer()
+    return this.playCard(odusId, cardId)
+  }
+
+  replaceWithAI(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.isHuman) return false
+
+    this.clearTurnTimer()
+    this.turnReminderCount = 0
+    if (this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
+
+    const aiNames = getRandomAINames(1)
+    player.isHuman = false
+    player.name = aiNames[0] ?? 'Bot'
+    player.odusId = null
+
+    this.events.onPlayerBooted(playerIndex, player.name)
+    this.broadcastState()
+
+    if (this.currentPlayer === playerIndex && !this.gameOver) {
+      this.scheduleAITurn()
+    }
+
+    return true
+  }
+
+  bootPlayer(playerIndex: number): boolean {
+    if (this.timedOutPlayer !== playerIndex) {
+      return false
+    }
+    this.timedOutPlayer = null
+    return this.replaceWithAI(playerIndex)
+  }
+
+  restoreHumanPlayer(seatIndex: number, odusId: string, nickname: string): boolean {
+    const player = this.players[seatIndex]
+    if (!player) return false
+    if (player.isHuman) return false
+
+    player.isHuman = true
+    player.name = nickname
+    player.odusId = odusId
+
+    this.events.onPlayerBooted(seatIndex, nickname)
+    this.broadcastState()
+    return true
+  }
+
+  findPlayerIndexByOdusId(odusId: string): number {
+    return this.players.findIndex(p => p.odusId === odusId)
+  }
+
   private startNewRound(): void {
     // Deal cards
     const gameState = Spades.createSpadesGame(

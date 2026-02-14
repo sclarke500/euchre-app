@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { BidAction, Suit } from '@euchre/shared'
 import type { ClientMessage } from '@euchre/shared'
 
-const gameTypeSchema = z.enum(['euchre', 'president'])
+const gameTypeSchema = z.enum(['euchre', 'president', 'spades'])
 
 const tableSettingsSchema = z.object({
   superTwosMode: z.boolean().optional(),
@@ -107,6 +107,13 @@ const presidentGiveCardsSchema = z.object({
   ...clientMetaShape,
 }).strict()
 
+const spadesMakeBidSchema = z.object({
+  type: z.literal('spades_make_bid'),
+  bidType: z.enum(['normal', 'nil', 'blind_nil']),
+  count: z.number().int().min(0).max(13),
+  ...clientMetaShape,
+}).strict()
+
 const bugReportSchema = z.object({
   type: z.literal('bug_report'),
   payload: z.string().max(500_000),
@@ -129,6 +136,7 @@ const clientMessageSchema = z.discriminatedUnion('type', [
   presidentPlayCardsSchema,
   presidentPassSchema,
   presidentGiveCardsSchema,
+  spadesMakeBidSchema,
   bugReportSchema,
 ])
 

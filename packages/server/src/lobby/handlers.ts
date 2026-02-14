@@ -8,6 +8,7 @@ import type {
 } from '@euchre/shared'
 import type { Game } from '../Game.js'
 import type { PresidentGame } from '../PresidentGame.js'
+import type { SpadesGame } from '../SpadesGame.js'
 import type { ConnectedClient } from '../ws/types.js'
 
 export interface LobbyHandlers {
@@ -27,7 +28,7 @@ export interface LobbyHandlers {
 export interface DisconnectedPlayer {
   gameId: string
   seatIndex: number
-  gameType: 'euchre' | 'president'
+  gameType: 'euchre' | 'president' | 'spades'
   disconnectTime: number
 }
 
@@ -36,6 +37,7 @@ export interface LobbyDependencies {
   tables: Map<string, Table>
   games: Map<string, Game>
   presidentGames: Map<string, PresidentGame>
+  spadesGames: Map<string, SpadesGame>
   disconnectedPlayers: Map<string, DisconnectedPlayer>
   generateId: () => string
   send: (ws: WebSocket, message: ServerMessage) => void
@@ -52,6 +54,7 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     tables,
     games,
     presidentGames,
+    spadesGames,
     disconnectedPlayers,
     generateId,
     send,
@@ -95,6 +98,17 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
               game.resendStateToPlayer(playerId)
             }
           }
+        } else if (disconnectedInfo.gameType === 'spades') {
+          const game = spadesGames.get(disconnectedInfo.gameId)
+          if (game) {
+            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
+            if (restored) {
+              client.gameId = disconnectedInfo.gameId
+              console.log(`Player ${nickname} restored to Spades game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
+              reconnectedToGame = true
+              game.resendStateToPlayer(playerId)
+            }
+          }
         } else {
           const game = games.get(disconnectedInfo.gameId)
           if (game) {
@@ -130,6 +144,19 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     }
 
     // Also check regular games
+    if (!reconnectedToGame) {
+      for (const [gameId, game] of spadesGames) {
+        const playerInfo = game.getPlayerInfo(playerId)
+        if (playerInfo) {
+          client.gameId = gameId
+          console.log(`Player ${nickname} reconnected to Spades game ${gameId}`)
+          reconnectedToGame = true
+          game.resendStateToPlayer(playerId)
+          break
+        }
+      }
+    }
+
     if (!reconnectedToGame) {
       for (const [gameId, game] of games) {
         const playerInfo = game.getPlayerInfo(playerId)
@@ -181,6 +208,8 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     let actualMaxPlayers: number
     if (gameType === 'president') {
       actualMaxPlayers = maxPlayers ? Math.min(Math.max(maxPlayers, 4), 8) : 4
+    } else if (gameType === 'spades') {
+      actualMaxPlayers = 4
     } else {
       actualMaxPlayers = 4 // Euchre is always 4 players
     }

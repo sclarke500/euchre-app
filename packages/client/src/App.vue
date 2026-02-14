@@ -288,6 +288,7 @@ function backToMenu() {
     <!-- Spades Single Player Game -->
     <SpadesGameBoard
       v-else-if="currentView === 'spadesSinglePlayer'"
+      mode="singleplayer"
       @leave-game="currentView = 'menu'"
     />
 
@@ -319,6 +320,13 @@ function backToMenu() {
     <!-- Multiplayer President Game -->
     <PresidentEngineBoard
       v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'president'"
+      mode="multiplayer"
+      @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
+    />
+
+    <!-- Multiplayer Spades Game -->
+    <SpadesGameBoard
+      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'spades'"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
     />

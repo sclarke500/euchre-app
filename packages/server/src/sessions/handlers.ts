@@ -5,6 +5,10 @@ import type {
   ClientGameState,
   TeamScore,
   PresidentClientGameState,
+  SpadesClientGameState,
+  SpadesBid,
+  SpadesTeamScore,
+  StandardCard as SpadesStandardCard,
   StandardCard,
   PlayerRank,
   PlayType,
@@ -13,10 +17,12 @@ import type {
 } from '@euchre/shared'
 import { Game } from '../Game.js'
 import { PresidentGame } from '../PresidentGame.js'
+import { SpadesGame } from '../SpadesGame.js'
 import type { ConnectedClient } from '../ws/types.js'
 import {
   games,
   presidentGames,
+  spadesGames,
   gameHosts,
   gameTypes,
   gameSettings,
@@ -217,6 +223,83 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       return
     }
 
+    if (gameType === 'spades') {
+      const spadesGame = new SpadesGame(gameId, {
+        onStateChange: (playerId: string | null, state: SpadesClientGameState) => {
+          if (playerId) {
+            sendToPlayer(playerId, { type: 'spades_game_state', state })
+          }
+        },
+        onBidMade: (_playerId: number, _bid: SpadesBid, _playerName: string) => {
+          // Spades UI is fully state-driven; no-op event for now.
+        },
+        onCardPlayed: (_playerId: number, _card: SpadesStandardCard, _playerName: string) => {
+          // Spades UI is fully state-driven; no-op event for now.
+        },
+        onTrickComplete: (_winnerId: number, _winnerName: string, _cards: Array<{ playerId: number; card: SpadesStandardCard }>) => {
+          // Spades UI is fully state-driven; no-op event for now.
+        },
+        onRoundComplete: (_scores: SpadesTeamScore[], _teamTricks: [number, number]) => {
+          // Spades UI is fully state-driven; no-op event for now.
+        },
+        onGameOver: (_winningTeam: number, _finalScores: SpadesTeamScore[]) => {
+          // Spades UI is fully state-driven; no-op event for now.
+        },
+        onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => {
+          sendToPlayer(playerId, {
+            type: 'spades_your_turn',
+            validActions,
+            validCards,
+          })
+        },
+        onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
+          sendToPlayer(playerId, {
+            type: 'spades_your_turn',
+            validActions,
+            validCards,
+          })
+        },
+        onPlayerTimedOut: (playerId: number, playerName: string) => {
+          broadcastToGame(gameId, {
+            type: 'player_timed_out',
+            playerId,
+            playerName,
+          })
+        },
+        onPlayerBooted: (playerId: number, playerName: string) => {
+          broadcastToGame(gameId, {
+            type: 'player_booted',
+            playerId,
+            playerName,
+            replacedWithAI: true,
+          })
+        },
+      })
+
+      spadesGame.initializePlayers(humanPlayers)
+      spadesGames.set(gameId, spadesGame)
+
+      for (const [, c] of clients) {
+        if (c.tableId === tableId) {
+          c.gameId = gameId
+          c.tableId = null
+        }
+      }
+
+      console.log(`Starting Spades game ${gameId} at table ${table.name}`)
+
+      broadcastToGame(gameId, {
+        type: 'game_started',
+        gameId,
+      })
+
+      tables.delete(tableId)
+      broadcast({ type: 'table_removed', tableId })
+
+      spadesGame.start()
+      return
+    }
+
     // Create Euchre game with event handlers
     const game = new Game(gameId, {
       onStateChange: (playerId: string | null, state: ClientGameState) => {
@@ -341,6 +424,14 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
         return
       }
       presidentGame.resendStateToPlayer(client.player.odusId)
+    } else if (gameType === 'spades') {
+      const spadesGame = spadesGames.get(client.gameId)
+      if (!spadesGame) {
+        send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
+        client.gameId = null
+        return
+      }
+      spadesGame.resendStateToPlayer(client.player.odusId)
     } else {
       const game = games.get(client.gameId)
       if (!game) {
@@ -379,8 +470,9 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     // Get old game to find player info
     const oldEuchreGame = games.get(oldGameId)
     const oldPresidentGame = presidentGames.get(oldGameId)
+    const oldSpadesGame = spadesGames.get(oldGameId)
 
-    if (!oldEuchreGame && !oldPresidentGame) {
+    if (!oldEuchreGame && !oldPresidentGame && !oldSpadesGame) {
       send(ws, { type: 'error', message: 'Game not found' })
       return
     }
@@ -391,7 +483,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       if (c.gameId === oldGameId && c.player) {
         // Find their seat index from the old game
         const playerInfo = oldEuchreGame?.getPlayerInfo(c.player.odusId) ||
-                           oldPresidentGame?.getPlayerInfo(c.player.odusId)
+                           oldPresidentGame?.getPlayerInfo(c.player.odusId) ||
+                           oldSpadesGame?.getPlayerInfo(c.player.odusId)
         if (playerInfo) {
           humanPlayers.push({
             odusId: c.player.odusId,
@@ -537,6 +630,74 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       // Start the new game
       newPresidentGame.start()
+      return
+    }
+
+    if (gameType === 'spades') {
+      const newSpadesGame = new SpadesGame(newGameId, {
+        onStateChange: (playerId: string | null, state: SpadesClientGameState) => {
+          if (playerId) {
+            sendToPlayer(playerId, { type: 'spades_game_state', state })
+          }
+        },
+        onBidMade: (_playerId: number, _bid: SpadesBid, _playerName: string) => {},
+        onCardPlayed: (_playerId: number, _card: SpadesStandardCard, _playerName: string) => {},
+        onTrickComplete: (_winnerId: number, _winnerName: string, _cards: Array<{ playerId: number; card: SpadesStandardCard }>) => {},
+        onRoundComplete: (_scores: SpadesTeamScore[], _teamTricks: [number, number]) => {},
+        onGameOver: (_winningTeam: number, _finalScores: SpadesTeamScore[]) => {},
+        onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => {
+          sendToPlayer(playerId, {
+            type: 'spades_your_turn',
+            validActions,
+            validCards,
+          })
+        },
+        onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => {
+          sendToPlayer(playerId, {
+            type: 'spades_your_turn',
+            validActions,
+            validCards,
+          })
+        },
+        onPlayerTimedOut: (playerId: number, playerName: string) => {
+          broadcastToGame(newGameId, {
+            type: 'player_timed_out',
+            playerId,
+            playerName,
+          })
+        },
+        onPlayerBooted: (playerId: number, playerName: string) => {
+          broadcastToGame(newGameId, {
+            type: 'player_booted',
+            playerId,
+            playerName,
+            replacedWithAI: true,
+          })
+        },
+      })
+
+      newSpadesGame.initializePlayers(humanPlayers)
+      spadesGames.set(newGameId, newSpadesGame)
+
+      for (const [, c] of clients) {
+        if (c.gameId === oldGameId) {
+          c.gameId = newGameId
+        }
+      }
+
+      spadesGames.delete(oldGameId)
+      gameHosts.delete(oldGameId)
+      gameTypes.delete(oldGameId)
+      gameSettings.delete(oldGameId)
+
+      console.log(`Spades game restarted: ${oldGameId} -> ${newGameId}`)
+
+      broadcastToGame(newGameId, {
+        type: 'game_started',
+        gameId: newGameId,
+      })
+
+      newSpadesGame.start()
       return
     }
 

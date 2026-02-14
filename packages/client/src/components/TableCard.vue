@@ -16,6 +16,7 @@ const emit = defineEmits<{
 const gameType = computed(() => props.table.gameType || 'euchre')
 const isEuchre = computed(() => gameType.value === 'euchre')
 const isPresident = computed(() => gameType.value === 'president')
+const isSpades = computed(() => gameType.value === 'spades')
 
 // Team labels for Euchre seats
 const seatTeams = ['Team A', 'Team B', 'Team A', 'Team B']
@@ -41,6 +42,7 @@ const gameTypeLabel = computed(() => {
     const settings = props.table.settings
     return settings?.superTwosMode ? 'President (Super 2s)' : 'President'
   }
+  if (isSpades.value) return 'Spades'
   return 'Game'
 })
 
@@ -155,6 +157,11 @@ function handleSeatClick(seatIndex: number) {
   &.president {
     background: rgba(156, 39, 176, 0.3);
     color: #ce93d8;
+  }
+
+  &.spades {
+    background: rgba(33, 33, 33, 0.45);
+    color: #e0e0e0;
   }
 }
 

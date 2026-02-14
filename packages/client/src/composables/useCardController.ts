@@ -2,6 +2,8 @@ import { ref, type Ref, nextTick } from 'vue'
 import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
 import type { CardTableEngine } from './useCardTable'
 import type { StandardCard } from '@euchre/shared'
+import { Suit } from '@euchre/shared'
+import { FullRank } from '@euchre/shared'
 import type { CardPosition } from '@/components/cardContainers'
 
 export type PlayAreaMode = 'trick' | 'overlay'
@@ -25,7 +27,7 @@ export const cardControllerPresets = {
 export interface CardControllerConfig {
   layout?: 'normal' | 'wide'
   playerCount: number
-  userSeatIndex?: number
+  userSeatIndex?: number | (() => number)
   userHandScale?: number
   opponentHandScale?: number
   userFanSpacing?: number
@@ -53,13 +55,23 @@ export interface DealOptions {
   dealerPlayerId?: number
 }
 
+export interface DealPlayerView {
+  hand?: StandardCard[]
+  handSize?: number
+}
+
 export function useCardController(
   engine: CardTableEngine,
   boardRef: Ref<HTMLElement | null>,
   config: CardControllerConfig
 ) {
   const layoutType = config.layout ?? 'normal'
-  const userSeatIndex = config.userSeatIndex ?? 0
+  const getUserSeatIndex = () => {
+    if (typeof config.userSeatIndex === 'function') {
+      return config.userSeatIndex()
+    }
+    return config.userSeatIndex ?? 0
+  }
   const playAreaMode = config.playAreaMode ?? 'trick'
   const trickCompleteMode = config.trickCompleteMode ?? 'stack'
   const playerIdToSeatIndex = config.playerIdToSeatIndex ?? ((id) => id)
@@ -114,7 +126,7 @@ export function useCardController(
     return layout
   }
 
-  async function dealFromPlayers(players: Array<{ hand: StandardCard[] }>, options: DealOptions = {}) {
+  async function dealFromPlayers(players: DealPlayerView[], options: DealOptions = {}) {
     const board = boardRef.value
     if (!board) return
 
@@ -133,6 +145,7 @@ export function useCardController(
     const revealUserHand = options.revealUserHand ?? true
     const focusUserHand = options.focusUserHand ?? true
 
+    const userSeatIndex = getUserSeatIndex()
     const userHand = hands[userSeatIndex]
     if (userHand) {
       userHand.faceUp = false
@@ -147,12 +160,26 @@ export function useCardController(
       }
     }
 
-    const maxCards = Math.max(...players.map(p => p.hand.length))
+    const placeholderNonce = Date.now()
+    const resolvedHands: StandardCard[][] = Array.from({ length: config.playerCount }, (_, seatIdx) => {
+      const player = players[seatIdx]
+      const knownHand = player?.hand ?? []
+      if (knownHand.length > 0) return knownHand
+
+      const hiddenCount = Math.max(0, player?.handSize ?? 0)
+      return Array.from({ length: hiddenCount }, (_, cardIdx) => ({
+        id: `hidden-${placeholderNonce}-${seatIdx}-${cardIdx}`,
+        suit: Suit.Spades,
+        rank: FullRank.Two,
+      }))
+    })
+
+    const maxCards = Math.max(0, ...resolvedHands.map(hand => hand.length))
     const dealQueue: { seatIdx: number; card: StandardCard }[] = []
 
     for (let round = 0; round < maxCards; round++) {
       for (let seatIdx = 0; seatIdx < config.playerCount; seatIdx++) {
-        const card = players[seatIdx]?.hand[round]
+        const card = resolvedHands[seatIdx]?.[round]
         if (card) dealQueue.push({ seatIdx, card })
       }
     }
@@ -239,6 +266,7 @@ export function useCardController(
   }
 
   async function sortUserHand(sorter: (cards: StandardCard[]) => StandardCard[], duration: number = 300) {
+    const userSeatIndex = getUserSeatIndex()
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
 
@@ -261,6 +289,7 @@ export function useCardController(
   }
 
   async function revealUserHand(duration: number = 350) {
+    const userSeatIndex = getUserSeatIndex()
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
 
@@ -320,23 +349,75 @@ export function useCardController(
     }
   }
 
-  async function playCard(cardId: string, playerId: number, cardIndex: number) {
+  async function playCard(cardOrId: StandardCard | string, playerId: number, cardIndex: number) {
     const pile = engine.getPiles().find(p => p.id === 'center')
+    const card = typeof cardOrId === 'string'
+      ? { id: cardOrId, suit: Suit.Spades, rank: FullRank.Two }
+      : cardOrId
     const seatIndex = playerIdToSeatIndex(playerId)
+    const userSeatIndex = getUserSeatIndex()
     const fromHand = engine.getHands().find(h => h.id === `hand-${seatIndex}`)
-    if (!pile || !fromHand) return
+    if (!pile) return
+
+    const alreadyInPlayArea = pile.cards.some((managed) => managed.card.id === card.id)
+    if (alreadyInPlayArea) return
+
+    const alreadyMovedToTrickPile = engine
+      .getPiles()
+      .filter((candidate) => candidate.id !== 'center')
+      .some((candidate) => candidate.cards.some((managed) => managed.card.id === card.id))
+    if (alreadyMovedToTrickPile) return
 
     const target = playAreaMode === 'overlay'
       ? getOverlayCardPosition(cardIndex, 0, 1)
       : getTrickCardPosition(playerId, cardIndex)
 
     const moveDuration = config.playMoveMs ?? 300
-    await engine.moveCard(cardId, fromHand, pile, target, moveDuration)
+    const hasCardInHand = !!fromHand?.cards.some((managed) => managed.card.id === card.id)
+
+    if (fromHand && hasCardInHand) {
+      await engine.moveCard(card.id, fromHand, pile, target, moveDuration)
+    } else {
+      const seat = tableLayout.value?.seats[seatIndex]
+      let startPos: CardPosition = {
+        x: seat?.handPosition.x ?? tableCenter.value.x,
+        y: seat?.handPosition.y ?? tableCenter.value.y,
+        rotation: seat?.rotation ?? 0,
+        zIndex: 900,
+        scale: seatIndex === userSeatIndex ? (config.userHandScale ?? 1.6) : (config.opponentHandScale ?? 0.7),
+        flipY: 0,
+      }
+
+      if (fromHand && fromHand.cards.length > 0 && seatIndex !== userSeatIndex) {
+        const placeholder = fromHand.cards[0]
+        if (placeholder) {
+          const placeholderRef = engine.getCardRef(placeholder.card.id)
+          if (placeholderRef) {
+            startPos = placeholderRef.getPosition()
+          }
+          fromHand.removeCard(placeholder.card.id)
+          engine.refreshCards()
+        }
+      }
+
+      pile.addCard({ id: card.id, suit: card.suit, rank: card.rank }, true)
+      engine.refreshCards()
+      await nextTick()
+
+      const ref = engine.getCardRef(card.id)
+      if (ref) {
+        ref.setPosition(startPos)
+        await new Promise<void>(resolve => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        })
+        await ref.moveTo(target, moveDuration)
+      }
+    }
 
     // Brief pause, then refan to close the gap after the card leaves the hand.
     const refanDelay = config.playRefanDelayMs ?? 120
     const refanDuration = config.playRefanDurationMs ?? 200
-    if (fromHand.cards.length > 0 && !(seatIndex !== userSeatIndex && hiddenSeatIndices.has(seatIndex))) {
+    if (fromHand && fromHand.cards.length > 0 && !(seatIndex !== userSeatIndex && hiddenSeatIndices.has(seatIndex))) {
       await new Promise(r => setTimeout(r, refanDelay))
       fromHand.mode = 'fanned'
       const moves = fromHand.cards.map((managed, index) => {
@@ -477,6 +558,7 @@ export function useCardController(
     const promises: Promise<void>[] = []
 
     for (let seatIndex = 0; seatIndex < config.playerCount; seatIndex++) {
+      const userSeatIndex = getUserSeatIndex()
       if (seatIndex === userSeatIndex) continue
       const hand = hands[seatIndex]
       if (!hand || hand.cards.length === 0) continue
