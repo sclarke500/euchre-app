@@ -451,6 +451,7 @@ watch(() => store.phase, async (newPhase) => {
       
       for (let i = 0; i < userHand.cards.length; i++) {
         const managed = userHand.cards[i]
+        if (!managed) continue
         const cardRef = engine.getCardRef(managed.card.id)
         if (cardRef) {
           const spreadAmount = (i - middleIndex) * 30 // fanSpacing
