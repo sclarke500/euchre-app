@@ -14,6 +14,7 @@ import { GamePhase, getLegalPlays, BidAction as BidActionEnum } from '@euchre/sh
 import { websocket } from '@/services/websocket'
 import { useToast } from '@/composables/useToast'
 import { sendBugReport } from '@/services/autoBugReport'
+import { updateIfChanged } from './utils'
 
 export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   // State from server
@@ -121,15 +122,6 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   const myPlayerId = computed(() => myPlayer.value?.id ?? -1)
   const myHand = computed(() => myPlayer.value?.hand ?? [])
   const myTeamId = computed(() => myPlayer.value?.teamId ?? 0)
-
-  // Only update a ref if the array content actually changed (avoids triggering
-  // downstream reactivity from turn_reminder messages with identical data)
-  function updateIfChanged(target: { value: string[] }, incoming: string[]) {
-    if (target.value.length !== incoming.length ||
-        target.value.some((v, i) => v !== incoming[i])) {
-      target.value = incoming
-    }
-  }
 
   // WebSocket message entry point — buffers in queue mode, applies directly otherwise
   function handleMessage(message: ServerMessage): void {

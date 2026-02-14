@@ -9,6 +9,7 @@ import type {
 } from '@euchre/shared'
 import { SpadesPhase } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
+import { updateIfChanged } from './utils'
 
 export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => {
   const gameState = ref<SpadesClientGameState | null>(null)
@@ -50,15 +51,6 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   function getExpectedStateSeq(): number {
     const stateSeqFromSnapshot = gameState.value?.stateSeq ?? 0
     return Math.max(stateSeqFromSnapshot, lastStateSeq.value)
-  }
-
-  // Only update a ref if the array content actually changed (avoids triggering
-  // downstream reactivity and flickering from messages with identical data)
-  function updateIfChanged(target: { value: string[] }, incoming: string[]) {
-    if (target.value.length !== incoming.length ||
-        target.value.some((v, i) => v !== incoming[i])) {
-      target.value = incoming
-    }
   }
 
   function handleMessage(message: ServerMessage): void {
