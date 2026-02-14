@@ -328,7 +328,12 @@ watch(() => store.currentTrick.cards, async (cards) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
+  // Ensure CardTable has mounted and boardRef is available
+  if (tableRef.value) {
+    boardRef.value = tableRef.value.boardRef
+  }
   store.startNewGame()
 })
 
