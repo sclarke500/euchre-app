@@ -411,6 +411,12 @@ const showRoundComplete = computed(() =>
 
 <template>
   <div class="president-game-board">
+    <!-- Watermark -->
+    <div class="table-watermark">
+      <span class="watermark-67">67</span>
+      <span class="watermark-name">PRESIDENT</span>
+    </div>
+
     <BackButton @click="showLeaveConfirm = true" />
     
     <!-- Resync button for multiplayer -->
@@ -558,11 +564,13 @@ const showRoundComplete = computed(() =>
       </div>
     </div><!-- end game-main -->
 
-    <!-- Top right info (game name, round, waiting status) -->
-    <div class="top-right-info">
-      <h1 class="game-title">President</h1>
-      <div class="round-info">Round {{ roundNumber }}</div>
-      <div v-if="!isHumanTurn && !humanPlayer?.finishOrder" class="waiting-message">
+    <!-- Scoreboard (top right, like other games) -->
+    <div class="scoreboard">
+      <div class="score-row">
+        <span class="score-label">Round</span>
+        <span class="score-value">{{ roundNumber }}</span>
+      </div>
+      <div v-if="!isHumanTurn && !humanPlayer?.finishOrder" class="waiting-row">
         Waiting for {{ players[currentPlayer]?.name }}...
       </div>
     </div>
@@ -1070,53 +1078,83 @@ const showRoundComplete = computed(() =>
   }
 }
 
-// Top right info (game name, round, waiting status)
-.top-right-info {
-  position: fixed;
-  top: $spacing-md;
-  right: 10px;
-  width: 180px;
-  text-align: center;
-  z-index: 100;
-
-  @media (max-height: 500px) {
-    top: $spacing-sm;
-    width: 150px;
-  }
-
-  .game-title {
+// Watermark (centered, like CardTable)
+.table-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.1;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  
+  .watermark-67 {
     font-family: 'Rock Salt', cursive;
-    font-size: 1.4rem;
+    font-size: 4rem;
     font-weight: 400;
-    margin: 0 0 $spacing-xs 0;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .watermark-name {
+    font-family: 'Rock Salt', cursive;
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.15em;
+  }
+}
 
-    @media (max-height: 500px) {
-      font-size: 1rem;
-    }
+// Scoreboard (top right, matching Euchre/Spades style)
+.scoreboard {
+  position: fixed;
+  top: 10px;
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 500;
+  background: rgba(20, 20, 30, 0.88);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 0;
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #ccc;
+  min-width: 100px;
+
+  .score-row {
+    display: flex;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding: 6px 12px;
+    align-items: center;
   }
 
-  .round-info {
-    font-weight: bold;
-    font-size: 1rem;
-    opacity: 0.9;
-
-    @media (max-height: 500px) {
-      font-size: 0.85rem;
-    }
+  .score-label {
+    font-weight: 600;
+    font-size: 13px;
   }
 
-  .waiting-message {
-    margin-top: $spacing-sm;
-    font-size: 0.85rem;
+  .score-value {
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+  }
+
+  .waiting-row {
+    padding: 6px 12px;
+    font-size: 0.75rem;
     opacity: 0.8;
     font-style: italic;
-
-    @media (max-height: 500px) {
-      font-size: 0.75rem;
-      margin-top: $spacing-xs;
-    }
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
   }
 }
 

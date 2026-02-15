@@ -10,6 +10,7 @@
     :current-turn-seat="currentTurnSeat"
     :dimmed-card-ids="dimmedCardIds"
     layout="normal"
+    game-name="SPADES"
     @card-click="handleCardClick"
   >
     <!-- Player bid info tags (indexed by seat, not player ID) -->

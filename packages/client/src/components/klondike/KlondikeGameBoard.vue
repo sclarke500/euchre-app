@@ -739,6 +739,12 @@ function doNewGame() {
 
 <template>
   <div ref="boardRef" class="klondike-board">
+    <!-- Watermark -->
+    <div class="table-watermark">
+      <span class="watermark-67">67</span>
+      <span class="watermark-name">KLONDIKE</span>
+    </div>
+
     <!-- Container slots (measures positions, handles empty slot clicks) -->
     <KlondikeContainers
       ref="containersRef"
@@ -898,6 +904,39 @@ function doNewGame() {
   // Card size CSS variables (set dynamically by calculateCardSize)
   --card-width: 50px;
   --card-height: 70px;
+}
+
+// Watermark
+.table-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.1;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  
+  .watermark-67 {
+    font-family: 'Rock Salt', cursive;
+    font-size: 4rem;
+    font-weight: 400;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .watermark-name {
+    font-family: 'Rock Salt', cursive;
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.15em;
+  }
 }
 
 .bottom-toolbar {

@@ -10,6 +10,7 @@
     :current-turn-seat="currentTurnSeat"
     :dimmed-card-ids="dimmedCardIds"
     layout="normal"
+    game-name="EUCHRE"
     @card-click="handleCardClick"
   >
     <!-- Player info tags via named slots -->

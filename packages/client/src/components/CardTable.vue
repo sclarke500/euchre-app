@@ -3,6 +3,11 @@
     <div ref="boardRef" class="board">
       <!-- Table surface -->
       <div ref="tableRef" class="table-surface" :class="layout">
+        <!-- Watermark with game name -->
+        <div v-if="gameName" class="table-watermark">
+          <span class="watermark-67">67</span>
+          <span class="watermark-name">{{ gameName }}</span>
+        </div>
         <!-- Player avatars positioned outside the table -->
         <div
           v-for="(seat, i) in seatData"
@@ -64,12 +69,14 @@ const props = withDefaults(defineProps<{
   selectedCardIds?: Set<string>
   highlightedCardIds?: Set<string>
   avatarOpacities?: number[]
+  gameName?: string
 }>(), {
   layout: 'normal',
   dealerSeat: -1,
   playerStatuses: () => [],
   currentTurnSeat: -1,
   avatarOpacities: () => [],
+  gameName: '',
 })
 
 defineEmits<{
@@ -207,18 +214,36 @@ defineExpose({
     0 4px 20px rgba(0, 0, 0, 0.5),
     0 0 0 2px var(--rail-accent);
 
-  // Watermark logo
-  &::before {
-    content: '';
+  // Watermark with game name
+  .table-watermark {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
-    background: url('@/assets/AppLogo.png') center/contain no-repeat;
-    opacity: 0.08;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.1;
     pointer-events: none;
+    user-select: none;
+    
+    .watermark-67 {
+      font-family: 'Rock Salt', cursive;
+      font-size: 4rem;
+      font-weight: 400;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .watermark-name {
+      font-family: 'Rock Salt', cursive;
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: white;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+      letter-spacing: 0.15em;
+    }
   }
 
   // Horizontal position driven by JS layout via CSS vars
