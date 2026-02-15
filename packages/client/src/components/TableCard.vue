@@ -43,6 +43,12 @@ const gameTypeLabel = computed(() => {
   return 'Game'
 })
 
+// Get host name for list view
+const hostName = computed(() => {
+  const hostSeat = props.table.seats.find(s => s.isHost && s.player)
+  return hostSeat?.player?.nickname || 'Unknown'
+})
+
 function handleSeatClick(seatIndex: number) {
   const seat = props.table.seats[seatIndex]
   if (seat?.player === null && !props.isCurrent) {
@@ -52,7 +58,23 @@ function handleSeatClick(seatIndex: number) {
 </script>
 
 <template>
-  <div class="table-card" :class="{ current: isCurrent }">
+  <!-- LIST VIEW (compact row for lobby) -->
+  <div v-if="!isCurrent" class="table-row" @click="handleSeatClick(seats.findIndex(s => s.isEmpty))">
+    <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
+    <span class="host-name">{{ hostName }}</span>
+    <div class="seat-dots">
+      <span 
+        v-for="(seat, index) in seats" 
+        :key="index" 
+        class="dot"
+        :class="{ filled: !seat.isEmpty }"
+      />
+    </div>
+    <span class="table-name">{{ table.name }}</span>
+  </div>
+
+  <!-- CURRENT TABLE VIEW (spacious, centered) -->
+  <div v-else class="table-card current">
     <div class="table-header">
       <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
       <span class="table-name">{{ table.name }}</span>
@@ -67,54 +89,93 @@ function handleSeatClick(seatIndex: number) {
         :class="{
           occupied: !seat.isEmpty,
           empty: seat.isEmpty,
-          host: seat.isHost,
           'current-user': seat.isCurrentUser,
-          clickable: seat.isEmpty && !isCurrent,
         }"
-        @click="handleSeatClick(index)"
       >
-        <template v-if="seat.player">
-          <span class="player-name">{{ seat.isCurrentUser ? 'You' : seat.player.nickname }}</span>
-          <span v-if="seat.isHost" class="host-badge">H</span>
-        </template>
-        <template v-else>
-          <span class="empty-label">{{ isCurrent ? 'AI' : '+' }}</span>
-        </template>
+        <span class="player-name">
+          <template v-if="seat.player">
+            {{ seat.isCurrentUser ? 'You' : seat.player.nickname }}
+          </template>
+          <template v-else>AI</template>
+        </span>
+        <span v-if="seat.isHost" class="host-badge">HOST</span>
+        <span v-else-if="!seat.player" class="seat-label">Seat {{ index + 1 }}</span>
       </div>
     </div>
 
-    <div v-if="isCurrent && isEuchre" class="partnership-hint">
-      <span>1 & 3 partners • 2 & 4 partners</span>
+    <div v-if="isEuchre" class="partnership-hint">
+      1 & 3 partners • 2 & 4 partners
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.table-card {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+// ============ LIST VIEW (compact row) ============
+.table-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
   
-  &.current {
-    background: rgba(255, 255, 255, 0.12);
-    padding: $spacing-md $spacing-lg;
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
   }
+}
+
+.host-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.seat-dots {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  
+  &.filled {
+    background: $secondary-color;
+  }
+}
+
+.table-row .table-name {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  text-align: right;
+}
+
+// ============ CURRENT TABLE VIEW ============
+.table-card.current {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: $spacing-lg;
 }
 
 .table-header {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  margin-bottom: $spacing-sm;
+  margin-bottom: $spacing-md;
 }
 
 .game-type-badge {
   font-size: 0.7rem;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 4px;
   text-transform: uppercase;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 
   &.euchre {
     background: rgba(66, 133, 244, 0.4);
@@ -132,94 +193,68 @@ function handleSeatClick(seatIndex: number) {
   }
 }
 
-.table-name {
+.table-card .table-name {
   flex: 1;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
-  opacity: 0.9;
 }
 
 .seat-count {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   opacity: 0.6;
 }
 
 .seats-row {
   display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  gap: $spacing-sm;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .seat {
-  flex: 0 0 auto;
-  min-width: 60px;
-  height: 44px;
+  min-width: 90px;
+  padding: $spacing-sm $spacing-md;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
-  padding: 0 $spacing-sm;
-  transition: all var(--anim-fast);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  border: 2px solid transparent;
 
   &.occupied {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   &.current-user {
-    background: rgba($secondary-color, 0.25);
-  }
-
-  &.empty.clickable {
-    cursor: pointer;
-    
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-  }
-  
-  // Larger seats for current table view
-  .current & {
-    min-width: 80px;
-    height: 56px;
-    flex-direction: column;
+    border-color: $secondary-color;
+    background: rgba($secondary-color, 0.15);
   }
 }
 
 .player-name {
   font-weight: 600;
-  font-size: 0.75rem;
-  text-align: center;
-  max-width: 70px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.9rem;
 }
 
 .host-badge {
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   background: $secondary-color;
   color: white;
-  padding: 1px 4px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-weight: 700;
 }
 
-.empty-label {
-  font-size: 0.8rem;
+.seat-label {
+  font-size: 0.7rem;
   opacity: 0.5;
 }
 
 .partnership-hint {
-  margin-top: $spacing-sm;
-  font-size: 0.7rem;
+  margin-top: $spacing-md;
+  font-size: 0.75rem;
   opacity: 0.5;
   text-align: center;
 }
