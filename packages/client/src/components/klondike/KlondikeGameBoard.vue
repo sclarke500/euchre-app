@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick, reactive } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch, nextTick, triggerRef } from 'vue'
 import { useKlondikeStore } from '@/stores/klondikeStore'
 import { useKlondikeLayout, type ContainerRect, type CardPosition } from '@/composables/useKlondikeLayout'
 import KlondikeContainers from './KlondikeContainers.vue'
@@ -48,8 +48,8 @@ const score = computed(() => {
   return total
 })
 
-// Card positions - using reactive map for deep reactivity
-const cardPositionsRef = ref<Map<string, CardPosition>>(new Map())
+// Card positions - using shallowRef so we can manually trigger updates
+const cardPositionsRef = shallowRef<Map<string, CardPosition>>(new Map())
 
 // Helper to update a position reactively (replaces the object to trigger Vue)
 function updatePosition(id: string, updates: Partial<CardPosition>) {
@@ -57,6 +57,7 @@ function updatePosition(id: string, updates: Partial<CardPosition>) {
   const existing = map.get(id)
   if (existing) {
     map.set(id, { ...existing, ...updates })
+    triggerRef(cardPositionsRef)
   }
 }
 
@@ -111,6 +112,10 @@ watch(
         map.delete(id)
       }
     }
+    
+    // Manually trigger Vue to update (shallowRef doesn't track Map changes)
+    triggerRef(cardPositionsRef)
+    console.log('Klondike watcher: Map updated, size =', map.size)
   },
   { deep: true, immediate: true }
 )
