@@ -273,11 +273,10 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   gap: 0;
-  // Use CSS custom property for border color (for turn glow)
   --avatar-border: #4a4a60;
+  --avatar-bg: rgba(30, 30, 45, 0.92);
 
-  // Unified shape: pill/badge that encompasses circle + name
-  // Built with ::before (main body) and ::after (circle cutout top)
+  // Back circle layer: has border, BEHIND name plate
   &::before {
     content: '';
     position: absolute;
@@ -286,38 +285,38 @@ defineExpose({
     transform: translateX(-50%);
     width: 40px;
     height: 40px;
-    background: rgba(30, 30, 45, 0.92);
+    background: var(--avatar-bg);
     border: 2px solid var(--avatar-border);
     border-radius: 50%;
-    z-index: 0;
+    z-index: 1;
     transition: border-color var(--anim-slow) ease;
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 22px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% + 4px);
-    height: calc(100% - 22px);
-    background: rgba(30, 30, 45, 0.92);
-    border: 2px solid var(--avatar-border);
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-    z-index: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease;
-  }
-
-  // Circle content (no border - just the letter)
-  .avatar-circle {
+  // Name plate: middle layer with border
+  .player-name {
     position: relative;
     z-index: 2;
-    width: 36px;
-    height: 36px;
+    margin-top: -8px;
+    padding: 10px 10px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ccc;
+    white-space: nowrap;
+    background: var(--avatar-bg);
+    border: 2px solid var(--avatar-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
+  }
+
+  // Front circle layer: background fill, ABOVE name plate (covers name's top border)
+  .avatar-circle {
+    position: relative;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: transparent;
+    background: var(--avatar-bg);
     border: none;
     display: flex;
     align-items: center;
@@ -325,17 +324,6 @@ defineExpose({
     font-size: 14px;
     font-weight: bold;
     color: #ccc;
-  }
-
-  // Name text
-  .player-name {
-    position: relative;
-    z-index: 1;
-    padding: 2px 10px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #ccc;
-    white-space: nowrap;
   }
 
   .player-status {
@@ -374,7 +362,7 @@ defineExpose({
   &.is-current-turn {
     --avatar-border: rgba(255, 215, 0, 0.7);
     
-    &::after {
+    .player-name {
       box-shadow:
         0 0 12px rgba(255, 215, 0, 0.3),
         0 0 30px rgba(255, 215, 0, 0.15);
@@ -418,8 +406,9 @@ defineExpose({
   align-items: center;
   gap: 0;
   --avatar-border: #4a4a60;
+  --avatar-bg: rgba(30, 30, 45, 0.92);
 
-  // Circle part of badge
+  // Back circle layer: has border, BEHIND name plate
   &::before {
     content: '';
     position: absolute;
@@ -428,38 +417,38 @@ defineExpose({
     transform: translateX(-50%);
     width: 40px;
     height: 40px;
-    background: rgba(30, 30, 45, 0.92);
+    background: var(--avatar-bg);
     border: 2px solid var(--avatar-border);
     border-radius: 50%;
-    z-index: 0;
+    z-index: 1;
     transition: border-color var(--anim-slow) ease;
   }
 
-  // Rectangle part of badge (connects to circle)
-  &::after {
-    content: '';
-    position: absolute;
-    top: 22px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% + 4px);
-    height: calc(100% - 22px);
-    background: rgba(30, 30, 45, 0.92);
-    border: 2px solid var(--avatar-border);
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-    z-index: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease;
-  }
-
-  .avatar-circle {
+  // Name plate: middle layer with border
+  .player-name {
     position: relative;
     z-index: 2;
-    width: 36px;
-    height: 36px;
+    margin-top: -8px;
+    padding: 10px 10px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ccc;
+    white-space: nowrap;
+    background: var(--avatar-bg);
+    border: 2px solid var(--avatar-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
+  }
+
+  // Front circle layer: background fill, ABOVE name plate
+  .avatar-circle {
+    position: relative;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: transparent;
+    background: var(--avatar-bg);
     border: none;
     display: flex;
     align-items: center;
@@ -469,20 +458,10 @@ defineExpose({
     color: #ccc;
   }
 
-  .player-name {
-    position: relative;
-    z-index: 1;
-    padding: 2px 10px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #ccc;
-    white-space: nowrap;
-  }
-
   &.is-current-turn {
     --avatar-border: rgba(255, 215, 0, 0.7);
     
-    &::after {
+    .player-name {
       box-shadow:
         0 0 12px rgba(255, 215, 0, 0.3),
         0 0 30px rgba(255, 215, 0, 0.15);
