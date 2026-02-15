@@ -264,29 +264,16 @@ const pileStatus = computed(() => {
 
 // ── Dimmed cards (unplayable during user's turn) ────────────────────────
 
-// Cache to prevent flickering from Set recreation
-let cachedDimmedIds = new Set<string>()
-let cachedDimmedKey = ''
-
 const dimmedCardIds = computed(() => {
-  if (!game.isHumanTurn.value && !game.isHumanGivingCards.value) {
-    if (cachedDimmedIds.size > 0) {
-      cachedDimmedIds = new Set<string>()
-      cachedDimmedKey = ''
-    }
-    return cachedDimmedIds
-  }
+  const ids = new Set<string>()
+  if (!game.isHumanTurn.value && !game.isHumanGivingCards.value) return ids
 
   const human = game.humanPlayer.value
-  if (!human) return cachedDimmedIds
+  if (!human) return ids
 
   if (game.isHumanGivingCards.value) {
     // During give-back, all cards are selectable — no dimming
-    if (cachedDimmedIds.size > 0) {
-      cachedDimmedIds = new Set<string>()
-      cachedDimmedKey = ''
-    }
-    return cachedDimmedIds
+    return ids
   }
 
   // During play, dim cards whose rank can't be part of any valid play
@@ -296,22 +283,12 @@ const dimmedCardIds = computed(() => {
       validRanks.add(card.rank)
     }
   }
-  
-  const newIds: string[] = []
   for (const card of human.hand) {
     if (!validRanks.has(card.rank)) {
-      newIds.push(card.id)
+      ids.add(card.id)
     }
   }
-  
-  // Only update if content changed
-  const newKey = newIds.sort().join(',')
-  if (newKey !== cachedDimmedKey) {
-    cachedDimmedIds = new Set(newIds)
-    cachedDimmedKey = newKey
-  }
-  
-  return cachedDimmedIds
+  return ids
 })
 
 // ── Card selection ──────────────────────────────────────────────────────
