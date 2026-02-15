@@ -207,7 +207,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             replacedWithAI: true,
           })
         },
-      }, table.maxPlayers, superTwosMode)
+      }, table.maxPlayers, superTwosMode, table.settings?.aiDifficulty ?? 'easy')
 
       presidentGame.initializePlayers(humanPlayers)
       presidentGames.set(gameId, presidentGame)
@@ -653,7 +653,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             replacedWithAI: true,
           })
         },
-      }, humanPlayers.length || 4, false)
+      }, humanPlayers.length || 4, previousSettings?.superTwosMode ?? false, previousSettings?.aiDifficulty ?? 'easy')
 
       newPresidentGame.initializePlayers(humanPlayers)
       presidentGames.set(newGameId, newPresidentGame)

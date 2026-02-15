@@ -213,12 +213,11 @@ export const useLobbyStore = defineStore('lobby', () => {
   }
 
   function createTable(tableName?: string): void {
-    // Build settings from shared settingsStore
-    const settings: TableSettings | undefined = selectedGameType.value === 'president'
-      ? { superTwosMode: settingsStore.superTwosAndJokers }
-      : selectedGameType.value === 'euchre'
-        ? { aiDifficulty: settingsStore.aiDifficulty }
-        : undefined
+    // Build settings from shared settingsStore - include aiDifficulty for all games
+    const settings: TableSettings = {
+      aiDifficulty: settingsStore.aiDifficulty,
+      ...(selectedGameType.value === 'president' && { superTwosMode: settingsStore.superTwosAndJokers }),
+    }
 
     websocket.send({
       type: 'create_table',

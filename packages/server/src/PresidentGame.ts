@@ -19,6 +19,7 @@ import {
   isValidPlay,
   canPlay,
   choosePresidentPlay,
+  choosePresidentPlayHard,
   chooseCardsToGive,
   getLowestCards,
   getHighestCards,
@@ -83,11 +84,15 @@ export class PresidentGame {
   private awaitingGiveCards: number | null = null // seat index of player we're waiting on
   private pendingExchangeReceivedCards: Map<number, StandardCard[]> = new Map() // what each player received
 
-  constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false) {
+  // AI difficulty
+  private readonly aiDifficulty: 'easy' | 'hard'
+
+  constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false, aiDifficulty: 'easy' | 'hard' = 'easy') {
     this.id = id
     this.events = events
     this.maxPlayers = maxPlayers
     this.superTwosMode = superTwosMode
+    this.aiDifficulty = aiDifficulty
   }
 
   getStateSeq(): number {
@@ -843,7 +848,9 @@ export class PresidentGame {
       }
 
       const gameState = this.buildGameState()
-      const play = choosePresidentPlay(presidentPlayer, this.currentPile, gameState)
+      const play = this.aiDifficulty === 'hard'
+        ? choosePresidentPlayHard(presidentPlayer, this.currentPile, gameState)
+        : choosePresidentPlay(presidentPlayer, this.currentPile, gameState)
 
       if (play === null) {
         this.passInternal(player.seatIndex)

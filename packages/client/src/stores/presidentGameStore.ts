@@ -22,6 +22,7 @@ import {
   findValidPlays,
   canPlay,
   choosePresidentPlay,
+  choosePresidentPlayHard,
   chooseCardsToGiveBack,
   getRankDisplayName,
   getRandomAINames,
@@ -31,7 +32,7 @@ import { useSettingsStore } from './settingsStore'
 
 export const usePresidentGameStore = defineStore('presidentGame', () => {
   // Settings
-  const settings = useSettingsStore()
+  const settingsStore = useSettingsStore()
 
   // State
   const players = ref<PresidentPlayer[]>([])
@@ -164,7 +165,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // Build rules from settings
     rules.value = {
-      superTwosMode: settings.isSuperTwosAndJokers(),
+      superTwosMode: settingsStore.isSuperTwosAndJokers(),
       whoLeads: 'scum', // Scum leads after card exchange (standard rule)
       playStyle: 'multiLoop', // TODO: Add to settings
     }
@@ -451,7 +452,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     setTimeout(() => {
       if (phase.value !== PresidentPhase.Playing) return
 
-      const play = choosePresidentPlay(player, currentPile.value, gameState.value)
+      const hard = settingsStore.isHardAI()
+      const play = hard
+        ? choosePresidentPlayHard(player, currentPile.value, gameState.value)
+        : choosePresidentPlay(player, currentPile.value, gameState.value)
 
       if (play === null) {
         pass()

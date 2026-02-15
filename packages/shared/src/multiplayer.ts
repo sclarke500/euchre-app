@@ -33,7 +33,7 @@ export type GameType = 'euchre' | 'president' | 'spades'
 export interface TableSettings {
   superTwosMode?: boolean // President only
   maxRounds?: number // President only (default 5)
-  aiDifficulty?: 'easy' | 'hard' // Euchre only
+  aiDifficulty?: 'easy' | 'hard' // All games
 }
 
 export interface Table {
