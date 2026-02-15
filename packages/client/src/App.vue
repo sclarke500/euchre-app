@@ -111,7 +111,10 @@ onMounted(async () => {
 
   console.log('PWA: Days since dismissed:', daysSinceDismissed, 'Has deferred prompt:', !!deferredPrompt.value)
 
-  if (daysSinceDismissed > 7) {
+  // Only show install prompts on mobile (desktop users are fine with browser tabs)
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  
+  if (daysSinceDismissed > 7 && isMobile) {
     // Show prompt after a brief delay
     setTimeout(() => {
       // For Android/Chrome - show if we have the deferred prompt
@@ -127,6 +130,8 @@ onMounted(async () => {
         console.log('PWA: No prompt available - Chrome requires 2+ visits with 5min between')
       }
     }, 2000)
+  } else if (!isMobile) {
+    console.log('PWA: Skipping install prompt on desktop')
   }
 })
 
