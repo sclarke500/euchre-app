@@ -274,14 +274,31 @@ defineExpose({
   align-items: center;
   gap: 0;
 
-  // Circle protrudes from top of name plate
+  // Unified background shape behind circle + name
+  &::before {
+    content: '';
+    position: absolute;
+    top: 10px; // Start below top of circle
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% + 4px);
+    height: calc(100% - 10px);
+    background: rgba(30, 30, 45, 0.92);
+    border: 2px solid #4a4a60;
+    border-radius: 8px;
+    z-index: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
+  }
+
+  // Circle protrudes from top
   .avatar-circle {
     position: relative;
     z-index: 2;
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #3a3a4a;
+    background: rgba(30, 30, 45, 0.92);
     border: 2px solid #4a4a60;
     display: flex;
     align-items: center;
@@ -289,23 +306,18 @@ defineExpose({
     font-size: 14px;
     font-weight: bold;
     color: #ccc;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    margin-bottom: -10px; // Overlap into name plate
+    transition: border-color var(--anim-slow) ease;
   }
 
-  // Name plate below circle
+  // Name text (no separate background/border)
   .player-name {
     position: relative;
     z-index: 1;
-    padding: 12px 10px 5px;
+    padding: 4px 10px 6px;
     font-size: 11px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: rgba(30, 30, 45, 0.92);
-    border: 2px solid #4a4a60;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   .player-status {
@@ -340,9 +352,9 @@ defineExpose({
     gap: 2px;
   }
 
-  // Turn indicator glow on the name plate
+  // Turn indicator glow
   &.is-current-turn {
-    .player-name {
+    &::before {
       border-color: rgba(255, 215, 0, 0.7);
       box-shadow:
         0 0 12px rgba(255, 215, 0, 0.3),
@@ -390,14 +402,31 @@ defineExpose({
   align-items: center;
   gap: 0;
 
-  // Circle protrudes from top of name plate
+  // Unified background shape behind circle + name
+  &::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% + 4px);
+    height: calc(100% - 10px);
+    background: rgba(30, 30, 45, 0.92);
+    border: 2px solid #4a4a60;
+    border-radius: 8px;
+    z-index: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
+  }
+
+  // Circle protrudes from top
   .avatar-circle {
     position: relative;
     z-index: 2;
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #3a3a4a;
+    background: rgba(30, 30, 45, 0.92);
     border: 2px solid #4a4a60;
     display: flex;
     align-items: center;
@@ -405,29 +434,22 @@ defineExpose({
     font-size: 14px;
     font-weight: bold;
     color: #ccc;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    margin-bottom: -10px;
     transition: border-color var(--anim-slow) ease;
   }
 
-  // Name plate below circle
+  // Name text (no separate background/border)
   .player-name {
     position: relative;
     z-index: 1;
-    padding: 12px 10px 5px;
+    padding: 4px 10px 6px;
     font-size: 11px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: rgba(30, 30, 45, 0.92);
-    border: 2px solid #4a4a60;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
   }
 
   &.is-current-turn {
-    .player-name {
+    &::before {
       border-color: rgba(255, 215, 0, 0.7);
       box-shadow:
         0 0 12px rgba(255, 215, 0, 0.3),
