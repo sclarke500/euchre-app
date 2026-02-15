@@ -132,15 +132,17 @@ const cardPositions = computed<CardPosition[]>(() => {
 
 // Animate dealing cards from stock to tableau
 async function animateDeal() {
+  const stockRect = layout.containers.value.stock
+  
+  // If containers aren't measured yet, skip animation and let watcher handle it
+  if (!stockRect) {
+    console.warn('Klondike: Stock container not measured, skipping deal animation')
+    return
+  }
+  
   isAnimating.value = true
   const map = cardPositionsRef.value
   map.clear()
-  
-  const stockRect = layout.containers.value.stock
-  if (!stockRect) {
-    isAnimating.value = false
-    return
-  }
   
   // Get final positions
   const finalPositions = layout.calculatePositions(store.gameState)
@@ -214,8 +216,12 @@ onMounted(async () => {
     layout.setCardSize(width, height)
   }
   
-  // Wait for containers to be measured
-  await new Promise(r => setTimeout(r, 150))
+  // Wait for containers to be measured (poll until ready)
+  let attempts = 0
+  while (!layout.containers.value.stock && attempts < 20) {
+    await new Promise(r => setTimeout(r, 50))
+    attempts++
+  }
   
   store.startNewGame()
   startTimer()
