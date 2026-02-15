@@ -4,6 +4,11 @@
 
 This index classifies docs by current usage so contributors can quickly identify canonical sources vs. historical context.
 
+## Start Here (LLM Onboarding)
+
+- `docs/LLM_ONBOARDING.md` — **Quick architecture overview** (5 min read). Start here.
+- `docs/NEW_GAME_GUIDE.md` — **Step-by-step guide** for implementing a new multiplayer game.
+
 ## Canonical (Current)
 
 - `README.md` — Project overview, setup, and core commands.
