@@ -105,6 +105,11 @@ function setTableauRef(index: number, el: HTMLElement | null) {
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
               </svg>
             </template>
+            <template v-else>
+              <div class="card-back">
+                <div class="card-back-pattern"></div>
+              </div>
+            </template>
           </div>
           <div ref="wasteRef" class="waste-slot" @click="emit('wasteClick')"></div>
         </div>
@@ -162,6 +167,11 @@ function setTableauRef(index: number, el: HTMLElement | null) {
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
             </svg>
           </template>
+          <template v-else>
+            <div class="card-back">
+              <div class="card-back-pattern"></div>
+            </div>
+          </template>
         </div>
         <div class="waste-slot" @click="emit('wasteClick')"></div>
       </div>
@@ -206,6 +216,42 @@ function setTableauRef(index: number, el: HTMLElement | null) {
     width: 28px;
     height: 28px;
     color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.card-back {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-back-pattern {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    bottom: 3px;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 4px,
+      rgba(255, 255, 255, 0.05) 4px,
+      rgba(255, 255, 255, 0.05) 8px
+    );
   }
 }
 

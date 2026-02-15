@@ -76,20 +76,9 @@ export function useKlondikeLayout() {
       tableau: containers.value.tableau.filter(Boolean).length
     })
 
-    // Stock cards (stacked, all face down)
-    const stockRect = containers.value.stock
-    if (stockRect) {
-      state.stock.forEach((card, i) => {
-        positions.push({
-          id: card.id,
-          x: stockRect.x,
-          y: stockRect.y,
-          z: zIndex++,
-          faceUp: false,
-          card,
-        })
-      })
-    }
+    // Stock cards - NOT rendered in card layer
+    // The stock slot shows a card back if there are cards
+    // This keeps the card layer clickable
 
     // Waste cards (fanned horizontally, face up)
     const wasteRect = containers.value.waste
