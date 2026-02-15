@@ -7,19 +7,19 @@ const settings = useSettingsStore()
 <template>
   <div class="compact-options">
     <div class="option-row">
-      <span class="option-label">Dealer Rules</span>
+      <span class="option-label">Stick the Dealer</span>
       <div class="toggle-group">
         <button
           :class="['toggle-btn', { active: settings.dealerPassRule === 'canPass' }]"
           @click="settings.setDealerPassRule('canPass')"
         >
-          Can Pass
+          Off
         </button>
         <button
           :class="['toggle-btn', { active: settings.dealerPassRule === 'stickTheDealer' }]"
           @click="settings.setDealerPassRule('stickTheDealer')"
         >
-          Stick Dealer
+          On
         </button>
       </div>
     </div>
