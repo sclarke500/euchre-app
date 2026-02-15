@@ -112,6 +112,12 @@ function setFoundationRef(index: number, el: HTMLElement | null) {
 function setTableauRef(index: number, el: HTMLElement | null) {
   tableauRefs.value[index] = el
 }
+
+// Expose refs for drag-and-drop zone detection
+defineExpose({
+  tableauRefs,
+  foundationRefs,
+})
 </script>
 
 <template>

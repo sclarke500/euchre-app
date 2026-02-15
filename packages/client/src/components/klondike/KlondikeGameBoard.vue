@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch, nextTick, triggerRef } from 'vue'
 import { useKlondikeStore } from '@/stores/klondikeStore'
 import { useKlondikeLayout, type ContainerRect, type CardPosition } from '@/composables/useKlondikeLayout'
+import { canMoveToTableau, canMoveToFoundation } from '@euchre/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '../Modal.vue'
@@ -12,6 +13,9 @@ const emit = defineEmits<{
 
 const store = useKlondikeStore()
 const layout = useKlondikeLayout()
+
+// Ref to containers component for drop zone detection
+const containersRef = ref<InstanceType<typeof KlondikeContainers> | null>(null)
 
 // Timer
 const elapsedSeconds = ref(0)
@@ -63,6 +67,223 @@ function updatePosition(id: string, updates: Partial<CardPosition>) {
 
 // Track whether we're animating (deal or draw)
 const isAnimating = ref(false)
+
+// Drag-and-drop state
+interface DragState {
+  cardIds: string[]
+  startPositions: Map<string, { x: number; y: number; z: number }>
+  offsetX: number
+  offsetY: number
+  sourceType: 'tableau' | 'waste' | 'foundation'
+  sourceColumnIndex?: number
+  sourceCardIndex?: number
+}
+
+const dragState = ref<DragState | null>(null)
+const dragOffset = ref({ x: 0, y: 0 })
+const activeDropZone = ref<{ type: 'tableau' | 'foundation'; index: number; isValid: boolean } | null>(null)
+
+// Get cards being dragged
+const dragCardIds = computed(() => dragState.value?.cardIds ?? [])
+
+// Find what drop zone a point is over
+function findDropZone(x: number, y: number): { type: 'tableau' | 'foundation'; index: number; isValid: boolean } | null {
+  if (!dragState.value || !containersRef.value) return null
+  
+  const tableauRefs = containersRef.value.tableauRefs
+  const foundationRefs = containersRef.value.foundationRefs
+  
+  // Get the first dragged card to check validity
+  const firstCardId = dragState.value.cardIds[0]
+  if (!firstCardId) return null
+  
+  const firstCardPos = cardPositionsRef.value.get(firstCardId)
+  if (!firstCardPos) return null
+  
+  const draggedCard = firstCardPos.card
+  const state = store.gameState
+  
+  // Check tableau columns
+  for (let i = 0; i < tableauRefs.length; i++) {
+    const el = tableauRefs[i]
+    if (!el) continue
+    
+    // Skip source column
+    if (dragState.value.sourceType === 'tableau' && dragState.value.sourceColumnIndex === i) {
+      continue
+    }
+    
+    const rect = el.getBoundingClientRect()
+    // Expand hit area vertically for tableau (cards stack down)
+    const expandedRect = {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom + 200, // Extend downward for stacked cards
+    }
+    
+    if (x >= expandedRect.left && x <= expandedRect.right && y >= expandedRect.top && y <= expandedRect.bottom) {
+      const column = state.tableau[i]
+      const isValid = column ? canMoveToTableau(draggedCard, column) : false
+      return { type: 'tableau', index: i, isValid }
+    }
+  }
+  
+  // Check foundations (only for single card drags)
+  if (dragState.value.cardIds.length === 1) {
+    for (let i = 0; i < foundationRefs.length; i++) {
+      const el = foundationRefs[i]
+      if (!el) continue
+      
+      const rect = el.getBoundingClientRect()
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        const foundation = state.foundations[i]
+        const isValid = foundation ? canMoveToFoundation(draggedCard, foundation) : false
+        return { type: 'foundation', index: i, isValid }
+      }
+    }
+  }
+  
+  return null
+}
+
+// Handle drag start from card layer
+function handleDragStart(cardId: string, x: number, y: number, sourceType: 'tableau' | 'waste' | 'foundation') {
+  const cardPos = cardPositionsRef.value.get(cardId)
+  if (!cardPos || !cardPos.faceUp) return
+  
+  // Find source info
+  let sourceColumnIndex: number | undefined
+  let sourceCardIndex: number | undefined
+  let cardIds: string[] = [cardId]
+  
+  // Find which tableau column/card index this is
+  for (let colIdx = 0; colIdx < store.gameState.tableau.length; colIdx++) {
+    const column = store.gameState.tableau[colIdx]
+    if (!column) continue
+    
+    for (let cardIdx = 0; cardIdx < column.cards.length; cardIdx++) {
+      if (column.cards[cardIdx]?.id === cardId) {
+        sourceColumnIndex = colIdx
+        sourceCardIndex = cardIdx
+        // For tableau, include all face-up cards from this index down
+        cardIds = column.cards
+          .slice(cardIdx)
+          .filter(c => c.faceUp)
+          .map(c => c.id)
+        break
+      }
+    }
+    if (sourceColumnIndex !== undefined) break
+  }
+  
+  // Check waste
+  if (sourceColumnIndex === undefined) {
+    const waste = store.gameState.waste
+    if (waste.length > 0 && waste[waste.length - 1]?.id === cardId) {
+      sourceColumnIndex = undefined
+      sourceCardIndex = undefined
+      cardIds = [cardId]
+    }
+  }
+  
+  // Store original positions for potential snap-back
+  const startPositions = new Map<string, { x: number; y: number; z: number }>()
+  for (const id of cardIds) {
+    const pos = cardPositionsRef.value.get(id)
+    if (pos) {
+      startPositions.set(id, { x: pos.x, y: pos.y, z: pos.z })
+    }
+  }
+  
+  dragState.value = {
+    cardIds,
+    startPositions,
+    offsetX: x - cardPos.x,
+    offsetY: y - cardPos.y,
+    sourceType: sourceColumnIndex !== undefined ? 'tableau' : 'waste',
+    sourceColumnIndex,
+    sourceCardIndex,
+  }
+  
+  dragOffset.value = { x: 0, y: 0 }
+}
+
+// Handle drag move
+function handleDragMove(x: number, y: number) {
+  if (!dragState.value) return
+  
+  const firstCardId = dragState.value.cardIds[0]
+  if (!firstCardId) return
+  
+  const startPos = dragState.value.startPositions.get(firstCardId)
+  if (!startPos) return
+  
+  dragOffset.value = {
+    x: x - dragState.value.offsetX - startPos.x,
+    y: y - dragState.value.offsetY - startPos.y,
+  }
+  
+  // Update active drop zone
+  activeDropZone.value = findDropZone(x, y)
+}
+
+// Handle drag end
+function handleDragEnd() {
+  if (!dragState.value) return
+  
+  const zone = activeDropZone.value
+  
+  if (zone?.isValid) {
+    // Execute the move
+    if (zone.type === 'tableau') {
+      if (dragState.value.sourceType === 'tableau' && dragState.value.sourceColumnIndex !== undefined && dragState.value.sourceCardIndex !== undefined) {
+        // Select the card first, then move
+        store.handleTableauTap(dragState.value.sourceColumnIndex, dragState.value.sourceCardIndex)
+        store.handleEmptyTableauTap(zone.index)
+      } else if (dragState.value.sourceType === 'waste') {
+        store.handleWasteTap()
+        store.handleEmptyTableauTap(zone.index)
+      }
+    } else if (zone.type === 'foundation') {
+      if (dragState.value.sourceType === 'tableau' && dragState.value.sourceColumnIndex !== undefined && dragState.value.sourceCardIndex !== undefined) {
+        store.handleTableauTap(dragState.value.sourceColumnIndex, dragState.value.sourceCardIndex)
+        store.handleFoundationTap(zone.index)
+      } else if (dragState.value.sourceType === 'waste') {
+        store.handleWasteTap()
+        store.handleFoundationTap(zone.index)
+      }
+    }
+  }
+  
+  // Clear drag state (positions will sync from state change)
+  dragState.value = null
+  dragOffset.value = { x: 0, y: 0 }
+  activeDropZone.value = null
+}
+
+// Get style for drop zone highlight overlay
+function getDropZoneStyle(zone: { type: 'tableau' | 'foundation'; index: number }): Record<string, string> {
+  if (!containersRef.value) return {}
+  
+  const refs = zone.type === 'tableau' 
+    ? containersRef.value.tableauRefs 
+    : containersRef.value.foundationRefs
+  
+  const el = refs[zone.index]
+  if (!el) return {}
+  
+  const rect = el.getBoundingClientRect()
+  const boardRect = boardRef.value?.getBoundingClientRect()
+  if (!boardRect) return {}
+  
+  return {
+    left: `${rect.left - boardRect.left}px`,
+    top: `${rect.top - boardRect.top}px`,
+    width: `${rect.width}px`,
+    height: zone.type === 'tableau' ? `${rect.height + 150}px` : `${rect.height}px`,
+  }
+}
 
 function hasValidRect(rect: ContainerRect | null): boolean {
   return !!rect && rect.width > 0 && rect.height > 0
@@ -479,7 +700,12 @@ function doNewGame() {
   <div ref="boardRef" class="klondike-board">
     <!-- Container slots (measures positions, handles empty slot clicks) -->
     <KlondikeContainers
+      ref="containersRef"
       :state="store.gameState"
+      :class="{ 
+        'drop-zone-active': dragState !== null,
+        'drop-zone-valid': activeDropZone?.isValid 
+      }"
       @container-measured="handleContainerMeasured"
       @stock-click="handleStockClick"
       @waste-click="handleWasteClick"
@@ -493,8 +719,30 @@ function doNewGame() {
       :selection="selection"
       :card-width="layout.cardWidth.value"
       :card-height="layout.cardHeight.value"
+      :drag-card-ids="dragCardIds"
+      :drag-offset-x="dragOffset.x"
+      :drag-offset-y="dragOffset.y"
       @card-click="handleCardClick"
+      @drag-start="handleDragStart"
+      @drag-move="handleDragMove"
+      @drag-end="handleDragEnd"
     />
+    
+    <!-- Drop zone highlight overlay -->
+    <div v-if="activeDropZone" class="drop-zone-highlight" :class="{ valid: activeDropZone.isValid, invalid: !activeDropZone.isValid }">
+      <template v-if="activeDropZone.type === 'tableau'">
+        <div 
+          class="highlight-overlay tableau"
+          :style="getDropZoneStyle(activeDropZone)"
+        ></div>
+      </template>
+      <template v-else>
+        <div 
+          class="highlight-overlay foundation"
+          :style="getDropZoneStyle(activeDropZone)"
+        ></div>
+      </template>
+    </div>
 
     <!-- Bottom toolbar -->
     <div class="bottom-toolbar">
@@ -767,5 +1015,33 @@ function doNewGame() {
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+// Drop zone highlight overlay
+.drop-zone-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5; // Below card layer but above containers
+}
+
+.highlight-overlay {
+  position: absolute;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  
+  .valid & {
+    background: rgba(46, 204, 113, 0.3);
+    border: 3px solid rgba(46, 204, 113, 0.8);
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+  }
+  
+  .invalid & {
+    background: rgba(231, 76, 60, 0.2);
+    border: 3px dashed rgba(231, 76, 60, 0.6);
+  }
 }
 </style>
