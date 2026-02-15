@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { watch } from 'vue'
 import type { CardPosition } from '@/composables/useKlondikeLayout'
 import { Suit, type Selection } from '@euchre/shared'
 
@@ -41,8 +41,28 @@ function isRedSuit(suit: Suit): boolean {
 }
 
 function handleCardClick(cardId: string) {
+  // Log position before click
+  const pos = props.positions.find(p => p.id === cardId)
+  if (pos) {
+    console.log('[CardLayer] Card clicked:', cardId, 'at', pos.x, pos.y)
+  }
   emit('cardClick', cardId)
 }
+
+// Log when positions change for debugging
+watch(() => props.positions, (newPositions, oldPositions) => {
+  if (oldPositions && newPositions) {
+    // Find cards that moved
+    for (const newPos of newPositions) {
+      const oldPos = oldPositions.find(p => p.id === newPos.id)
+      if (oldPos && (Math.abs(oldPos.x - newPos.x) > 1 || Math.abs(oldPos.y - newPos.y) > 1)) {
+        console.log('[CardLayer] Card moved:', newPos.id, 
+          'from', Math.round(oldPos.x), Math.round(oldPos.y),
+          'to', Math.round(newPos.x), Math.round(newPos.y))
+      }
+    }
+  }
+}, { deep: true })
 </script>
 
 <template>
