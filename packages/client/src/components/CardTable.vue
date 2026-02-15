@@ -380,11 +380,11 @@ defineExpose({
   &.dealer-seat-3 { left: calc(100% - 20px); top: calc(50% + 50px); }
 }
 
-// User avatar at bottom right of screen
+// User avatar at bottom left of screen
 .user-avatar-bottom {
   position: fixed;
   bottom: 12px;
-  right: max(12px, env(safe-area-inset-right));
+  left: max(12px, env(safe-area-inset-left));
   z-index: 400;
   display: flex;
   flex-direction: column;
