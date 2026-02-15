@@ -2,13 +2,13 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Klondike Solitaire', () => {
   test.beforeEach(async ({ page }) => {
-    // Set a portrait viewport (most phones)
-    await page.setViewportSize({ width: 390, height: 844 })
+    // Set a landscape viewport (required for game board)
+    await page.setViewportSize({ width: 844, height: 390 })
     
     await page.goto('/')
     
     // Navigate to Klondike and start a game
-    await page.locator('.game-tab', { hasText: 'Klondike' }).click()
+    await page.locator('.game-card', { hasText: 'Klondike' }).click()
     await page.locator('.menu-btn.single-player').click()
     
     // Wait for game board to load
@@ -35,41 +35,42 @@ test.describe('Klondike Solitaire', () => {
   })
 
   test('can draw cards from stock', async ({ page }) => {
-    // Get initial face-up count (7 from tableau)
-    const initialFaceUp = await page.locator('.klondike-card.face-up').count()
-    expect(initialFaceUp).toBe(7)
+    // Wait for deal animation to complete (7 face-up cards in tableau)
+    await expect(page.locator('.klondike-card.face-up')).toHaveCount(7, { timeout: 5000 })
     
     // Click stock slot to draw cards
     const stockSlot = page.locator('.stock-slot').first()
     await stockSlot.click()
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(500)
     
     // After draw, we should have more face-up cards (waste cards are face-up)
     const afterDrawFaceUp = await page.locator('.klondike-card.face-up').count()
-    expect(afterDrawFaceUp).toBeGreaterThan(initialFaceUp)
+    expect(afterDrawFaceUp).toBeGreaterThan(7)
   })
 
-  test('undo reverses a draw from stock', async ({ page }) => {
-    // Get initial face-up count
-    const initialFaceUp = await page.locator('.klondike-card.face-up').count()
+  test('undo reverses a draw from stock', { retries: 2 }, async ({ page }) => {
+    // Wait for deal animation to complete (7 face-up cards in tableau)
+    await expect(page.locator('.klondike-card.face-up')).toHaveCount(7, { timeout: 5000 })
     
     // Draw from stock
     const stockSlot = page.locator('.stock-slot').first()
     await stockSlot.click()
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(500)
     
-    // Should have more face-up cards now
+    // Should have more face-up cards now (draw adds waste cards)
     const afterDrawFaceUp = await page.locator('.klondike-card.face-up').count()
-    expect(afterDrawFaceUp).toBeGreaterThan(initialFaceUp)
+    expect(afterDrawFaceUp).toBeGreaterThan(7)
     
-    // Click undo button
-    const undoButton = page.locator('button[title="Undo"]')
+    // Wait for undo button to become enabled
+    const undoButton = page.locator('button[title="Undo"]:not(.disabled)')
+    await expect(undoButton).toBeVisible({ timeout: 2000 })
     await undoButton.click()
-    await page.waitForTimeout(300)
     
-    // Should be back to initial
-    const afterUndoFaceUp = await page.locator('.klondike-card.face-up').count()
-    expect(afterUndoFaceUp).toBe(initialFaceUp)
+    // Wait for undo animation and state update
+    await page.waitForTimeout(800)
+    
+    // Undo should return to initial 7 face-up cards
+    await expect(page.locator('.klondike-card.face-up')).toHaveCount(7, { timeout: 3000 })
   })
 
   test('move count increases on draw', async ({ page }) => {

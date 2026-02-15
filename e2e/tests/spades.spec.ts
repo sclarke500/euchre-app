@@ -6,13 +6,13 @@ test.describe('Spades', () => {
     await page.goto('/')
   })
 
-  test('Spades tab appears in main menu', async ({ page }) => {
-    await expect(page.locator('.game-tab', { hasText: 'Spades' })).toBeVisible()
+  test('Spades card appears in main menu', async ({ page }) => {
+    await expect(page.locator('.game-card', { hasText: 'Spades' })).toBeVisible()
   })
 
   test('can start single player Spades game', async ({ page }) => {
-    // Select Spades tab
-    await page.locator('.game-tab', { hasText: 'Spades' }).click()
+    // Select Spades card
+    await page.locator('.game-card', { hasText: 'Spades' }).click()
     
     // Start single player
     await page.locator('.menu-btn.single-player').click()
@@ -22,7 +22,7 @@ test.describe('Spades', () => {
   })
 
   test('bidding phase shows bid selector', async ({ page }) => {
-    await page.locator('.game-tab', { hasText: 'Spades' }).click()
+    await page.locator('.game-card', { hasText: 'Spades' }).click()
     await page.locator('.menu-btn.single-player').click()
     
     // Should see bidding UI - the bid selector element
@@ -30,7 +30,7 @@ test.describe('Spades', () => {
   })
 
   test('shows team scores', async ({ page }) => {
-    await page.locator('.game-tab', { hasText: 'Spades' }).click()
+    await page.locator('.game-card', { hasText: 'Spades' }).click()
     await page.locator('.menu-btn.single-player').click()
     
     // Should display scores for both teams (Us/Them)
@@ -41,7 +41,7 @@ test.describe('Spades', () => {
   test('spades are always trump', async ({ page }) => {
     // This is more of a game logic test, but we can verify
     // the UI shows spades as trump or doesn't have trump selection
-    await page.locator('.game-tab', { hasText: 'Spades' }).click()
+    await page.locator('.game-card', { hasText: 'Spades' }).click()
     await page.locator('.menu-btn.single-player').click()
     
     // Should NOT have trump selection (unlike Euchre)

@@ -7,17 +7,17 @@ test.describe('Smoke Tests', () => {
     // Should show the site branding
     await expect(page.locator('text=67CardGames.com')).toBeVisible()
     
-    // Should have game selection tabs
-    await expect(page.locator('.game-tab', { hasText: 'Euchre' })).toBeVisible()
-    await expect(page.locator('.game-tab', { hasText: 'President' })).toBeVisible()
-    await expect(page.locator('.game-tab', { hasText: 'Klondike' })).toBeVisible()
+    // Should have game selection cards
+    await expect(page.locator('.game-card', { hasText: 'Euchre' })).toBeVisible()
+    await expect(page.locator('.game-card', { hasText: 'President' })).toBeVisible()
+    await expect(page.locator('.game-card', { hasText: 'Klondike' })).toBeVisible()
   })
 
   test('can start a single player Euchre game', async ({ page }) => {
     await page.goto('/')
     
-    // Click Euchre tab
-    await page.locator('.game-tab', { hasText: 'Euchre' }).click()
+    // Click Euchre card
+    await page.locator('.game-card', { hasText: 'Euchre' }).click()
     
     // Start single player game
     await page.locator('.menu-btn.single-player').click()
@@ -29,8 +29,8 @@ test.describe('Smoke Tests', () => {
   test('can start a single player President game', async ({ page }) => {
     await page.goto('/')
     
-    // Select President tab
-    await page.locator('.game-tab', { hasText: 'President' }).click()
+    // Select President card
+    await page.locator('.game-card', { hasText: 'President' }).click()
     
     // Start single player
     await page.locator('.menu-btn.single-player').click()
@@ -42,8 +42,8 @@ test.describe('Smoke Tests', () => {
   test('can start a Klondike game', async ({ page }) => {
     await page.goto('/')
     
-    // Select Klondike tab
-    await page.locator('.game-tab', { hasText: 'Klondike' }).click()
+    // Select Klondike card
+    await page.locator('.game-card', { hasText: 'Klondike' }).click()
     
     // Start game
     await page.locator('.menu-btn.single-player').click()
