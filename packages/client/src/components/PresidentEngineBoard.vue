@@ -161,6 +161,8 @@ import GameHUD from './GameHUD.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { usePresidentGameAdapter } from '@/composables/usePresidentGameAdapter'
 import { usePresidentDirector } from '@/composables/usePresidentDirector'
+import { usePresidentGameStore } from '@/stores/presidentGameStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { websocket } from '@/services/websocket'
 
 const props = withDefaults(defineProps<{
@@ -430,12 +432,17 @@ function buildBugReportPayload() {
 // ── Mount ───────────────────────────────────────────────────────────────
 
 onMounted(async () => {
+  // Initialize game - multiplayer connects to server, single-player starts new game
+  if (props.mode === 'multiplayer') {
+    game.initialize?.()
+  } else {
+    const presidentStore = usePresidentGameStore()
+    const settingsStore = useSettingsStore()
+    presidentStore.startNewGame(settingsStore.presidentPlayerCount)
+  }
   await nextTick()
   if (tableRef.value) {
     boardRef.value = tableRef.value.boardRef
-  }
-  if (props.mode === 'multiplayer') {
-    game.initialize?.()
   }
 })
 

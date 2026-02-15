@@ -195,7 +195,7 @@ function startSinglePlayer(game: GameType) {
   currentGame.value = game
   if (game === 'president') {
     currentView.value = 'presidentSinglePlayer'
-    presidentStore.startNewGame(settingsStore.presidentPlayerCount)
+    // PresidentEngineBoard initializes the game in onMounted
   } else if (game === 'klondike') {
     currentView.value = 'klondikeSinglePlayer'
     // KlondikeGameBoard initializes the game in onMounted
@@ -204,7 +204,7 @@ function startSinglePlayer(game: GameType) {
     // SpadesGameBoard initializes the game in onMounted
   } else {
     currentView.value = 'euchreSinglePlayer'
-    gameStore.startNewGame()
+    // EuchreEngineBoard initializes the game in onMounted
   }
 }
 

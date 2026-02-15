@@ -422,7 +422,12 @@ function confirmLeave() {
 }
 
 onMounted(async () => {
-  mpStore?.initialize()
+  // Initialize game - multiplayer connects to server, single-player starts new game
+  if (props.mode === 'multiplayer') {
+    mpStore?.initialize()
+  } else {
+    gameStore?.startNewGame()
+  }
   await nextTick()
   if (tableRef.value) {
     boardRef.value = tableRef.value.boardRef
