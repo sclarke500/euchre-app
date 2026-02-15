@@ -210,18 +210,26 @@ function handleWasteClick() {
   }
 }
 
-.waste-fan-enter-active,
-.waste-fan-leave-active {
-  transition: all var(--anim-medium) ease-out;
+.waste-fan-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.waste-fan-enter-from,
+.waste-fan-leave-active {
+  transition: all 0.2s ease-in;
+  position: absolute;
+}
+
+.waste-fan-enter-from {
+  opacity: 0;
+  transform: scale(0.7) translateX(-20px);
+}
+
 .waste-fan-leave-to {
   opacity: 0;
-  transform: scale(0.9) translateY(-6px);
+  transform: scale(0.8) translateY(-15px);
 }
 
 .waste-fan-move {
-  transition: transform var(--anim-medium) ease-out;
+  transition: all 0.3s ease-out;
 }
 </style>

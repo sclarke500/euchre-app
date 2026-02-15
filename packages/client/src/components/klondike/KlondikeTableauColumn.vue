@@ -135,26 +135,26 @@ function handleEmptyClick() {
 
 // Vue TransitionGroup classes
 .card-stack-enter-active {
-  transition: all 0.35s ease-out;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .card-stack-leave-active {
-  transition: all 0.25s ease-in;
+  transition: all 0.2s ease-in;
   position: absolute;
 }
 
 .card-stack-enter-from {
   opacity: 0;
-  transform: scale(0.8);
+  transform: scale(0.7) translateY(-25px);
 }
 
 .card-stack-leave-to {
   opacity: 0;
-  transform: scale(0.8) translateY(-20px);
+  transform: scale(0.8) translateY(-15px);
 }
 
 .card-stack-move {
-  transition: transform 0.35s ease-out;
+  transition: all 0.3s ease-out;
 }
 
 .card-back {

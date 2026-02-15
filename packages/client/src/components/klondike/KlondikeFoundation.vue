@@ -61,11 +61,21 @@ function handleTap() {
 
 // Vue transition classes for card landing animation
 .card-land-enter-active {
-  transition: all 0.25s ease-out;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card-land-leave-active {
+  transition: all 0.2s ease-in;
+  position: absolute;
 }
 
 .card-land-enter-from {
-  transform: scale(1.2) translateY(-10px);
+  transform: scale(0.6) translateY(-30px);
+  opacity: 0;
+}
+
+.card-land-leave-to {
+  transform: scale(0.8);
   opacity: 0;
 }
 

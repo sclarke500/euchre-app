@@ -22,6 +22,15 @@ import {
   hasAvailableMoves,
 } from '@euchre/shared'
 
+// Move info for animations
+export interface MoveInfo {
+  cards: KlondikeCard[]
+  fromType: 'tableau' | 'waste' | 'foundation' | 'stock'
+  fromIndex?: number
+  toType: 'tableau' | 'foundation'
+  toIndex: number
+}
+
 export const useKlondikeStore = defineStore('klondike', () => {
   // State
   const tableau = ref<TableauColumn[]>([])
@@ -33,6 +42,9 @@ export const useKlondikeStore = defineStore('klondike', () => {
   const isWon = ref(false)
   const isAutoCompleting = ref(false)
   const drawCount = ref<1 | 3>(3) // Default to draw 3
+  
+  // Pending move for animation (set before state update)
+  const pendingMove = ref<MoveInfo | null>(null)
   
   // History for undo (store serialized states)
   const history = ref<string[]>([])
@@ -284,6 +296,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
     return false
   }
 
+  // Clear pending move (called after animation)
+  function clearPendingMove() {
+    pendingMove.value = null
+  }
+
   return {
     // State
     tableau,
@@ -295,6 +312,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     isWon,
     isAutoCompleting,
     drawCount,
+    pendingMove,
 
     // Computed
     gameState,
@@ -315,5 +333,6 @@ export const useKlondikeStore = defineStore('klondike', () => {
     runAutoComplete,
     isCardSelected,
     undo,
+    clearPendingMove,
   }
 })
