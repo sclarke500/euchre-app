@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Klondike Solitaire', () => {
   test.beforeEach(async ({ page }) => {
-    // Set a landscape viewport that will show the landscape layout
-    await page.setViewportSize({ width: 1024, height: 768 })
+    // Set a portrait viewport (most phones)
+    await page.setViewportSize({ width: 390, height: 844 })
     
     await page.goto('/')
     
@@ -13,6 +13,22 @@ test.describe('Klondike Solitaire', () => {
     
     // Wait for game board to load
     await expect(page.locator('.klondike-board')).toBeVisible({ timeout: 10000 })
+  })
+
+  test('deals 28 cards on start', async ({ page }) => {
+    // After a new game, there should be 28 cards dealt:
+    // - 7 columns with 1+2+3+4+5+6+7 = 28 cards total
+    // We should see 28 .klondike-card elements rendered
+    const cards = page.locator('.klondike-card')
+    await expect(cards).toHaveCount(28, { timeout: 5000 })
+    
+    // 7 should be face-up (one per column)
+    const faceUpCards = page.locator('.klondike-card.face-up')
+    await expect(faceUpCards).toHaveCount(7)
+    
+    // 21 should be face-down
+    const faceDownCards = page.locator('.klondike-card.face-down')
+    await expect(faceDownCards).toHaveCount(21)
   })
 
   test('can draw cards from stock', async ({ page }) => {

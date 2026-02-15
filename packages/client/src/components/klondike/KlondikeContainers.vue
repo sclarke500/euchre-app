@@ -26,6 +26,13 @@ const suitSymbols = ['♠', '♥', '♦', '♣']
 
 // Measure and emit container positions
 function measureContainers() {
+  console.log('[Containers] measureContainers called', {
+    stockRef: !!stockRef.value,
+    wasteRef: !!wasteRef.value,
+    foundations: foundationRefs.value.filter(Boolean).length,
+    tableau: tableauRefs.value.filter(Boolean).length
+  })
+  
   if (stockRef.value) {
     const rect = stockRef.value.getBoundingClientRect()
     emit('containerMeasured', 'stock', null, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
@@ -48,8 +55,10 @@ function measureContainers() {
   })
 }
 
-// Measure on mount and resize
-onMounted(() => {
+// Measure on mount and resize (with nextTick to ensure DOM is ready)
+onMounted(async () => {
+  // Wait for refs to be populated
+  await new Promise(resolve => setTimeout(resolve, 50))
   measureContainers()
   window.addEventListener('resize', measureContainers)
 })

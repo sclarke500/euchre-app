@@ -46,6 +46,7 @@ export function useKlondikeLayout() {
     index: number | null,
     rect: ContainerRect | null
   ) {
+    console.log('[Layout] setContainerRect', type, index, rect)
     if (type === 'stock') {
       containers.value.stock = rect
     } else if (type === 'waste') {
@@ -67,6 +68,13 @@ export function useKlondikeLayout() {
   function calculatePositions(state: KlondikeState): CardPosition[] {
     const positions: CardPosition[] = []
     let zIndex = 1
+    
+    console.log('[Layout] calculatePositions - containers:', {
+      stock: containers.value.stock,
+      waste: containers.value.waste,
+      foundations: containers.value.foundations.filter(Boolean).length,
+      tableau: containers.value.tableau.filter(Boolean).length
+    })
 
     // Stock cards (stacked, all face down)
     const stockRect = containers.value.stock
