@@ -205,7 +205,7 @@ const gameTitle = computed(() => {
         <button class="menu-btn single-player" @click="handleSinglePlayer">
           Single Player
           <span v-if="selectedGame === 'klondike'" class="btn-subtitle">Classic solitaire</span>
-          <span v-else class="btn-subtitle">Play against 3 <span class="clanker">clankers</span></span>
+          <span v-else class="btn-subtitle">Play against AI</span>
         </button>
 
         <button
@@ -470,6 +470,7 @@ const gameTitle = computed(() => {
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
+  color: white;
   cursor: pointer;
   scroll-snap-align: center;
   transition: all 0.2s ease;
@@ -571,12 +572,6 @@ const gameTitle = computed(() => {
     font-weight: normal;
     opacity: 0.7;
     margin-top: $spacing-xs;
-
-    .clanker {
-      font-family: 'Audiowide', cursive;
-      font-weight: 400;
-      letter-spacing: 0.05em;
-    }
   }
 }
 
