@@ -224,7 +224,6 @@ defineExpose({
     flex-direction: column;
     align-items: center;
     gap: 0;
-    opacity: 0.1;
     pointer-events: none;
     user-select: none;
     
@@ -232,6 +231,7 @@ defineExpose({
       width: 120px;
       height: 120px;
       object-fit: contain;
+      opacity: 0.1;
     }
     
     .watermark-name {
@@ -239,10 +239,11 @@ defineExpose({
       font-size: 1.1rem;
       font-weight: 400;
       color: white;
-      text-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 1px 1px 2px rgba(0, 0, 0, 0.5);
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 1px 1px 2px rgba(0, 0, 0, 0.5);
       letter-spacing: 0.08em;
-      margin-top: -8px;
+      margin-top: -20px;
       -webkit-text-stroke: 0.5px white;
+      opacity: 0.18;
     }
   }
 
