@@ -17,7 +17,13 @@ const store = useKlondikeStore()
 const animation = getKlondikeAnimation()
 
 // Computed for flying cards (unwrap ref for template)
-const flyingCards = computed(() => animation.flyingCards.value)
+const flyingCards = computed(() => {
+  const cards = animation.flyingCards.value
+  if (cards.length > 0) {
+    console.log('[GameBoard] flyingCards computed:', cards.length, cards)
+  }
+  return cards
+})
 
 // Timer
 const elapsedSeconds = ref(0)

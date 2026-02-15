@@ -36,9 +36,11 @@ const style = computed(() => {
 })
 
 onMounted(() => {
+  console.log('[FlyingCard] Mounted at', props.startX, props.startY, '→', props.endX, props.endY)
   // Small delay then trigger animation
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
+      console.log('[FlyingCard] Triggering animation')
       hasAnimated.value = true
     })
   })
