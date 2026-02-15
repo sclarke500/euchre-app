@@ -145,6 +145,7 @@ async function animateDeal() {
   // If containers aren't measured yet, skip animation and let watcher handle it
   if (!stockRect) {
     console.warn('Klondike: Stock container not measured, skipping deal animation')
+    isAnimating.value = false
     return
   }
   
@@ -152,6 +153,11 @@ async function animateDeal() {
   
   // Get final positions
   const finalPositions = layout.calculatePositions(store.gameState)
+  console.log('Klondike deal: finalPositions count =', finalPositions.length, 'cardWidth=', layout.cardWidth.value, 'cardHeight=', layout.cardHeight.value)
+  console.log('Klondike deal: stockRect =', stockRect)
+  if (finalPositions.length > 0) {
+    console.log('Klondike deal: sample position =', finalPositions[0])
+  }
   
   // First, place all cards at stock position (create new Map for reactivity)
   const newMap = new Map<string, CardPosition>()
@@ -164,9 +170,11 @@ async function animateDeal() {
     })
   }
   cardPositionsRef.value = newMap
+  console.log('Klondike deal: Map size after init =', cardPositionsRef.value.size)
   
   // Wait a frame for initial positions to render
   await nextTick()
+  console.log('Klondike deal: After nextTick, computed cardPositions length =', cardPositions.value.length)
   await new Promise(r => setTimeout(r, 50))
   
   // Build deal order: tableau cards dealt row by row (col 0 card 0, col 1 card 0, col 1 card 1, etc.)
@@ -235,11 +243,19 @@ onMounted(async () => {
     attempts++
   }
   
+  // Block the watcher during initial setup
+  isAnimating.value = true
+  
   store.startNewGame()
   startTimer()
   
-  // Animate the deal
-  await animateDeal()
+  // If we have container measurements, animate the deal
+  if (layout.containers.value.stock) {
+    await animateDeal()
+  } else {
+    // No containers - let watcher handle it
+    isAnimating.value = false
+  }
 })
 
 onUnmounted(() => {
