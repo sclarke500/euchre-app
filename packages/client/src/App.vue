@@ -36,9 +36,9 @@ if (initialView === 'euchreLegacy') {
 
 const phase = computed(() => gameStore.phase)
 
-// Only show landscape blocker on game boards, not menu/lobby
+// Show landscape blocker on game boards and lobby (all multiplayer flows)
 const showLandscapeBlocker = computed(() => {
-  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'euchreLegacy'].includes(currentView.value)
+  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'euchreLegacy', 'lobby'].includes(currentView.value)
 })
 
 // PWA install prompt
@@ -183,6 +183,10 @@ function startSinglePlayer(game: GameType) {
 
 function enterMultiplayer(game: GameType) {
   currentGame.value = game
+  // Pre-select game type for new table modal (klondike excluded - no multiplayer)
+  if (game !== 'klondike') {
+    lobbyStore.setGameType(game)
+  }
   currentView.value = 'lobby'
 }
 
