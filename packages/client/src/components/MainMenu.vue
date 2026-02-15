@@ -473,6 +473,8 @@ const gameTitle = computed(() => {
 .game-carousel-wrapper {
   position: relative;
   margin-bottom: $spacing-xl;
+  max-width: 100%;
+  overflow: hidden;
 
   @media (max-height: 500px) {
     margin-bottom: $spacing-md;
@@ -480,6 +482,9 @@ const gameTitle = computed(() => {
 
   @media (orientation: portrait) {
     margin-bottom: $spacing-lg;
+    // Extend to edges for full-width scroll
+    width: calc(100% + #{$spacing-md} * 2);
+    margin-left: -$spacing-md;
   }
 }
 
