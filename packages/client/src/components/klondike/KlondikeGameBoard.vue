@@ -54,21 +54,43 @@ const cardPositions = computed<CardPosition[]>(() => {
   return layout.calculatePositions(store.gameState)
 })
 
+// Board ref for reading CSS variables
+const boardRef = ref<HTMLElement | null>(null)
+
 // Initialize game
 onMounted(() => {
   store.startNewGame()
   startTimer()
-  // Set card size based on CSS variable
+  // Set card size based on CSS variable from board element
   nextTick(() => {
-    const root = document.documentElement
-    const width = parseInt(getComputedStyle(root).getPropertyValue('--card-width') || '50')
-    const height = parseInt(getComputedStyle(root).getPropertyValue('--card-height') || '70')
-    layout.setCardSize(width, height)
+    if (boardRef.value) {
+      const styles = getComputedStyle(boardRef.value)
+      const width = parseInt(styles.getPropertyValue('--card-width')) || 50
+      const height = parseInt(styles.getPropertyValue('--card-height')) || 70
+      console.log('[Board] Card size from CSS:', width, height)
+      layout.setCardSize(width, height)
+    }
   })
 })
 
 onUnmounted(() => {
   stopTimer()
+  window.removeEventListener('resize', updateCardSize)
+})
+
+// Update card size from CSS variables
+function updateCardSize() {
+  if (boardRef.value) {
+    const styles = getComputedStyle(boardRef.value)
+    const width = parseInt(styles.getPropertyValue('--card-width')) || 50
+    const height = parseInt(styles.getPropertyValue('--card-height')) || 70
+    layout.setCardSize(width, height)
+  }
+}
+
+// Listen for resize to update card sizes
+onMounted(() => {
+  window.addEventListener('resize', updateCardSize)
 })
 
 // Container measurement handler
@@ -161,7 +183,7 @@ const selection = computed(() => store.selection)
 </script>
 
 <template>
-  <div class="klondike-board">
+  <div ref="boardRef" class="klondike-board">
     <BackButton @click="handleLeaveGame" />
 
     <!-- Container slots (measures positions, handles empty slot clicks) -->
