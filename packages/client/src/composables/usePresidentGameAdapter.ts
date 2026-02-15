@@ -151,11 +151,24 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
   })
 
   // Convert valid plays from card ID arrays to actual card arrays
+  // Cache to prevent recreating arrays when content hasn't changed
+  let cachedValidPlaysKey = ''
+  let cachedValidPlays: StandardCard[][] = []
+  
   const validPlays = computed<StandardCard[][]>(() => {
+    // Create a key from the input to detect changes
+    const newKey = store.validPlays.map(p => p.join(',')).join('|')
+    if (newKey === cachedValidPlaysKey) {
+      return cachedValidPlays
+    }
+    
+    // Input changed, rebuild output
     const hand = store.myHand
-    return store.validPlays.map(playIds =>
+    cachedValidPlays = store.validPlays.map(playIds =>
       playIds.map(id => hand.find(c => c.id === id)!).filter(Boolean)
     )
+    cachedValidPlaysKey = newKey
+    return cachedValidPlays
   })
 
   return {
