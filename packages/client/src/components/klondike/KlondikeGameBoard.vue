@@ -68,6 +68,9 @@ function updatePosition(id: string, updates: Partial<CardPosition>) {
 // Track whether we're animating (deal or draw)
 const isAnimating = ref(false)
 
+// Track cards that are currently animating (for elevated z-index)
+const animatingCardIds = ref<Set<string>>(new Set())
+
 // Drag-and-drop state
 interface DragState {
   cardIds: string[]
@@ -422,6 +425,9 @@ async function animateDeal() {
     }
   }
   
+  // Mark all cards as animating (elevated z-index)
+  animatingCardIds.value = new Set(dealOrder.map(d => d.cardId))
+  
   // Animate each card to its final position
   for (const { cardId, finalPos, delay: cardDelay } of dealOrder) {
     setTimeout(() => {
@@ -431,11 +437,16 @@ async function animateDeal() {
         z: finalPos.z,
         faceUp: finalPos.faceUp,
       })
+      // Remove from animating set after this card's animation completes
+      setTimeout(() => {
+        animatingCardIds.value.delete(cardId)
+      }, 350)
     }, cardDelay)
   }
   
   // Wait for all animations to complete
   await new Promise(r => setTimeout(r, delay + 350)) // 350ms for the CSS transition
+  animatingCardIds.value = new Set() // Clear all
   isAnimating.value = false
 }
 
@@ -579,6 +590,11 @@ async function handleStockClick() {
     await nextTick()
     await new Promise(r => setTimeout(r, 20))
     
+    // Mark drawn cards as animating (elevated z-index)
+    for (const card of drawnCards) {
+      animatingCardIds.value.add(card.id)
+    }
+    
     // Stagger the animations for new cards
     let delay = 0
     for (const card of drawnCards) {
@@ -590,6 +606,10 @@ async function handleStockClick() {
             y: finalPos.y,
             faceUp: true,
           })
+          // Remove from animating set after animation completes
+          setTimeout(() => {
+            animatingCardIds.value.delete(card.id)
+          }, 350)
         }, delay)
         delay += 60 // Stagger each card
       }
@@ -599,6 +619,7 @@ async function handleStockClick() {
     await new Promise(r => setTimeout(r, delay + 350))
   }
   
+  animatingCardIds.value = new Set() // Clear all
   isAnimating.value = false
 }
 
@@ -722,6 +743,7 @@ function doNewGame() {
       :drag-card-ids="dragCardIds"
       :drag-offset-x="dragOffset.x"
       :drag-offset-y="dragOffset.y"
+      :animating-card-ids="animatingCardIds"
       @card-click="handleCardClick"
       @drag-start="handleDragStart"
       @drag-move="handleDragMove"

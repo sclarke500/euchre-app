@@ -11,6 +11,7 @@ const props = defineProps<{
   dragCardIds?: string[]
   dragOffsetX?: number
   dragOffsetY?: number
+  animatingCardIds?: Set<string>
   highlightedZones?: { type: 'tableau' | 'foundation'; index: number; isValid: boolean }[]
 }>()
 
@@ -153,10 +154,13 @@ function getCardTransform(pos: CardPosition): string {
   return `translate(${pos.x}px, ${pos.y}px)`
 }
 
-// Get z-index (dragged cards should be on top)
+// Get z-index (dragged and animating cards should be on top)
 function getCardZIndex(pos: CardPosition): number {
   if (isBeingDragged(pos.id)) {
-    return 1000 + pos.z
+    return 2000 + pos.z  // Dragged cards highest
+  }
+  if (props.animatingCardIds?.has(pos.id)) {
+    return 1000 + pos.z  // Animating cards elevated
   }
   return pos.z
 }
