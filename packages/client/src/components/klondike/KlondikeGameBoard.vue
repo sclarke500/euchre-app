@@ -48,8 +48,17 @@ const score = computed(() => {
   return total
 })
 
-// Card positions - using ref to maintain object identity for animations
+// Card positions - using reactive map for deep reactivity
 const cardPositionsRef = ref<Map<string, CardPosition>>(new Map())
+
+// Helper to update a position reactively (replaces the object to trigger Vue)
+function updatePosition(id: string, updates: Partial<CardPosition>) {
+  const map = cardPositionsRef.value
+  const existing = map.get(id)
+  if (existing) {
+    map.set(id, { ...existing, ...updates })
+  }
+}
 
 // Track whether we're animating (deal or draw)
 const isAnimating = ref(false)
@@ -66,27 +75,26 @@ watch(
     const newPositions = layout.calculatePositions(store.gameState)
     const map = cardPositionsRef.value
     
-    // Update existing positions in place (preserves reactivity for transitions)
+    // Update positions (use map.set to trigger reactivity)
     for (const pos of newPositions) {
       const existing = map.get(pos.id)
       if (existing) {
         // Check if this card is newly flipping (was face-down, now face-up)
         const isNewlyFlipped = !existing.faceUp && pos.faceUp
         
-        // Update position
-        existing.x = pos.x
-        existing.y = pos.y
-        existing.z = pos.z
-        
-        // If this card should flip, delay it
+        // If this card should flip with delay
         if (isNewlyFlipped && pendingFlips.value.has(pos.id)) {
-          // Keep face-down for now, flip after move animation
+          // Update position but keep face-down
           pendingFlips.value.delete(pos.id)
+          map.set(pos.id, { ...pos, faceUp: false })
+          // Flip after move animation
+          const cardId = pos.id
           setTimeout(() => {
-            existing.faceUp = true
-          }, 300) // Wait for move animation
+            updatePosition(cardId, { faceUp: true })
+          }, 300)
         } else {
-          existing.faceUp = pos.faceUp
+          // Normal update
+          map.set(pos.id, pos)
         }
       } else {
         // New card
@@ -187,13 +195,12 @@ async function animateDeal() {
   // Animate each card to its final position
   for (const { cardId, finalPos, delay: cardDelay } of dealOrder) {
     setTimeout(() => {
-      const existing = map.get(cardId)
-      if (existing) {
-        existing.x = finalPos.x
-        existing.y = finalPos.y
-        existing.z = finalPos.z
-        existing.faceUp = finalPos.faceUp
-      }
+      updatePosition(cardId, {
+        x: finalPos.x,
+        y: finalPos.y,
+        z: finalPos.z,
+        faceUp: finalPos.faceUp,
+      })
     }, cardDelay)
   }
   
@@ -296,12 +303,9 @@ async function handleStockClick() {
       store.waste.some(c => c.id === p.id)
     )
     for (const pos of allWastePositions) {
-      const existing = map.get(pos.id)
-      if (existing && !drawnCards.some(c => c.id === pos.id)) {
+      if (!drawnCards.some(c => c.id === pos.id)) {
         // Update position of existing waste cards
-        existing.x = pos.x
-        existing.y = pos.y
-        existing.z = pos.z
+        updatePosition(pos.id, { x: pos.x, y: pos.y, z: pos.z })
       }
     }
     
@@ -315,12 +319,11 @@ async function handleStockClick() {
       const finalPos = finalPositions.find(p => p.id === card.id)
       if (finalPos) {
         setTimeout(() => {
-          const existing = map.get(card.id)
-          if (existing) {
-            existing.x = finalPos.x
-            existing.y = finalPos.y
-            existing.faceUp = true
-          }
+          updatePosition(card.id, {
+            x: finalPos.x,
+            y: finalPos.y,
+            faceUp: true,
+          })
         }, delay)
         delay += 60 // Stagger each card
       }

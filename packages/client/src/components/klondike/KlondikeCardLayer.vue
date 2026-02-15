@@ -126,6 +126,7 @@ function handleCardClick(cardId: string) {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 10; // Above containers layer
 }
 
 .klondike-card {
