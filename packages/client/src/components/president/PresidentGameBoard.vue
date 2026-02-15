@@ -159,8 +159,7 @@ const sortedHand = computed(() => {
 })
 
 // Get opponent players in correct turn order (clockwise from human's perspective)
-// Left → Center → Right should match who plays after the human in turn order
-const opponents = computed(() => {
+const allOpponents = computed(() => {
   const human = humanPlayer.value
   const allPlayers = players.value
   
@@ -177,6 +176,37 @@ const opponents = computed(() => {
   }
   return reordered
 })
+
+// Split opponents into left, top, right for proper table layout
+// For 4-5 players: all on top row
+// For 6-7 players: 1 left, rest top, 1 right  
+// For 8 players: 2 left, 3 top, 2 right
+const leftOpponents = computed(() => {
+  const opps = allOpponents.value
+  if (opps.length <= 4) return [] // 4-5 players: no side positions
+  if (opps.length <= 6) return opps.slice(0, 1).filter(Boolean) // 6-7 players: 1 on left
+  // 8 players (7 opponents): 2 on left
+  return opps.slice(0, 2).filter(Boolean)
+})
+
+const topOpponents = computed(() => {
+  const opps = allOpponents.value
+  if (opps.length <= 4) return opps.filter(Boolean) // 4-5 players: all on top
+  if (opps.length <= 6) return opps.slice(1, opps.length - 1).filter(Boolean) // 6-7 players: middle ones on top
+  // 8 players (7 opponents): middle 3 on top
+  return opps.slice(2, 5).filter(Boolean)
+})
+
+const rightOpponents = computed(() => {
+  const opps = allOpponents.value
+  if (opps.length <= 4) return [] // 4-5 players: no side positions
+  if (opps.length <= 6) return opps.slice(opps.length - 1).filter(Boolean) // 6-7 players: 1 on right
+  // 8 players (7 opponents): 2 on right
+  return opps.slice(5, 7).filter(Boolean)
+})
+
+// Legacy: for backward compatibility
+const opponents = allOpponents
 
 // Check if a card is selectable (during normal play)
 function isCardSelectable(card: StandardCard): boolean {
@@ -395,10 +425,10 @@ const showRoundComplete = computed(() =>
 
     <!-- Main game area -->
     <div class="game-main">
-      <!-- Opponents row -->
-      <div class="opponents-row">
+      <!-- Left side opponents (for 6+ players) -->
+      <div v-if="leftOpponents.length > 0" class="opponents-left">
         <div
-          v-for="opponent in opponents"
+          v-for="opponent in leftOpponents"
           :key="opponent.id"
           :class="['opponent', { active: currentPlayer === opponent.id }]"
         >
@@ -416,6 +446,30 @@ const showRoundComplete = computed(() =>
           <div class="opponent-status">{{ getPlayerStatus(opponent.id) }}</div>
         </div>
       </div>
+
+      <!-- Center column (top opponents + pile + hand) -->
+      <div class="game-center">
+        <!-- Top opponents row -->
+        <div class="opponents-row">
+          <div
+            v-for="opponent in topOpponents"
+            :key="opponent.id"
+            :class="['opponent', { active: currentPlayer === opponent.id }]"
+          >
+            <div class="opponent-name">
+              <span v-if="getPlayerRankBadge(opponent.id)" class="rank-badge">{{ getPlayerRankBadge(opponent.id) }}</span>
+              {{ opponent.name }}
+            </div>
+            <div class="opponent-cards">
+              <div
+                v-for="i in opponent.hand.length"
+                :key="i"
+                class="card-back"
+              />
+            </div>
+            <div class="opponent-status">{{ getPlayerStatus(opponent.id) }}</div>
+          </div>
+        </div>
 
       <!-- Center pile -->
       <div class="center-area">
@@ -458,28 +512,51 @@ const showRoundComplete = computed(() =>
         </div>
       </div>
 
-      <!-- Player hand -->
-      <div class="player-area">
-        <div ref="handContainerRef" class="hand-container">
-          <div
-            v-for="(card, index) in sortedHand"
-            :key="card.id"
-            :class="['hand-card', {
-              selectable: isCardSelectable(card),
-              selected: isCardSelected(card),
-              dimmed: isHumanTurn && !isCardSelectable(card)
-            }]"
-            :style="index > 0 ? { marginLeft: `${dynamicCardOverlap}px` } : {}"
-            @click="toggleCardSelection(card)"
-          >
-            <Card
-              :card="toCard(card)"
-              :selectable="isCardSelectable(card)"
-            />
+        <!-- Player hand -->
+        <div class="player-area">
+          <div ref="handContainerRef" class="hand-container">
+            <div
+              v-for="(card, index) in sortedHand"
+              :key="card.id"
+              :class="['hand-card', {
+                selectable: isCardSelectable(card),
+                selected: isCardSelected(card),
+                dimmed: isHumanTurn && !isCardSelectable(card)
+              }]"
+              :style="index > 0 ? { marginLeft: `${dynamicCardOverlap}px` } : {}"
+              @click="toggleCardSelection(card)"
+            >
+              <Card
+                :card="toCard(card)"
+                :selectable="isCardSelectable(card)"
+              />
+            </div>
           </div>
         </div>
+      </div><!-- end game-center -->
+
+      <!-- Right side opponents (for 6+ players) -->
+      <div v-if="rightOpponents.length > 0" class="opponents-right">
+        <div
+          v-for="opponent in rightOpponents"
+          :key="opponent.id"
+          :class="['opponent', { active: currentPlayer === opponent.id }]"
+        >
+          <div class="opponent-name">
+            <span v-if="getPlayerRankBadge(opponent.id)" class="rank-badge">{{ getPlayerRankBadge(opponent.id) }}</span>
+            {{ opponent.name }}
+          </div>
+          <div class="opponent-cards">
+            <div
+              v-for="i in opponent.hand.length"
+              :key="i"
+              class="card-back"
+            />
+          </div>
+          <div class="opponent-status">{{ getPlayerStatus(opponent.id) }}</div>
+        </div>
       </div>
-    </div>
+    </div><!-- end game-main -->
 
     <!-- Top right info (game name, round, waiting status) -->
     <div class="top-right-info">
@@ -728,12 +805,69 @@ const showRoundComplete = computed(() =>
 .game-main {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row; // Changed: left | center | right layout
   min-width: 0;
   overflow: hidden;
   height: 100%;
   min-height: 0;
   width: 100%;
+}
+
+// Center column contains top opponents, pile, and player hand
+.game-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+// Left side opponents (vertical column)
+.opponents-left {
+  display: flex;
+  flex-direction: column-reverse; // Bottom player first (closest to human in turn order)
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  width: 120px;
+  flex-shrink: 0;
+
+  @media (max-height: 500px) {
+    width: 90px;
+    padding: $spacing-sm;
+    gap: $spacing-sm;
+  }
+
+  .opponent {
+    width: 100%;
+  }
+}
+
+// Right side opponents (vertical column)
+.opponents-right {
+  display: flex;
+  flex-direction: column; // Top player first (closer in turn order)
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  padding-right: calc($spacing-md + 190px); // Reserve space for floating panel
+  width: calc(120px + 190px);
+  flex-shrink: 0;
+
+  @media (max-height: 500px) {
+    width: calc(90px + 160px);
+    padding: $spacing-sm;
+    padding-right: calc($spacing-sm + 160px);
+    gap: $spacing-sm;
+  }
+
+  .opponent {
+    width: 120px;
+
+    @media (max-height: 500px) {
+      width: 90px;
+    }
+  }
 }
 
 .opponents-row {
