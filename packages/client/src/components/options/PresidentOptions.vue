@@ -20,19 +20,19 @@ const settings = useSettingsStore()
       </div>
     </div>
     <div class="option-row">
-      <span class="option-label">Rules</span>
+      <span class="option-label">Super 2s & Jokers</span>
       <div class="toggle-group">
         <button
           :class="['toggle-btn', { active: !settings.superTwosAndJokers }]"
           @click="settings.setSuperTwosAndJokers(false)"
         >
-          Standard
+          Off
         </button>
         <button
           :class="['toggle-btn', { active: settings.superTwosAndJokers }]"
           @click="settings.setSuperTwosAndJokers(true)"
         >
-          Super 2s
+          On
         </button>
       </div>
     </div>
