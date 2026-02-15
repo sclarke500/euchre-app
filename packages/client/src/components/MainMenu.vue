@@ -170,30 +170,38 @@ const gameTitle = computed(() => {
     <div class="content-section">
       <h1>{{ gameTitle }}</h1>
 
-      <div class="game-selector">
+      <div class="game-carousel">
         <button
-          :class="['game-tab', { active: selectedGame === 'euchre' }]"
+          :class="['game-card', { active: selectedGame === 'euchre' }]"
           @click="selectedGame = 'euchre'"
         >
-          Euchre
+          <span class="game-icon">🃏</span>
+          <span class="game-name">Euchre</span>
+          <span class="game-desc">Trick-taking</span>
         </button>
         <button
-          :class="['game-tab', { active: selectedGame === 'president' }]"
-          @click="selectedGame = 'president'"
-        >
-          President
-        </button>
-        <button
-          :class="['game-tab', { active: selectedGame === 'klondike' }]"
-          @click="selectedGame = 'klondike'"
-        >
-          Klondike
-        </button>
-        <button
-          :class="['game-tab', { active: selectedGame === 'spades' }]"
+          :class="['game-card', { active: selectedGame === 'spades' }]"
           @click="selectedGame = 'spades'"
         >
-          Spades
+          <span class="game-icon">♠️</span>
+          <span class="game-name">Spades</span>
+          <span class="game-desc">Bid & tricks</span>
+        </button>
+        <button
+          :class="['game-card', { active: selectedGame === 'president' }]"
+          @click="selectedGame = 'president'"
+        >
+          <span class="game-icon">👑</span>
+          <span class="game-name">President</span>
+          <span class="game-desc">Shedding</span>
+        </button>
+        <button
+          :class="['game-card', { active: selectedGame === 'klondike' }]"
+          @click="selectedGame = 'klondike'"
+        >
+          <span class="game-icon">🎴</span>
+          <span class="game-name">Klondike</span>
+          <span class="game-desc">Solitaire</span>
         </button>
       </div>
 
@@ -428,36 +436,90 @@ const gameTitle = computed(() => {
   }
 }
 
-.game-selector {
+.game-carousel {
   display: flex;
-  gap: $spacing-xs;
+  gap: $spacing-md;
   margin-bottom: $spacing-xl;
-  background: rgba(0, 0, 0, 0.2);
-  padding: $spacing-xs;
-  border-radius: 12px;
+  padding: $spacing-sm 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   @media (max-height: 500px) {
     margin-bottom: $spacing-md;
+    gap: $spacing-sm;
   }
 
   @media (orientation: portrait) {
     margin-bottom: $spacing-lg;
+    // Allow full-width scrolling on mobile
+    width: calc(100% + #{$spacing-md} * 2);
+    margin-left: -$spacing-md;
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
   }
 }
 
-.game-tab {
-  padding: $spacing-sm $spacing-lg;
-  font-size: 1rem;
-  font-weight: bold;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.7);
-  border: none;
-  border-radius: 8px;
+.game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  min-width: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   cursor: pointer;
+  scroll-snap-align: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
 
   &.active {
     background: white;
+    border-color: white;
     color: #1e4d2b;
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .game-icon {
+    font-size: 2rem;
+    margin-bottom: $spacing-xs;
+  }
+
+  .game-name {
+    font-size: 1rem;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .game-desc {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  @media (max-height: 500px) {
+    padding: $spacing-sm $spacing-md;
+    min-width: 80px;
+
+    .game-icon {
+      font-size: 1.5rem;
+    }
+
+    .game-name {
+      font-size: 0.85rem;
+    }
   }
 }
 
