@@ -304,11 +304,18 @@ function containersReadyForLayout(): boolean {
 function syncPositionsFromState() {
   const newPositions = layout.calculatePositions(store.gameState)
   const map = cardPositionsRef.value
+  const movingCards: string[] = []
 
   for (const pos of newPositions) {
     const existing = map.get(pos.id)
     if (existing) {
       const isNewlyFlipped = !existing.faceUp && pos.faceUp
+      
+      // Check if card is moving (position changed significantly)
+      const isMoving = Math.abs(existing.x - pos.x) > 5 || Math.abs(existing.y - pos.y) > 5
+      if (isMoving) {
+        movingCards.push(pos.id)
+      }
 
       // Always delay flips for newly exposed tableau cards
       const isTableauCard = store.gameState.tableau.some(col => 
@@ -328,6 +335,19 @@ function syncPositionsFromState() {
     } else {
       map.set(pos.id, pos)
     }
+  }
+
+  // Elevate moving cards' z-index during animation
+  if (movingCards.length > 0) {
+    for (const cardId of movingCards) {
+      animatingCardIds.value.add(cardId)
+    }
+    // Remove after transition completes (300ms + buffer)
+    setTimeout(() => {
+      for (const cardId of movingCards) {
+        animatingCardIds.value.delete(cardId)
+      }
+    }, 350)
   }
 
   const newIds = new Set(newPositions.map(p => p.id))
