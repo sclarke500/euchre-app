@@ -273,37 +273,39 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   gap: 0;
-  // Unified background for circle + name
-  background: rgba(30, 30, 45, 0.9);
-  border: 2px solid #4a4a60;
-  border-radius: 24px;
-  padding: 6px 6px 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
 
+  // Circle protrudes from top of name plate
   .avatar-circle {
-    width: 38px;
-    height: 38px;
+    position: relative;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: #444455;
-    border: none;
+    background: #3a3a4a;
+    border: 2px solid #4a4a60;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
     color: #ccc;
-    box-shadow: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    margin-bottom: -10px; // Overlap into name plate
   }
 
+  // Name plate below circle
   .player-name {
-    padding: 2px 6px;
+    position: relative;
+    z-index: 1;
+    padding: 12px 10px 5px;
     font-size: 11px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: transparent;
-    border-radius: 0;
+    background: rgba(30, 30, 45, 0.92);
+    border: 2px solid #4a4a60;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   .player-status {
@@ -328,19 +330,27 @@ defineExpose({
     }
   }
 
+  // Info tags (trump chip, etc) overlap the avatar
   .info-tags {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    z-index: 10;
     display: flex;
-    gap: 4px;
-    margin-top: 2px;
+    gap: 2px;
   }
 
-  // Turn indicator glow — soft diffused halo
+  // Turn indicator glow on the name plate
   &.is-current-turn {
-    border-color: rgba(255, 215, 0, 0.7);
-    box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.3),
-      0 0 30px rgba(255, 215, 0, 0.15),
-      0 0 50px rgba(255, 215, 0, 0.08);
+    .player-name {
+      border-color: rgba(255, 215, 0, 0.7);
+      box-shadow:
+        0 0 12px rgba(255, 215, 0, 0.3),
+        0 0 30px rgba(255, 215, 0, 0.15);
+    }
+    .avatar-circle {
+      border-color: rgba(255, 215, 0, 0.7);
+    }
   }
 }
 
@@ -379,40 +389,53 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   gap: 0;
-  background: rgba(30, 30, 45, 0.9);
-  border: 2px solid #4a4a60;
-  border-radius: 24px;
-  padding: 6px 6px 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
 
+  // Circle protrudes from top of name plate
   .avatar-circle {
-    width: 38px;
-    height: 38px;
+    position: relative;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: #444455;
+    background: #3a3a4a;
+    border: 2px solid #4a4a60;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
     color: #ccc;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    margin-bottom: -10px;
+    transition: border-color var(--anim-slow) ease;
   }
 
+  // Name plate below circle
   .player-name {
-    padding: 2px 6px;
+    position: relative;
+    z-index: 1;
+    padding: 12px 10px 5px;
     font-size: 11px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
+    background: rgba(30, 30, 45, 0.92);
+    border: 2px solid #4a4a60;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
   }
 
   &.is-current-turn {
-    border-color: rgba(255, 215, 0, 0.7);
-    box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.3),
-      0 0 30px rgba(255, 215, 0, 0.15),
-      0 0 50px rgba(255, 215, 0, 0.08);
+    .player-name {
+      border-color: rgba(255, 215, 0, 0.7);
+      box-shadow:
+        0 0 12px rgba(255, 215, 0, 0.3),
+        0 0 30px rgba(255, 215, 0, 0.15);
+    }
+    .avatar-circle {
+      border-color: rgba(255, 215, 0, 0.7);
+    }
   }
 }
 </style>
