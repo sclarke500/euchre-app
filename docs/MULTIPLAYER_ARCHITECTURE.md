@@ -407,6 +407,142 @@ function routeMessage(ws, client, message, handlers) {
 | `xxx_bid` | Make a bid (if applicable) |
 | `request_state` | Request state resync |
 
+## Additional Patterns (from industry guides)
+
+### 1. Optimistic Updates
+
+**What**: Client predicts the result before server confirms, then corrects if wrong.
+
+**Why**: Makes the game feel more responsive (no waiting for round-trip).
+
+**When to use**: Low-stakes actions like card selection highlights.
+
+**When NOT to use**: Critical game actions (playing cards, bidding) - always wait for server.
+
+```typescript
+// Optimistic: highlight card immediately
+function onCardClick(cardId) {
+  setSelectedCard(cardId)  // Immediate local update
+  socket.emit('select_card', cardId)  // Send to server
+}
+
+// Server confirms or rejects
+socket.on('card_selected', (cardId) => {
+  // Server confirmed - already showing correct state
+})
+socket.on('invalid_selection', () => {
+  setSelectedCard(null)  // Rollback
+})
+```
+
+### 2. Message Acknowledgments
+
+**What**: Server confirms receipt of critical actions.
+
+**Why**: Detect dropped messages, retry if needed.
+
+```typescript
+// Client
+socket.emit('play_cards', cardIds, (ack) => {
+  if (ack.success) {
+    // Action confirmed
+  } else {
+    // Handle error, maybe retry
+  }
+})
+
+// Server
+socket.on('play_cards', (cardIds, callback) => {
+  const result = game.playCards(cardIds)
+  callback({ success: result.valid, error: result.error })
+})
+```
+
+### 3. AI Takeover on Disconnect
+
+**What**: When a player disconnects, AI takes over their seat.
+
+**Why**: Game continues for remaining players.
+
+```typescript
+// Server
+socket.on('disconnect', () => {
+  const player = game.getPlayer(socket.odusId)
+  if (player) {
+    player.isAI = true
+    player.isConnected = false
+    broadcastToGame({ type: 'player_disconnected', playerId: player.id })
+    
+    // If it was their turn, AI plays
+    if (game.currentPlayer === player.id) {
+      setTimeout(() => game.aiTakeTurn(player.id), 2000)
+    }
+  }
+})
+```
+
+### 4. Spectator Mode
+
+**What**: Players can watch without participating.
+
+**Why**: Useful for tournaments, learning, waiting to join.
+
+```typescript
+// Server
+socket.on('join_as_spectator', (gameId) => {
+  socket.join(`spectator:${gameId}`)
+  // Send current state but no turn notifications
+  socket.emit('game_state', game.getPublicState())
+})
+
+// Broadcast to spectators too
+function broadcastState() {
+  io.to(`game:${gameId}`).emit('game_state', state)
+  io.to(`spectator:${gameId}`).emit('game_state', publicState)
+}
+```
+
+### 5. Heartbeat / Keep-Alive
+
+**What**: Periodic ping to detect dead connections.
+
+**Why**: WebSocket connections can silently die (network changes, sleep mode).
+
+```typescript
+// Server - Socket.IO has built-in pingTimeout/pingInterval
+const io = new Server(server, {
+  pingTimeout: 60000,    // How long to wait for pong
+  pingInterval: 25000,   // How often to ping
+})
+
+// Client can also send application-level heartbeat
+setInterval(() => {
+  socket.emit('heartbeat', { timestamp: Date.now() })
+}, 30000)
+```
+
+### 6. Room Cleanup
+
+**What**: Remove empty rooms to free memory.
+
+**Why**: Long-running servers accumulate abandoned rooms.
+
+```typescript
+// Server
+function checkRoomCleanup() {
+  for (const [roomId, room] of rooms) {
+    const hasPlayers = room.players.some(p => p.isConnected)
+    const isStale = Date.now() - room.lastActivity > 30 * 60 * 1000 // 30 min
+    
+    if (!hasPlayers || isStale) {
+      rooms.delete(roomId)
+      console.log(`Cleaned up room ${roomId}`)
+    }
+  }
+}
+setInterval(checkRoomCleanup, 60000)
+```
+
 ## Common Pitfalls & Solutions
 
 ### 1. Card Flickering
@@ -496,6 +632,62 @@ if (!game) {
 watch(() => store.gameLost, (lost) => {
   if (lost) emit('leave-game')
 })
+```
+
+## Scaling Considerations (Future)
+
+### Redis for Distributed State
+
+When running multiple server instances behind a load balancer:
+
+```typescript
+// Socket.IO Redis adapter
+import { createAdapter } from '@socket.io/redis-adapter'
+import { createClient } from 'redis'
+
+const pubClient = createClient({ url: REDIS_URL })
+const subClient = pubClient.duplicate()
+
+io.adapter(createAdapter(pubClient, subClient))
+
+// Now messages broadcast across all server instances
+```
+
+### Sticky Sessions
+
+WebSocket connections must stay on the same server:
+
+```nginx
+# Nginx config
+upstream backend {
+  ip_hash;  # Sticky sessions based on IP
+  server backend1:3000;
+  server backend2:3000;
+}
+```
+
+### Game State Persistence
+
+For surviving server restarts:
+
+```typescript
+// Save game state to Redis/DB periodically
+function persistGameState(game) {
+  redis.set(`game:${game.id}`, JSON.stringify(game.serialize()))
+  redis.expire(`game:${game.id}`, 3600)  // 1 hour TTL
+}
+
+// On server start, restore active games
+async function restoreGames() {
+  const keys = await redis.keys('game:*')
+  for (const key of keys) {
+    const data = await redis.get(key)
+    if (data) {
+      const game = Game.deserialize(JSON.parse(data))
+      activeGames.set(game.id, game)
+    }
+  }
+}
 ```
 
 ## Checklist for New Multiplayer Game
