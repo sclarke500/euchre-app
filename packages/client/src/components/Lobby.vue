@@ -322,22 +322,25 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 }
 
 .create-options-content {
-  background: #1e4d2b;
+  background: white;
   border-radius: 12px;
   padding: $spacing-lg;
-  min-width: 320px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  min-width: 300px;
+  max-width: 360px;
+  color: #333;
 
   h3 {
     margin: 0 0 $spacing-md 0;
     text-align: center;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e4d2b;
   }
 }
 
 .game-selector {
   display: flex;
-  background: rgba(0, 0, 0, 0.2);
+  background: #f0f0f0;
   border-radius: 8px;
   padding: 3px;
   margin-bottom: $spacing-md;
@@ -348,30 +351,29 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   padding: $spacing-xs $spacing-sm;
   border-radius: 6px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: #666;
   font-size: 0.85rem;
   font-weight: 500;
   transition: all 0.15s ease;
 
   &:hover:not(.active) {
-    color: white;
-    background: rgba(255, 255, 255, 0.1);
+    color: #333;
+    background: rgba(0, 0, 0, 0.05);
   }
 
   &.active {
     background: white;
     color: #1e4d2b;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 }
 
 .game-options-section {
   margin-bottom: $spacing-md;
-  padding: $spacing-sm $spacing-md;
-  background: rgba(255, 255, 255, 0.95);
+  padding: $spacing-sm;
+  background: #f8f8f8;
   border-radius: 8px;
-  color: #333;
-  min-height: 60px;
+  min-height: 50px;
 }
 
 .player-count-selector {
@@ -407,11 +409,12 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   flex: 1;
   padding: $spacing-sm $spacing-md;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: #f0f0f0;
+  color: #666;
+  font-weight: 500;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: #e0e0e0;
   }
 }
 
@@ -419,7 +422,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   flex: 1;
   padding: $spacing-sm $spacing-md;
   border-radius: 8px;
-  background: $secondary-color;
+  background: #1e4d2b;
   color: white;
   font-weight: bold;
 }

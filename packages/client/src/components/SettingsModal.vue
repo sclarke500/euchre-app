@@ -105,12 +105,12 @@ function checkForUpdates() {
 <style scoped lang="scss">
 .modal-content {
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   max-width: 480px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  text-align: left;
 }
 
 .modal-header {
@@ -183,40 +183,37 @@ function checkForUpdates() {
 
 .option-buttons {
   display: flex;
-  flex-direction: column;
   gap: $spacing-sm;
 }
 
 .option-btn {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: $spacing-md;
-  background: #f8f8f8;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  padding: $spacing-sm $spacing-md;
+  background: #f0f0f0;
+  border-radius: 10px;
   text-align: left;
   cursor: pointer;
-  transition: all var(--anim-fast) ease;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: #f0f0f0;
-    border-color: #ccc;
+    background: #e8e8e8;
   }
 
   &.active {
-    background: rgba(30, 77, 43, 0.1);
-    border-color: #1e4d2b;
+    background: rgba(30, 77, 43, 0.15);
   }
 
   .option-title {
-    font-weight: bold;
-    font-size: 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
     color: #333;
   }
 
   .option-desc {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #666;
     margin-top: 2px;
   }
