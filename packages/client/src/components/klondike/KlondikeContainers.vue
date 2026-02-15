@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { ContainerRect } from '@/composables/useKlondikeLayout'
 import type { KlondikeState } from '@euchre/shared'
 
@@ -14,6 +14,13 @@ const emit = defineEmits<{
   foundationClick: [index: number]
   tableauClick: [index: number]
 }>()
+
+// Orientation detection
+const isLandscape = ref(window.innerWidth > window.innerHeight)
+
+function updateOrientation() {
+  isLandscape.value = window.innerWidth > window.innerHeight
+}
 
 // Refs for measuring
 const stockRef = ref<HTMLElement | null>(null)
@@ -60,11 +67,22 @@ onMounted(async () => {
   // Wait for refs to be populated
   await new Promise(resolve => setTimeout(resolve, 50))
   measureContainers()
-  window.addEventListener('resize', measureContainers)
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', measureContainers)
+  window.removeEventListener('resize', handleResize)
+})
+
+function handleResize() {
+  updateOrientation()
+  // Re-measure after orientation change settles
+  setTimeout(measureContainers, 100)
+}
+
+// Re-measure when orientation changes
+watch(isLandscape, () => {
+  setTimeout(measureContainers, 100)
 })
 
 // Re-measure when state changes (in case layout shifts)
@@ -82,7 +100,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
 <template>
   <div class="containers-layer">
     <!-- Portrait layout -->
-    <div class="portrait-layout">
+    <div v-if="!isLandscape" class="portrait-layout">
       <!-- Top row: Foundations + Stock/Waste -->
       <div class="top-row">
         <div class="foundations-row">
@@ -130,12 +148,13 @@ function setTableauRef(index: number, el: HTMLElement | null) {
     </div>
 
     <!-- Landscape layout -->
-    <div class="landscape-layout">
+    <div v-else class="landscape-layout">
       <!-- Left: Foundations -->
       <div class="left-column">
         <div
           v-for="(_, index) in 4"
           :key="'lf' + index"
+          :ref="(el) => setFoundationRef(index, el as HTMLElement)"
           class="foundation-slot"
           :class="{ red: index === 1 || index === 2 }"
           @click="emit('foundationClick', index)"
@@ -150,6 +169,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
           <div
             v-for="(column, index) in state.tableau"
             :key="'lt' + index"
+            :ref="(el) => setTableauRef(index, el as HTMLElement)"
             class="tableau-slot"
             @click="emit('tableauClick', index)"
           >
@@ -160,7 +180,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
 
       <!-- Right: Stock/Waste -->
       <div class="right-column">
-        <div class="stock-slot" @click="emit('stockClick')">
+        <div ref="stockRef" class="stock-slot" @click="emit('stockClick')">
           <template v-if="state.stock.length === 0">
             <svg class="recycle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M1 4v6h6" />
@@ -173,7 +193,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
             </div>
           </template>
         </div>
-        <div class="waste-slot" @click="emit('wasteClick')"></div>
+        <div ref="wasteRef" class="waste-slot" @click="emit('wasteClick')"></div>
       </div>
     </div>
   </div>
@@ -272,7 +292,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
 
 // Portrait layout
 .portrait-layout {
-  display: none;
+  display: flex;
   flex-direction: column;
   height: 100%;
   gap: 8px;
@@ -304,7 +324,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
 
 // Landscape layout
 .landscape-layout {
-  display: none;
+  display: flex;
   height: 100%;
   gap: 8px;
   padding: 4px;
@@ -331,22 +351,5 @@ function setTableauRef(index: number, el: HTMLElement | null) {
   flex-shrink: 0;
 }
 
-// Orientation media queries
-@media (orientation: portrait) {
-  .portrait-layout {
-    display: flex;
-  }
-  .landscape-layout {
-    display: none;
-  }
-}
-
-@media (orientation: landscape) {
-  .portrait-layout {
-    display: none;
-  }
-  .landscape-layout {
-    display: flex;
-  }
-}
+// Layout visibility controlled by v-if in template
 </style>
