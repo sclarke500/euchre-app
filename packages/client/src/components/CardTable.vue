@@ -135,6 +135,11 @@ function computeLayout() {
   return result
 }
 
+// Handle orientation change with slight delay for DOM update
+function handleOrientationChange() {
+  setTimeout(() => computeLayout(), 100)
+}
+
 onMounted(() => {
   computeLayout()
   if (boardRef.value && typeof ResizeObserver !== 'undefined') {
@@ -143,6 +148,8 @@ onMounted(() => {
     })
     resizeObserver.observe(boardRef.value)
   }
+  // Explicit orientation handler for mobile reliability
+  screen.orientation?.addEventListener('change', handleOrientationChange)
 })
 
 watch(() => [props.playerCount, props.layout], () => {
@@ -154,6 +161,7 @@ onUnmounted(() => {
     resizeObserver.disconnect()
     resizeObserver = null
   }
+  screen.orientation?.removeEventListener('change', handleOrientationChange)
 })
 
 // Provide engine and layout for director composables
