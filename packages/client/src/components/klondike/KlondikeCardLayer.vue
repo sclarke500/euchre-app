@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import type { CardPosition } from '@/composables/useKlondikeLayout'
 import { Suit, type Selection } from '@euchre/shared'
 
@@ -8,14 +8,25 @@ const props = defineProps<{
   selection: Selection | null
   cardWidth: number
   cardHeight: number
+  dragCardIds?: string[]
+  dragOffsetX?: number
+  dragOffsetY?: number
+  highlightedZones?: { type: 'tableau' | 'foundation'; index: number; isValid: boolean }[]
 }>()
 
 const emit = defineEmits<{
   cardClick: [cardId: string]
+  dragStart: [cardId: string, x: number, y: number, sourceType: 'tableau' | 'waste' | 'foundation', columnIndex?: number, cardIndex?: number]
+  dragMove: [x: number, y: number]
+  dragEnd: []
 }>()
 
 // Track cards that are currently flipping (for animation)
 const flippingCards = ref<Set<string>>(new Set())
+
+// Track if we're in a drag operation
+const isDragging = ref(false)
+const dragStartPos = ref<{ x: number; y: number } | null>(null)
 
 // Watch for face-up changes to trigger flip animation
 watch(
@@ -43,14 +54,8 @@ function isFlipping(cardId: string): boolean {
   return flippingCards.value.has(cardId)
 }
 
-// Determine if a card is selected (for tableau, all cards from selection index and below)
-function isSelected(cardId: string): boolean {
-  if (!props.selection) return false
-  
-  // Find the card in positions to check if it's part of selection
-  // This is simplified - actual selection logic depends on position in tableau
-  // For now, just check if this specific card matches selection criteria
-  return false // Will be enhanced when we wire up selection
+function isBeingDragged(cardId: string): boolean {
+  return props.dragCardIds?.includes(cardId) ?? false
 }
 
 // Get suit symbol
@@ -69,8 +74,91 @@ function isRedSuit(suit: Suit): boolean {
   return suit === Suit.Hearts || suit === Suit.Diamonds
 }
 
-function handleCardClick(cardId: string) {
-  emit('cardClick', cardId)
+// Find card source info (for drag start)
+function findCardSource(cardId: string): { 
+  type: 'tableau' | 'waste' | 'foundation'
+  columnIndex?: number
+  cardIndex?: number 
+} | null {
+  const pos = props.positions.find(p => p.id === cardId)
+  if (!pos) return null
+  
+  // Check if it's a valid draggable position based on source
+  // The CardPosition should include source info, but we can infer from the position
+  // For now, emit and let parent figure it out
+  return null
+}
+
+// Pointer event handlers
+function handlePointerDown(event: PointerEvent, cardId: string, pos: CardPosition) {
+  // Only handle left mouse button or touch
+  if (event.button !== 0) return
+  // Don't drag face-down cards
+  if (!pos.faceUp) return
+  
+  isDragging.value = false
+  dragStartPos.value = { x: event.clientX, y: event.clientY }
+  
+  // Capture pointer for tracking
+  const target = event.currentTarget as HTMLElement
+  target.setPointerCapture(event.pointerId)
+}
+
+function handlePointerMove(event: PointerEvent, cardId: string, pos: CardPosition) {
+  if (!dragStartPos.value) return
+  
+  const dx = event.clientX - dragStartPos.value.x
+  const dy = event.clientY - dragStartPos.value.y
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  
+  // Start drag after moving 5px (prevents accidental drags on clicks)
+  if (!isDragging.value && distance > 5) {
+    isDragging.value = true
+    emit('dragStart', cardId, event.clientX, event.clientY, 'tableau')
+  }
+  
+  if (isDragging.value) {
+    emit('dragMove', event.clientX, event.clientY)
+  }
+}
+
+function handlePointerUp(event: PointerEvent, cardId: string) {
+  const target = event.currentTarget as HTMLElement
+  target.releasePointerCapture(event.pointerId)
+  
+  if (isDragging.value) {
+    emit('dragEnd')
+  } else if (dragStartPos.value) {
+    // It was a click, not a drag
+    emit('cardClick', cardId)
+  }
+  
+  isDragging.value = false
+  dragStartPos.value = null
+}
+
+function handlePointerCancel(event: PointerEvent) {
+  if (isDragging.value) {
+    emit('dragEnd')
+  }
+  isDragging.value = false
+  dragStartPos.value = null
+}
+
+// Calculate card transform including drag offset
+function getCardTransform(pos: CardPosition): string {
+  if (isBeingDragged(pos.id) && props.dragOffsetX !== undefined && props.dragOffsetY !== undefined) {
+    return `translate(${pos.x + props.dragOffsetX}px, ${pos.y + props.dragOffsetY}px)`
+  }
+  return `translate(${pos.x}px, ${pos.y}px)`
+}
+
+// Get z-index (dragged cards should be on top)
+function getCardZIndex(pos: CardPosition): number {
+  if (isBeingDragged(pos.id)) {
+    return 1000 + pos.z
+  }
+  return pos.z
 }
 </script>
 
@@ -83,18 +171,21 @@ function handleCardClick(cardId: string) {
       :class="{ 
         'face-up': pos.faceUp, 
         'face-down': !pos.faceUp,
-        'selected': isSelected(pos.id),
-        'flipping': isFlipping(pos.id)
+        'flipping': isFlipping(pos.id),
+        'dragging': isBeingDragged(pos.id)
       }"
       :style="{
-        transform: `translate(${pos.x}px, ${pos.y}px)`,
-        zIndex: pos.z,
+        transform: getCardTransform(pos),
+        zIndex: getCardZIndex(pos),
         width: `${cardWidth}px`,
         height: `${cardHeight}px`,
         '--card-width': `${cardWidth}px`,
         '--card-height': `${cardHeight}px`,
       }"
-      @click="handleCardClick(pos.id)"
+      @pointerdown="handlePointerDown($event, pos.id, pos)"
+      @pointermove="handlePointerMove($event, pos.id, pos)"
+      @pointerup="handlePointerUp($event, pos.id)"
+      @pointercancel="handlePointerCancel"
     >
       <!-- Face up card -->
       <template v-if="pos.faceUp">
@@ -142,6 +233,8 @@ function handleCardClick(cardId: string) {
   transition-timing-function: ease-out;
   will-change: transform;
   backface-visibility: hidden; // Force GPU layer
+  touch-action: none; // Prevent browser handling of touch for drag
+  user-select: none;
   
   &.face-up {
     background: white;
@@ -151,6 +244,7 @@ function handleCardClick(cardId: string) {
   &.face-down {
     background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: default;
   }
   
   &.selected {
@@ -160,6 +254,12 @@ function handleCardClick(cardId: string) {
   &.flipping {
     animation: card-flip 0.3s ease-out;
     z-index: 1000 !important; // Bring to front during flip
+  }
+  
+  &.dragging {
+    transition: none; // Disable transition during drag
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    cursor: grabbing;
   }
 }
 
