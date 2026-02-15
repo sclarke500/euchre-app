@@ -157,6 +157,40 @@ function computeLayout() {
   el.style.setProperty('--table-left', `${(tableBounds.left / w * 100).toFixed(2)}%`)
   el.style.setProperty('--table-right', `${((w - tableBounds.right) / w * 100).toFixed(2)}%`)
 
+  // Update card container positions when layout changes (e.g., orientation change)
+  // This ensures cards reposition correctly after resize
+  const hands = engine.getHands()
+  for (let i = 0; i < result.seats.length && i < hands.length; i++) {
+    const seat = result.seats[i]!
+    const hand = hands[i]
+    if (hand && seat) {
+      // Update user hand position to bottom center
+      if (seat.isUser) {
+        hand.position = { x: seat.handPosition.x, y: h - 20 }
+      } else {
+        hand.position = seat.handPosition
+      }
+      hand.angleToCenter = seat.angleToCenter
+      // Reposition cards without animation for immediate visual update
+      hand.repositionAll(0)
+    }
+  }
+
+  // Update deck position if it exists
+  const deck = engine.getDeck()
+  if (deck) {
+    deck.position = result.tableCenter
+    deck.repositionAll(0)
+  }
+
+  // Update trick pile position
+  const piles = engine.getPiles()
+  const trickPile = piles.find(p => p.id === 'trick')
+  if (trickPile) {
+    trickPile.position = result.tableCenter
+    // Note: trick pile cards have explicit positions, so repositionAll isn't needed
+  }
+
   return result
 }
 
