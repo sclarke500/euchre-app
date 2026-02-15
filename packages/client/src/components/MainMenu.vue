@@ -175,7 +175,6 @@ const gameTitle = computed(() => {
           :class="['game-card', { active: selectedGame === 'euchre' }]"
           @click="selectedGame = 'euchre'"
         >
-          <span class="game-icon">🃏</span>
           <span class="game-name">Euchre</span>
           <span class="game-desc">Trick-taking</span>
         </button>
@@ -183,7 +182,6 @@ const gameTitle = computed(() => {
           :class="['game-card', { active: selectedGame === 'spades' }]"
           @click="selectedGame = 'spades'"
         >
-          <span class="game-icon">♠️</span>
           <span class="game-name">Spades</span>
           <span class="game-desc">Bid & tricks</span>
         </button>
@@ -191,7 +189,6 @@ const gameTitle = computed(() => {
           :class="['game-card', { active: selectedGame === 'president' }]"
           @click="selectedGame = 'president'"
         >
-          <span class="game-icon">👑</span>
           <span class="game-name">President</span>
           <span class="game-desc">Shedding</span>
         </button>
@@ -199,7 +196,6 @@ const gameTitle = computed(() => {
           :class="['game-card', { active: selectedGame === 'klondike' }]"
           @click="selectedGame = 'klondike'"
         >
-          <span class="game-icon">🎴</span>
           <span class="game-name">Klondike</span>
           <span class="game-desc">Solitaire</span>
         </button>
@@ -492,11 +488,6 @@ const gameTitle = computed(() => {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
 
-  .game-icon {
-    font-size: 2rem;
-    margin-bottom: $spacing-xs;
-  }
-
   .game-name {
     font-size: 1rem;
     font-weight: bold;
@@ -512,10 +503,6 @@ const gameTitle = computed(() => {
   @media (max-height: 500px) {
     padding: $spacing-sm $spacing-md;
     min-width: 80px;
-
-    .game-icon {
-      font-size: 1.5rem;
-    }
 
     .game-name {
       font-size: 0.85rem;
