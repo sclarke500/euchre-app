@@ -8,6 +8,25 @@ export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 
 const showSettings = ref(false)
 
+// Carousel scroll state
+const carouselRef = ref<HTMLElement | null>(null)
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
+
+function updateScrollState() {
+  const el = carouselRef.value
+  if (!el) return
+  canScrollLeft.value = el.scrollLeft > 5
+  canScrollRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 5
+}
+
+function scrollCarousel(direction: 'left' | 'right') {
+  const el = carouselRef.value
+  if (!el) return
+  const scrollAmount = 120
+  el.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' })
+}
+
 // Platform detection
 const showIOSInstallHint = ref(false)
 const showIOSSafariWarning = ref(false)
@@ -51,6 +70,12 @@ onMounted(() => {
     isWobbling.value = false
   }, 2000) // 4 cycles × 0.5s = 2s
 
+  // Set up carousel scroll tracking
+  nextTick(() => {
+    updateScrollState()
+    carouselRef.value?.addEventListener('scroll', updateScrollState)
+  })
+
   const platform = getPlatformInfo()
 
   if (platform.isStandalone) {
@@ -72,6 +97,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+  carouselRef.value?.removeEventListener('scroll', updateScrollState)
 })
 
 function dismissInstallHint() {
@@ -170,34 +196,46 @@ const gameTitle = computed(() => {
     <div class="content-section">
       <h1>{{ gameTitle }}</h1>
 
-      <div class="game-carousel">
-        <button
-          :class="['game-card', { active: selectedGame === 'euchre' }]"
-          @click="selectedGame = 'euchre'"
-        >
-          <span class="game-name">Euchre</span>
-          <span class="game-desc">Trick-taking</span>
+      <div class="game-carousel-wrapper">
+        <div v-if="canScrollLeft" class="carousel-fade left"></div>
+        <button v-if="canScrollLeft" class="carousel-arrow left" @click="scrollCarousel('left')">
+          ‹
         </button>
-        <button
-          :class="['game-card', { active: selectedGame === 'spades' }]"
-          @click="selectedGame = 'spades'"
-        >
-          <span class="game-name">Spades</span>
-          <span class="game-desc">Bid & tricks</span>
-        </button>
-        <button
-          :class="['game-card', { active: selectedGame === 'president' }]"
-          @click="selectedGame = 'president'"
-        >
-          <span class="game-name">President</span>
-          <span class="game-desc">Shedding</span>
-        </button>
-        <button
-          :class="['game-card', { active: selectedGame === 'klondike' }]"
-          @click="selectedGame = 'klondike'"
-        >
-          <span class="game-name">Klondike</span>
-          <span class="game-desc">Solitaire</span>
+        
+        <div ref="carouselRef" class="game-carousel">
+          <button
+            :class="['game-card', { active: selectedGame === 'euchre' }]"
+            @click="selectedGame = 'euchre'"
+          >
+            <span class="game-name">Euchre</span>
+            <span class="game-desc">Trick-taking</span>
+          </button>
+          <button
+            :class="['game-card', { active: selectedGame === 'spades' }]"
+            @click="selectedGame = 'spades'"
+          >
+            <span class="game-name">Spades</span>
+            <span class="game-desc">Bid & tricks</span>
+          </button>
+          <button
+            :class="['game-card', { active: selectedGame === 'president' }]"
+            @click="selectedGame = 'president'"
+          >
+            <span class="game-name">President</span>
+            <span class="game-desc">Shedding</span>
+          </button>
+          <button
+            :class="['game-card', { active: selectedGame === 'klondike' }]"
+            @click="selectedGame = 'klondike'"
+          >
+            <span class="game-name">Klondike</span>
+            <span class="game-desc">Solitaire</span>
+          </button>
+        </div>
+        
+        <div v-if="canScrollRight" class="carousel-fade right"></div>
+        <button v-if="canScrollRight" class="carousel-arrow right" @click="scrollCarousel('right')">
+          ›
         </button>
       </div>
 
@@ -432,11 +470,74 @@ const gameTitle = computed(() => {
   }
 }
 
+.game-carousel-wrapper {
+  position: relative;
+  margin-bottom: $spacing-xl;
+
+  @media (max-height: 500px) {
+    margin-bottom: $spacing-md;
+  }
+
+  @media (orientation: portrait) {
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.carousel-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  z-index: 2;
+
+  &.left {
+    left: 0;
+    background: linear-gradient(to right, rgba(13, 40, 24, 0.95), transparent);
+  }
+
+  &.right {
+    right: 0;
+    background: linear-gradient(to left, rgba(13, 40, 24, 0.95), transparent);
+  }
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  &.left {
+    left: 4px;
+  }
+
+  &.right {
+    right: 4px;
+  }
+}
+
 .game-carousel {
   display: flex;
   gap: $spacing-md;
-  margin-bottom: $spacing-xl;
-  padding: $spacing-sm 0;
+  padding: $spacing-sm $spacing-md;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -447,17 +548,7 @@ const gameTitle = computed(() => {
   }
 
   @media (max-height: 500px) {
-    margin-bottom: $spacing-md;
     gap: $spacing-sm;
-  }
-
-  @media (orientation: portrait) {
-    margin-bottom: $spacing-lg;
-    // Allow full-width scrolling on mobile
-    width: calc(100% + #{$spacing-md} * 2);
-    margin-left: -$spacing-md;
-    padding-left: $spacing-md;
-    padding-right: $spacing-md;
   }
 }
 
