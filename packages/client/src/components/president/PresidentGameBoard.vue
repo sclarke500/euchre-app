@@ -557,9 +557,9 @@ const showRoundComplete = computed(() =>
 
     <!-- Card exchange modal (for Scum/Vice-Scum showing what was exchanged) -->
     <Modal :show="!!exchangeInfo && !isHumanGivingCards" @close="() => {}">
-      <div v-if="exchangeInfo" class="exchange-modal">
-        <h3>Card Exchange</h3>
-        <p class="exchange-role">You are <strong>{{ exchangeInfo.yourRole }}</strong></p>
+      <div v-if="exchangeInfo" class="exchange-modal dialog-panel">
+        <h3 class="dialog-title">Card Exchange</h3>
+        <p class="exchange-role dialog-text">You are <strong>{{ exchangeInfo.yourRole }}</strong></p>
         <div class="exchange-sections">
           <div class="exchange-section give">
             <div class="exchange-label">You gave:</div>
@@ -582,7 +582,7 @@ const showRoundComplete = computed(() =>
             </div>
           </div>
         </div>
-        <button class="modal-btn confirm" @click="adapter.acknowledgeExchange()">
+        <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="adapter.acknowledgeExchange()">
           OK
         </button>
       </div>
@@ -590,9 +590,9 @@ const showRoundComplete = computed(() =>
     
     <!-- Exchange summary modal (for President/VP after they've given cards) -->
     <Modal :show="!!completedExchange" @close="dismissExchangeSummary">
-      <div v-if="completedExchange" class="exchange-modal">
-        <h3>Card Exchange Complete</h3>
-        <p class="exchange-role">You are <strong>{{ completedExchange.yourRole }}</strong></p>
+      <div v-if="completedExchange" class="exchange-modal dialog-panel">
+        <h3 class="dialog-title">Card Exchange Complete</h3>
+        <p class="exchange-role dialog-text">You are <strong>{{ completedExchange.yourRole }}</strong></p>
         <div class="exchange-sections">
           <div class="exchange-section receive">
             <div class="exchange-label">You received:</div>
@@ -615,7 +615,7 @@ const showRoundComplete = computed(() =>
             </div>
           </div>
         </div>
-        <button class="modal-btn confirm" @click="dismissExchangeSummary">
+        <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="dismissExchangeSummary">
           OK
         </button>
       </div>
@@ -623,14 +623,14 @@ const showRoundComplete = computed(() =>
 
     <!-- Leave confirmation modal -->
     <Modal :show="showLeaveConfirm" @close="showLeaveConfirm = false">
-      <div class="confirm-modal">
-        <h3>Leave Game?</h3>
-        <p>Are you sure you want to leave this game?</p>
-        <div class="modal-buttons">
-          <button class="modal-btn cancel" @click="showLeaveConfirm = false">
+      <div class="confirm-modal dialog-panel">
+        <h3 class="dialog-title">Leave Game?</h3>
+        <p class="dialog-text">Are you sure you want to leave this game?</p>
+        <div class="modal-buttons dialog-actions">
+          <button class="modal-btn dialog-btn dialog-btn--muted cancel" @click="showLeaveConfirm = false">
             Cancel
           </button>
-          <button class="modal-btn confirm" @click="confirmLeave">
+          <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="confirmLeave">
             Leave
           </button>
         </div>
@@ -639,8 +639,8 @@ const showRoundComplete = computed(() =>
 
     <!-- Round complete modal -->
     <Modal :show="showRoundComplete" @close="() => {}">
-      <div class="round-complete-modal">
-        <h3>Round {{ roundNumber }} Complete!</h3>
+      <div class="round-complete-modal dialog-panel">
+        <h3 class="dialog-title">Round {{ roundNumber }} Complete!</h3>
         <div class="rankings">
           <div
             v-for="(playerId, index) in finishedPlayers"
@@ -652,15 +652,15 @@ const showRoundComplete = computed(() =>
             <span class="title">{{ adapter.getPlayerRankDisplay(playerId) }}</span>
           </div>
         </div>
-        <p v-if="!gameOver" class="next-round-msg">Next round starting...</p>
+        <p v-if="!gameOver" class="next-round-msg dialog-text">Next round starting...</p>
       </div>
     </Modal>
 
     <!-- Game over modal -->
     <Modal :show="gameOver" @close="emit('leaveGame')">
-      <div class="game-over-modal">
-        <h2>Game Over!</h2>
-        <h3>Final Rankings</h3>
+      <div class="game-over-modal dialog-panel">
+        <h2 class="dialog-title">Game Over!</h2>
+        <h3 class="dialog-title">Final Rankings</h3>
         <div class="rankings">
           <div
             v-for="(playerId, index) in finishedPlayers"
@@ -671,7 +671,7 @@ const showRoundComplete = computed(() =>
             <span class="name">{{ players[playerId]?.name }}</span>
           </div>
         </div>
-        <button class="modal-btn confirm" @click="emit('leaveGame')">
+        <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="emit('leaveGame')">
           Back to Menu
         </button>
       </div>

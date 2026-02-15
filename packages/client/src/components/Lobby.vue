@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import TableCard from '@/components/TableCard.vue'
+import Modal from '@/components/Modal.vue'
 import EuchreOptions from '@/components/options/EuchreOptions.vue'
 import PresidentOptions from '@/components/options/PresidentOptions.vue'
 import SpadesOptions from '@/components/options/SpadesOptions.vue'
@@ -97,7 +98,11 @@ const checkGameStart = computed(() => lobbyStore.gameId)
     </header>
 
     <!-- Create Table Options -->
-    <div v-if="showCreateOptions && !lobbyStore.isAtTable" class="create-options">
+    <Modal
+      :show="showCreateOptions && !lobbyStore.isAtTable"
+      aria-label="Create table"
+      @close="showCreateOptions = false"
+    >
       <div class="create-options-content">
         <h3>Create Table</h3>
 
@@ -123,7 +128,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
           <button class="confirm-create-btn" @click="handleCreateTable">Create</button>
         </div>
       </div>
-    </div>
+    </Modal>
 
     <!-- Connection status -->
     <div v-if="lobbyStore.isConnecting" class="status-banner connecting">
@@ -314,16 +319,6 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   justify-content: center;
   font-size: 2rem;
   z-index: 100;
-}
-
-.create-options {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
 }
 
 .create-options-content {

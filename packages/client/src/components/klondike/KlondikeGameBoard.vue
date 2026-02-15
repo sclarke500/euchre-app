@@ -845,8 +845,8 @@ function doNewGame() {
 
     <!-- Win modal -->
     <Modal :show="isWon">
-      <div class="win-modal">
-        <h1>🎉 You Win!</h1>
+      <div class="win-modal dialog-panel">
+        <h1 class="dialog-title">🎉 You Win!</h1>
         <div class="win-stats">
           <div class="win-stat">
             <span class="win-stat-value">{{ score }}</span>
@@ -861,21 +861,21 @@ function doNewGame() {
             <span class="win-stat-label">Moves</span>
           </div>
         </div>
-        <div class="win-actions">
-          <button class="action-btn primary" @click="handleNewGame">Play Again</button>
-          <button class="action-btn" @click="handleLeaveGame">Main Menu</button>
+        <div class="win-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleNewGame">Play Again</button>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="handleLeaveGame">Main Menu</button>
         </div>
       </div>
     </Modal>
 
     <!-- New Game confirmation modal -->
-    <Modal :show="showNewGameConfirm">
-      <div class="confirm-modal">
-        <h2>Start New Game?</h2>
-        <p>Your current progress will be lost.</p>
-        <div class="confirm-actions">
-          <button class="action-btn" @click="cancelNewGame">Cancel</button>
-          <button class="action-btn primary" @click="doNewGame">New Game</button>
+    <Modal :show="showNewGameConfirm" @close="cancelNewGame">
+      <div class="confirm-modal dialog-panel">
+        <h2 class="dialog-title">Start New Game?</h2>
+        <p class="dialog-text">Your current progress will be lost.</p>
+        <div class="confirm-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="cancelNewGame">Cancel</button>
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="doNewGame">New Game</button>
         </div>
       </div>
     </Modal>

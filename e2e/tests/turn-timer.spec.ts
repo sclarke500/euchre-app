@@ -24,6 +24,8 @@ test.describe('Turn Timer', () => {
   test('player returns to lobby when turn timer expires', async ({ page }) => {
     // Set nickname and start multiplayer game (AI fills empty seats)
     await page.goto('/?timerSpeed=fast')
+
+    await page.locator('.game-card', { hasText: 'Euchre' }).click()
     
     // Set nickname if needed
     const nicknameInput = page.locator('#nickname')
@@ -41,7 +43,7 @@ test.describe('Turn Timer', () => {
     // Create and start a table (AI fills other seats)
     await page.click('.create-btn')
     await page.click('.confirm-create-btn')
-    await expect(page.locator('.table-card')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.table-view')).toBeVisible({ timeout: 10000 })
     await page.click('.start-btn')
     
     // Wait for game board
@@ -63,6 +65,8 @@ test.describe('Turn Timer', () => {
 
   test('timer resets when player takes action', async ({ page }) => {
     await page.goto('/?timerSpeed=fast')
+
+    await page.locator('.game-card', { hasText: 'Euchre' }).click()
     
     const nicknameInput = page.locator('#nickname')
     if (await nicknameInput.isVisible()) {
@@ -75,7 +79,7 @@ test.describe('Turn Timer', () => {
     
     await page.click('.create-btn')
     await page.click('.confirm-create-btn')
-    await expect(page.locator('.table-card')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.table-view')).toBeVisible({ timeout: 10000 })
     await page.click('.start-btn')
     
     await expect(page.locator('.board')).toBeVisible({ timeout: 15000 })

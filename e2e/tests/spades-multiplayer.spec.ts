@@ -9,7 +9,7 @@ test.describe('Spades Multiplayer Smoke', () => {
 
     await page.goto('/')
 
-    await page.locator('.game-tab', { hasText: 'Spades' }).click()
+    await page.locator('.game-card', { hasText: 'Spades' }).click()
 
     const nicknameInput = page.locator('#nickname')
     if (await nicknameInput.isVisible()) {
@@ -22,9 +22,9 @@ test.describe('Spades Multiplayer Smoke', () => {
     await expect(page.locator('.lobby-header')).toBeVisible({ timeout: 15000 })
 
     await page.locator('.create-btn').click()
-    await expect(page.locator('.create-options')).toBeVisible()
+    await expect(page.locator('.create-options-content')).toBeVisible()
 
-    await page.locator('.game-type-btn', { hasText: 'Spades' }).click()
+    await page.locator('.game-pill', { hasText: 'Spades' }).click()
     await page.locator('.confirm-create-btn').click()
 
     await expect(page.locator('.table-view')).toBeVisible({ timeout: 10000 })

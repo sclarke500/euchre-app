@@ -48,35 +48,35 @@
     />
 
     <!-- Game Over overlay -->
-    <div v-if="game.gameOver.value" class="game-over-overlay">
-      <div class="game-over-panel">
-        <div class="game-over-title">Game Over</div>
-        <div class="game-over-result">{{ winnerText }}</div>
-        <div class="game-over-scores">
+    <Modal :show="game.gameOver.value" :dismiss-on-backdrop="false" aria-label="Game over" @close="emit('leave-game')">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Game Over</div>
+        <div class="game-over-result dialog-text">{{ winnerText }}</div>
+        <div class="game-over-scores dialog-text">
           <span>Us {{ teamScore(0) }} - {{ teamScore(1) }} Them</span>
         </div>
-        <div v-if="mode === 'singleplayer' || isHost" class="game-over-actions">
-          <button class="action-btn primary" @click="handlePlayAgain">Play Again</button>
-          <button class="action-btn" @click="emit('leave-game')">Exit</button>
+        <div v-if="mode === 'singleplayer' || isHost" class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handlePlayAgain">Play Again</button>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Exit</button>
         </div>
-        <div v-else class="game-over-actions">
-          <div class="panel-message">Waiting for host...</div>
-          <button class="action-btn" @click="emit('leave-game')">Exit</button>
+        <div v-else class="game-over-actions dialog-actions">
+          <div class="panel-message dialog-text">Waiting for host...</div>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Exit</button>
         </div>
       </div>
-    </div>
+    </Modal>
 
     <!-- Leave confirmation modal -->
-    <div v-if="showLeaveConfirm" class="game-over-overlay">
-      <div class="game-over-panel">
-        <div class="game-over-title">Leave Game?</div>
-        <div class="panel-message">You'll forfeit the current game.</div>
-        <div class="game-over-actions">
-          <button class="action-btn" @click="confirmLeave">Leave</button>
-          <button class="action-btn primary" @click="showLeaveConfirm = false">Stay</button>
+    <Modal :show="showLeaveConfirm" aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Leave Game?</div>
+        <div class="panel-message dialog-text">You'll forfeit the current game.</div>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="confirmLeave">Leave</button>
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showLeaveConfirm = false">Stay</button>
         </div>
       </div>
-    </div>
+    </Modal>
 
     <!-- User action panel — always visible -->
     <div class="action-panel" :class="{ 'is-my-turn': game.isMyTurn.value && !director.isAnimating.value }">
@@ -147,6 +147,7 @@ import { GamePhase, BidAction, Suit, type TeamScore } from '@euchre/shared'
 import CardTable from './CardTable.vue'
 import TurnTimer from './TurnTimer.vue'
 import GameHUD from './GameHUD.vue'
+import Modal from './Modal.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useGameAdapter } from '@/composables/useGameAdapter'
 import { useEuchreDirector } from '@/composables/useEuchreDirector'
@@ -649,17 +650,6 @@ onUnmounted(() => {
   input {
     accent-color: #2a8a6a;
   }
-}
-
-.game-over-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
 }
 
 .game-over-panel {

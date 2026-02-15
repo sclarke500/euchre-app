@@ -4,6 +4,7 @@ import { useSettingsStore, type AIDifficulty } from '@/stores/settingsStore'
 import EuchreOptions from '@/components/options/EuchreOptions.vue'
 import PresidentOptions from '@/components/options/PresidentOptions.vue'
 import SpadesOptions from '@/components/options/SpadesOptions.vue'
+import Modal from '@/components/Modal.vue'
 
 defineProps<{
   show: boolean
@@ -37,89 +38,71 @@ function checkForUpdates() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="fade">
-      <div v-if="show" class="modal-backdrop" @click.self="emit('close')">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>Settings</h2>
-            <button class="close-btn" @click="emit('close')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+  <Modal :show="show" aria-label="Settings" @close="emit('close')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="close-btn" @click="emit('close')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-          <div class="settings-section">
-            <h3>AI Difficulty</h3>
-            <p class="section-desc">Choose how challenging the computer opponents are</p>
-            <div class="option-buttons">
-              <button
-                :class="['option-btn', { active: settings.aiDifficulty === 'easy' }]"
-                @click="selectDifficulty('easy')"
-              >
-                <span class="option-title">Easy</span>
-                <span class="option-desc">Basic strategy, no card counting</span>
-              </button>
-              <button
-                :class="['option-btn', { active: settings.aiDifficulty === 'hard' }]"
-                @click="selectDifficulty('hard')"
-              >
-                <span class="option-title">Hard</span>
-                <span class="option-desc">Tracks cards, smarter plays</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="game-section">
-            <div class="game-header">Euchre</div>
-            <div class="settings-section">
-              <EuchreOptions />
-            </div>
-          </div>
-
-          <div class="game-section">
-            <div class="game-header">President</div>
-            <div class="settings-section">
-              <PresidentOptions />
-            </div>
-          </div>
-
-          <div class="game-section">
-            <div class="game-header">Spades</div>
-            <div class="settings-section">
-              <SpadesOptions />
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <div class="version-info">
-              <span class="version-label">Build: {{ buildInfo }}</span>
-              <button class="update-btn" @click="checkForUpdates">Check for Updates</button>
-            </div>
-            <button class="done-btn" @click="emit('close')">Done</button>
-          </div>
+      <div class="settings-section">
+        <h3>AI Difficulty</h3>
+        <p class="section-desc">Choose how challenging the computer opponents are</p>
+        <div class="option-buttons">
+          <button
+            :class="['option-btn', { active: settings.aiDifficulty === 'easy' }]"
+            @click="selectDifficulty('easy')"
+          >
+            <span class="option-title">Easy</span>
+            <span class="option-desc">Basic strategy, no card counting</span>
+          </button>
+          <button
+            :class="['option-btn', { active: settings.aiDifficulty === 'hard' }]"
+            @click="selectDifficulty('hard')"
+          >
+            <span class="option-title">Hard</span>
+            <span class="option-desc">Tracks cards, smarter plays</span>
+          </button>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div class="game-section">
+        <div class="game-header">Euchre</div>
+        <div class="settings-section">
+          <EuchreOptions />
+        </div>
+      </div>
+
+      <div class="game-section">
+        <div class="game-header">President</div>
+        <div class="settings-section">
+          <PresidentOptions />
+        </div>
+      </div>
+
+      <div class="game-section">
+        <div class="game-header">Spades</div>
+        <div class="settings-section">
+          <SpadesOptions />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="version-info">
+          <span class="version-label">Build: {{ buildInfo }}</span>
+          <button class="update-btn" @click="checkForUpdates">Check for Updates</button>
+        </div>
+        <button class="done-btn" @click="emit('close')">Done</button>
+      </div>
+    </div>
+  </Modal>
 </template>
 
 <style scoped lang="scss">
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: $spacing-md;
-}
-
 .modal-content {
   background: white;
   border-radius: 16px;
@@ -282,16 +265,5 @@ function checkForUpdates() {
   &:hover {
     background: #2a6b3d;
   }
-}
-
-// Fade transition
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity var(--anim-fast) ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

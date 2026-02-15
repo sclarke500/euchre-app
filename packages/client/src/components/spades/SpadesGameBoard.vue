@@ -57,10 +57,9 @@
     </div>
 
     <!-- Round Summary Modal -->
-    <Transition name="modal-fade">
-      <div v-if="showRoundSummary" class="game-over-overlay">
-        <div class="round-summary-panel">
-          <div class="round-summary-title">Round Complete</div>
+    <Modal :show="showRoundSummary" aria-label="Round summary" @close="dismissRoundSummary">
+      <div class="round-summary-panel dialog-panel">
+          <div class="round-summary-title dialog-title">Round Complete</div>
           <div class="round-summary-table">
             <div class="summary-header">
               <span></span>
@@ -121,39 +120,38 @@
               <span>{{ scores[1]?.score ?? 0 }}</span>
             </div>
           </div>
-          <div class="game-over-actions">
-            <button class="action-btn primary" @click="dismissRoundSummary">Continue</button>
+          <div class="game-over-actions dialog-actions">
+            <button class="action-btn dialog-btn dialog-btn--primary primary" @click="dismissRoundSummary">Continue</button>
           </div>
-        </div>
       </div>
-    </Transition>
+    </Modal>
 
     <!-- Game Over overlay -->
-    <div v-if="store.gameOver" class="game-over-overlay">
-      <div class="game-over-panel">
-        <div class="game-over-title">Game Over</div>
-        <div class="game-over-result">{{ winnerText }}</div>
-        <div class="game-over-scores">
+    <Modal :show="store.gameOver" :dismiss-on-backdrop="false" aria-label="Game over" @close="emit('leave-game')">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Game Over</div>
+        <div class="game-over-result dialog-text">{{ winnerText }}</div>
+        <div class="game-over-scores dialog-text">
           <span>Us {{ scores[0]?.score ?? 0 }} - {{ scores[1]?.score ?? 0 }} Them</span>
         </div>
-        <div class="game-over-actions">
-          <button class="action-btn primary" @click="handlePlayAgain">Play Again</button>
-          <button class="action-btn" @click="emit('leave-game')">Exit</button>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handlePlayAgain">Play Again</button>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Exit</button>
         </div>
       </div>
-    </div>
+    </Modal>
 
     <!-- Leave confirmation -->
-    <div v-if="showLeaveConfirm" class="game-over-overlay">
-      <div class="game-over-panel">
-        <div class="game-over-title">Leave Game?</div>
-        <div class="panel-message">You'll forfeit the current game.</div>
-        <div class="game-over-actions">
-          <button class="action-btn" @click="confirmLeave">Leave</button>
-          <button class="action-btn primary" @click="showLeaveConfirm = false">Stay</button>
+    <Modal :show="showLeaveConfirm" aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Leave Game?</div>
+        <div class="panel-message dialog-text">You'll forfeit the current game.</div>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="confirmLeave">Leave</button>
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showLeaveConfirm = false">Stay</button>
         </div>
       </div>
-    </div>
+    </Modal>
 
     <!-- Action panel -->
     <div class="action-panel" :class="{ 'is-my-turn': store.isHumanTurn }">
@@ -221,6 +219,7 @@ import { computed, proxyRefs, ref } from 'vue'
 import { type SpadesBid } from '@euchre/shared'
 import CardTable from '../CardTable.vue'
 import GameHUD from '../GameHUD.vue'
+import Modal from '../Modal.vue'
 import TurnTimer from '../TurnTimer.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useSpadesGameAdapter } from '@/composables/useSpadesGameAdapter'
@@ -503,17 +502,6 @@ function handlePlayAgain() {
   }
 }
 
-.game-over-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-}
-
 .game-over-panel {
   background: rgba(20, 20, 30, 0.95);
   border: 1px solid #555;
@@ -548,17 +536,6 @@ function handlePlayAgain() {
   display: flex;
   gap: 8px;
   justify-content: center;
-}
-
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity var(--anim-medium) ease, transform var(--anim-medium) ease;
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.92);
 }
 
 .action-panel {

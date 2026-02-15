@@ -8,9 +8,9 @@
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
     "pretest:phase0": "node ./scripts/preflight-local.cjs",
-    "test:phase0": "BASE_URL=http://localhost:4200 playwright test tests/spades-multiplayer.spec.ts tests/turn-timer.spec.ts --workers=1 --reporter=line",
+    "test:phase0": "playwright test tests/spades-multiplayer.spec.ts tests/turn-timer.spec.ts --workers=1 --reporter=line",
     "pretest:phase0:headed": "node ./scripts/preflight-local.cjs",
-    "test:phase0:headed": "BASE_URL=http://localhost:4200 playwright test tests/spades-multiplayer.spec.ts tests/turn-timer.spec.ts --workers=1 --reporter=line --headed",
+    "test:phase0:headed": "playwright test tests/spades-multiplayer.spec.ts tests/turn-timer.spec.ts --workers=1 --reporter=line --headed",
     "report": "playwright show-report"
   },
   "devDependencies": {

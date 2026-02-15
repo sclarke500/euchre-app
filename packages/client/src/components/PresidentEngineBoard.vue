@@ -101,8 +101,8 @@
 
     <!-- Round complete modal -->
     <Modal :show="phase === PresidentPhase.RoundComplete" @close="() => {}">
-      <div class="round-modal">
-        <h3>Round {{ game.roundNumber.value }} Complete!</h3>
+      <div class="round-modal dialog-panel">
+        <h3 class="dialog-title">Round {{ game.roundNumber.value }} Complete!</h3>
         <div class="rankings">
           <div
             v-for="(playerId, index) in game.finishedPlayers.value"
@@ -114,14 +114,14 @@
             <span class="title">{{ game.getPlayerRankDisplay(playerId) }}</span>
           </div>
         </div>
-        <p v-if="!game.gameOver.value" class="next-round-msg">Next round starting...</p>
+        <p v-if="!game.gameOver.value" class="next-round-msg dialog-text">Next round starting...</p>
       </div>
     </Modal>
 
     <!-- Game over modal -->
     <Modal :show="game.gameOver.value" @close="$emit('leave-game')">
-      <div class="round-modal">
-        <h2>Game Over!</h2>
+      <div class="round-modal dialog-panel">
+        <h2 class="dialog-title">Game Over!</h2>
         <div class="rankings">
           <div
             v-for="(playerId, index) in game.finishedPlayers.value"
@@ -132,18 +132,18 @@
             <span class="name">{{ game.players.value[playerId]?.name }}</span>
           </div>
         </div>
-        <button class="modal-btn confirm" @click="$emit('leave-game')">Back to Menu</button>
+        <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="$emit('leave-game')">Back to Menu</button>
       </div>
     </Modal>
 
     <!-- Leave confirmation modal -->
     <Modal :show="showLeaveConfirm" @close="showLeaveConfirm = false">
-      <div class="round-modal">
-        <h3>Leave Game?</h3>
-        <p>Are you sure you want to leave?</p>
-        <div class="modal-buttons">
-          <button class="modal-btn" @click="showLeaveConfirm = false">Cancel</button>
-          <button class="modal-btn confirm" @click="$emit('leave-game')">Leave</button>
+      <div class="round-modal dialog-panel">
+        <h3 class="dialog-title">Leave Game?</h3>
+        <p class="dialog-text">Are you sure you want to leave?</p>
+        <div class="modal-buttons dialog-actions">
+          <button class="modal-btn dialog-btn dialog-btn--muted" @click="showLeaveConfirm = false">Cancel</button>
+          <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="$emit('leave-game')">Leave</button>
         </div>
       </div>
     </Modal>
