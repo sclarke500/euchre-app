@@ -87,7 +87,7 @@ function handleSeatClick(seatIndex: number) {
           </template>
           <template v-else>
             <span class="empty-label">
-              <template v-if="isCurrent">(<span class="clanker">clanker</span>)</template>
+              <template v-if="isCurrent">(AI)</template>
               <template v-else>Join</template>
             </span>
           </template>
@@ -114,7 +114,6 @@ function handleSeatClick(seatIndex: number) {
   &.current {
     background: rgba(255, 255, 255, 0.15);
     border-color: rgba(255, 255, 255, 0.3);
-    max-width: 500px;
     width: 100%;
   }
 }
@@ -166,38 +165,30 @@ function handleSeatClick(seatIndex: number) {
 }
 
 .seats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: $spacing-sm;
-
-  &.president-grid {
-    &.players-5 {
-      grid-template-columns: repeat(5, 1fr);
-    }
-    &.players-6 {
-      grid-template-columns: repeat(3, 1fr);
-    }
-    &.players-7 {
-      grid-template-columns: repeat(4, 1fr);
-    }
-    &.players-8 {
-      grid-template-columns: repeat(4, 1fr);
-    }
+  overflow-x: auto;
+  padding-bottom: $spacing-xs;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
 .seat {
-  aspect-ratio: 1;
+  flex: 0 0 auto;
+  min-width: 80px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
-  padding: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
   border: 2px solid transparent;
   transition: all var(--anim-fast);
-  min-height: 80px;
 
   &.occupied {
     background: rgba(255, 255, 255, 0.15);

@@ -3,7 +3,7 @@
     <div class="player-plaque" :class="{ 'current-turn': isCurrentTurn, 'is-ai': !isHuman }">
       <div class="tricks-won">{{ tricksWon }}</div>
       <div class="player-name-container">
-        <span class="player-name" :class="{ 'clanker': !isHuman }">{{ playerName }}</span>
+        <span class="player-name" :class="{ 'ai-player': !isHuman }">{{ playerName }}</span>
       </div>
     </div>
 
@@ -123,7 +123,7 @@ const showDealerChip = computed(() => props.isDealer && !props.hideDealer)
   white-space: nowrap;
   font-family: 'Shadows Into Light', cursive;
 
-  &.clanker {
+  &.ai-player {
     font-family: 'Audiowide', cursive;
     font-size: 1rem;
     font-weight: 400;

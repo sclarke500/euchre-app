@@ -148,7 +148,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
       />
       <p class="waiting-message">
         Waiting for players...
-        <span v-if="lobbyStore.isHost">Press "Start Game" when ready. Empty seats will be filled with <span class="clanker">clankers</span>.</span>
+        <span v-if="lobbyStore.isHost">Press "Start Game" when ready. Empty seats will be filled with AI.</span>
       </p>
     </div>
 
