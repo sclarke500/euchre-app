@@ -427,14 +427,30 @@ export const useKlondikeStore = defineStore('klondike', () => {
 
     isAnimating.value = true
     
+    // Calculate destination offset for tableau stacking
+    // Cards stack with ~30% of card height offset for face-up cards
+    const FACE_UP_OFFSET_RATIO = 0.30
+    let destOffsetY = 0
+    
+    // If destination is a tableau column with cards, offset by one card position
+    if (destKey.startsWith('tableau-')) {
+      const parts = destKey.split('-')
+      const colIndex = parseInt(parts[1]!)
+      const column = gameState.value.tableau[colIndex]
+      if (column && column.cards.length > 0) {
+        // There are cards in the column, so we land below the top card
+        destOffsetY = destPos.height * FACE_UP_OFFSET_RATIO
+      }
+    }
+    
     // Create flying cards in store (for reactivity)
     const newFlyingCards: FlyingCard[] = cards.map((card, index) => ({
       id: `flying-${card.id}`,
       card,
       startX: sourcePos.x,
-      startY: sourcePos.y + (index * 25),
+      startY: sourcePos.y + (index * destPos.height * FACE_UP_OFFSET_RATIO),
       endX: destPos.x,
-      endY: destPos.y + (index * 25),
+      endY: destPos.y + destOffsetY + (index * destPos.height * FACE_UP_OFFSET_RATIO),
       width: sourcePos.width,
       height: sourcePos.height,
     }))
