@@ -5,13 +5,19 @@ import BackButton from '../BackButton.vue'
 import KlondikeFoundation from './KlondikeFoundation.vue'
 import KlondikeStockWaste from './KlondikeStockWaste.vue'
 import KlondikeTableauColumn from './KlondikeTableauColumn.vue'
+import FlyingCard from './FlyingCard.vue'
 import Modal from '../Modal.vue'
+import { getKlondikeAnimation, resetKlondikeAnimation } from '@/composables/useKlondikeAnimation'
 
 const emit = defineEmits<{
   leaveGame: []
 }>()
 
 const store = useKlondikeStore()
+const animation = getKlondikeAnimation()
+
+// Computed for flying cards (unwrap ref for template)
+const flyingCards = computed(() => animation.flyingCards.value)
 
 // Timer
 const elapsedSeconds = ref(0)
@@ -50,12 +56,14 @@ const score = computed(() => {
 
 // Initialize game on mount
 onMounted(() => {
+  resetKlondikeAnimation()
   store.startNewGame()
   startTimer()
 })
 
 onUnmounted(() => {
   stopTimer()
+  resetKlondikeAnimation()
 })
 
 // Computed
@@ -110,6 +118,7 @@ function handleAutoComplete() {
 
 function handleNewGame() {
   stopTimer()
+  resetKlondikeAnimation()
   store.startNewGame()
   startTimer()
 }
@@ -275,6 +284,23 @@ function handleHint() {
         </button>
       </div>
     </div>
+
+    <!-- Flying cards overlay for animations -->
+    <Teleport to="body">
+      <template v-if="flyingCards.length > 0">
+        <FlyingCard
+          v-for="fc in flyingCards"
+          :key="fc.id"
+          :card="fc.card"
+          :start-x="fc.startX"
+          :start-y="fc.startY"
+          :end-x="fc.endX"
+          :end-y="fc.endY"
+          :width="fc.width"
+          :height="fc.height"
+        />
+      </template>
+    </Teleport>
 
     <!-- Win modal -->
     <Modal :show="isWon">

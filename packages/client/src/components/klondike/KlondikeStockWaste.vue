@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import type { KlondikeCard } from '@euchre/shared'
 import Card from '../Card.vue'
+import { getKlondikeAnimation } from '@/composables/useKlondikeAnimation'
 
 const props = withDefaults(defineProps<{
   stock: KlondikeCard[]
@@ -18,9 +19,53 @@ const emit = defineEmits<{
   tapWaste: []
 }>()
 
+const animation = getKlondikeAnimation()
+const stockRef = ref<HTMLElement | null>(null)
+const wasteRef = ref<HTMLElement | null>(null)
+const wasteCardRefs = ref<Map<number, HTMLElement>>(new Map())
+
 const hasStock = computed(() => props.stock.length > 0)
 const hasWaste = computed(() => props.waste.length > 0)
 const isVertical = computed(() => props.layout === 'vertical')
+
+// Register stock container
+watch(stockRef, (el) => {
+  animation.registerContainer('stock', el)
+}, { immediate: true })
+
+// Register waste container
+watch(wasteRef, (el) => {
+  animation.registerContainer('waste', el)
+}, { immediate: true })
+
+// Register waste top card (the playable one)
+function setWasteCardRef(index: number, el: HTMLElement | null) {
+  if (el) {
+    wasteCardRefs.value.set(index, el)
+    // Only register the top card as "waste" for animation purposes
+    if (index === props.visibleWasteCards.length - 1) {
+      animation.registerCard('waste', el)
+    }
+  } else {
+    wasteCardRefs.value.delete(index)
+  }
+}
+
+// Re-register when visible cards change
+watch(() => props.visibleWasteCards.length, () => {
+  // Update waste card registration
+  const topIndex = props.visibleWasteCards.length - 1
+  const topEl = wasteCardRefs.value.get(topIndex)
+  if (topEl) {
+    animation.registerCard('waste', topEl)
+  }
+})
+
+onBeforeUnmount(() => {
+  animation.registerContainer('stock', null)
+  animation.registerContainer('waste', null)
+  animation.registerCard('waste', null)
+})
 
 function handleStockClick() {
   emit('drawCard')
@@ -37,6 +82,7 @@ function handleWasteClick() {
     <!-- In vertical mode, waste comes first (on top) -->
     <div 
       v-if="isVertical"
+      ref="wasteRef"
       class="waste-area" 
       :class="{ selected: isWasteSelected, vertical: isVertical }" 
       @click="handleWasteClick"
@@ -46,6 +92,7 @@ function handleWasteClick() {
         <div
           v-for="(card, index) in visibleWasteCards"
           :key="card.id"
+          :ref="(el) => setWasteCardRef(index, el as HTMLElement)"
           class="waste-card"
           :class="{ vertical: isVertical }"
           :style="{ '--fan-index': index }"
@@ -56,7 +103,7 @@ function handleWasteClick() {
     </div>
 
     <!-- Stock pile (draw pile) -->
-    <div class="stock" :class="{ empty: !hasStock }" @click="handleStockClick">
+    <div ref="stockRef" class="stock" :class="{ empty: !hasStock }" @click="handleStockClick">
       <div v-if="hasStock" class="card-back">
         <div class="card-back-pattern"></div>
       </div>
@@ -71,6 +118,7 @@ function handleWasteClick() {
     <!-- Waste pile for horizontal layout (comes after stock) -->
     <div 
       v-if="!isVertical"
+      ref="wasteRef"
       class="waste-area" 
       :class="{ selected: isWasteSelected }" 
       @click="handleWasteClick"
@@ -80,6 +128,7 @@ function handleWasteClick() {
         <div
           v-for="(card, index) in visibleWasteCards"
           :key="card.id"
+          :ref="(el) => setWasteCardRef(index, el as HTMLElement)"
           class="waste-card"
           :style="{ '--fan-index': index }"
         >

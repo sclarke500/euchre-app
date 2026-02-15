@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import type { TableauColumn, KlondikeCard } from '@euchre/shared'
 import Card from '../Card.vue'
+import { getKlondikeAnimation } from '@/composables/useKlondikeAnimation'
 
 const props = defineProps<{
   column: TableauColumn
@@ -14,7 +15,45 @@ const emit = defineEmits<{
   tapEmpty: [columnIndex: number]
 }>()
 
+const animation = getKlondikeAnimation()
+const columnRef = ref<HTMLElement | null>(null)
+const cardRefs = ref<Map<number, HTMLElement>>(new Map())
+
 const isEmpty = computed(() => props.column.cards.length === 0)
+
+// Register column container for empty targets
+watch(columnRef, (el) => {
+  animation.registerContainer(`tableau-${props.columnIndex}`, el)
+}, { immediate: true })
+
+// Register each card element
+function setCardRef(index: number, el: HTMLElement | null) {
+  if (el) {
+    cardRefs.value.set(index, el)
+    animation.registerCard(`tableau-${props.columnIndex}-${index}`, el)
+  } else {
+    cardRefs.value.delete(index)
+    animation.registerCard(`tableau-${props.columnIndex}-${index}`, null)
+  }
+}
+
+// Re-register cards when column changes
+watch(() => props.column.cards, () => {
+  // Clean up old registrations
+  cardRefs.value.forEach((_, index) => {
+    if (index >= props.column.cards.length) {
+      animation.registerCard(`tableau-${props.columnIndex}-${index}`, null)
+      cardRefs.value.delete(index)
+    }
+  })
+}, { deep: true })
+
+onBeforeUnmount(() => {
+  animation.registerContainer(`tableau-${props.columnIndex}`, null)
+  cardRefs.value.forEach((_, index) => {
+    animation.registerCard(`tableau-${props.columnIndex}-${index}`, null)
+  })
+})
 
 // Use CSS custom property values or defaults
 // These are percentages of card height
@@ -63,7 +102,11 @@ function handleEmptyClick() {
 </script>
 
 <template>
-  <div class="tableau-column" :style="{ height: `calc(var(--card-height, 105px) * ${columnHeightMultiplier})` }">
+  <div 
+    ref="columnRef"
+    class="tableau-column" 
+    :style="{ height: `calc(var(--card-height, 105px) * ${columnHeightMultiplier})` }"
+  >
     <!-- Empty column placeholder -->
     <div v-if="isEmpty" class="empty-column" @click="handleEmptyClick">
       <span class="king-hint">K</span>
@@ -74,6 +117,7 @@ function handleEmptyClick() {
       <div
         v-for="(card, index) in column.cards"
         :key="card.id"
+        :ref="(el) => setCardRef(index, el as HTMLElement)"
         class="stacked-card"
         :class="{ selected: isSelected(index) }"
         :style="getCardStyle(index)"

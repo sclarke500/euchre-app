@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import type { FoundationPile } from '@euchre/shared'
 import { Suit } from '@euchre/shared'
 import Card from '../Card.vue'
+import { getKlondikeAnimation } from '@/composables/useKlondikeAnimation'
 
 const props = defineProps<{
   foundation: FoundationPile
@@ -12,6 +13,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   tap: [index: number]
 }>()
+
+const animation = getKlondikeAnimation()
+const foundationRef = ref<HTMLElement | null>(null)
+const cardRef = ref<HTMLElement | null>(null)
 
 // Suit symbol for empty foundation placeholder
 const suitSymbols: Record<number, string> = {
@@ -28,20 +33,37 @@ const topCard = computed(() => {
   return props.foundation.cards[props.foundation.cards.length - 1]
 })
 
+// Register foundation container
+watch(foundationRef, (el) => {
+  animation.registerContainer(`foundation-${props.index}`, el)
+}, { immediate: true })
+
+// Register top card element
+watch(cardRef, (el) => {
+  animation.registerCard(`foundation-${props.index}`, el)
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  animation.registerContainer(`foundation-${props.index}`, null)
+  animation.registerCard(`foundation-${props.index}`, null)
+})
+
 function handleTap() {
   emit('tap', props.index)
 }
 </script>
 
 <template>
-  <div class="foundation" @click="handleTap">
+  <div ref="foundationRef" class="foundation" @click="handleTap">
     <!-- Empty foundation placeholder -->
     <div v-if="!topCard" class="foundation-placeholder" :class="{ red: index === 1 || index === 2 }">
       {{ placeholderSuit }}
     </div>
     <!-- Top card with enter transition -->
     <Transition v-else name="card-land" appear>
-      <Card :key="topCard.id" :card="topCard" />
+      <div ref="cardRef" :key="topCard.id">
+        <Card :card="topCard" />
+      </div>
     </Transition>
   </div>
 </template>
