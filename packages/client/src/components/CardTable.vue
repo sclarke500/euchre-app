@@ -45,6 +45,13 @@
         @click="$emit('card-click', managed.card.id)"
       />
 
+      <!-- User avatar at bottom center of screen -->
+      <div class="user-avatar-bottom" :class="{ 'is-current-turn': currentTurnSeat === 0 }">
+        <div class="avatar-circle">{{ playerNames[0]?.[0] ?? '?' }}</div>
+        <div class="player-name">{{ playerNames[0] }}</div>
+        <slot name="user-info" />
+      </div>
+
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
     </div>
@@ -103,19 +110,22 @@ const avatarStyles = computed(() => {
   const { tableBounds } = layout
 
   return seatData.value.map((seat) => {
+    // Hide user avatar at table - shown separately at bottom of screen
+    if (seat.isUser) return { display: 'none' }
+
     // Convert board-space hand position to table-relative percentage
     const pctX = ((seat.handPosition.x - tableBounds.left) / tableBounds.width * 100)
     const pctY = ((seat.handPosition.y - tableBounds.top) / tableBounds.height * 100)
 
     switch (seat.side) {
       case 'left':
-        return { left: '-40px', top: `${pctY}%` }
+        return { left: '-50px', top: `${pctY}%` }
       case 'right':
-        return { left: 'calc(100% + 40px)', top: `${pctY}%` }
+        return { left: 'calc(100% + 50px)', top: `${pctY}%` }
       case 'top':
-        return { left: `${pctX}%`, top: '-30px' }
-      default: // bottom (user seat)
-        return { left: `${pctX}%`, top: 'calc(100% + 30px)' }
+        return { left: `${pctX}%`, top: '-40px' }
+      default: // bottom
+        return { left: `${pctX}%`, top: 'calc(100% + 40px)' }
     }
   })
 })
@@ -262,32 +272,38 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 0;
+  // Unified background for circle + name
+  background: rgba(30, 30, 45, 0.9);
+  border: 2px solid #4a4a60;
+  border-radius: 24px;
+  padding: 6px 6px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
 
   .avatar-circle {
-    width: 48px;
-    height: 48px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: #333344;
-    border: 2px solid #4a4a60;
+    background: #444455;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: bold;
     color: #ccc;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
+    box-shadow: none;
   }
 
   .player-name {
-    padding: 2px 10px;
-    font-size: 13px;
+    padding: 2px 6px;
+    font-size: 11px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
+    background: transparent;
+    border-radius: 0;
   }
 
   .player-status {
@@ -295,13 +311,13 @@ defineExpose({
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-top: 2px;
+    margin-top: 4px;
     padding: 1px 8px;
     font-size: 10px;
     font-weight: 600;
     color: #ffd700;
     white-space: nowrap;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.7);
     border-radius: 4px;
     opacity: 0;
     transition: opacity var(--anim-slow) ease;
@@ -315,10 +331,11 @@ defineExpose({
   .info-tags {
     display: flex;
     gap: 4px;
+    margin-top: 2px;
   }
 
   // Turn indicator glow — soft diffused halo
-  &.is-current-turn .avatar-circle {
+  &.is-current-turn {
     border-color: rgba(255, 215, 0, 0.7);
     box-shadow:
       0 0 12px rgba(255, 215, 0, 0.3),
@@ -349,5 +366,53 @@ defineExpose({
   &.dealer-seat-1 { left: 20px; top: calc(50% - 50px); }
   &.dealer-seat-2 { left: calc(50% + 50px); top: 20px; }
   &.dealer-seat-3 { left: calc(100% - 20px); top: calc(50% + 50px); }
+}
+
+// User avatar at bottom center of screen
+.user-avatar-bottom {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  background: rgba(30, 30, 45, 0.9);
+  border: 2px solid #4a4a60;
+  border-radius: 24px;
+  padding: 6px 6px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
+
+  .avatar-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #444455;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: bold;
+    color: #ccc;
+  }
+
+  .player-name {
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ccc;
+    white-space: nowrap;
+  }
+
+  &.is-current-turn {
+    border-color: rgba(255, 215, 0, 0.7);
+    box-shadow:
+      0 0 12px rgba(255, 215, 0, 0.3),
+      0 0 30px rgba(255, 215, 0, 0.15),
+      0 0 50px rgba(255, 215, 0, 0.08);
+  }
 }
 </style>

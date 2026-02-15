@@ -79,22 +79,22 @@
       </div>
     </Modal>
 
-    <!-- User action panel — always visible -->
-    <div class="action-panel" :class="{ 'is-my-turn': game.isMyTurn.value && !director.isAnimating.value }">
-      <div class="panel-header">
-        <div class="panel-name">
-          <span v-if="userTrumpInfo" class="panel-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
-          {{ userName }}
-        </div>
-        <TurnTimer 
-          v-if="mode === 'multiplayer'"
-          ref="turnTimerRef"
-          :active="game.isMyTurn.value && !director.isAnimating.value"
-          :grace-period-ms="timerSettings.gracePeriodMs"
-          :countdown-ms="timerSettings.countdownMs"
-          @timeout="handleTurnTimeout"
-        />
-      </div>
+    <!-- User info for the user-avatar slot -->
+    <template #user-info>
+      <span v-if="userTrumpInfo" class="user-trump-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
+    </template>
+
+    <!-- User action buttons — floating, no container -->
+    <div class="action-buttons" :class="{ 'is-my-turn': game.isMyTurn.value && !director.isAnimating.value }">
+      <TurnTimer 
+        v-if="mode === 'multiplayer'"
+        ref="turnTimerRef"
+        class="floating-timer"
+        :active="game.isMyTurn.value && !director.isAnimating.value"
+        :grace-period-ms="timerSettings.gracePeriodMs"
+        :countdown-ms="timerSettings.countdownMs"
+        @timeout="handleTurnTimeout"
+      />
 
       <!-- Round 1: Pass or Order Up -->
       <template v-if="showBidding && game.biddingRound.value === 1">
@@ -134,10 +134,7 @@
         <div class="panel-message">Discard a card</div>
       </template>
 
-      <!-- Playing phase — your turn -->
-      <template v-else-if="game.phase.value === 'playing' && game.isMyTurn.value && !director.isAnimating.value">
-        <div class="panel-message">Your turn</div>
-      </template>
+      <!-- Playing phase — your turn (no message needed, turn indicator on avatar) -->
     </div>
   </CardTable>
 </template>
@@ -535,87 +532,73 @@ onUnmounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-// User action panel — stacked vertical layout, bottom-right
-.action-panel {
+// User trump badge in avatar slot
+.user-trump-badge {
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+// Floating action buttons — no container, just buttons
+.action-buttons {
   position: absolute;
   bottom: 12px;
   right: max(12px, env(safe-area-inset-right));
   z-index: 600;
-  background: rgba(20, 20, 30, 0.92);
-  border: 1px solid #444;
-  border-radius: 10px;
-  padding: 10px 12px;
-  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
   width: 130px;
-  min-height: 135px;
-  transition: box-shadow var(--anim-slow) ease, border-color var(--anim-slow) ease, background var(--anim-slow) ease;
 
-  &.is-my-turn {
-    border: 2px solid rgba(255, 215, 0, 0.5);
-    background: rgba(40, 38, 20, 0.92);
-    box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.2),
-      0 0 30px rgba(255, 215, 0, 0.08);
+  &:empty {
+    display: none;
   }
 }
 
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.panel-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: #eee;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-
-  .panel-badge {
-    font-size: 14px;
-    line-height: 1;
-  }
+.floating-timer {
+  align-self: center;
+  margin-bottom: 4px;
 }
 
 .panel-message {
   font-size: 12px;
-  color: #aaa;
+  color: #ccc;
   text-align: center;
+  background: rgba(20, 20, 30, 0.85);
+  padding: 6px 10px;
+  border-radius: 6px;
 }
 
 .action-btn {
   padding: 10px 8px;
   border-radius: 6px;
   border: 1px solid #555;
-  background: rgba(50, 50, 65, 0.9);
+  background: rgba(50, 50, 65, 0.95);
+  backdrop-filter: blur(8px);
   color: #ccc;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background var(--anim-fast);
+  transition: background var(--anim-fast), transform var(--anim-fast);
   text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 
   &:hover {
-    background: rgba(70, 70, 90, 0.95);
+    background: rgba(70, 70, 90, 0.98);
     color: #fff;
   }
 
+  &:active {
+    transform: scale(0.97);
+  }
+
   &.primary {
-    background: rgba(36, 115, 90, 0.9);
+    background: rgba(36, 115, 90, 0.95);
     border-color: #2a8a6a;
     color: #fff;
 
     &:hover {
-      background: rgba(46, 135, 110, 0.95);
+      background: rgba(46, 135, 110, 0.98);
     }
   }
 
