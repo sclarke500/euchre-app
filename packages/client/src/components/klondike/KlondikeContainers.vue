@@ -37,14 +37,6 @@ function measureContainers() {
   const parent = stockRef.value?.closest('.containers-layer')
   const parentRect = parent?.getBoundingClientRect() || { left: 0, top: 0 }
   
-  console.log('[Containers] measureContainers called', {
-    stockRef: !!stockRef.value,
-    wasteRef: !!wasteRef.value,
-    foundations: foundationRefs.value.filter(Boolean).length,
-    tableau: tableauRefs.value.filter(Boolean).length,
-    parentOffset: { x: parentRect.left, y: parentRect.top }
-  })
-  
   if (stockRef.value) {
     const rect = stockRef.value.getBoundingClientRect()
     emit('containerMeasured', 'stock', null, { 

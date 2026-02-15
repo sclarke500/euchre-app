@@ -50,9 +50,7 @@ const score = computed(() => {
 
 // Card positions calculated from state + container positions
 const cardPositions = computed<CardPosition[]>(() => {
-  const positions = layout.calculatePositions(store.gameState)
-  console.log('[Board] Card positions:', positions.length, 'cards, first 3:', positions.slice(0, 3).map(p => ({ id: p.id, x: p.x, y: p.y })))
-  return positions
+  return layout.calculatePositions(store.gameState)
 })
 
 // Board ref for reading CSS variables
@@ -68,7 +66,6 @@ onMounted(() => {
       const styles = getComputedStyle(boardRef.value)
       const width = parseInt(styles.getPropertyValue('--card-width')) || 50
       const height = parseInt(styles.getPropertyValue('--card-height')) || 70
-      console.log('[Board] Card size from CSS:', width, height)
       layout.setCardSize(width, height)
     }
   })
