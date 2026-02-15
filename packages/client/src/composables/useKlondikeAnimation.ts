@@ -83,10 +83,14 @@ export function useKlondikeAnimation() {
     destKey: string,
     onComplete: () => void
   ): Promise<void> {
+    console.log('[Animation] animateMove called', { sourceKey, destKey, cards: cards.length })
+    console.log('[Animation] Registered cards:', Array.from(cardRefs.keys()))
+    console.log('[Animation] Registered containers:', Array.from(containerRefs.keys()))
+    
     // Get source position
     const sourcePos = getCardPosition(sourceKey) || getContainerPosition(sourceKey)
     if (!sourcePos) {
-      // No position found, just execute immediately
+      console.log('[Animation] Source position not found for:', sourceKey)
       onComplete()
       return
     }
@@ -94,13 +98,17 @@ export function useKlondikeAnimation() {
     // Get destination position (might be a container if empty)
     const destPos = getCardPosition(destKey) || getContainerPosition(destKey)
     if (!destPos) {
+      console.log('[Animation] Dest position not found for:', destKey)
       onComplete()
       return
     }
+    
+    console.log('[Animation] Positions found:', { sourcePos, destPos })
 
     isAnimating.value = true
 
     // Create flying cards for each card in the stack
+    console.log('[Animation] Creating', cards.length, 'flying cards')
     const newFlyingCards: FlyingCard[] = cards.map((card, index) => ({
       id: `flying-${card.id}`,
       card,
@@ -113,6 +121,7 @@ export function useKlondikeAnimation() {
     }))
 
     flyingCards.value = newFlyingCards
+    console.log('[Animation] Flying cards set:', flyingCards.value.length)
 
     // Wait for animation to complete (CSS handles the actual animation)
     await new Promise(resolve => setTimeout(resolve, 300))
