@@ -28,8 +28,7 @@ const wasteRef = ref<HTMLElement | null>(null)
 const foundationRefs = ref<(HTMLElement | null)[]>([null, null, null, null])
 const tableauRefs = ref<(HTMLElement | null)[]>([null, null, null, null, null, null, null])
 
-// Suit symbols for foundation placeholders
-const suitSymbols = ['♠', '♥', '♦', '♣']
+// Foundation slots - no suit symbols (any Ace can go anywhere per standard rules)
 
 // Measure and emit container positions (relative to parent container)
 function measureContainers() {
@@ -132,10 +131,9 @@ defineExpose({
             :key="'f' + index"
             :ref="(el) => setFoundationRef(index, el as HTMLElement)"
             class="foundation-slot"
-            :class="{ red: index === 1 || index === 2 }"
             @click="emit('foundationClick', index)"
           >
-            {{ suitSymbols[index] }}
+            <span class="ace-hint">A</span>
           </div>
         </div>
         <div class="stock-waste-row">
@@ -179,10 +177,9 @@ defineExpose({
           :key="'lf' + index"
           :ref="(el) => setFoundationRef(index, el as HTMLElement)"
           class="foundation-slot"
-          :class="{ red: index === 1 || index === 2 }"
           @click="emit('foundationClick', index)"
         >
-          {{ suitSymbols[index] }}
+          <span class="ace-hint">A</span>
         </div>
       </div>
 
@@ -246,12 +243,7 @@ defineExpose({
 }
 
 .foundation-slot {
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.3);
-  
-  &.red {
-    color: rgba(231, 76, 60, 0.4);
-  }
+  // Empty slot styling handled by base empty-slot styles
 }
 
 .stock-slot {
@@ -309,7 +301,8 @@ defineExpose({
   height: var(--card-height, 70px);
 }
 
-.king-hint {
+.king-hint,
+.ace-hint {
   font-size: 1.25rem;
   color: rgba(255, 255, 255, 0.2);
   font-weight: bold;
