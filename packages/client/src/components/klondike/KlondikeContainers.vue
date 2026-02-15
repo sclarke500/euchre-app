@@ -293,6 +293,8 @@ function setTableauRef(index: number, el: HTMLElement | null) {
 }
 
 .waste-slot {
+  // Width to accommodate 3 fanned cards (1 full + 2 offsets of 0.22)
+  width: calc(var(--card-width, 50px) * 1.5);
   border-style: dotted;
   border-color: rgba(255, 255, 255, 0.1);
 }

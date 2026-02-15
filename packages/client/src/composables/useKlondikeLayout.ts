@@ -64,7 +64,7 @@ export function useKlondikeLayout() {
   }
 
   // Calculate all card positions from game state
-  function calculatePositions(state: KlondikeState): CardPosition[] {
+  function calculatePositions(state: KlondikeState, options?: { dealAnimation?: boolean }): CardPosition[] {
     const positions: CardPosition[] = []
     let zIndex = 1
 
@@ -72,19 +72,33 @@ export function useKlondikeLayout() {
     // The stock slot shows a card back if there are cards
     // This keeps the card layer clickable
 
-    // Waste cards (fanned horizontally, face up)
+    // Waste cards (fanned horizontally, face up, RIGHT-ALIGNED)
     const wasteRect = containers.value.waste
     if (wasteRect) {
       // Only show up to drawCount cards fanned
       const visibleCount = Math.min(state.drawCount, state.waste.length)
       const startIdx = Math.max(0, state.waste.length - visibleCount)
       
+      // Calculate the width of the fanned cards
+      const fanOffset = cardWidth.value * WASTE_FAN_OFFSET
+      const totalFanWidth = (visibleCount - 1) * fanOffset + cardWidth.value
+      
+      // Right-align: start from right edge of waste slot minus total width
+      const rightEdge = wasteRect.x + wasteRect.width
+      const baseX = rightEdge - totalFanWidth
+      
       state.waste.forEach((card, i) => {
         const fanIndex = i >= startIdx ? i - startIdx : 0
         const isFanned = i >= startIdx
+        
+        // Cards not in the visible fan are stacked at the leftmost position (hidden behind)
+        const x = isFanned 
+          ? baseX + fanIndex * fanOffset
+          : baseX
+          
         positions.push({
           id: card.id,
-          x: wasteRect.x + (isFanned ? fanIndex * cardWidth.value * WASTE_FAN_OFFSET : 0),
+          x,
           y: wasteRect.y,
           z: zIndex++,
           faceUp: true,

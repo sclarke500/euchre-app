@@ -51,10 +51,15 @@ const score = computed(() => {
 // Card positions - using ref to maintain object identity for animations
 const cardPositionsRef = ref<Map<string, CardPosition>>(new Map())
 
+// Track whether we're animating a deal
+const isDealing = ref(false)
+
 // Update positions when state changes
 watch(
   () => store.gameState,
   () => {
+    if (isDealing.value) return // Skip during deal animation
+    
     const newPositions = layout.calculatePositions(store.gameState)
     const map = cardPositionsRef.value
     
@@ -89,22 +94,98 @@ const cardPositions = computed<CardPosition[]>(() => {
   return Array.from(cardPositionsRef.value.values())
 })
 
+// Animate dealing cards from stock to tableau
+async function animateDeal() {
+  isDealing.value = true
+  const map = cardPositionsRef.value
+  map.clear()
+  
+  const stockRect = layout.containers.value.stock
+  if (!stockRect) {
+    isDealing.value = false
+    return
+  }
+  
+  // Get final positions
+  const finalPositions = layout.calculatePositions(store.gameState)
+  
+  // First, place all cards at stock position
+  for (const pos of finalPositions) {
+    map.set(pos.id, {
+      ...pos,
+      x: stockRect.x,
+      y: stockRect.y,
+      faceUp: false, // Start face down
+    })
+  }
+  
+  // Wait a frame for initial positions to render
+  await nextTick()
+  await new Promise(r => setTimeout(r, 50))
+  
+  // Build deal order: tableau cards dealt row by row (col 0 card 0, col 1 card 0, col 1 card 1, etc.)
+  const dealOrder: { cardId: string; finalPos: CardPosition; delay: number }[] = []
+  const state = store.gameState
+  let delay = 0
+  const DEAL_DELAY = 50 // ms between each card
+  
+  // Deal tableau row by row
+  for (let row = 0; row < 7; row++) {
+    for (let col = row; col < 7; col++) {
+      const column = state.tableau[col]
+      if (column && row < column.cards.length) {
+        const card = column.cards[row]
+        if (card) {
+          const finalPos = finalPositions.find(p => p.id === card.id)
+          if (finalPos) {
+            dealOrder.push({ cardId: card.id, finalPos, delay })
+            delay += DEAL_DELAY
+          }
+        }
+      }
+    }
+  }
+  
+  // Animate each card to its final position
+  for (const { cardId, finalPos, delay: cardDelay } of dealOrder) {
+    setTimeout(() => {
+      const existing = map.get(cardId)
+      if (existing) {
+        existing.x = finalPos.x
+        existing.y = finalPos.y
+        existing.z = finalPos.z
+        existing.faceUp = finalPos.faceUp
+      }
+    }, cardDelay)
+  }
+  
+  // Wait for all animations to complete
+  await new Promise(r => setTimeout(r, delay + 350)) // 350ms for the CSS transition
+  isDealing.value = false
+}
+
 // Board ref for reading CSS variables
 const boardRef = ref<HTMLElement | null>(null)
 
-// Initialize game
-onMounted(() => {
+// Initialize game with deal animation
+onMounted(async () => {
+  // Set card size based on CSS variable from board element
+  await nextTick()
+  if (boardRef.value) {
+    const styles = getComputedStyle(boardRef.value)
+    const width = parseInt(styles.getPropertyValue('--card-width')) || 50
+    const height = parseInt(styles.getPropertyValue('--card-height')) || 70
+    layout.setCardSize(width, height)
+  }
+  
+  // Wait for containers to be measured
+  await new Promise(r => setTimeout(r, 150))
+  
   store.startNewGame()
   startTimer()
-  // Set card size based on CSS variable from board element
-  nextTick(() => {
-    if (boardRef.value) {
-      const styles = getComputedStyle(boardRef.value)
-      const width = parseInt(styles.getPropertyValue('--card-width')) || 50
-      const height = parseInt(styles.getPropertyValue('--card-height')) || 70
-      layout.setCardSize(width, height)
-    }
-  })
+  
+  // Animate the deal
+  await animateDeal()
 })
 
 onUnmounted(() => {
@@ -136,9 +217,64 @@ function handleContainerMeasured(
   layout.setContainerRect(type, index, rect)
 }
 
+// Track cards that should animate from stock
+const animatingFromStock = ref<Set<string>>(new Set())
+
 // Click handlers
-function handleStockClick() {
+async function handleStockClick() {
+  const stockRect = layout.containers.value.stock
+  const prevWasteCount = store.waste.length
+  
   store.handleDrawCard()
+  
+  // Identify newly drawn cards
+  const newWasteCount = store.waste.length
+  if (stockRect && newWasteCount > prevWasteCount) {
+    const drawnCards = store.waste.slice(prevWasteCount)
+    const drawnIds = new Set(drawnCards.map(c => c.id))
+    
+    // Position new cards at stock initially
+    const map = cardPositionsRef.value
+    const finalPositions = layout.calculatePositions(store.gameState)
+    
+    for (const card of drawnCards) {
+      const finalPos = finalPositions.find(p => p.id === card.id)
+      if (finalPos) {
+        // Place at stock first
+        map.set(card.id, {
+          ...finalPos,
+          x: stockRect.x,
+          y: stockRect.y,
+          faceUp: false, // Start face down
+        })
+      }
+    }
+    
+    // Wait a frame then animate to final positions
+    await nextTick()
+    await new Promise(r => setTimeout(r, 20))
+    
+    // Stagger the animations
+    let delay = 0
+    for (const card of drawnCards) {
+      const finalPos = finalPositions.find(p => p.id === card.id)
+      if (finalPos) {
+        setTimeout(() => {
+          const existing = map.get(card.id)
+          if (existing) {
+            existing.x = finalPos.x
+            existing.y = finalPos.y
+            existing.faceUp = true
+          }
+        }, delay)
+        delay += 60 // Stagger each card
+      }
+    }
+  } else if (store.waste.length === 0 && store.stock.length > 0) {
+    // Cards recycled from waste to stock - clear waste cards from map
+    const map = cardPositionsRef.value
+    // Waste cards no longer exist in our positions after recycle
+  }
 }
 
 function handleWasteClick() {
@@ -191,10 +327,13 @@ function handleAutoComplete() {
   store.runAutoComplete()
 }
 
-function handleNewGame() {
+async function handleNewGame() {
   stopTimer()
   store.startNewGame()
   startTimer()
+  
+  // Animate the deal
+  await animateDeal()
 }
 
 function handleLeaveGame() {
