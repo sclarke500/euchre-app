@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick, reactive } from 'vue'
 import { useKlondikeStore } from '@/stores/klondikeStore'
 import { useKlondikeLayout, type ContainerRect, type CardPosition } from '@/composables/useKlondikeLayout'
 import KlondikeContainers from './KlondikeContainers.vue'
@@ -48,9 +48,45 @@ const score = computed(() => {
   return total
 })
 
-// Card positions calculated from state + container positions
+// Card positions - using ref to maintain object identity for animations
+const cardPositionsRef = ref<Map<string, CardPosition>>(new Map())
+
+// Update positions when state changes
+watch(
+  () => store.gameState,
+  () => {
+    const newPositions = layout.calculatePositions(store.gameState)
+    const map = cardPositionsRef.value
+    
+    // Update existing positions in place (preserves reactivity for transitions)
+    for (const pos of newPositions) {
+      const existing = map.get(pos.id)
+      if (existing) {
+        // Update in place
+        existing.x = pos.x
+        existing.y = pos.y
+        existing.z = pos.z
+        existing.faceUp = pos.faceUp
+      } else {
+        // New card
+        map.set(pos.id, pos)
+      }
+    }
+    
+    // Remove cards no longer in play
+    const newIds = new Set(newPositions.map(p => p.id))
+    for (const id of map.keys()) {
+      if (!newIds.has(id)) {
+        map.delete(id)
+      }
+    }
+  },
+  { deep: true, immediate: true }
+)
+
+// Convert map to array for template
 const cardPositions = computed<CardPosition[]>(() => {
-  return layout.calculatePositions(store.gameState)
+  return Array.from(cardPositionsRef.value.values())
 })
 
 // Board ref for reading CSS variables
