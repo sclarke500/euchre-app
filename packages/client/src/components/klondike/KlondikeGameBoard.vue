@@ -522,13 +522,6 @@ function updateCardSize() {
 }
 
 // Initialize game
-// Handle orientation change - recalculate after a small delay to ensure DOM updated
-function handleOrientationChange() {
-  setTimeout(() => {
-    updateCardSize()
-  }, 100)
-}
-
 onMounted(async () => {
   await nextTick()
   updateCardSize()
@@ -538,8 +531,6 @@ onMounted(async () => {
   startTimer()
 
   window.addEventListener('resize', updateCardSize)
-  // Also listen for orientation changes explicitly (more reliable on mobile)
-  screen.orientation?.addEventListener('change', handleOrientationChange)
 
   // Wait for containers to be measured before animating
   if (containersReadyForLayout()) {
@@ -561,7 +552,6 @@ onMounted(async () => {
 onUnmounted(() => {
   stopTimer()
   window.removeEventListener('resize', updateCardSize)
-  screen.orientation?.removeEventListener('change', handleOrientationChange)
 })
 
 // Container measurement handler
