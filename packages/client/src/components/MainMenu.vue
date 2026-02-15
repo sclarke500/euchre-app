@@ -324,9 +324,11 @@ const gameTitle = computed(() => {
 .main-menu {
   width: 100%;
   height: 100%;
+  max-width: 900px;
+  margin: 0 auto;
   display: flex;
   flex-direction: row;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+  // Background handled by #app for full-screen coverage
   color: white;
 
   // Portrait mode - stack vertically

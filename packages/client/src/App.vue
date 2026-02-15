@@ -343,6 +343,7 @@ function backToMenu() {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
 }
 
 // Portrait orientation overlay - only shows on mobile portrait
