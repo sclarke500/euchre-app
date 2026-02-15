@@ -38,10 +38,7 @@ const maxPlayers = computed(() => props.table.maxPlayers || 4)
 
 const gameTypeLabel = computed(() => {
   if (isEuchre.value) return 'Euchre'
-  if (isPresident.value) {
-    const settings = props.table.settings
-    return settings?.superTwosMode ? 'President (Super 2s)' : 'President'
-  }
+  if (isPresident.value) return 'President'
   if (isSpades.value) return 'Spades'
   return 'Game'
 })
@@ -57,14 +54,12 @@ function handleSeatClick(seatIndex: number) {
 <template>
   <div class="table-card" :class="{ current: isCurrent }">
     <div class="table-header">
-      <div class="table-title">
-        <h3>{{ table.name }}</h3>
-        <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
-      </div>
-      <span class="seat-count">{{ filledSeats }}/{{ maxPlayers }} players</span>
+      <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
+      <span class="table-name">{{ table.name }}</span>
+      <span class="seat-count">{{ filledSeats }}/{{ maxPlayers }}</span>
     </div>
 
-    <div class="seats-grid" :class="{ 'president-grid': isPresident, [`players-${maxPlayers}`]: isPresident }">
+    <div class="seats-row">
       <div
         v-for="(seat, index) in seats"
         :key="index"
@@ -78,97 +73,81 @@ function handleSeatClick(seatIndex: number) {
         }"
         @click="handleSeatClick(index)"
       >
-        <div class="seat-content">
-          <template v-if="seat.player">
-            <span class="player-name">
-              {{ seat.isCurrentUser ? 'You' : seat.player.nickname }}
-            </span>
-            <span v-if="seat.isHost" class="host-badge">Host</span>
-          </template>
-          <template v-else>
-            <span class="empty-label">
-              <template v-if="isCurrent">(AI)</template>
-              <template v-else>Join</template>
-            </span>
-          </template>
-        </div>
-        <span class="team-label">{{ seat.team }}</span>
+        <template v-if="seat.player">
+          <span class="player-name">{{ seat.isCurrentUser ? 'You' : seat.player.nickname }}</span>
+          <span v-if="seat.isHost" class="host-badge">H</span>
+        </template>
+        <template v-else>
+          <span class="empty-label">{{ isCurrent ? 'AI' : '+' }}</span>
+        </template>
       </div>
     </div>
 
-    <div v-if="isEuchre" class="partnership-hint">
-      <span>Seats 1 & 3 are partners</span>
-      <span>Seats 2 & 4 are partners</span>
+    <div v-if="isCurrent && isEuchre" class="partnership-hint">
+      <span>1 & 3 partners • 2 & 4 partners</span>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
 .table-card {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: $spacing-lg;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: $spacing-sm $spacing-md;
+  
   &.current {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-    width: 100%;
+    background: rgba(255, 255, 255, 0.12);
+    padding: $spacing-md $spacing-lg;
   }
 }
 
 .table-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: $spacing-md;
-
-  h3 {
-    margin: 0;
-    font-size: 1.125rem;
-  }
-
-  .seat-count {
-    font-size: 0.875rem;
-    opacity: 0.8;
-  }
-}
-
-.table-title {
-  display: flex;
   align-items: center;
   gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
 }
 
 .game-type-badge {
-  font-size: 0.625rem;
-  padding: 2px 8px;
+  font-size: 0.7rem;
+  padding: 3px 8px;
   border-radius: 4px;
   text-transform: uppercase;
-  font-weight: bold;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 
   &.euchre {
-    background: rgba(66, 133, 244, 0.3);
-    color: #82b1ff;
+    background: rgba(66, 133, 244, 0.4);
+    color: #a8c7ff;
   }
 
   &.president {
-    background: rgba(156, 39, 176, 0.3);
-    color: #ce93d8;
+    background: rgba(156, 39, 176, 0.4);
+    color: #daa8e0;
   }
 
   &.spades {
-    background: rgba(33, 33, 33, 0.45);
-    color: #e0e0e0;
+    background: rgba(80, 80, 80, 0.5);
+    color: #ccc;
   }
 }
 
-.seats-grid {
+.table-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.seat-count {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.seats-row {
   display: flex;
-  gap: $spacing-sm;
+  gap: 6px;
   overflow-x: auto;
-  padding-bottom: $spacing-xs;
   scrollbar-width: none;
   -ms-overflow-style: none;
   
@@ -179,73 +158,69 @@ function handleSeatClick(seatIndex: number) {
 
 .seat {
   flex: 0 0 auto;
-  min-width: 80px;
+  min-width: 60px;
+  height: 44px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: $spacing-sm $spacing-md;
-  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 0 $spacing-sm;
   transition: all var(--anim-fast);
 
   &.occupied {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12);
   }
 
   &.current-user {
-    border-color: $secondary-color;
-    background: rgba($secondary-color, 0.2);
+    background: rgba($secondary-color, 0.25);
   }
 
   &.empty.clickable {
     cursor: pointer;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+  
+  // Larger seats for current table view
+  .current & {
+    min-width: 80px;
+    height: 56px;
+    flex-direction: column;
   }
 }
 
-.seat-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
 .player-name {
-  font-weight: bold;
-  font-size: 0.875rem;
+  font-weight: 600;
+  font-size: 0.75rem;
   text-align: center;
-  word-break: break-word;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .host-badge {
-  font-size: 0.625rem;
+  font-size: 0.55rem;
   background: $secondary-color;
   color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 700;
 }
 
 .empty-label {
-  font-size: 0.875rem;
-  opacity: 0.6;
-}
-
-.team-label {
-  font-size: 0.625rem;
+  font-size: 0.8rem;
   opacity: 0.5;
-  margin-top: $spacing-xs;
 }
 
 .partnership-hint {
-  display: flex;
-  justify-content: space-between;
-  margin-top: $spacing-md;
-  padding-top: $spacing-sm;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.75rem;
-  opacity: 0.6;
+  margin-top: $spacing-sm;
+  font-size: 0.7rem;
+  opacity: 0.5;
+  text-align: center;
 }
 </style>
