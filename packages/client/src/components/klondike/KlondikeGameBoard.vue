@@ -7,18 +7,17 @@ import KlondikeStockWaste from './KlondikeStockWaste.vue'
 import KlondikeTableauColumn from './KlondikeTableauColumn.vue'
 import FlyingCard from './FlyingCard.vue'
 import Modal from '../Modal.vue'
-import { getKlondikeAnimation, resetKlondikeAnimation } from '@/composables/useKlondikeAnimation'
+import { resetKlondikeAnimation } from '@/composables/useKlondikeAnimation'
 
 const emit = defineEmits<{
   leaveGame: []
 }>()
 
 const store = useKlondikeStore()
-const animation = getKlondikeAnimation()
 
-// Computed for flying cards (unwrap ref for template)
+// Flying cards from store (Pinia reactive)
 const flyingCards = computed(() => {
-  const cards = animation.flyingCards.value
+  const cards = store.flyingCards
   if (cards.length > 0) {
     console.log('[GameBoard] flyingCards computed:', cards.length, cards)
   }

@@ -24,7 +24,7 @@ import {
   findValidFoundation,
   findValidTableau,
 } from '@euchre/shared'
-import { getKlondikeAnimation } from '@/composables/useKlondikeAnimation'
+import { getKlondikeAnimation, type FlyingCard } from '@/composables/useKlondikeAnimation'
 
 // Animation config
 const ANIMATION_DURATION = 250 // ms
@@ -43,6 +43,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
   
   // Animation state
   const isAnimating = ref(false)
+  const flyingCards = ref<FlyingCard[]>([])
   
   // History for undo (store serialized states)
   const history = ref<string[]>([])
@@ -414,12 +415,40 @@ export const useKlondikeStore = defineStore('klondike', () => {
       return
     }
 
+    // Get positions
+    const sourcePos = animation.getCardPosition(sourceKey) || animation.getContainerPosition(sourceKey)
+    const destPos = animation.getCardPosition(destKey) || animation.getContainerPosition(destKey)
+    
+    if (!sourcePos || !destPos) {
+      console.log('[Store] Missing positions, skipping animation', { sourceKey, destKey, sourcePos, destPos })
+      updateState(newState)
+      return
+    }
+
     isAnimating.value = true
     
-    await animation.animateMove(cards, sourceKey, destKey, () => {
-      updateState(newState)
-      isAnimating.value = false
-    })
+    // Create flying cards in store (for reactivity)
+    const newFlyingCards: FlyingCard[] = cards.map((card, index) => ({
+      id: `flying-${card.id}`,
+      card,
+      startX: sourcePos.x,
+      startY: sourcePos.y + (index * 25),
+      endX: destPos.x,
+      endY: destPos.y + (index * 25),
+      width: sourcePos.width,
+      height: sourcePos.height,
+    }))
+    
+    flyingCards.value = newFlyingCards
+    console.log('[Store] Flying cards set:', flyingCards.value.length)
+
+    // Wait for animation
+    await new Promise(resolve => setTimeout(resolve, ANIMATION_DURATION + 50))
+
+    // Clear flying cards and update state
+    flyingCards.value = []
+    updateState(newState)
+    isAnimating.value = false
   }
 
   return {
@@ -434,6 +463,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     isAutoCompleting,
     drawCount,
     isAnimating,
+    flyingCards,
 
     // Computed
     gameState,
