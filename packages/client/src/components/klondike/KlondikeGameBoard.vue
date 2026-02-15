@@ -64,81 +64,81 @@ function updatePosition(id: string, updates: Partial<CardPosition>) {
 // Track whether we're animating (deal or draw)
 const isAnimating = ref(false)
 
-// Track cards that should flip after a delay (newly exposed tableau cards)
-const pendingFlips = ref<Set<string>>(new Set())
+function hasValidRect(rect: ContainerRect | null): boolean {
+  return !!rect && rect.width > 0 && rect.height > 0
+}
+
+function containersReadyForLayout(): boolean {
+  const c = layout.containers.value
+  return (
+    hasValidRect(c.stock) &&
+    hasValidRect(c.waste) &&
+    c.tableau.every(slot => hasValidRect(slot))
+  )
+}
+
+function syncPositionsFromState() {
+  const newPositions = layout.calculatePositions(store.gameState)
+  const map = cardPositionsRef.value
+
+  for (const pos of newPositions) {
+    const existing = map.get(pos.id)
+    if (existing) {
+      const isNewlyFlipped = !existing.faceUp && pos.faceUp
+
+      // Always delay flips for newly exposed tableau cards
+      const isTableauCard = store.gameState.tableau.some(col => 
+        col.cards.some(c => c.id === pos.id)
+      )
+      
+      if (isNewlyFlipped && isTableauCard) {
+        // Keep face-down initially and flip after animation
+        map.set(pos.id, { ...pos, faceUp: false })
+        const cardId = pos.id
+        setTimeout(() => {
+          updatePosition(cardId, { faceUp: true })
+        }, 400)
+      } else {
+        map.set(pos.id, pos)
+      }
+    } else {
+      map.set(pos.id, pos)
+    }
+  }
+
+  const newIds = new Set(newPositions.map(p => p.id))
+  for (const id of map.keys()) {
+    if (!newIds.has(id)) {
+      map.delete(id)
+    }
+  }
+
+  triggerRef(cardPositionsRef)
+}
 
 // Update positions when state changes
 watch(
   () => store.gameState,
   () => {
-    console.log('Klondike watcher: triggered, isAnimating =', isAnimating.value)
     if (isAnimating.value) return // Skip during animations
-    
-    const newPositions = layout.calculatePositions(store.gameState)
-    console.log('Klondike watcher: newPositions count =', newPositions.length)
-    const map = cardPositionsRef.value
-    
-    // Update positions (use map.set to trigger reactivity)
-    for (const pos of newPositions) {
-      const existing = map.get(pos.id)
-      if (existing) {
-        // Check if this card is newly flipping (was face-down, now face-up)
-        const isNewlyFlipped = !existing.faceUp && pos.faceUp
-        
-        // If this card should flip with delay
-        if (isNewlyFlipped && pendingFlips.value.has(pos.id)) {
-          // Update position but keep face-down
-          pendingFlips.value.delete(pos.id)
-          map.set(pos.id, { ...pos, faceUp: false })
-          // Flip after move animation
-          const cardId = pos.id
-          setTimeout(() => {
-            updatePosition(cardId, { faceUp: true })
-          }, 300)
-        } else {
-          // Normal update
-          map.set(pos.id, pos)
-        }
-      } else {
-        // New card
-        map.set(pos.id, pos)
-      }
-    }
-    
-    // Remove cards no longer in play
-    const newIds = new Set(newPositions.map(p => p.id))
-    for (const id of map.keys()) {
-      if (!newIds.has(id)) {
-        map.delete(id)
-      }
-    }
-    
-    // Manually trigger Vue to update (shallowRef doesn't track Map changes)
-    triggerRef(cardPositionsRef)
-    console.log('Klondike watcher: Map updated, size =', map.size)
+    if (!containersReadyForLayout()) return // Skip if layout not ready
+    syncPositionsFromState()
   },
   { deep: true, immediate: true }
 )
 
-// Get the card that will be exposed when moving from a tableau column
-function getCardToExpose(columnIndex: number): string | null {
-  const column = store.gameState.tableau[columnIndex]
-  if (!column || column.cards.length < 2) return null
-  
-  // If there's a selection from this column, check what card will be exposed
-  const selection = store.selection
-  if (selection?.source === 'tableau' && selection.columnIndex === columnIndex) {
-    const cardIdx = selection.cardIndex ?? column.cards.length - 1
-    if (cardIdx > 0) {
-      const cardBelow = column.cards[cardIdx - 1]
-      // Only track if it's currently face-down
-      if (cardBelow && !cardBelow.faceUp) {
-        return cardBelow.id
-      }
+watch(
+  () => layout.containers.value,
+  () => {
+    if (isAnimating.value) return
+    if (!containersReadyForLayout()) return
+    // Only sync if we have cards positioned (avoid overriding deal animation)
+    if (cardPositionsRef.value.size > 0) {
+      syncPositionsFromState()
     }
-  }
-  return null
-}
+  },
+  { deep: true }
+)
 
 // Convert map to array for template
 const cardPositions = computed<CardPosition[]>(() => {
@@ -147,24 +147,20 @@ const cardPositions = computed<CardPosition[]>(() => {
 
 // Animate dealing cards from stock to tableau
 async function animateDeal() {
-  const stockRect = layout.containers.value.stock
-  
-  // If containers aren't measured yet, skip animation and let watcher handle it
-  if (!stockRect) {
-    console.warn('Klondike: Stock container not measured, skipping deal animation')
+  // Containers should be ready by now, but double-check
+  if (!containersReadyForLayout()) {
+    console.warn('Klondike: Containers not ready for deal animation')
+    syncPositionsFromState()
     isAnimating.value = false
     return
   }
   
   isAnimating.value = true
   
+  const stockRect = layout.containers.value.stock!
+  
   // Get final positions
   const finalPositions = layout.calculatePositions(store.gameState)
-  console.log('Klondike deal: finalPositions count =', finalPositions.length, 'cardWidth=', layout.cardWidth.value, 'cardHeight=', layout.cardHeight.value)
-  console.log('Klondike deal: stockRect =', stockRect)
-  if (finalPositions.length > 0) {
-    console.log('Klondike deal: sample position =', finalPositions[0])
-  }
   
   // First, place all cards at stock position (create new Map for reactivity)
   const newMap = new Map<string, CardPosition>()
@@ -177,11 +173,9 @@ async function animateDeal() {
     })
   }
   cardPositionsRef.value = newMap
-  console.log('Klondike deal: Map size after init =', cardPositionsRef.value.size)
   
   // Wait a frame for initial positions to render
   await nextTick()
-  console.log('Klondike deal: After nextTick, computed cardPositions length =', cardPositions.value.length)
   await new Promise(r => setTimeout(r, 50))
   
   // Build deal order: tableau cards dealt row by row (col 0 card 0, col 1 card 0, col 1 card 1, etc.)
@@ -210,17 +204,12 @@ async function animateDeal() {
   // Animate each card to its final position
   for (const { cardId, finalPos, delay: cardDelay } of dealOrder) {
     setTimeout(() => {
-      const map = cardPositionsRef.value
-      const existing = map.get(cardId)
-      if (existing) {
-        map.set(cardId, {
-          ...existing,
-          x: finalPos.x,
-          y: finalPos.y,
-          z: finalPos.z,
-          faceUp: finalPos.faceUp,
-        })
-      }
+      updatePosition(cardId, {
+        x: finalPos.x,
+        y: finalPos.y,
+        z: finalPos.z,
+        faceUp: finalPos.faceUp,
+      })
     }, cardDelay)
   }
   
@@ -229,61 +218,88 @@ async function animateDeal() {
   isAnimating.value = false
 }
 
-// Board ref for reading CSS variables
+// Board ref for setting card size CSS variables
 const boardRef = ref<HTMLElement | null>(null)
 
-// Initialize game (simple version - animation disabled for debugging)
-onMounted(async () => {
-  // Set card size based on CSS variable from board element
-  await nextTick()
+// Calculate card size based on available viewport dimensions
+function calculateCardSize(): { width: number; height: number } {
+  const el = boardRef.value
+  if (!el) return { width: 50, height: 70 }
+
+  const vw = el.clientWidth
+  const vh = el.clientHeight
+  const landscape = vw > vh
+
+  const RATIO = 1.4 // card height / width
+  const PAD = 8
+  const GAP = 4
+  const TOOLBAR = 50
+
+  let maxW: number
+
+  if (landscape) {
+    // Width: left foundations(1 card) + gaps + center 7 tableau cols + gaps + right stock/waste(~1.5 card)
+    const wFromWidth = (vw - PAD * 2 - GAP * 6 - 8 * 2) / 9.5
+    // Height: 4 stacked foundations + gaps + toolbar + padding
+    const wFromHeight = (vh - TOOLBAR - PAD * 2 - GAP * 3) / (4 * RATIO)
+    maxW = Math.min(wFromWidth, wFromHeight)
+  } else {
+    // Width: 7 tableau columns + gaps + padding
+    const wFromWidth = (vw - PAD * 2 - GAP * 6) / 7
+    // Height: top row(1 card) + gap + tableau cascade(~2.1x card height) + toolbar + padding
+    const wFromHeight = (vh - TOOLBAR - PAD * 2 - GAP) / (3.1 * RATIO)
+    maxW = Math.min(wFromWidth, wFromHeight)
+  }
+
+  const width = Math.max(35, Math.min(Math.floor(maxW), 80))
+  const height = Math.round(width * RATIO)
+  return { width, height }
+}
+
+// Update card size from calculated dimensions
+function updateCardSize() {
+  const { width, height } = calculateCardSize()
   if (boardRef.value) {
-    const styles = getComputedStyle(boardRef.value)
-    const width = parseInt(styles.getPropertyValue('--card-width')) || 50
-    const height = parseInt(styles.getPropertyValue('--card-height')) || 70
-    layout.setCardSize(width, height)
-    console.log('Klondike: Card size set to', width, 'x', height)
+    boardRef.value.style.setProperty('--card-width', `${width}px`)
+    boardRef.value.style.setProperty('--card-height', `${height}px`)
   }
-  
-  // Wait for containers to be measured (poll until ALL are ready)
-  let attempts = 0
-  const containersReady = () => {
-    const c = layout.containers.value
-    return c.stock && c.waste && c.tableau.every(t => t !== null)
+  layout.setCardSize(width, height)
+  if (!isAnimating.value && cardPositionsRef.value.size > 0) {
+    syncPositionsFromState()
   }
-  while (!containersReady() && attempts < 30) {
-    await new Promise(r => setTimeout(r, 50))
-    attempts++
-  }
-  console.log('Klondike: Containers measured after', attempts, 'attempts')
-  console.log('Klondike: stock =', layout.containers.value.stock)
-  console.log('Klondike: tableau =', layout.containers.value.tableau)
-  
+}
+
+// Initialize game
+onMounted(async () => {
+  await nextTick()
+  updateCardSize()
+
+  // Start the game immediately
   store.startNewGame()
   startTimer()
-  
-  // For now, just let the watcher handle positioning (no animation)
-  // The watcher will run automatically when store.gameState changes
-  console.log('Klondike: Game started, cardPositions count =', cardPositions.value.length)
+
+  window.addEventListener('resize', updateCardSize)
+
+  // Wait for containers to be measured before animating
+  if (containersReadyForLayout()) {
+    await animateDeal()
+  } else {
+    // Watch for containers to become ready
+    const unwatch = watch(
+      () => containersReadyForLayout(),
+      async (ready) => {
+        if (ready) {
+          unwatch()
+          await animateDeal()
+        }
+      }
+    )
+  }
 })
 
 onUnmounted(() => {
   stopTimer()
   window.removeEventListener('resize', updateCardSize)
-})
-
-// Update card size from CSS variables
-function updateCardSize() {
-  if (boardRef.value) {
-    const styles = getComputedStyle(boardRef.value)
-    const width = parseInt(styles.getPropertyValue('--card-width')) || 50
-    const height = parseInt(styles.getPropertyValue('--card-height')) || 70
-    layout.setCardSize(width, height)
-  }
-}
-
-// Listen for resize to update card sizes
-onMounted(() => {
-  window.addEventListener('resize', updateCardSize)
 })
 
 // Container measurement handler
@@ -370,27 +386,12 @@ function handleWasteClick() {
 }
 
 function handleFoundationClick(index: number) {
-  // Check if we're moving from tableau - mark card for delayed flip
-  const cardToExpose = store.selection?.source === 'tableau' 
-    ? getCardToExpose(store.selection.columnIndex!) 
-    : null
-  if (cardToExpose) {
-    pendingFlips.value.add(cardToExpose)
-  }
-  
   store.handleFoundationTap(index)
 }
 
 function handleTableauClick(index: number) {
   // If there's a selection, try to move there
   if (store.selection) {
-    // Check if moving from another tableau column - mark card for delayed flip
-    if (store.selection.source === 'tableau' && store.selection.columnIndex !== index) {
-      const cardToExpose = getCardToExpose(store.selection.columnIndex!)
-      if (cardToExpose) {
-        pendingFlips.value.add(cardToExpose)
-      }
-    }
     store.handleEmptyTableauTap(index)
   }
 }
@@ -410,14 +411,6 @@ function handleCardClick(cardId: string) {
     const column = state.tableau[colIdx]!
     for (let cardIdx = 0; cardIdx < column.cards.length; cardIdx++) {
       if (column.cards[cardIdx]?.id === cardId) {
-        // Check if moving from another column - mark card for delayed flip
-        const selection = store.selection
-        if (selection?.source === 'tableau' && selection.columnIndex !== colIdx) {
-          const cardToExpose = getCardToExpose(selection.columnIndex!)
-          if (cardToExpose) {
-            pendingFlips.value.add(cardToExpose)
-          }
-        }
         store.handleTableauTap(colIdx, cardIdx)
         return
       }
@@ -428,14 +421,6 @@ function handleCardClick(cardId: string) {
   for (let fIdx = 0; fIdx < state.foundations.length; fIdx++) {
     const foundation = state.foundations[fIdx]!
     if (foundation.cards.length > 0 && foundation.cards[foundation.cards.length - 1]?.id === cardId) {
-      // Check if moving from tableau - mark card for delayed flip
-      const selection = store.selection
-      if (selection?.source === 'tableau') {
-        const cardToExpose = getCardToExpose(selection.columnIndex!)
-        if (cardToExpose) {
-          pendingFlips.value.add(cardToExpose)
-        }
-      }
       store.handleFoundationTap(fIdx)
       return
     }
@@ -620,23 +605,9 @@ function doNewGame() {
   overflow: hidden;
   position: relative;
   
-  // Card size CSS variables
+  // Card size CSS variables (set dynamically by calculateCardSize)
   --card-width: 50px;
   --card-height: 70px;
-}
-
-@media (min-width: 400px) {
-  .klondike-board {
-    --card-width: 55px;
-    --card-height: 77px;
-  }
-}
-
-@media (min-width: 500px) {
-  .klondike-board {
-    --card-width: 65px;
-    --card-height: 91px;
-  }
 }
 
 .bottom-toolbar {
