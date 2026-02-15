@@ -328,6 +328,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   min-width: 300px;
   max-width: 360px;
   color: #333;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
 
   h3 {
     margin: 0 0 $spacing-md 0;

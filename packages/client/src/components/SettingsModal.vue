@@ -111,6 +111,7 @@ function checkForUpdates() {
   max-height: 85vh;
   overflow-y: auto;
   text-align: left;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {

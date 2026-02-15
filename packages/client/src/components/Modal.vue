@@ -194,21 +194,20 @@ onUnmounted(() => {
 }
 
 .modal-content {
-  background: rgba(245, 245, 245, 0.85);
-  backdrop-filter: blur(8px);
-  border-radius: 10px;
-  padding: $spacing-md;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
-  text-align: center;
+  background: transparent;
+  border-radius: 12px;
   max-width: min(92vw, 560px);
   max-height: calc(100dvh - #{$spacing-xl});
   overflow: auto;
-  transform: scale(0.85);
 }
 
 :deep(.dialog-panel) {
+  background: rgba(245, 245, 245, 0.9);
+  backdrop-filter: blur(8px);
   padding: $spacing-md;
   border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  text-align: center;
 }
 
 :deep(.dialog-title) {
