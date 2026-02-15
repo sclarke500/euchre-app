@@ -187,7 +187,7 @@ const director = usePresidentDirector(game, engine, { boardRef })
 
 const currentTurnSeat = computed(() => director.currentTurnSeat.value)
 const phase = computed(() => game.phase.value)
-const playerCount = computed(() => game.players.value.length)
+const playerCount = computed(() => game.players.value.length || 4) // Default to 4 for President
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
 const userRankBadge = computed(() => getRankBadge(game.humanPlayer.value?.id ?? 0))
 
