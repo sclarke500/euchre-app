@@ -117,6 +117,24 @@ const checkGameStart = computed(() => lobbyStore.gameId)
           </button>
         </div>
 
+        <div class="bot-difficulty-row">
+          <span class="difficulty-label">Bot Difficulty</span>
+          <div class="difficulty-selector">
+            <button
+              :class="['difficulty-pill', { active: settings.aiDifficulty === 'easy' }]"
+              @click="settings.setAIDifficulty('easy')"
+            >
+              Easy
+            </button>
+            <button
+              :class="['difficulty-pill', { active: settings.aiDifficulty === 'hard' }]"
+              @click="settings.setAIDifficulty('hard')"
+            >
+              Hard
+            </button>
+          </div>
+        </div>
+
         <div class="game-options-section">
           <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" />
           <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" />
@@ -354,6 +372,48 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   background: transparent;
   color: #666;
   font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &:hover:not(.active) {
+    color: #333;
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  &.active {
+    background: white;
+    color: #1e4d2b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.bot-difficulty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm 0;
+}
+
+.difficulty-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.difficulty-selector {
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.difficulty-pill {
+  padding: 6px 14px;
+  border-radius: 5px;
+  background: transparent;
+  color: #666;
+  font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.15s ease;
 
