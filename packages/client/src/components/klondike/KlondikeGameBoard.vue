@@ -149,21 +149,21 @@ async function animateDeal() {
   }
   
   isAnimating.value = true
-  const map = cardPositionsRef.value
-  map.clear()
   
   // Get final positions
   const finalPositions = layout.calculatePositions(store.gameState)
   
-  // First, place all cards at stock position
+  // First, place all cards at stock position (create new Map for reactivity)
+  const newMap = new Map<string, CardPosition>()
   for (const pos of finalPositions) {
-    map.set(pos.id, {
+    newMap.set(pos.id, {
       ...pos,
       x: stockRect.x,
       y: stockRect.y,
       faceUp: false, // Start face down
     })
   }
+  cardPositionsRef.value = newMap
   
   // Wait a frame for initial positions to render
   await nextTick()
@@ -195,12 +195,17 @@ async function animateDeal() {
   // Animate each card to its final position
   for (const { cardId, finalPos, delay: cardDelay } of dealOrder) {
     setTimeout(() => {
-      updatePosition(cardId, {
-        x: finalPos.x,
-        y: finalPos.y,
-        z: finalPos.z,
-        faceUp: finalPos.faceUp,
-      })
+      const map = cardPositionsRef.value
+      const existing = map.get(cardId)
+      if (existing) {
+        map.set(cardId, {
+          ...existing,
+          x: finalPos.x,
+          y: finalPos.y,
+          z: finalPos.z,
+          faceUp: finalPos.faceUp,
+        })
+      }
     }, cardDelay)
   }
   

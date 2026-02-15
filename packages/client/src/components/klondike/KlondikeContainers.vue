@@ -316,7 +316,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
   height: 100%;
   gap: 8px;
   padding: 8px;
-  padding-bottom: 56px; // Space for bottom toolbar
+  padding-bottom: 64px; // Space for bottom toolbar + extra room for card stacks
 }
 
 .top-row {
@@ -348,7 +348,7 @@ function setTableauRef(index: number, el: HTMLElement | null) {
   height: 100%;
   gap: 8px;
   padding: 8px;
-  padding-bottom: 56px; // Space for bottom toolbar
+  padding-bottom: 64px; // Space for bottom toolbar + extra room for card stacks
 }
 
 .left-column {
