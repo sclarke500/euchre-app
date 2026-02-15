@@ -41,8 +41,8 @@ const phase = computed(() => gameStore.phase)
 // Views that require landscape orientation
 const landscapeRequiredViews = ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'euchreLegacy', 'lobby']
 
-// Track landscape orientation - initialize correctly to prevent flash
-const isLandscape = ref(typeof window !== 'undefined' ? window.innerWidth > window.innerHeight : true)
+// Track landscape orientation
+const isLandscape = ref(true)
 
 function updateOrientation() {
   isLandscape.value = window.innerWidth > window.innerHeight
