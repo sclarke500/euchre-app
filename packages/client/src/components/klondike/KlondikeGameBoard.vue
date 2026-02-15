@@ -239,13 +239,19 @@ onMounted(async () => {
     console.log('Klondike: Card size set to', width, 'x', height)
   }
   
-  // Wait for containers to be measured (poll until ready)
+  // Wait for containers to be measured (poll until ALL are ready)
   let attempts = 0
-  while (!layout.containers.value.stock && attempts < 20) {
+  const containersReady = () => {
+    const c = layout.containers.value
+    return c.stock && c.waste && c.tableau.every(t => t !== null)
+  }
+  while (!containersReady() && attempts < 30) {
     await new Promise(r => setTimeout(r, 50))
     attempts++
   }
-  console.log('Klondike: Containers measured after', attempts, 'attempts, stock =', layout.containers.value.stock)
+  console.log('Klondike: Containers measured after', attempts, 'attempts')
+  console.log('Klondike: stock =', layout.containers.value.stock)
+  console.log('Klondike: tableau =', layout.containers.value.tableau)
   
   store.startNewGame()
   startTimer()
