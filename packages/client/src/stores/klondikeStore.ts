@@ -44,6 +44,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
   // Animation state
   const isAnimating = ref(false)
   const flyingCards = ref<FlyingCard[]>([])
+  const hiddenCardIds = ref<Set<string>>(new Set()) // Cards hidden during animation
   
   // History for undo (store serialized states)
   const history = ref<string[]>([])
@@ -455,15 +456,20 @@ export const useKlondikeStore = defineStore('klondike', () => {
       height: sourcePos.height,
     }))
     
+    // Hide the source cards
+    const cardIds = cards.map(c => c.id)
+    hiddenCardIds.value = new Set(cardIds)
+    
     flyingCards.value = newFlyingCards
-    console.log('[Store] Flying cards set:', flyingCards.value.length)
+    console.log('[Store] Flying cards set:', flyingCards.value.length, 'hidden:', cardIds)
 
     // Wait for animation
     await new Promise(resolve => setTimeout(resolve, ANIMATION_DURATION + 50))
 
-    // Clear flying cards and update state
+    // Clear flying cards, update state, then unhide
     flyingCards.value = []
     updateState(newState)
+    hiddenCardIds.value = new Set()
     isAnimating.value = false
   }
 
@@ -480,6 +486,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     drawCount,
     isAnimating,
     flyingCards,
+    hiddenCardIds,
 
     // Computed
     gameState,

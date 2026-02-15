@@ -3,6 +3,7 @@ import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import type { KlondikeCard } from '@euchre/shared'
 import Card from '../Card.vue'
 import { getKlondikeAnimation } from '@/composables/useKlondikeAnimation'
+import { useKlondikeStore } from '@/stores/klondikeStore'
 
 const props = withDefaults(defineProps<{
   stock: KlondikeCard[]
@@ -20,9 +21,15 @@ const emit = defineEmits<{
 }>()
 
 const animation = getKlondikeAnimation()
+const store = useKlondikeStore()
 const stockRef = ref<HTMLElement | null>(null)
 const wasteRef = ref<HTMLElement | null>(null)
 const wasteCardRefs = ref<Map<number, HTMLElement>>(new Map())
+
+// Check if a card is hidden (being animated)
+function isCardHidden(cardId: string): boolean {
+  return store.hiddenCardIds.has(cardId)
+}
 
 const hasStock = computed(() => props.stock.length > 0)
 const hasWaste = computed(() => props.waste.length > 0)
@@ -94,7 +101,7 @@ function handleWasteClick() {
           :key="card.id"
           :ref="(el) => setWasteCardRef(index, el as HTMLElement)"
           class="waste-card"
-          :class="{ vertical: isVertical }"
+          :class="{ vertical: isVertical, hidden: isCardHidden(card.id) }"
           :style="{ '--fan-index': index }"
         >
           <Card :card="card" :selectable="index === visibleWasteCards.length - 1" />
@@ -130,6 +137,7 @@ function handleWasteClick() {
           :key="card.id"
           :ref="(el) => setWasteCardRef(index, el as HTMLElement)"
           class="waste-card"
+          :class="{ hidden: isCardHidden(card.id) }"
           :style="{ '--fan-index': index }"
         >
           <Card :card="card" :selectable="index === visibleWasteCards.length - 1" />
@@ -256,6 +264,10 @@ function handleWasteClick() {
   &.vertical {
     left: 0;
     top: calc(var(--fan-index, 0) * 18px);
+  }
+  
+  &.hidden {
+    visibility: hidden;
   }
 }
 

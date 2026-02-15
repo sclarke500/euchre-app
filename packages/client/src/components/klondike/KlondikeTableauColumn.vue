@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import type { TableauColumn, KlondikeCard } from '@euchre/shared'
 import Card from '../Card.vue'
 import { getKlondikeAnimation } from '@/composables/useKlondikeAnimation'
+import { useKlondikeStore } from '@/stores/klondikeStore'
 
 const props = defineProps<{
   column: TableauColumn
@@ -16,10 +17,16 @@ const emit = defineEmits<{
 }>()
 
 const animation = getKlondikeAnimation()
+const store = useKlondikeStore()
 const columnRef = ref<HTMLElement | null>(null)
 const cardRefs = ref<Map<number, HTMLElement>>(new Map())
 
 const isEmpty = computed(() => props.column.cards.length === 0)
+
+// Check if a card is hidden (being animated)
+function isCardHidden(cardId: string): boolean {
+  return store.hiddenCardIds.has(cardId)
+}
 
 // Register column container for empty targets
 watch(columnRef, (el) => {
@@ -119,7 +126,7 @@ function handleEmptyClick() {
         :key="card.id"
         :ref="(el) => setCardRef(index, el as HTMLElement)"
         class="stacked-card"
-        :class="{ selected: isSelected(index) }"
+        :class="{ selected: isSelected(index), hidden: isCardHidden(card.id) }"
         :style="getCardStyle(index)"
         @click="handleCardClick(index, card)"
       >
@@ -174,6 +181,10 @@ function handleEmptyClick() {
 
   &.selected :deep(.card) {
     box-shadow: 0 0 0 3px $secondary-color, 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  &.hidden {
+    visibility: hidden;
   }
 }
 
