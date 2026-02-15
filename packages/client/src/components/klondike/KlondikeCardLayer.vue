@@ -57,8 +57,7 @@ function handleCardClick(cardId: string) {
         'selected': isSelected(pos.id)
       }"
       :style="{
-        left: `${pos.x}px`,
-        top: `${pos.y}px`,
+        transform: `translate(${pos.x}px, ${pos.y}px)`,
         zIndex: pos.z,
         width: `${cardWidth}px`,
         height: `${cardHeight}px`,
@@ -101,12 +100,14 @@ function handleCardClick(cardId: string) {
 
 .klondike-card {
   position: absolute;
-  // left, top, width, height, z-index set via inline style
+  left: 0;
+  top: 0;
+  // transform, width, height, z-index set via inline style
   border-radius: 6px;
   pointer-events: auto;
   cursor: pointer;
-  transition: left 0.3s ease-out, top 0.3s ease-out !important;
-  will-change: left, top;
+  transition: transform 0.3s ease-out;
+  will-change: transform;
   
   &.face-up {
     background: white;

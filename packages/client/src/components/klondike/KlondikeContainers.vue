@@ -321,7 +321,8 @@ function setTableauRef(index: number, el: HTMLElement | null) {
   flex-direction: column;
   height: 100%;
   gap: 8px;
-  padding: 4px;
+  padding: 8px;
+  padding-bottom: 56px; // Space for bottom toolbar
 }
 
 .top-row {
@@ -352,7 +353,8 @@ function setTableauRef(index: number, el: HTMLElement | null) {
   display: flex;
   height: 100%;
   gap: 8px;
-  padding: 4px;
+  padding: 8px;
+  padding-bottom: 56px; // Space for bottom toolbar
 }
 
 .left-column {
