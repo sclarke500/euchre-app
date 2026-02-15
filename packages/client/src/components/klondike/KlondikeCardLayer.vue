@@ -1,49 +1,199 @@
 <script setup lang="ts">
-/**
- * Single rendering layer for all Klondike cards
- * Cards are positioned absolutely and animate between positions
- */
 import { computed } from 'vue'
-import type { KlondikeEngine } from '@/composables/useKlondikeEngine'
-import BoardCard from '../BoardCard.vue'
+import type { CardPosition } from '@/composables/useKlondikeLayout'
+import { Suit, type Selection } from '@euchre/shared'
 
 const props = defineProps<{
-  engine: KlondikeEngine
+  positions: CardPosition[]
+  selection: Selection | null
+  cardWidth: number
+  cardHeight: number
 }>()
 
-const cards = computed(() => props.engine.allCards.value)
+const emit = defineEmits<{
+  cardClick: [cardId: string]
+}>()
 
-function setCardRef(cardId: string, el: any) {
-  props.engine.setCardRef(cardId, el)
+// Determine if a card is selected (for tableau, all cards from selection index and below)
+function isSelected(cardId: string): boolean {
+  if (!props.selection) return false
+  
+  // Find the card in positions to check if it's part of selection
+  // This is simplified - actual selection logic depends on position in tableau
+  // For now, just check if this specific card matches selection criteria
+  return false // Will be enhanced when we wire up selection
+}
+
+// Get suit symbol
+function getSuitSymbol(suit: Suit): string {
+  switch (suit) {
+    case Suit.Spades: return '♠'
+    case Suit.Hearts: return '♥'
+    case Suit.Diamonds: return '♦'
+    case Suit.Clubs: return '♣'
+    default: return ''
+  }
+}
+
+// Check if suit is red
+function isRedSuit(suit: Suit): boolean {
+  return suit === Suit.Hearts || suit === Suit.Diamonds
+}
+
+function handleCardClick(cardId: string) {
+  emit('cardClick', cardId)
 }
 </script>
 
 <template>
-  <div class="klondike-card-layer">
-    <BoardCard
-      v-for="managed in cards"
-      :key="managed.card.id"
-      :ref="(el) => setCardRef(managed.card.id, el)"
-      :card="{
-        id: managed.card.id,
-        suit: managed.card.suit,
-        rank: managed.card.rank,
+  <div class="card-layer">
+    <div
+      v-for="pos in positions"
+      :key="pos.id"
+      class="klondike-card"
+      :class="{ 
+        'face-up': pos.faceUp, 
+        'face-down': !pos.faceUp,
+        'selected': isSelected(pos.id)
       }"
-      :face-up="managed.card.faceUp"
-      :initial-position="managed.position"
-      :dimmed="false"
-    />
+      :style="{
+        '--x': `${pos.x}px`,
+        '--y': `${pos.y}px`,
+        '--z': pos.z,
+        '--card-width': `${cardWidth}px`,
+        '--card-height': `${cardHeight}px`,
+      }"
+      @click="handleCardClick(pos.id)"
+    >
+      <!-- Face up card -->
+      <template v-if="pos.faceUp">
+        <div class="card-corner top-left" :class="{ red: isRedSuit(pos.card.suit) }">
+          <div class="rank">{{ pos.card.rank }}</div>
+          <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
+        </div>
+        <div class="card-center" :class="{ red: isRedSuit(pos.card.suit) }">
+          {{ getSuitSymbol(pos.card.suit) }}
+        </div>
+        <div class="card-corner bottom-right" :class="{ red: isRedSuit(pos.card.suit) }">
+          <div class="rank">{{ pos.card.rank }}</div>
+          <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
+        </div>
+      </template>
+      <!-- Face down card -->
+      <template v-else>
+        <div class="card-back-pattern"></div>
+      </template>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.klondike-card-layer {
+.card-layer {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+}
+
+.klondike-card {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: var(--z);
+  width: var(--card-width);
+  height: var(--card-height);
+  border-radius: 6px;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: left 0.25s ease-out, top 0.25s ease-out;
   
-  :deep(.board-card) {
-    pointer-events: auto;
+  &.face-up {
+    background: white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  &.face-down {
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  &.selected {
+    box-shadow: 0 0 0 3px #f1c40f, 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.card-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: bold;
+  color: #2c3e50;
+
+  &.red {
+    color: #e74c3c;
+  }
+
+  &.top-left {
+    top: 2px;
+    left: 4px;
+  }
+
+  &.bottom-right {
+    bottom: 2px;
+    right: 4px;
+    transform: rotate(180deg);
+  }
+
+  .rank {
+    font-size: calc(var(--card-width) * 0.29);
+    line-height: 1;
+  }
+
+  .suit {
+    font-size: calc(var(--card-width) * 0.21);
+    line-height: 1;
+  }
+}
+
+.card-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: calc(var(--card-width) * 0.48);
+  color: #2c3e50;
+
+  &.red {
+    color: #e74c3c;
+  }
+}
+
+.card-back-pattern {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    bottom: 3px;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 4px,
+      rgba(255, 255, 255, 0.05) 4px,
+      rgba(255, 255, 255, 0.05) 8px
+    );
   }
 }
 </style>

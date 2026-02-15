@@ -1,28 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useKlondikeStore } from '@/stores/klondikeStore'
+import { useKlondikeLayout, type ContainerRect, type CardPosition } from '@/composables/useKlondikeLayout'
 import BackButton from '../BackButton.vue'
-import KlondikeFoundation from './KlondikeFoundation.vue'
-import KlondikeStockWaste from './KlondikeStockWaste.vue'
-import KlondikeTableauColumn from './KlondikeTableauColumn.vue'
-import FlyingCard from './FlyingCard.vue'
+import KlondikeContainers from './KlondikeContainers.vue'
+import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '../Modal.vue'
-import { resetKlondikeAnimation } from '@/composables/useKlondikeAnimation'
 
 const emit = defineEmits<{
   leaveGame: []
 }>()
 
 const store = useKlondikeStore()
-
-// Flying cards from store (Pinia reactive)
-const flyingCards = computed(() => {
-  const cards = store.flyingCards
-  if (cards.length > 0) {
-    console.log('[GameBoard] flyingCards computed:', cards.length, cards)
-  }
-  return cards
-})
+const layout = useKlondikeLayout()
 
 // Timer
 const elapsedSeconds = ref(0)
@@ -50,7 +40,7 @@ const formattedTime = computed(() => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 })
 
-// Simple scoring: 10 points per card moved to foundation
+// Scoring
 const score = computed(() => {
   let total = 0
   for (const foundation of store.foundations) {
@@ -59,62 +49,86 @@ const score = computed(() => {
   return total
 })
 
-// Initialize game on mount
+// Card positions calculated from state + container positions
+const cardPositions = computed<CardPosition[]>(() => {
+  return layout.calculatePositions(store.gameState)
+})
+
+// Initialize game
 onMounted(() => {
-  resetKlondikeAnimation()
   store.startNewGame()
   startTimer()
+  // Set card size based on CSS variable
+  nextTick(() => {
+    const root = document.documentElement
+    const width = parseInt(getComputedStyle(root).getPropertyValue('--card-width') || '50')
+    const height = parseInt(getComputedStyle(root).getPropertyValue('--card-height') || '70')
+    layout.setCardSize(width, height)
+  })
 })
 
 onUnmounted(() => {
   stopTimer()
-  resetKlondikeAnimation()
 })
 
-// Computed
-const tableau = computed(() => store.tableau)
-const foundations = computed(() => store.foundations)
-const stock = computed(() => store.stock)
-const waste = computed(() => store.waste)
-const visibleWasteCards = computed(() => store.visibleWasteCards)
-const selection = computed(() => store.selection)
-const moveCount = computed(() => store.moveCount)
-const isWon = computed(() => store.isWon)
-const canAutoComplete = computed(() => store.canRunAutoComplete)
-const isAutoCompleting = computed(() => store.isAutoCompleting)
-const canUndo = computed(() => store.canUndo)
-const noMovesAvailable = computed(() => store.noMovesAvailable && !isWon.value)
-
-// Check if waste is selected
-const isWasteSelected = computed(() => selection.value?.source === 'waste')
-
-// Get selected card index for a tableau column
-function getSelectedCardIndex(columnIndex: number): number | null {
-  if (!selection.value) return null
-  if (selection.value.source !== 'tableau') return null
-  if (selection.value.columnIndex !== columnIndex) return null
-  return selection.value.cardIndex
+// Container measurement handler
+function handleContainerMeasured(
+  type: 'stock' | 'waste' | 'foundation' | 'tableau',
+  index: number | null,
+  rect: ContainerRect
+) {
+  layout.setContainerRect(type, index, rect)
 }
 
-// Event handlers
-function handleDrawCard() {
+// Click handlers
+function handleStockClick() {
   store.handleDrawCard()
 }
 
-function handleWasteTap() {
+function handleWasteClick() {
   store.handleWasteTap()
 }
 
-function handleFoundationTap(index: number) {
+function handleFoundationClick(index: number) {
   store.handleFoundationTap(index)
 }
 
-function handleTableauCardTap(columnIndex: number, cardIndex: number) {
-  store.handleTableauTap(columnIndex, cardIndex)
+function handleTableauClick(index: number) {
+  // If there's a selection, try to move there
+  if (store.selection) {
+    store.handleEmptyTableauTap(index)
+  }
 }
 
-function handleEmptyTableauTap(columnIndex: number) {
-  store.handleEmptyTableauTap(columnIndex)
+function handleCardClick(cardId: string) {
+  // Find which card was clicked and handle appropriately
+  const state = store.gameState
+  
+  // Check waste
+  if (state.waste.length > 0 && state.waste[state.waste.length - 1]?.id === cardId) {
+    store.handleWasteTap()
+    return
+  }
+  
+  // Check tableau
+  for (let colIdx = 0; colIdx < state.tableau.length; colIdx++) {
+    const column = state.tableau[colIdx]!
+    for (let cardIdx = 0; cardIdx < column.cards.length; cardIdx++) {
+      if (column.cards[cardIdx]?.id === cardId) {
+        store.handleTableauTap(colIdx, cardIdx)
+        return
+      }
+    }
+  }
+  
+  // Check foundations (clicking on foundation top card)
+  for (let fIdx = 0; fIdx < state.foundations.length; fIdx++) {
+    const foundation = state.foundations[fIdx]!
+    if (foundation.cards.length > 0 && foundation.cards[foundation.cards.length - 1]?.id === cardId) {
+      store.handleFoundationTap(fIdx)
+      return
+    }
+  }
 }
 
 function handleAutoComplete() {
@@ -123,7 +137,6 @@ function handleAutoComplete() {
 
 function handleNewGame() {
   stopTimer()
-  resetKlondikeAnimation()
   store.startNewGame()
   startTimer()
 }
@@ -133,111 +146,45 @@ function handleLeaveGame() {
   emit('leaveGame')
 }
 
-// Undo last move
 function handleUndo() {
   store.undo()
 }
 
-// TODO: Implement hint functionality
-function handleHint() {
-  // store.showHint()
-  console.log('Hint not yet implemented')
-}
+// Computed state for template
+const isWon = computed(() => store.isWon)
+const moveCount = computed(() => store.moveCount)
+const canAutoComplete = computed(() => store.canRunAutoComplete)
+const isAutoCompleting = computed(() => store.isAutoCompleting)
+const canUndo = computed(() => store.canUndo)
+const noMovesAvailable = computed(() => store.noMovesAvailable && !isWon.value)
+const selection = computed(() => store.selection)
 </script>
 
 <template>
   <div class="klondike-board">
     <BackButton @click="handleLeaveGame" />
 
-    <!-- Main game area -->
-    <div class="game-area">
-      <!-- PORTRAIT LAYOUT -->
-      <div class="portrait-layout">
-        <!-- Top row: Foundations (left) + Stock/Waste (right) -->
-        <div class="portrait-top-row">
-          <div class="foundations-row">
-            <KlondikeFoundation
-              v-for="(foundation, index) in foundations"
-              :key="index"
-              :foundation="foundation"
-              :index="index"
-              @tap="handleFoundationTap"
-            />
-          </div>
-          <div class="stock-waste-area">
-            <KlondikeStockWaste
-              :stock="stock"
-              :waste="waste"
-              :visible-waste-cards="visibleWasteCards"
-              :is-waste-selected="isWasteSelected"
-              @draw-card="handleDrawCard"
-              @tap-waste="handleWasteTap"
-            />
-          </div>
-        </div>
+    <!-- Container slots (measures positions, handles empty slot clicks) -->
+    <KlondikeContainers
+      :state="store.gameState"
+      @container-measured="handleContainerMeasured"
+      @stock-click="handleStockClick"
+      @waste-click="handleWasteClick"
+      @foundation-click="handleFoundationClick"
+      @tableau-click="handleTableauClick"
+    />
 
-        <!-- Tableau -->
-        <div class="portrait-tableau">
-          <KlondikeTableauColumn
-            v-for="(column, index) in tableau"
-            :key="index"
-            :column="column"
-            :column-index="index"
-            :selected-card-index="getSelectedCardIndex(index)"
-            @tap-card="handleTableauCardTap"
-            @tap-empty="handleEmptyTableauTap"
-          />
-        </div>
-      </div>
+    <!-- All cards in a single layer -->
+    <KlondikeCardLayer
+      :positions="cardPositions"
+      :selection="selection"
+      :card-width="layout.cardWidth.value"
+      :card-height="layout.cardHeight.value"
+      @card-click="handleCardClick"
+    />
 
-      <!-- LANDSCAPE LAYOUT -->
-      <div class="landscape-layout">
-        <!-- Left sidebar: Foundations -->
-        <div class="landscape-left">
-          <div class="foundations-column">
-            <KlondikeFoundation
-              v-for="(foundation, index) in foundations"
-              :key="index"
-              :foundation="foundation"
-              :index="index"
-              @tap="handleFoundationTap"
-            />
-          </div>
-        </div>
-
-        <!-- Center: Tableau -->
-        <div class="landscape-center">
-          <div class="landscape-tableau">
-            <KlondikeTableauColumn
-              v-for="(column, index) in tableau"
-              :key="index"
-              :column="column"
-              :column-index="index"
-              :selected-card-index="getSelectedCardIndex(index)"
-              @tap-card="handleTableauCardTap"
-              @tap-empty="handleEmptyTableauTap"
-            />
-          </div>
-        </div>
-
-        <!-- Right sidebar: Stock/Waste -->
-        <div class="landscape-right">
-          <KlondikeStockWaste
-            :stock="stock"
-            :waste="waste"
-            :visible-waste-cards="visibleWasteCards"
-            :is-waste-selected="isWasteSelected"
-            layout="vertical"
-            @draw-card="handleDrawCard"
-            @tap-waste="handleWasteTap"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom toolbar with stats -->
+    <!-- Bottom toolbar -->
     <div class="bottom-toolbar">
-      <!-- Stats section -->
       <div class="toolbar-stats">
         <span v-if="noMovesAvailable" class="no-moves-indicator">No moves!</span>
         <template v-else>
@@ -249,7 +196,6 @@ function handleHint() {
         </template>
       </div>
 
-      <!-- Actions section -->
       <div class="toolbar-actions">
         <button 
           class="toolbar-btn" 
@@ -262,12 +208,6 @@ function handleHint() {
             <path d="M3 10h10a5 5 0 0 1 5 5v2" />
             <path d="M3 10l4-4" />
             <path d="M3 10l4 4" />
-          </svg>
-        </button>
-        <button class="toolbar-btn" @click="handleHint" title="Hint">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
-            <path d="M9 21h6" />
           </svg>
         </button>
         <button v-if="canAutoComplete && !isAutoCompleting" class="toolbar-btn auto" @click="handleAutoComplete" title="Auto">
@@ -289,23 +229,6 @@ function handleHint() {
         </button>
       </div>
     </div>
-
-    <!-- Flying cards overlay for animations -->
-    <Teleport to="body">
-      <template v-if="flyingCards.length > 0">
-        <FlyingCard
-          v-for="fc in flyingCards"
-          :key="fc.id"
-          :card="fc.card"
-          :start-x="fc.startX"
-          :start-y="fc.startY"
-          :end-x="fc.endX"
-          :end-y="fc.endY"
-          :width="fc.width"
-          :height="fc.height"
-        />
-      </template>
-    </Teleport>
 
     <!-- Win modal -->
     <Modal :show="isWon">
@@ -336,6 +259,7 @@ function handleHint() {
 
 <style scoped lang="scss">
 @use 'sass:color';
+
 .klondike-board {
   width: 100%;
   height: 100%;
@@ -344,127 +268,44 @@ function handleHint() {
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
+  position: relative;
+  
+  // Card size CSS variables
+  --card-width: 50px;
+  --card-height: 70px;
 }
 
-// ============================================
-// GAME AREA
-// ============================================
-.game-area {
-  flex: 1;
-  min-height: 0;
-  padding: $spacing-xs;
-  overflow: hidden;
+@media (min-width: 400px) {
+  .klondike-board {
+    --card-width: 55px;
+    --card-height: 77px;
+  }
 }
 
-// ============================================
-// PORTRAIT LAYOUT
-// ============================================
-.portrait-layout {
-  display: none;
-  flex-direction: column;
-  height: 100%;
-  gap: $spacing-sm;
-
-  --card-width: 44px;
-  --card-height: 62px;
+@media (min-width: 500px) {
+  .klondike-board {
+    --card-width: 65px;
+    --card-height: 91px;
+  }
 }
 
-.portrait-top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 0 $spacing-xs;
-  flex-shrink: 0;
-}
-
-.foundations-row {
-  display: flex;
-  gap: 3px;
-}
-
-.stock-waste-area {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.portrait-tableau {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  gap: 3px;
-  min-height: 0;
-  overflow-y: auto;
-  padding: $spacing-xs 0;
-}
-
-// ============================================
-// LANDSCAPE LAYOUT
-// ============================================
-.landscape-layout {
-  display: none;
-  height: 100%;
-  gap: $spacing-sm;
-
-  // Small cards for landscape to fit 4 foundations vertically on phones
-  // 4 cards * 56px + 3 gaps * 3px = 233px, should fit most landscape heights
-  --card-width: 40px;
-  --card-height: 56px;
-}
-
-.landscape-left {
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  padding-top: 2px;
-}
-
-.foundations-column {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.landscape-center {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: flex-start;
-  overflow: hidden;
-}
-
-.landscape-tableau {
-  display: flex;
-  justify-content: center;
-  gap: $spacing-xs;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  padding: $spacing-xs;
-}
-
-.landscape-right {
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  padding-top: $spacing-xs;
-}
-
-// ============================================
-// BOTTOM TOOLBAR
-// ============================================
 .bottom-toolbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: $spacing-xs $spacing-sm;
+  padding: 8px 12px;
   background: rgba(0, 0, 0, 0.4);
-  flex-shrink: 0;
+  z-index: 100;
 }
 
 .toolbar-stats {
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
+  gap: 8px;
   color: white;
   font-size: 0.8rem;
 }
@@ -491,14 +332,14 @@ function handleHint() {
 
 .toolbar-actions {
   display: flex;
-  gap: $spacing-xs;
+  gap: 8px;
 }
 
 .toolbar-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: $spacing-xs;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 6px;
@@ -510,25 +351,14 @@ function handleHint() {
     background: rgba(255, 255, 255, 0.2);
   }
 
-  &:active {
-    background: rgba(255, 255, 255, 0.15);
-  }
-
   &.disabled {
     opacity: 0.3;
     cursor: not-allowed;
-    
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
   }
 
   &.auto {
-    background: $secondary-color;
-    
-    &:hover {
-      background: color.adjust($secondary-color, $lightness: 5%);
-    }
+    background: #f1c40f;
+    color: #333;
   }
 
   svg {
@@ -537,82 +367,22 @@ function handleHint() {
   }
 }
 
-// ============================================
-// ORIENTATION MEDIA QUERIES
-// ============================================
-@media (orientation: portrait) {
-  .portrait-layout {
-    display: flex;
-  }
-  .landscape-layout {
-    display: none;
-  }
-}
-
-@media (orientation: landscape) {
-  .portrait-layout {
-    display: none;
-  }
-  .landscape-layout {
-    display: flex;
-  }
-}
-
-// Larger screens in portrait - bigger cards
-@media (orientation: portrait) and (min-width: 400px) {
-  .portrait-layout {
-    --card-width: 48px;
-    --card-height: 67px;
-  }
-  .foundations-row {
-    gap: 4px;
-  }
-  .portrait-tableau {
-    gap: 4px;
-  }
-}
-
-// Medium landscape screens (tablets, larger phones)
-@media (orientation: landscape) and (min-height: 350px) {
-  .landscape-layout {
-    --card-width: 50px;
-    --card-height: 70px;
-  }
-  .foundations-column {
-    gap: 4px;
-  }
-}
-
-// Taller landscape screens - can fit bigger cards
-@media (orientation: landscape) and (min-height: 500px) {
-  .landscape-layout {
-    --card-width: 65px;
-    --card-height: 91px;
-  }
-  .foundations-column {
-    gap: $spacing-xs;
-  }
-}
-
-// ============================================
-// WIN MODAL
-// ============================================
 .win-modal {
   text-align: center;
-  padding: $spacing-md;
+  padding: 16px;
 
   h1 {
     font-size: 1.5rem;
-    margin-bottom: $spacing-md;
-    color: $secondary-color;
+    margin-bottom: 16px;
+    color: #f1c40f;
   }
 }
 
 .win-stats {
   display: flex;
   justify-content: center;
-  gap: $spacing-lg;
-  margin-bottom: $spacing-lg;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
 .win-stat {
@@ -636,11 +406,11 @@ function handleHint() {
 .win-actions {
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: 8px;
 }
 
 .action-btn {
-  padding: $spacing-sm $spacing-lg;
+  padding: 12px 24px;
   font-size: 1rem;
   font-weight: bold;
   border-radius: 8px;
@@ -650,8 +420,8 @@ function handleHint() {
   border: none;
 
   &.primary {
-    background: $secondary-color;
-    color: white;
+    background: #f1c40f;
+    color: #333;
   }
 }
 </style>

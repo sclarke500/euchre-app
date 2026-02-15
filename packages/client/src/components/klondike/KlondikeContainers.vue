@@ -1,0 +1,297 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import type { ContainerRect } from '@/composables/useKlondikeLayout'
+import type { KlondikeState } from '@euchre/shared'
+
+const props = defineProps<{
+  state: KlondikeState
+}>()
+
+const emit = defineEmits<{
+  containerMeasured: [type: 'stock' | 'waste' | 'foundation' | 'tableau', index: number | null, rect: ContainerRect]
+  stockClick: []
+  wasteClick: []
+  foundationClick: [index: number]
+  tableauClick: [index: number]
+}>()
+
+// Refs for measuring
+const stockRef = ref<HTMLElement | null>(null)
+const wasteRef = ref<HTMLElement | null>(null)
+const foundationRefs = ref<(HTMLElement | null)[]>([null, null, null, null])
+const tableauRefs = ref<(HTMLElement | null)[]>([null, null, null, null, null, null, null])
+
+// Suit symbols for foundation placeholders
+const suitSymbols = ['♠', '♥', '♦', '♣']
+
+// Measure and emit container positions
+function measureContainers() {
+  if (stockRef.value) {
+    const rect = stockRef.value.getBoundingClientRect()
+    emit('containerMeasured', 'stock', null, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+  }
+  if (wasteRef.value) {
+    const rect = wasteRef.value.getBoundingClientRect()
+    emit('containerMeasured', 'waste', null, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+  }
+  foundationRefs.value.forEach((el, i) => {
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      emit('containerMeasured', 'foundation', i, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+    }
+  })
+  tableauRefs.value.forEach((el, i) => {
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      emit('containerMeasured', 'tableau', i, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+    }
+  })
+}
+
+// Measure on mount and resize
+onMounted(() => {
+  measureContainers()
+  window.addEventListener('resize', measureContainers)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', measureContainers)
+})
+
+// Re-measure when state changes (in case layout shifts)
+watch(() => props.state, measureContainers, { deep: true })
+
+function setFoundationRef(index: number, el: HTMLElement | null) {
+  foundationRefs.value[index] = el
+}
+
+function setTableauRef(index: number, el: HTMLElement | null) {
+  tableauRefs.value[index] = el
+}
+</script>
+
+<template>
+  <div class="containers-layer">
+    <!-- Portrait layout -->
+    <div class="portrait-layout">
+      <!-- Top row: Foundations + Stock/Waste -->
+      <div class="top-row">
+        <div class="foundations-row">
+          <div
+            v-for="(_, index) in 4"
+            :key="'f' + index"
+            :ref="(el) => setFoundationRef(index, el as HTMLElement)"
+            class="foundation-slot"
+            :class="{ red: index === 1 || index === 2 }"
+            @click="emit('foundationClick', index)"
+          >
+            {{ suitSymbols[index] }}
+          </div>
+        </div>
+        <div class="stock-waste-row">
+          <div ref="stockRef" class="stock-slot" @click="emit('stockClick')">
+            <template v-if="state.stock.length === 0">
+              <svg class="recycle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6" />
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+              </svg>
+            </template>
+          </div>
+          <div ref="wasteRef" class="waste-slot" @click="emit('wasteClick')"></div>
+        </div>
+      </div>
+
+      <!-- Tableau -->
+      <div class="tableau-row">
+        <div
+          v-for="(column, index) in state.tableau"
+          :key="'t' + index"
+          :ref="(el) => setTableauRef(index, el as HTMLElement)"
+          class="tableau-slot"
+          @click="emit('tableauClick', index)"
+        >
+          <span v-if="column.cards.length === 0" class="king-hint">K</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Landscape layout -->
+    <div class="landscape-layout">
+      <!-- Left: Foundations -->
+      <div class="left-column">
+        <div
+          v-for="(_, index) in 4"
+          :key="'lf' + index"
+          class="foundation-slot"
+          :class="{ red: index === 1 || index === 2 }"
+          @click="emit('foundationClick', index)"
+        >
+          {{ suitSymbols[index] }}
+        </div>
+      </div>
+
+      <!-- Center: Tableau -->
+      <div class="center-area">
+        <div class="tableau-row">
+          <div
+            v-for="(column, index) in state.tableau"
+            :key="'lt' + index"
+            class="tableau-slot"
+            @click="emit('tableauClick', index)"
+          >
+            <span v-if="column.cards.length === 0" class="king-hint">K</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Stock/Waste -->
+      <div class="right-column">
+        <div class="stock-slot" @click="emit('stockClick')">
+          <template v-if="state.stock.length === 0">
+            <svg class="recycle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+          </template>
+        </div>
+        <div class="waste-slot" @click="emit('wasteClick')"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.containers-layer {
+  width: 100%;
+  height: 100%;
+}
+
+// Common slot styles
+.foundation-slot,
+.stock-slot,
+.waste-slot,
+.tableau-slot {
+  width: var(--card-width, 50px);
+  height: var(--card-height, 70px);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.foundation-slot {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.3);
+  
+  &.red {
+    color: rgba(231, 76, 60, 0.4);
+  }
+}
+
+.stock-slot {
+  .recycle-icon {
+    width: 28px;
+    height: 28px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.waste-slot {
+  border-style: dotted;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tableau-slot {
+  height: var(--card-height, 70px);
+}
+
+.king-hint {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.2);
+  font-weight: bold;
+}
+
+// Portrait layout
+.portrait-layout {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  padding: 4px;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.foundations-row {
+  display: flex;
+  gap: 4px;
+}
+
+.stock-waste-row {
+  display: flex;
+  gap: 8px;
+}
+
+.tableau-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+}
+
+// Landscape layout
+.landscape-layout {
+  display: none;
+  height: 100%;
+  gap: 8px;
+  padding: 4px;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.center-area {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+// Orientation media queries
+@media (orientation: portrait) {
+  .portrait-layout {
+    display: flex;
+  }
+  .landscape-layout {
+    display: none;
+  }
+}
+
+@media (orientation: landscape) {
+  .portrait-layout {
+    display: none;
+  }
+  .landscape-layout {
+    display: flex;
+  }
+}
+</style>
