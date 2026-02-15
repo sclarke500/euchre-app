@@ -296,6 +296,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
     return false
   }
 
+  // Set pending move (called before state update for animation)
+  function setPendingMove(move: MoveInfo) {
+    pendingMove.value = move
+  }
+  
   // Clear pending move (called after animation)
   function clearPendingMove() {
     pendingMove.value = null
@@ -333,6 +338,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     runAutoComplete,
     isCardSelected,
     undo,
+    setPendingMove,
     clearPendingMove,
   }
 })
