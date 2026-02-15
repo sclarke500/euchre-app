@@ -39,36 +39,7 @@ function scrollToSelectedGame() {
 // Platform detection
 const showIOSInstallHint = ref(false)
 const showIOSSafariWarning = ref(false)
-const showAndroidInstall = ref(false)
-let deferredPrompt: BeforeInstallPromptEvent | null = null
-
-// Type for the install prompt event
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-function handleBeforeInstallPrompt(e: Event) {
-  // Prevent the mini-infobar from appearing on mobile
-  e.preventDefault()
-  // Save the event so it can be triggered later
-  deferredPrompt = e as BeforeInstallPromptEvent
-  showAndroidInstall.value = true
-}
-
-async function installPWA() {
-  if (!deferredPrompt) return
-
-  // Show the install prompt
-  deferredPrompt.prompt()
-
-  // Wait for the user to respond
-  await deferredPrompt.userChoice
-
-  // Clear the deferred prompt
-  deferredPrompt = null
-  showAndroidInstall.value = false
-}
+// Note: Android/Desktop install prompt is handled by App.vue
 
 // 67 wobble animation on load
 const isWobbling = ref(true)
@@ -99,21 +70,17 @@ onMounted(() => {
     } else {
       showIOSSafariWarning.value = true
     }
-  } else {
-    // Android/Desktop - listen for install prompt
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   }
+  // Note: Android/Desktop install prompt is handled by App.vue (fires before mount)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   carouselRef.value?.removeEventListener('scroll', updateScrollState)
 })
 
 function dismissInstallHint() {
   showIOSInstallHint.value = false
   showIOSSafariWarning.value = false
-  showAndroidInstall.value = false
 }
 
 const emit = defineEmits<{
@@ -308,11 +275,7 @@ const gameTitle = computed(() => {
         <span>Open in <strong>Safari</strong> to install as an app</span>
         <button class="dismiss-btn" @click="dismissInstallHint">×</button>
       </div>
-      <div v-if="showAndroidInstall" class="install-hint">
-        <span>Install app for fullscreen</span>
-        <button class="install-btn" @click="installPWA">Install</button>
-        <button class="dismiss-btn" @click="dismissInstallHint">×</button>
-      </div>
+      <!-- Android/Desktop install prompt handled by App.vue -->
     </div>
   </div>
 </template>
