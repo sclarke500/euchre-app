@@ -279,55 +279,47 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 300;
-  padding: 8px; /* Prevent clipping */
 
   .avatar-container {
     position: relative;
   }
 
   .avatar-border {
-    position: relative;
-    border: 2px solid var(--avatar-border, #4a4a60);
-    border-radius: 20px 20px 8px 8px; /* Rounded top, square bottom */
-    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: border-color 0.3s ease;
-    overflow: hidden; /* Clean edges */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
   }
 
   .avatar-circle {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
+    background: #333344;
+    border: 2px solid #4a4a60;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: bold;
     color: #ccc;
-    position: relative;
-    z-index: 2;
-    /* Position to overlap and mask the top border */
-    margin: -2px auto 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
   }
 
   .player-name {
-    padding: 8px 12px 6px;
-    font-size: 11px;
+    margin-top: 3px;
+    padding: 2px 10px;
+    font-size: 13px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
-    /* No border - the container provides it */
-    border: none;
-    border-radius: 0 0 6px 6px; /* Only bottom corners rounded */
-    position: relative;
-    z-index: 1;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
   }
 
   .player-status {
@@ -346,29 +338,21 @@ defineExpose({
     }
   }
 
-  // Info tags (trump chip, etc) overlap the avatar
   .info-tags {
-    position: absolute;
-    top: -4px;
-    right: -8px;
-    z-index: 10;
     display: flex;
-    gap: 2px;
+    gap: 4px;
   }
 
-  // Turn indicator glow
   .avatar-glow {
-    position: absolute;
-    inset: -4px;
-    border-radius: 24px 24px 12px 12px; /* Match border shape */
-    background: radial-gradient(ellipse, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
-    animation: pulse 2s ease-in-out infinite;
-    pointer-events: none;
+    display: none;
   }
 
-  &.is-current-turn .avatar-border {
-    border-color: rgba(255, 215, 0, 0.8);
-    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+  &.is-current-turn .avatar-circle {
+    border-color: rgba(255, 215, 0, 0.7);
+    box-shadow:
+      0 0 12px rgba(255, 215, 0, 0.3),
+      0 0 30px rgba(255, 215, 0, 0.15),
+      0 0 50px rgba(255, 215, 0, 0.08);
   }
 }
 
@@ -396,76 +380,65 @@ defineExpose({
   &.dealer-seat-3 { left: calc(100% - 20px); top: calc(50% + 50px); }
 }
 
-// User avatar at bottom center of screen
+// User avatar at bottom right of screen
 .user-avatar-bottom {
   position: fixed;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 12px;
+  right: max(12px, env(safe-area-inset-right));
   z-index: 400;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 
   .avatar-container {
     position: relative;
   }
 
   .avatar-border {
-    position: relative;
-    border: 2px solid var(--avatar-border, #4a4a60);
-    border-radius: 20px 20px 8px 8px; /* Rounded top, square bottom */
-    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: border-color 0.3s ease;
-    overflow: hidden; /* Clean edges */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
   }
 
   .avatar-circle {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
+    background: #333344;
+    border: 2px solid #4a4a60;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: bold;
     color: #ccc;
-    position: relative;
-    z-index: 2;
-    /* Position to overlap and mask the top border */
-    margin: -2px auto 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
   }
 
   .player-name {
-    padding: 8px 12px 6px;
-    font-size: 11px;
+    margin-top: 3px;
+    padding: 2px 10px;
+    font-size: 13px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
-    /* No border - the container provides it */
-    border: none;
-    border-radius: 0 0 6px 6px; /* Only bottom corners rounded */
-    position: relative;
-    z-index: 1;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
   }
 
-  // Turn indicator glow
   .avatar-glow {
-    position: absolute;
-    inset: -4px;
-    border-radius: 24px 24px 12px 12px; /* Match border shape */
-    background: radial-gradient(ellipse, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
-    animation: pulse 2s ease-in-out infinite;
-    pointer-events: none;
+    display: none;
   }
 
-  &.is-current-turn .avatar-border {
-    border-color: rgba(255, 215, 0, 0.8);
-    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+  &.is-current-turn .avatar-circle {
+    border-color: rgba(255, 215, 0, 0.7);
+    box-shadow:
+      0 0 12px rgba(255, 215, 0, 0.3),
+      0 0 30px rgba(255, 215, 0, 0.15),
+      0 0 50px rgba(255, 215, 0, 0.08);
   }
 }
 
