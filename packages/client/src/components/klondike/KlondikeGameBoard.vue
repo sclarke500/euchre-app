@@ -51,7 +51,9 @@ const score = computed(() => {
 
 // Card positions calculated from state + container positions
 const cardPositions = computed<CardPosition[]>(() => {
-  return layout.calculatePositions(store.gameState)
+  const positions = layout.calculatePositions(store.gameState)
+  console.log('[Board] Card positions:', positions.length, 'cards, first 3:', positions.slice(0, 3).map(p => ({ id: p.id, x: p.x, y: p.y })))
+  return positions
 })
 
 // Board ref for reading CSS variables

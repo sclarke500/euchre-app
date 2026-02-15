@@ -31,33 +31,58 @@ const tableauRefs = ref<(HTMLElement | null)[]>([null, null, null, null, null, n
 // Suit symbols for foundation placeholders
 const suitSymbols = ['♠', '♥', '♦', '♣']
 
-// Measure and emit container positions
+// Measure and emit container positions (relative to parent container)
 function measureContainers() {
+  // Get parent bounds to convert to relative coordinates
+  const parent = stockRef.value?.closest('.containers-layer')
+  const parentRect = parent?.getBoundingClientRect() || { left: 0, top: 0 }
+  
   console.log('[Containers] measureContainers called', {
     stockRef: !!stockRef.value,
     wasteRef: !!wasteRef.value,
     foundations: foundationRefs.value.filter(Boolean).length,
-    tableau: tableauRefs.value.filter(Boolean).length
+    tableau: tableauRefs.value.filter(Boolean).length,
+    parentOffset: { x: parentRect.left, y: parentRect.top }
   })
   
   if (stockRef.value) {
     const rect = stockRef.value.getBoundingClientRect()
-    emit('containerMeasured', 'stock', null, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+    emit('containerMeasured', 'stock', null, { 
+      x: rect.left - parentRect.left, 
+      y: rect.top - parentRect.top, 
+      width: rect.width, 
+      height: rect.height 
+    })
   }
   if (wasteRef.value) {
     const rect = wasteRef.value.getBoundingClientRect()
-    emit('containerMeasured', 'waste', null, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+    emit('containerMeasured', 'waste', null, { 
+      x: rect.left - parentRect.left, 
+      y: rect.top - parentRect.top, 
+      width: rect.width, 
+      height: rect.height 
+    })
   }
   foundationRefs.value.forEach((el, i) => {
     if (el) {
       const rect = el.getBoundingClientRect()
-      emit('containerMeasured', 'foundation', i, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+      emit('containerMeasured', 'foundation', i, { 
+        x: rect.left - parentRect.left, 
+        y: rect.top - parentRect.top, 
+        width: rect.width, 
+        height: rect.height 
+      })
     }
   })
   tableauRefs.value.forEach((el, i) => {
     if (el) {
       const rect = el.getBoundingClientRect()
-      emit('containerMeasured', 'tableau', i, { x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+      emit('containerMeasured', 'tableau', i, { 
+        x: rect.left - parentRect.left, 
+        y: rect.top - parentRect.top, 
+        width: rect.width, 
+        height: rect.height 
+      })
     }
   })
 }

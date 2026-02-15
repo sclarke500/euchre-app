@@ -105,7 +105,8 @@ function handleCardClick(cardId: string) {
   border-radius: 6px;
   pointer-events: auto;
   cursor: pointer;
-  transition: left 0.25s ease-out, top 0.25s ease-out;
+  transition: left 0.3s ease-out, top 0.3s ease-out !important;
+  will-change: left, top;
   
   &.face-up {
     background: white;
