@@ -27,6 +27,15 @@ function scrollCarousel(direction: 'left' | 'right') {
   el.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' })
 }
 
+function scrollToSelectedGame() {
+  const el = carouselRef.value
+  if (!el) return
+  const activeCard = el.querySelector('.game-card.active') as HTMLElement
+  if (activeCard) {
+    activeCard.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' })
+  }
+}
+
 // Platform detection
 const showIOSInstallHint = ref(false)
 const showIOSSafariWarning = ref(false)
@@ -72,6 +81,7 @@ onMounted(() => {
 
   // Set up carousel scroll tracking
   nextTick(() => {
+    scrollToSelectedGame()
     updateScrollState()
     carouselRef.value?.addEventListener('scroll', updateScrollState)
   })
