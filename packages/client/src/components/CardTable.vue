@@ -16,8 +16,13 @@
           :class="{ 'is-user': seat.isUser, 'is-current-turn': currentTurnSeat === i }"
           :style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
         >
-          <div class="avatar-circle">{{ playerNames[i]?.[0] ?? '?' }}</div>
-          <div class="player-name">{{ playerNames[i] }}</div>
+          <div class="avatar-container">
+            <div class="avatar-border">
+              <div class="avatar-circle">{{ playerNames[i]?.[0] ?? '?' }}</div>
+              <div class="player-name">{{ playerNames[i] }}</div>
+            </div>
+            <div class="avatar-glow" v-if="currentTurnSeat === i"></div>
+          </div>
           <div class="player-status" :class="{ visible: !!playerStatuses[i] }">{{ playerStatuses[i] }}</div>
           <div class="info-tags">
             <slot :name="`player-info-${i}`" />
@@ -47,8 +52,13 @@
 
       <!-- User avatar at bottom center of screen -->
       <div class="user-avatar-bottom" :class="{ 'is-current-turn': currentTurnSeat === 0 }">
-        <div class="avatar-circle">{{ playerNames[0]?.[0] ?? '?' }}</div>
-        <div class="player-name">{{ playerNames[0] }}</div>
+        <div class="avatar-container">
+          <div class="avatar-border">
+            <div class="avatar-circle">{{ playerNames[0]?.[0] ?? '?' }}</div>
+            <div class="player-name">{{ playerNames[0] }}</div>
+          </div>
+          <div class="avatar-glow" v-if="currentTurnSeat === 0"></div>
+        </div>
         <slot name="user-info" />
       </div>
 
@@ -266,79 +276,67 @@ defineExpose({
 }
 
 .player-avatar {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 300;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
-  --avatar-border: #4a4a60;
-  --avatar-bg: rgba(30, 30, 45, 0.92);
+  gap: 4px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 300;
+  padding: 8px; /* Prevent clipping */
 
-  // Back circle layer: has border, BEHIND name plate
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
-    background: var(--avatar-bg);
-    border: 2px solid var(--avatar-border);
-    border-radius: 50%;
-    z-index: 1;
-    transition: border-color var(--anim-slow) ease;
-  }
-
-  // Name plate: middle layer with border
-  .player-name {
+  .avatar-container {
     position: relative;
-    z-index: 2;
-    margin-top: -8px;
-    padding: 10px 10px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #ccc;
-    white-space: nowrap;
-    background: var(--avatar-bg);
-    border: 2px solid var(--avatar-border);
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
   }
 
-  // Front circle layer: background fill, ABOVE name plate (covers name's top border)
+  .avatar-border {
+    position: relative;
+    border: 2px solid var(--avatar-border, #4a4a60);
+    border-radius: 20px 20px 8px 8px; /* Rounded top, square bottom */
+    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.3s ease;
+    overflow: hidden; /* Clean edges */
+  }
+
   .avatar-circle {
-    position: relative;
-    z-index: 3;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--avatar-bg);
-    border: none;
+    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
     font-weight: bold;
     color: #ccc;
+    position: relative;
+    z-index: 2;
+    /* Position to overlap and mask the top border */
+    margin: -2px auto 0;
+  }
+
+  .player-name {
+    padding: 8px 12px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ccc;
+    white-space: nowrap;
+    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
+    /* No border - the container provides it */
+    border: none;
+    border-radius: 0 0 6px 6px; /* Only bottom corners rounded */
+    position: relative;
+    z-index: 1;
   }
 
   .player-status {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 4px;
-    padding: 1px 8px;
     font-size: 10px;
-    font-weight: 600;
     color: #ffd700;
-    white-space: nowrap;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
     opacity: 0;
     transition: opacity var(--anim-slow) ease;
     pointer-events: none;
@@ -359,14 +357,18 @@ defineExpose({
   }
 
   // Turn indicator glow
-  &.is-current-turn {
-    --avatar-border: rgba(255, 215, 0, 0.7);
-    
-    .player-name {
-      box-shadow:
-        0 0 12px rgba(255, 215, 0, 0.3),
-        0 0 30px rgba(255, 215, 0, 0.15);
-    }
+  .avatar-glow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 24px 24px 12px 12px; /* Match border shape */
+    background: radial-gradient(ellipse, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+    animation: pulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &.is-current-turn .avatar-border {
+    border-color: rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
   }
 }
 
@@ -404,68 +406,71 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
-  --avatar-border: #4a4a60;
-  --avatar-bg: rgba(30, 30, 45, 0.92);
+  gap: 4px;
 
-  // Back circle layer: has border, BEHIND name plate
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
-    background: var(--avatar-bg);
-    border: 2px solid var(--avatar-border);
-    border-radius: 50%;
-    z-index: 1;
-    transition: border-color var(--anim-slow) ease;
-  }
-
-  // Name plate: middle layer with border
-  .player-name {
+  .avatar-container {
     position: relative;
-    z-index: 2;
-    margin-top: -8px;
-    padding: 10px 10px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #ccc;
-    white-space: nowrap;
-    background: var(--avatar-bg);
-    border: 2px solid var(--avatar-border);
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
   }
 
-  // Front circle layer: background fill, ABOVE name plate
+  .avatar-border {
+    position: relative;
+    border: 2px solid var(--avatar-border, #4a4a60);
+    border-radius: 20px 20px 8px 8px; /* Rounded top, square bottom */
+    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.3s ease;
+    overflow: hidden; /* Clean edges */
+  }
+
   .avatar-circle {
-    position: relative;
-    z-index: 3;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--avatar-bg);
-    border: none;
+    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
     font-weight: bold;
     color: #ccc;
+    position: relative;
+    z-index: 2;
+    /* Position to overlap and mask the top border */
+    margin: -2px auto 0;
   }
 
-  &.is-current-turn {
-    --avatar-border: rgba(255, 215, 0, 0.7);
-    
-    .player-name {
-      box-shadow:
-        0 0 12px rgba(255, 215, 0, 0.3),
-        0 0 30px rgba(255, 215, 0, 0.15);
-    }
+  .player-name {
+    padding: 8px 12px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ccc;
+    white-space: nowrap;
+    background: var(--avatar-bg, rgba(30, 30, 45, 0.92));
+    /* No border - the container provides it */
+    border: none;
+    border-radius: 0 0 6px 6px; /* Only bottom corners rounded */
+    position: relative;
+    z-index: 1;
   }
+
+  // Turn indicator glow
+  .avatar-glow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 24px 24px 12px 12px; /* Match border shape */
+    background: radial-gradient(ellipse, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+    animation: pulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &.is-current-turn .avatar-border {
+    border-color: rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
 }
 </style>
