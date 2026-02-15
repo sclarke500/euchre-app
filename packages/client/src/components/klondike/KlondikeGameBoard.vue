@@ -70,9 +70,11 @@ const pendingFlips = ref<Set<string>>(new Set())
 watch(
   () => store.gameState,
   () => {
+    console.log('Klondike watcher: triggered, isAnimating =', isAnimating.value)
     if (isAnimating.value) return // Skip during animations
     
     const newPositions = layout.calculatePositions(store.gameState)
+    console.log('Klondike watcher: newPositions count =', newPositions.length)
     const map = cardPositionsRef.value
     
     // Update positions (use map.set to trigger reactivity)
@@ -225,7 +227,7 @@ async function animateDeal() {
 // Board ref for reading CSS variables
 const boardRef = ref<HTMLElement | null>(null)
 
-// Initialize game with deal animation
+// Initialize game (simple version - animation disabled for debugging)
 onMounted(async () => {
   // Set card size based on CSS variable from board element
   await nextTick()
@@ -234,6 +236,7 @@ onMounted(async () => {
     const width = parseInt(styles.getPropertyValue('--card-width')) || 50
     const height = parseInt(styles.getPropertyValue('--card-height')) || 70
     layout.setCardSize(width, height)
+    console.log('Klondike: Card size set to', width, 'x', height)
   }
   
   // Wait for containers to be measured (poll until ready)
@@ -242,20 +245,14 @@ onMounted(async () => {
     await new Promise(r => setTimeout(r, 50))
     attempts++
   }
-  
-  // Block the watcher during initial setup
-  isAnimating.value = true
+  console.log('Klondike: Containers measured after', attempts, 'attempts, stock =', layout.containers.value.stock)
   
   store.startNewGame()
   startTimer()
   
-  // If we have container measurements, animate the deal
-  if (layout.containers.value.stock) {
-    await animateDeal()
-  } else {
-    // No containers - let watcher handle it
-    isAnimating.value = false
-  }
+  // For now, just let the watcher handle positioning (no animation)
+  // The watcher will run automatically when store.gameState changes
+  console.log('Klondike: Game started, cardPositions count =', cardPositions.value.length)
 })
 
 onUnmounted(() => {
