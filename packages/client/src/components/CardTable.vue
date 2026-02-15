@@ -103,8 +103,6 @@ const avatarStyles = computed(() => {
   const { tableBounds } = layout
 
   return seatData.value.map((seat) => {
-    if (seat.isUser) return { display: 'none' }
-
     // Convert board-space hand position to table-relative percentage
     const pctX = ((seat.handPosition.x - tableBounds.left) / tableBounds.width * 100)
     const pctY = ((seat.handPosition.y - tableBounds.top) / tableBounds.height * 100)
@@ -116,7 +114,7 @@ const avatarStyles = computed(() => {
         return { left: 'calc(100% + 40px)', top: `${pctY}%` }
       case 'top':
         return { left: `${pctX}%`, top: '-30px' }
-      default: // bottom
+      default: // bottom (user seat)
         return { left: `${pctX}%`, top: 'calc(100% + 30px)' }
     }
   })
