@@ -54,6 +54,9 @@ const cardPositionsRef = ref<Map<string, CardPosition>>(new Map())
 // Track whether we're animating (deal or draw)
 const isAnimating = ref(false)
 
+// Track cards that should flip after a delay (newly exposed tableau cards)
+const pendingFlips = ref<Set<string>>(new Set())
+
 // Update positions when state changes
 watch(
   () => store.gameState,
@@ -67,11 +70,24 @@ watch(
     for (const pos of newPositions) {
       const existing = map.get(pos.id)
       if (existing) {
-        // Update in place
+        // Check if this card is newly flipping (was face-down, now face-up)
+        const isNewlyFlipped = !existing.faceUp && pos.faceUp
+        
+        // Update position
         existing.x = pos.x
         existing.y = pos.y
         existing.z = pos.z
-        existing.faceUp = pos.faceUp
+        
+        // If this card should flip, delay it
+        if (isNewlyFlipped && pendingFlips.value.has(pos.id)) {
+          // Keep face-down for now, flip after move animation
+          pendingFlips.value.delete(pos.id)
+          setTimeout(() => {
+            existing.faceUp = true
+          }, 300) // Wait for move animation
+        } else {
+          existing.faceUp = pos.faceUp
+        }
       } else {
         // New card
         map.set(pos.id, pos)
@@ -88,6 +104,26 @@ watch(
   },
   { deep: true, immediate: true }
 )
+
+// Get the card that will be exposed when moving from a tableau column
+function getCardToExpose(columnIndex: number): string | null {
+  const column = store.gameState.tableau[columnIndex]
+  if (!column || column.cards.length < 2) return null
+  
+  // If there's a selection from this column, check what card will be exposed
+  const selection = store.selection
+  if (selection?.source === 'tableau' && selection.columnIndex === columnIndex) {
+    const cardIdx = selection.cardIndex ?? column.cards.length - 1
+    if (cardIdx > 0) {
+      const cardBelow = column.cards[cardIdx - 1]
+      // Only track if it's currently face-down
+      if (cardBelow && !cardBelow.faceUp) {
+        return cardBelow.id
+      }
+    }
+  }
+  return null
+}
 
 // Convert map to array for template
 const cardPositions = computed<CardPosition[]>(() => {
@@ -296,12 +332,27 @@ function handleWasteClick() {
 }
 
 function handleFoundationClick(index: number) {
+  // Check if we're moving from tableau - mark card for delayed flip
+  const cardToExpose = store.selection?.source === 'tableau' 
+    ? getCardToExpose(store.selection.columnIndex!) 
+    : null
+  if (cardToExpose) {
+    pendingFlips.value.add(cardToExpose)
+  }
+  
   store.handleFoundationTap(index)
 }
 
 function handleTableauClick(index: number) {
   // If there's a selection, try to move there
   if (store.selection) {
+    // Check if moving from another tableau column - mark card for delayed flip
+    if (store.selection.source === 'tableau' && store.selection.columnIndex !== index) {
+      const cardToExpose = getCardToExpose(store.selection.columnIndex!)
+      if (cardToExpose) {
+        pendingFlips.value.add(cardToExpose)
+      }
+    }
     store.handleEmptyTableauTap(index)
   }
 }
@@ -321,6 +372,14 @@ function handleCardClick(cardId: string) {
     const column = state.tableau[colIdx]!
     for (let cardIdx = 0; cardIdx < column.cards.length; cardIdx++) {
       if (column.cards[cardIdx]?.id === cardId) {
+        // Check if moving from another column - mark card for delayed flip
+        const selection = store.selection
+        if (selection?.source === 'tableau' && selection.columnIndex !== colIdx) {
+          const cardToExpose = getCardToExpose(selection.columnIndex!)
+          if (cardToExpose) {
+            pendingFlips.value.add(cardToExpose)
+          }
+        }
         store.handleTableauTap(colIdx, cardIdx)
         return
       }
@@ -331,6 +390,14 @@ function handleCardClick(cardId: string) {
   for (let fIdx = 0; fIdx < state.foundations.length; fIdx++) {
     const foundation = state.foundations[fIdx]!
     if (foundation.cards.length > 0 && foundation.cards[foundation.cards.length - 1]?.id === cardId) {
+      // Check if moving from tableau - mark card for delayed flip
+      const selection = store.selection
+      if (selection?.source === 'tableau') {
+        const cardToExpose = getCardToExpose(selection.columnIndex!)
+        if (cardToExpose) {
+          pendingFlips.value.add(cardToExpose)
+        }
+      }
       store.handleFoundationTap(fIdx)
       return
     }

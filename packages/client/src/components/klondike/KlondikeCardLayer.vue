@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { CardPosition } from '@/composables/useKlondikeLayout'
 import { Suit, type Selection } from '@euchre/shared'
 
@@ -12,6 +13,35 @@ const props = defineProps<{
 const emit = defineEmits<{
   cardClick: [cardId: string]
 }>()
+
+// Track cards that are currently flipping (for animation)
+const flippingCards = ref<Set<string>>(new Set())
+
+// Watch for face-up changes to trigger flip animation
+watch(
+  () => props.positions.map(p => ({ id: p.id, faceUp: p.faceUp })),
+  (newVals, oldVals) => {
+    if (!oldVals) return
+    
+    const oldMap = new Map(oldVals.map(v => [v.id, v.faceUp]))
+    for (const { id, faceUp } of newVals) {
+      const wasFaceUp = oldMap.get(id)
+      // Detect flip from face-down to face-up
+      if (wasFaceUp === false && faceUp === true) {
+        flippingCards.value.add(id)
+        // Remove after animation completes
+        setTimeout(() => {
+          flippingCards.value.delete(id)
+        }, 300)
+      }
+    }
+  },
+  { deep: true }
+)
+
+function isFlipping(cardId: string): boolean {
+  return flippingCards.value.has(cardId)
+}
 
 // Determine if a card is selected (for tableau, all cards from selection index and below)
 function isSelected(cardId: string): boolean {
@@ -53,7 +83,8 @@ function handleCardClick(cardId: string) {
       :class="{ 
         'face-up': pos.faceUp, 
         'face-down': !pos.faceUp,
-        'selected': isSelected(pos.id)
+        'selected': isSelected(pos.id),
+        'flipping': isFlipping(pos.id)
       }"
       :style="{
         transform: `translate(${pos.x}px, ${pos.y}px)`,
@@ -123,6 +154,27 @@ function handleCardClick(cardId: string) {
   
   &.selected {
     box-shadow: 0 0 0 3px #f1c40f, 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  &.flipping {
+    animation: card-flip 0.3s ease-out;
+    z-index: 1000 !important; // Bring to front during flip
+  }
+}
+
+// Card flip animation - quick "reveal" effect
+@keyframes card-flip {
+  0% {
+    filter: brightness(0.5);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    filter: brightness(1.2);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
 }
 
