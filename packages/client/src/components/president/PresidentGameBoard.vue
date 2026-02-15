@@ -413,7 +413,7 @@ const showRoundComplete = computed(() =>
   <div class="president-game-board">
     <!-- Watermark -->
     <div class="table-watermark">
-      <span class="watermark-67">67</span>
+      <img src="@/assets/AppLogo.png" alt="" class="watermark-logo" />
       <span class="watermark-name">PRESIDENT</span>
     </div>
 
@@ -1087,27 +1087,26 @@ const showRoundComplete = computed(() =>
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   opacity: 0.1;
   pointer-events: none;
   user-select: none;
   z-index: 1;
   
-  .watermark-67 {
-    font-family: 'Rock Salt', cursive;
-    font-size: 4rem;
-    font-weight: 400;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  .watermark-logo {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
   }
   
   .watermark-name {
     font-family: 'Rock Salt', cursive;
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     font-weight: 400;
     color: white;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-    letter-spacing: 0.15em;
+    letter-spacing: 0.1em;
+    margin-top: -8px;
   }
 }
 
