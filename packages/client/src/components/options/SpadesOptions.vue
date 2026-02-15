@@ -1,16 +1,13 @@
 <script setup lang="ts">
-// Spades options will be added as we implement more rules
-// For now, this is a placeholder
+// Spades options - placeholder for now
 </script>
 
 <template>
-  <div class="game-options">
-    <div class="option-group">
-      <p class="option-desc">Standard Spades rules apply. More options coming soon!</p>
-    </div>
+  <div class="compact-options">
+    <div class="no-options">Standard rules • More options coming soon</div>
   </div>
 </template>
 
 <style scoped lang="scss">
-@use '@/assets/styles/game-options';
+@use '@/assets/styles/compact-options';
 </style>

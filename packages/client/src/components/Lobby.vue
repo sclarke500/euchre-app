@@ -101,24 +101,21 @@ const checkGameStart = computed(() => lobbyStore.gameId)
       <div class="create-options-content">
         <h3>Create Table</h3>
 
-        <div class="game-type-row">
-          <label for="game-select">Game:</label>
-          <select 
-            id="game-select" 
-            :value="lobbyStore.selectedGameType"
-            @change="selectGameType(($event.target as HTMLSelectElement).value as GameType)"
-            class="game-select"
+        <div class="game-selector">
+          <button
+            v-for="game in ['euchre', 'president', 'spades'] as const"
+            :key="game"
+            :class="['game-pill', { active: lobbyStore.selectedGameType === game }]"
+            @click="selectGameType(game)"
           >
-            <option value="euchre">Euchre</option>
-            <option value="president">President</option>
-            <option value="spades">Spades</option>
-          </select>
+            {{ game.charAt(0).toUpperCase() + game.slice(1) }}
+          </button>
         </div>
 
         <div class="game-options-section">
-          <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" class="compact" />
-          <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" class="compact" />
-          <SpadesOptions v-else-if="lobbyStore.selectedGameType === 'spades'" class="compact" />
+          <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" />
+          <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" />
+          <SpadesOptions v-else-if="lobbyStore.selectedGameType === 'spades'" />
         </div>
 
         <div class="create-actions">
@@ -343,50 +340,43 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   }
 }
 
-.game-type-row {
+.game-selector {
   display: flex;
-  align-items: center;
-  gap: $spacing-md;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 3px;
   margin-bottom: $spacing-md;
-
-  label {
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
 }
 
-.game-select {
+.game-pill {
   flex: 1;
-  padding: $spacing-sm $spacing-md;
-  border-radius: 8px;
-  background: white;
-  color: #1e4d2b;
-  font-size: 1rem;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
   font-weight: 500;
-  border: none;
-  cursor: pointer;
+  transition: all 0.15s ease;
 
-  &:focus {
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: 2px;
+  &:hover:not(.active) {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  &.active {
+    background: white;
+    color: #1e4d2b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 }
 
 .game-options-section {
   margin-bottom: $spacing-md;
-  padding: $spacing-md;
+  padding: $spacing-sm $spacing-md;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
   color: #333;
-
-  // Override compact game-options styles for dark modal
-  :deep(.game-options) {
-    .option-group {
-      h4 {
-        color: #1e4d2b;
-      }
-    }
-  }
+  min-height: 60px;
 }
 
 .player-count-selector {

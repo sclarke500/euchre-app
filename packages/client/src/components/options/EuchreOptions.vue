@@ -5,24 +5,21 @@ const settings = useSettingsStore()
 </script>
 
 <template>
-  <div class="game-options">
-    <div class="option-group">
-      <h4>Dealer Rules</h4>
-      <p class="option-desc">What happens if no one calls trump in round 2</p>
-      <div class="option-buttons">
+  <div class="compact-options">
+    <div class="option-row">
+      <span class="option-label">Dealer Rules</span>
+      <div class="toggle-group">
         <button
-          :class="['option-btn', { active: settings.dealerPassRule === 'canPass' }]"
+          :class="['toggle-btn', { active: settings.dealerPassRule === 'canPass' }]"
           @click="settings.setDealerPassRule('canPass')"
         >
-          <span class="option-title">Dealer Can Pass</span>
-          <span class="option-subtitle">Hand is thrown in, cards redealt</span>
+          Can Pass
         </button>
         <button
-          :class="['option-btn', { active: settings.dealerPassRule === 'stickTheDealer' }]"
+          :class="['toggle-btn', { active: settings.dealerPassRule === 'stickTheDealer' }]"
           @click="settings.setDealerPassRule('stickTheDealer')"
         >
-          <span class="option-title">Stick the Dealer</span>
-          <span class="option-subtitle">Dealer must call a suit</span>
+          Stick Dealer
         </button>
       </div>
     </div>
@@ -30,5 +27,5 @@ const settings = useSettingsStore()
 </template>
 
 <style scoped lang="scss">
-@use '@/assets/styles/game-options';
+@use '@/assets/styles/compact-options';
 </style>
