@@ -2,7 +2,6 @@
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useKlondikeStore } from '@/stores/klondikeStore'
 import { useKlondikeLayout, type ContainerRect, type CardPosition } from '@/composables/useKlondikeLayout'
-import BackButton from '../BackButton.vue'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '../Modal.vue'
@@ -182,12 +181,26 @@ const isAutoCompleting = computed(() => store.isAutoCompleting)
 const canUndo = computed(() => store.canUndo)
 const noMovesAvailable = computed(() => store.noMovesAvailable && !isWon.value)
 const selection = computed(() => store.selection)
+
+// New game confirmation
+const showNewGameConfirm = ref(false)
+
+function confirmNewGame() {
+  showNewGameConfirm.value = true
+}
+
+function cancelNewGame() {
+  showNewGameConfirm.value = false
+}
+
+function doNewGame() {
+  showNewGameConfirm.value = false
+  handleNewGame()
+}
 </script>
 
 <template>
   <div ref="boardRef" class="klondike-board">
-    <BackButton @click="handleLeaveGame" />
-
     <!-- Container slots (measures positions, handles empty slot clicks) -->
     <KlondikeContainers
       :state="store.gameState"
@@ -209,6 +222,15 @@ const selection = computed(() => store.selection)
 
     <!-- Bottom toolbar -->
     <div class="bottom-toolbar">
+      <!-- Left: Back button -->
+      <button class="toolbar-btn back" @click="handleLeaveGame" title="Main Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <!-- Center: Stats -->
       <div class="toolbar-stats">
         <span v-if="noMovesAvailable" class="no-moves-indicator">No moves!</span>
         <template v-else>
@@ -220,6 +242,7 @@ const selection = computed(() => store.selection)
         </template>
       </div>
 
+      <!-- Right: Actions -->
       <div class="toolbar-actions">
         <button 
           class="toolbar-btn" 
@@ -239,7 +262,7 @@ const selection = computed(() => store.selection)
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
           </svg>
         </button>
-        <button class="toolbar-btn" @click="handleNewGame" title="New Game">
+        <button class="toolbar-btn" @click="confirmNewGame" title="New Game">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2v4" />
             <path d="M12 18v4" />
@@ -275,6 +298,18 @@ const selection = computed(() => store.selection)
         <div class="win-actions">
           <button class="action-btn primary" @click="handleNewGame">Play Again</button>
           <button class="action-btn" @click="handleLeaveGame">Main Menu</button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- New Game confirmation modal -->
+    <Modal :show="showNewGameConfirm">
+      <div class="confirm-modal">
+        <h2>Start New Game?</h2>
+        <p>Your current progress will be lost.</p>
+        <div class="confirm-actions">
+          <button class="action-btn" @click="cancelNewGame">Cancel</button>
+          <button class="action-btn primary" @click="doNewGame">New Game</button>
         </div>
       </div>
     </Modal>
@@ -322,8 +357,9 @@ const selection = computed(() => store.selection)
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.6);
   z-index: 100;
+  gap: 8px;
 }
 
 .toolbar-stats {
@@ -447,5 +483,27 @@ const selection = computed(() => store.selection)
     background: #f1c40f;
     color: #333;
   }
+}
+
+.confirm-modal {
+  text-align: center;
+  padding: 16px;
+
+  h2 {
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+    color: #333;
+  }
+
+  p {
+    color: #666;
+    margin-bottom: 20px;
+  }
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 </style>
