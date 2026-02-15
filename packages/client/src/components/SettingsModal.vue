@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useSettingsStore, type AIDifficulty, type DealerPassRule } from '@/stores/settingsStore'
+import { useSettingsStore, type AIDifficulty } from '@/stores/settingsStore'
+import EuchreOptions from '@/components/options/EuchreOptions.vue'
+import PresidentOptions from '@/components/options/PresidentOptions.vue'
+import SpadesOptions from '@/components/options/SpadesOptions.vue'
 
 defineProps<{
   show: boolean
@@ -26,10 +29,6 @@ const buildInfo = computed(() => {
 
 function selectDifficulty(difficulty: AIDifficulty) {
   settings.setAIDifficulty(difficulty)
-}
-
-function selectDealerRule(rule: DealerPassRule) {
-  settings.setDealerPassRule(rule)
 }
 
 function checkForUpdates() {
@@ -74,51 +73,22 @@ function checkForUpdates() {
 
           <div class="game-section">
             <div class="game-header">Euchre</div>
-
             <div class="settings-section">
-              <h3>Dealer Rules</h3>
-              <p class="section-desc">What happens if no one calls trump in round 2</p>
-              <div class="option-buttons">
-                <button
-                  :class="['option-btn', { active: settings.dealerPassRule === 'canPass' }]"
-                  @click="selectDealerRule('canPass')"
-                >
-                  <span class="option-title">Dealer Can Pass</span>
-                  <span class="option-desc">Hand is thrown in, cards redealt</span>
-                </button>
-                <button
-                  :class="['option-btn', { active: settings.dealerPassRule === 'stickTheDealer' }]"
-                  @click="selectDealerRule('stickTheDealer')"
-                >
-                  <span class="option-title">Stick the Dealer</span>
-                  <span class="option-desc">Dealer must call a suit</span>
-                </button>
-              </div>
+              <EuchreOptions />
             </div>
           </div>
 
           <div class="game-section">
             <div class="game-header">President</div>
-
             <div class="settings-section">
-              <h3>Special Cards</h3>
-              <p class="section-desc">Optional rules for 2s and Jokers</p>
-              <div class="option-buttons">
-                <button
-                  :class="['option-btn', { active: !settings.superTwosAndJokers }]"
-                  @click="settings.setSuperTwosAndJokers(false)"
-                >
-                  <span class="option-title">Standard Rules</span>
-                  <span class="option-desc">2s are highest, no jokers (2 twos beat 2 aces)</span>
-                </button>
-                <button
-                  :class="['option-btn', { active: settings.superTwosAndJokers }]"
-                  @click="settings.setSuperTwosAndJokers(true)"
-                >
-                  <span class="option-title">Super 2s &amp; Jokers</span>
-                  <span class="option-desc">Jokers beat all, 2 twos beat 3 aces</span>
-                </button>
-              </div>
+              <PresidentOptions />
+            </div>
+          </div>
+
+          <div class="game-section">
+            <div class="game-header">Spades</div>
+            <div class="settings-section">
+              <SpadesOptions />
             </div>
           </div>
 

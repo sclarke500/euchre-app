@@ -9,6 +9,7 @@ interface GameSettings {
   // Euchre-specific
   dealerPassRule: DealerPassRule
   // President-specific
+  presidentPlayerCount: number
   superTwosAndJokers: boolean
 }
 
@@ -22,6 +23,7 @@ function loadSettings(): GameSettings {
       return {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
+        presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
         superTwosAndJokers: parsed.superTwosAndJokers === true,
       }
     }
@@ -31,6 +33,7 @@ function loadSettings(): GameSettings {
   return {
     aiDifficulty: 'easy',
     dealerPassRule: 'canPass',
+    presidentPlayerCount: 4,
     superTwosAndJokers: false,
   }
 }
@@ -40,13 +43,15 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const aiDifficulty = ref<AIDifficulty>(initialSettings.aiDifficulty)
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
+  const presidentPlayerCount = ref<number>(initialSettings.presidentPlayerCount)
   const superTwosAndJokers = ref<boolean>(initialSettings.superTwosAndJokers)
 
   // Persist settings when they change
-  watch([aiDifficulty, dealerPassRule, superTwosAndJokers], () => {
+  watch([aiDifficulty, dealerPassRule, presidentPlayerCount, superTwosAndJokers], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       dealerPassRule: dealerPassRule.value,
+      presidentPlayerCount: presidentPlayerCount.value,
       superTwosAndJokers: superTwosAndJokers.value,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
@@ -58,6 +63,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setDealerPassRule(rule: DealerPassRule) {
     dealerPassRule.value = rule
+  }
+
+  function setPresidentPlayerCount(count: number) {
+    presidentPlayerCount.value = Math.min(Math.max(count, 4), 8)
   }
 
   function setSuperTwosAndJokers(enabled: boolean) {
@@ -72,9 +81,11 @@ export const useSettingsStore = defineStore('settings', () => {
   return {
     aiDifficulty,
     dealerPassRule,
+    presidentPlayerCount,
     superTwosAndJokers,
     setAIDifficulty,
     setDealerPassRule,
+    setPresidentPlayerCount,
     setSuperTwosAndJokers,
     isHardAI,
     isStickTheDealer,

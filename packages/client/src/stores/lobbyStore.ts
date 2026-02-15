@@ -213,8 +213,9 @@ export const useLobbyStore = defineStore('lobby', () => {
   }
 
   function createTable(tableName?: string): void {
+    // Build settings from shared settingsStore
     const settings: TableSettings | undefined = selectedGameType.value === 'president'
-      ? { superTwosMode: selectedSuperTwosMode.value }
+      ? { superTwosMode: settingsStore.superTwosAndJokers }
       : selectedGameType.value === 'euchre'
         ? { aiDifficulty: settingsStore.aiDifficulty }
         : undefined
@@ -223,7 +224,7 @@ export const useLobbyStore = defineStore('lobby', () => {
       type: 'create_table',
       tableName,
       gameType: selectedGameType.value,
-      maxPlayers: selectedGameType.value === 'president' ? selectedMaxPlayers.value : undefined,
+      maxPlayers: selectedGameType.value === 'president' ? settingsStore.presidentPlayerCount : undefined,
       settings,
     })
   }

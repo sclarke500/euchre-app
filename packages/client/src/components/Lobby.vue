@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import TableCard from '@/components/TableCard.vue'
+import EuchreOptions from '@/components/options/EuchreOptions.vue'
+import PresidentOptions from '@/components/options/PresidentOptions.vue'
+import SpadesOptions from '@/components/options/SpadesOptions.vue'
 import type { GameType } from '@euchre/shared'
+
+const settings = useSettingsStore()
 
 const emit = defineEmits<{
   back: []
@@ -95,51 +101,24 @@ const checkGameStart = computed(() => lobbyStore.gameId)
       <div class="create-options-content">
         <h3>Create Table</h3>
 
-        <div class="game-type-selector">
-          <button
-            :class="['game-type-btn', { active: lobbyStore.selectedGameType === 'euchre' }]"
-            @click="selectGameType('euchre')"
+        <div class="game-type-row">
+          <label for="game-select">Game:</label>
+          <select 
+            id="game-select" 
+            :value="lobbyStore.selectedGameType"
+            @change="selectGameType(($event.target as HTMLSelectElement).value as GameType)"
+            class="game-select"
           >
-            Euchre
-          </button>
-          <button
-            :class="['game-type-btn', { active: lobbyStore.selectedGameType === 'president' }]"
-            @click="selectGameType('president')"
-          >
-            President
-          </button>
-          <button
-            :class="['game-type-btn', { active: lobbyStore.selectedGameType === 'spades' }]"
-            @click="selectGameType('spades')"
-          >
-            Spades
-          </button>
+            <option value="euchre">Euchre</option>
+            <option value="president">President</option>
+            <option value="spades">Spades</option>
+          </select>
         </div>
 
-        <div v-if="lobbyStore.selectedGameType === 'president'" class="president-options">
-          <div class="option-row">
-            <label>Players:</label>
-            <div class="player-count-selector">
-              <button
-                v-for="n in [4, 5, 6, 7, 8]"
-                :key="n"
-                :class="['count-btn', { active: lobbyStore.selectedMaxPlayers === n }]"
-                @click="lobbyStore.setMaxPlayers(n)"
-              >
-                {{ n }}
-              </button>
-            </div>
-          </div>
-          <div class="option-row">
-            <label>
-              <input
-                type="checkbox"
-                :checked="lobbyStore.selectedSuperTwosMode"
-                @change="lobbyStore.setSuperTwosMode(($event.target as HTMLInputElement).checked)"
-              >
-              Super 2s & Jokers
-            </label>
-          </div>
+        <div class="game-options-section">
+          <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" class="compact" />
+          <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" class="compact" />
+          <SpadesOptions v-else-if="lobbyStore.selectedGameType === 'spades'" class="compact" />
         </div>
 
         <div class="create-actions">
@@ -364,57 +343,48 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   }
 }
 
-.game-type-selector {
-  display: flex;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
-}
-
-.game-type-btn {
-  flex: 1;
-  padding: $spacing-sm $spacing-md;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  font-weight: 500;
-  transition: all var(--anim-fast);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  &.active {
-    background: white;
-    color: #1e4d2b;
-  }
-}
-
-.president-options {
-  margin-bottom: $spacing-md;
-  padding: $spacing-md;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-}
-
-.option-row {
+.game-type-row {
   display: flex;
   align-items: center;
   gap: $spacing-md;
-  margin-bottom: $spacing-sm;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
+  margin-bottom: $spacing-md;
 
   label {
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+}
 
-    input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
+.game-select {
+  flex: 1;
+  padding: $spacing-sm $spacing-md;
+  border-radius: 8px;
+  background: white;
+  color: #1e4d2b;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+
+  &:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+}
+
+.game-options-section {
+  margin-bottom: $spacing-md;
+  padding: $spacing-md;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  color: #333;
+
+  // Override compact game-options styles for dark modal
+  :deep(.game-options) {
+    .option-group {
+      h4 {
+        color: #1e4d2b;
+      }
     }
   }
 }

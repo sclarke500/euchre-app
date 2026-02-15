@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useGameStore } from './stores/gameStore'
 import { usePresidentGameStore } from './stores/presidentGameStore'
 import { useLobbyStore } from './stores/lobbyStore'
+import { useSettingsStore } from './stores/settingsStore'
 import { GamePhase } from '@euchre/shared'
 import UnifiedGameBoard from './components/legacy/UnifiedGameBoard.vue'
 import PresidentEngineBoard from './components/PresidentEngineBoard.vue'
@@ -17,6 +18,7 @@ import AppToast from './components/AppToast.vue'
 const gameStore = useGameStore()
 const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
+const settingsStore = useSettingsStore()
 
 // App view state
 type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'spadesSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox' | 'euchreLegacy'
@@ -193,7 +195,7 @@ function startSinglePlayer(game: GameType) {
   currentGame.value = game
   if (game === 'president') {
     currentView.value = 'presidentSinglePlayer'
-    presidentStore.startNewGame(4)
+    presidentStore.startNewGame(settingsStore.presidentPlayerCount)
   } else if (game === 'klondike') {
     currentView.value = 'klondikeSinglePlayer'
     // KlondikeGameBoard initializes the game in onMounted
