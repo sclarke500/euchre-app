@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useGameStore } from './stores/gameStore'
 import { usePresidentGameStore } from './stores/presidentGameStore'
 import { useLobbyStore } from './stores/lobbyStore'
@@ -36,9 +36,26 @@ if (initialView === 'euchreLegacy') {
 
 const phase = computed(() => gameStore.phase)
 
-// Show landscape blocker on game boards and lobby (all multiplayer flows)
+// Views that require landscape orientation
+const landscapeRequiredViews = ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'euchreLegacy', 'lobby']
+
+// Track landscape orientation
+const isLandscape = ref(true)
+
+function updateOrientation() {
+  isLandscape.value = window.innerWidth > window.innerHeight
+}
+
+// Show landscape blocker when in portrait on landscape-required views
 const showLandscapeBlocker = computed(() => {
-  return ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'euchreLegacy', 'lobby'].includes(currentView.value)
+  return landscapeRequiredViews.includes(currentView.value) && !isLandscape.value
+})
+
+// Delay rendering landscape-required views until actually in landscape
+// This prevents layout calculations with portrait dimensions
+const canRenderLandscapeView = computed(() => {
+  if (!landscapeRequiredViews.includes(currentView.value)) return true
+  return isLandscape.value
 })
 
 // PWA install prompt
@@ -60,6 +77,10 @@ if (typeof window !== 'undefined') {
 }
 
 onMounted(async () => {
+  // Track orientation for delayed view rendering
+  updateOrientation()
+  window.addEventListener('resize', updateOrientation)
+  
   // Check if running as installed PWA
   isStandalone.value = window.matchMedia('(display-mode: standalone)').matches
     || (window.navigator as any).standalone === true
@@ -133,6 +154,10 @@ onMounted(async () => {
   } else if (!isMobile) {
     console.log('PWA: Skipping install prompt on desktop')
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateOrientation)
 })
 
 // Watch for multiplayer game start
@@ -275,41 +300,41 @@ function backToMenu() {
       @enter-multiplayer="enterMultiplayer"
     />
 
-    <!-- Euchre Single Player Game (engine-based) -->
+    <!-- Euchre Single Player Game (engine-based) - delay until landscape -->
     <EuchreEngineBoard
-      v-else-if="currentView === 'euchreSinglePlayer'"
+      v-else-if="currentView === 'euchreSinglePlayer' && canRenderLandscapeView"
       mode="singleplayer"
       @leave-game="currentView = 'menu'"
     />
 
-    <!-- President Single Player Game (engine-based) -->
+    <!-- President Single Player Game (engine-based) - delay until landscape -->
     <PresidentEngineBoard
-      v-else-if="currentView === 'presidentSinglePlayer'"
+      v-else-if="currentView === 'presidentSinglePlayer' && canRenderLandscapeView"
       @leave-game="currentView = 'menu'"
     />
 
-    <!-- Klondike Single Player Game -->
+    <!-- Klondike Single Player Game (supports portrait, no delay needed) -->
     <KlondikeGameBoard
       v-else-if="currentView === 'klondikeSinglePlayer'"
       @leave-game="currentView = 'menu'"
     />
 
-    <!-- Spades Single Player Game -->
+    <!-- Spades Single Player Game - delay until landscape -->
     <SpadesGameBoard
-      v-else-if="currentView === 'spadesSinglePlayer'"
+      v-else-if="currentView === 'spadesSinglePlayer' && canRenderLandscapeView"
       mode="singleplayer"
       @leave-game="currentView = 'menu'"
     />
 
-    <!-- Multiplayer Lobby -->
+    <!-- Multiplayer Lobby - delay until landscape -->
     <Lobby
-      v-else-if="currentView === 'lobby'"
+      v-else-if="currentView === 'lobby' && canRenderLandscapeView"
       @back="backToMenu"
     />
 
-    <!-- Multiplayer Euchre Game -->
+    <!-- Multiplayer Euchre Game - delay until landscape -->
     <EuchreEngineBoard
-      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'euchre'"
+      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'euchre' && canRenderLandscapeView"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
     />
@@ -319,23 +344,23 @@ function backToMenu() {
       v-else-if="currentView === 'sandbox'"
     />
 
-    <!-- Legacy Euchre board (access via ?legacy) -->
+    <!-- Legacy Euchre board (access via ?legacy) - delay until landscape -->
     <UnifiedGameBoard
-      v-else-if="currentView === 'euchreLegacy'"
+      v-else-if="currentView === 'euchreLegacy' && canRenderLandscapeView"
       mode="singleplayer"
       @leave-game="currentView = 'menu'"
     />
 
-    <!-- Multiplayer President Game -->
+    <!-- Multiplayer President Game - delay until landscape -->
     <PresidentEngineBoard
-      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'president'"
+      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'president' && canRenderLandscapeView"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
     />
 
-    <!-- Multiplayer Spades Game -->
+    <!-- Multiplayer Spades Game - delay until landscape -->
     <SpadesGameBoard
-      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'spades'"
+      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'spades' && canRenderLandscapeView"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
     />
@@ -350,9 +375,9 @@ function backToMenu() {
   background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
 }
 
-// Portrait orientation overlay - only shows on mobile portrait
+// Portrait orientation overlay - controlled via v-if="showLandscapeBlocker"
 .rotate-device-overlay {
-  display: none;
+  display: flex;
   position: fixed;
   top: 0;
   left: 0;
@@ -362,11 +387,6 @@ function backToMenu() {
   z-index: 9999;
   align-items: center;
   justify-content: center;
-
-  // Only show on mobile devices in portrait mode
-  @media (max-width: 768px) and (orientation: portrait) {
-    display: flex;
-  }
 }
 
 .rotate-content {
