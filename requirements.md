@@ -1,5 +1,16 @@
 # Euchre Card Game Requirements
 
+> Status: Historical (initial single-game MVP requirements)
+>
+> This document reflects early project scope and is preserved for context.
+> It is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `README.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 ## Project Overview
 Develop a digital Euchre card game with an initial MVP supporting single-player mode against AI opponents. The architecture must be modular to facilitate future integration of multiplayer functionality via Node.js, Express, and Socket.IO.
 

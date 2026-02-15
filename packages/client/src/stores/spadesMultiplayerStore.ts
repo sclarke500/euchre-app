@@ -10,6 +10,10 @@ import type {
 import { SpadesPhase } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
 import { updateIfChanged } from './utils'
+import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from './multiplayerDebug'
+import { createMultiplayerQueueController } from './multiplayerQueue'
+import { createMultiplayerResyncWatchdog } from './multiplayerResync'
+import { getExpectedStateSeq, handleCommonMultiplayerError, isSyncRequiredError, updateLastStateSeq } from './multiplayerSync'
 
 export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => {
   const gameState = ref<SpadesClientGameState | null>(null)
@@ -20,8 +24,19 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
 
   const lastStateSeq = ref(0)
 
-  const messageQueue: ServerMessage[] = []
-  let queueMode = false
+  const queueController = createMultiplayerQueueController<ServerMessage>(applyMessage)
+  const resyncWatchdog = createMultiplayerResyncWatchdog({
+    isGameActive: () => gameState.value !== null,
+    isWaitingForUs: () => isMyTurn.value,
+    onStaleState: ({ staleThresholdMs, timeSinceLastUpdate, isWaitingForUs }) => {
+      logMultiplayerEvent('spades-mp', 'stale_state_resync', getDebugSnapshot(), {
+        staleThresholdMs,
+        timeSinceLastUpdate,
+        isWaitingForUs,
+      })
+      requestStateResync()
+    },
+  })
 
   const phase = computed(() => gameState.value?.phase ?? SpadesPhase.Setup)
   const players = computed<SpadesClientPlayer[]>(() => gameState.value?.players ?? [])
@@ -48,20 +63,36 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     return human.hand.filter(c => legal.has(c.id))
   })
 
-  function getExpectedStateSeq(): number {
-    const stateSeqFromSnapshot = gameState.value?.stateSeq ?? 0
-    return Math.max(stateSeqFromSnapshot, lastStateSeq.value)
+  function getDebugSnapshot() {
+    return buildMultiplayerDebugSnapshot({
+      store: 'spades-mp',
+      phase: String(phase.value),
+      stateSeq: lastStateSeq.value,
+      currentPlayer: gameState.value?.currentPlayer ?? null,
+      myPlayerId: humanPlayer.value?.id ?? null,
+      isMyTurn: isMyTurn.value,
+      queueMode: queueController.isEnabled(),
+      queueLength: queueController.length(),
+      validActionsCount: validActions.value.length,
+      validCardsCount: validCards.value.length,
+      gameLost: gameLost.value,
+      timedOutPlayer: gameState.value?.timedOutPlayer ?? null,
+    })
   }
 
   function handleMessage(message: ServerMessage): void {
-    if (queueMode) {
+    if (queueController.isEnabled()) {
       if (message.type === 'spades_game_state') {
-        lastStateSeq.value = message.state.stateSeq
+        updateLastStateSeq(lastStateSeq, message.state.stateSeq)
+        resyncWatchdog.markStateReceived()
       }
-      if (message.type === 'error' && message.code === 'sync_required') {
+      if (isSyncRequiredError(message)) {
         requestStateResync()
       }
-      messageQueue.push(message)
+      queueController.enqueue(message)
+      logMultiplayerEvent('spades-mp', 'queue_message', getDebugSnapshot(), {
+        messageType: message.type,
+      })
       return
     }
 
@@ -72,7 +103,8 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     switch (message.type) {
       case 'spades_game_state':
         gameState.value = message.state
-        lastStateSeq.value = message.state.stateSeq
+        updateLastStateSeq(lastStateSeq, message.state.stateSeq)
+        resyncWatchdog.markStateReceived()
         // Only clear turn state if it's definitely not our turn
         // Use updateIfChanged to avoid flickering from redundant updates
         if (humanPlayer.value && message.state.currentPlayer !== humanPlayer.value.id) {
@@ -82,19 +114,24 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
             updateIfChanged(validCards, [])
           }
         }
+        logMultiplayerEvent('spades-mp', 'apply_game_state', getDebugSnapshot())
         break
       case 'spades_your_turn':
         isMyTurn.value = true
         updateIfChanged(validActions, message.validActions)
         updateIfChanged(validCards, message.validCards ?? [])
+        logMultiplayerEvent('spades-mp', 'apply_your_turn', getDebugSnapshot(), {
+          validActions: message.validActions,
+          validCardsCount: message.validCards?.length ?? 0,
+        })
         break
       case 'error':
-        if (message.code === 'game_lost') {
-          gameLost.value = true
+        logMultiplayerEvent('spades-mp', 'apply_error', getDebugSnapshot(), {
+          code: message.code ?? null,
+          message: message.message,
+        })
+        if (handleCommonMultiplayerError(message, gameLost, requestStateResync).gameLost) {
           return
-        }
-        if (message.code === 'sync_required') {
-          requestStateResync()
         }
         break
     }
@@ -103,7 +140,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   function makeBid(bid: { type: SpadesBidType; count: number }): void {
     if (!isHumanBidding.value) return
 
-    const expectedStateSeq = getExpectedStateSeq()
+    const expectedStateSeq = getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq)
 
     websocket.send({
       type: 'spades_make_bid',
@@ -120,7 +157,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   function playCard(card: StandardCard): void {
     if (!isHumanPlaying.value) return
 
-    const expectedStateSeq = getExpectedStateSeq()
+    const expectedStateSeq = getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq)
 
     websocket.send({
       type: 'play_card',
@@ -138,26 +175,24 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   }
 
   function requestStateResync(): void {
+    logMultiplayerEvent('spades-mp', 'request_state_resync', getDebugSnapshot())
     websocket.send({ type: 'request_state' })
   }
 
   function enableQueueMode(): void {
-    queueMode = true
+    queueController.enable()
   }
 
   function disableQueueMode(): void {
-    queueMode = false
-    while (messageQueue.length > 0) {
-      applyMessage(messageQueue.shift()!)
-    }
+    queueController.disable()
   }
 
   function dequeueMessage(): ServerMessage | null {
-    return messageQueue.shift() ?? null
+    return queueController.dequeue()
   }
 
   function getQueueLength(): number {
-    return messageQueue.length
+    return queueController.length()
   }
 
   function setPlayAnimationCallback(): void {
@@ -177,6 +212,8 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   function initialize(): void {
     if (unsubscribe) return
     unsubscribe = websocket.onMessage(handleMessage)
+    resyncWatchdog.start()
+    logMultiplayerEvent('spades-mp', 'initialize', getDebugSnapshot())
     requestStateResync()
   }
 
@@ -185,14 +222,16 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
       unsubscribe()
       unsubscribe = null
     }
+    resyncWatchdog.stop()
+    resyncWatchdog.reset()
     gameState.value = null
     isMyTurn.value = false
     validActions.value = []
     validCards.value = []
     gameLost.value = false
     lastStateSeq.value = 0
-    messageQueue.length = 0
-    queueMode = false
+    queueController.clear()
+    logMultiplayerEvent('spades-mp', 'cleanup', getDebugSnapshot())
   }
 
   function startNewGame(): void {
@@ -228,6 +267,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     validCards,
     validPlays,
     gameLost,
+    getDebugSnapshot,
 
     makeBid,
     playCard,

@@ -164,7 +164,26 @@
             {{ getBidDisplay(store.humanPlayer.bid) }}
           </span>
         </div>
+        <TurnTimer
+          v-if="mode === 'multiplayer'"
+          ref="turnTimerRef"
+          :active="store.isHumanTurn"
+          :grace-period-ms="timerSettings.gracePeriodMs"
+          :countdown-ms="timerSettings.countdownMs"
+          @timeout="handleTurnTimeout"
+        />
       </div>
+
+      <template v-if="mode === 'multiplayer' && timedOutPlayerName">
+        <div class="panel-message warning">{{ timedOutPlayerName }} timed out</div>
+        <button
+          v-if="store.timedOutPlayer !== null && store.timedOutPlayer !== store.humanPlayer?.id"
+          class="action-btn"
+          @click="store.bootPlayer?.(store.timedOutPlayer)"
+        >
+          Boot Player
+        </button>
+      </template>
 
       <!-- Bidding phase -->
       <template v-if="store.isHumanBidding">
@@ -198,15 +217,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { SpadesPhase, SpadesBidType, Spades, type SpadesBid, type StandardCard } from '@euchre/shared'
+import { computed, proxyRefs, ref } from 'vue'
+import { type SpadesBid } from '@euchre/shared'
 import CardTable from '../CardTable.vue'
-import Modal from '../Modal.vue'
 import GameHUD from '../GameHUD.vue'
+import TurnTimer from '../TurnTimer.vue'
 import { useCardTable } from '@/composables/useCardTable'
-import { useCardController, cardControllerPresets } from '@/composables/useCardController'
-import { useSpadesStore } from '@/stores/spadesStore'
-import { useSpadesMultiplayerStore } from '@/stores/spadesMultiplayerStore'
+import { useSpadesGameAdapter } from '@/composables/useSpadesGameAdapter'
+import { useSpadesDirector } from '@/composables/useSpadesDirector'
+import { useSpadesBoardUi } from '@/composables/useSpadesBoardUi'
 
 const props = withDefaults(defineProps<{
   mode?: 'singleplayer' | 'multiplayer'
@@ -218,164 +237,44 @@ const emit = defineEmits<{
   'leave-game': []
 }>()
 
-const singleStore = useSpadesStore()
-const multiplayerStore = useSpadesMultiplayerStore()
-const store = (props.mode === 'multiplayer' ? multiplayerStore : singleStore) as any
+const adapter = useSpadesGameAdapter(props.mode)
+const store = proxyRefs(adapter)
 const engine = useCardTable()
 const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
+const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 const showLeaveConfirm = ref(false)
-const selectedBid = ref(3)
 const boardRef = ref<HTMLElement | null>(null)
 
-// Seat rotation: User is always seat 0 (bottom), rotate others relative to user
-function playerIdToSeatIndex(playerId: number): number {
-  const myId = store.humanPlayer?.id ?? 0
-  return (playerId - myId + 4) % 4
-}
-
-function seatIndexToPlayerId(seatIndex: number): number {
-  const myId = store.humanPlayer?.id ?? 0
-  return (seatIndex + myId) % 4
-}
-
-function getPlayerAtSeat(seatIndex: number) {
-  const playerId = seatIndexToPlayerId(seatIndex)
-  return store.players.find((p: { id: number }) => p.id === playerId)
-}
-
-const cardController = useCardController(engine, boardRef, {
-  layout: 'normal',
-  playerCount: 4,
-  userSeatIndex: 0, // User is always at bottom (seat 0)
-  playerIdToSeatIndex,
-  userHandScale: 1.6,
-  opponentHandScale: 0.7,
-  userFanSpacing: 30,
-  opponentFanSpacing: 16,
-  userFanCurve: 0,
-  playMoveMs: 350,
-  ...cardControllerPresets.spades,
-})
-const showRoundSummary = ref(false)
-const opponentsHidden = ref(false)
-const animatedTrickCardIds = ref<Set<string>>(new Set())
-const completedTricksAnimated = ref(0)
-const processingMultiplayerAnimations = ref(false)
-const pendingMultiplayerAnimationPass = ref(false)
-const roundSummary = ref({
-  usBid: 0,
-  themBid: 0,
-  usTricks: 0,
-  themTricks: 0,
-  usBags: 0,
-  themBags: 0,
-  usBasePoints: 0,
-  themBasePoints: 0,
-  usNilBonus: 0,
-  themNilBonus: 0,
-  usNilPenalty: 0,
-  themNilPenalty: 0,
-  usBagPenalty: 0,
-  themBagPenalty: 0,
-  usTotal: 0,
-  themTotal: 0,
+const {
+  cardController,
+  getPlayerAtSeat,
+  playerNames,
+  playerStatuses,
+  dealerSeat,
+  currentTurnSeat,
+  dimmedCardIds,
+} = useSpadesDirector(adapter, engine, {
+  mode: props.mode,
+  tableRef,
+  boardRef,
+  onGameLost: () => emit('leave-game'),
 })
 
-// Player names - rotated so user is always seat 0
-const playerNames = computed(() => {
-  const names: string[] = []
-  for (let seat = 0; seat < 4; seat++) {
-    const playerId = seatIndexToPlayerId(seat)
-    const player = store.players.find((p: { id: number }) => p.id === playerId)
-    names.push(player?.name ?? `Player ${playerId}`)
-  }
-  return names
-})
-
-// Player statuses for display
-const playerStatuses = computed(() => {
-  return [0, 1, 2, 3].map(() => '')
-})
-
-// Dealer seat - rotated
-const dealerSeat = computed(() => {
-  return playerIdToSeatIndex(store.dealer)
-})
-
-// Current turn seat - rotated
-const currentTurnSeat = computed(() => {
-  if (store.phase === SpadesPhase.Bidding || store.phase === SpadesPhase.Playing) {
-    return playerIdToSeatIndex(store.currentPlayer)
-  }
-  return -1
-})
-
-// Dimmed card IDs (cards that can't be legally played)
-const dimmedCardIds = computed(() => {
-  if (!store.isHumanPlaying) return new Set<string>()
-  
-  const human = store.humanPlayer as { hand: Array<{ id: string }> } | undefined
-  if (!human) return new Set<string>()
-  
-  const validIds = new Set<string>(store.validPlays.map((c: { id: string }) => c.id))
-  return new Set<string>(human.hand.filter((c: { id: string }) => !validIds.has(c.id)).map((c: { id: string }) => c.id))
-})
-
-// Scores
-const scores = computed(() => store.scores)
-
-// Bags accumulated this hand (overtricks)
-const handBags = computed(() => {
-  const result = [0, 0]
-  
-  // Get team bids and tricks
-  for (let teamId = 0; teamId < 2; teamId++) {
-    let teamBid = 0
-    let teamTricks = 0
-    
-    for (const player of store.players) {
-      if (player.teamId !== teamId) continue
-      
-      // Only count normal bids (nil bids don't contribute to team bid)
-      if (player.bid?.type === 'normal') {
-        teamBid += player.bid.count
-      }
-      teamTricks += player.tricksWon ?? 0
-    }
-    
-    // Overtricks = tricks - bid (only if positive)
-    const overtricks = Math.max(0, teamTricks - teamBid)
-    result[teamId] = overtricks
-  }
-  
-  return result
-})
-
-// User info
-const userName = computed(() => store.humanPlayer?.name ?? 'You')
-
-const currentPlayerName = computed(() => {
-  return store.players[store.currentPlayer]?.name ?? ''
-})
-
-const suitOrder: Record<string, number> = { spades: 0, hearts: 1, clubs: 2, diamonds: 3 }
-const rankOrder: Record<string, number> = {
-  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-  'J': 11, 'Q': 12, 'K': 13, 'A': 14,
-}
-
-// Winner text
-const winnerText = computed(() => {
-  if (store.winner === null) return ''
-  const myTeam = store.humanPlayer?.teamId ?? 0
-  return store.winner === myTeam ? 'You Win!' : 'You Lose'
-})
-
-// Get bid display text
-function getBidDisplay(bid: SpadesBid): string {
-  return Spades.getBidDisplayText(bid)
-}
+const {
+  showRoundSummary,
+  roundSummary,
+  selectedBid,
+  scores,
+  handBags,
+  userName,
+  currentPlayerName,
+  winnerText,
+  getBidDisplay,
+  handleBid,
+  handleNilBid,
+  dismissRoundSummary,
+} = useSpadesBoardUi(adapter, props.mode)
 
 // Handle card click
 function handleCardClick(cardId: string) {
@@ -393,15 +292,6 @@ function handleCardClick(cardId: string) {
   store.playCard(card)
 }
 
-// Bidding actions
-function handleBid() {
-  store.makeBid({ type: SpadesBidType.Normal, count: selectedBid.value })
-}
-
-function handleNilBid() {
-  store.makeBid({ type: SpadesBidType.Nil, count: 0 })
-}
-
 // Leave game
 function handleLeaveClick() {
   showLeaveConfirm.value = true
@@ -411,6 +301,27 @@ function confirmLeave() {
   showLeaveConfirm.value = false
   emit('leave-game')
 }
+
+function handleTurnTimeout() {
+  if (props.mode === 'multiplayer') {
+    console.warn('[TurnTimer] Timeout reached — leaving game')
+    emit('leave-game')
+  }
+}
+
+const timerSettings = computed(() => {
+  const params = new URLSearchParams(window.location.search)
+  const speed = params.get('timerSpeed')
+  if (speed === 'fast') {
+    return { gracePeriodMs: 2000, countdownMs: 3000 }
+  }
+  return { gracePeriodMs: 30000, countdownMs: 30000 }
+})
+
+const timedOutPlayerName = computed(() => {
+  if (store.timedOutPlayer === null || store.timedOutPlayer === undefined) return null
+  return store.players.find((player: { id: number; name: string }) => player.id === store.timedOutPlayer)?.name ?? null
+})
 
 // ── Bug Report ──────────────────────────────────────────────────────────
 function buildBugReportPayload() {
@@ -428,6 +339,7 @@ function buildBugReportPayload() {
       tricksWon: p.tricksWon,
       handSize: p.hand?.length ?? p.handSize ?? 0,
     })),
+    timedOutPlayer: store.timedOutPlayer ?? null,
     currentTrick: store.currentTrick,
     completedTricksCount: store.completedTricks?.length ?? 0,
   }
@@ -436,248 +348,8 @@ function buildBugReportPayload() {
 // Play again
 function handlePlayAgain() {
   store.startNewGame()
-  initializeBoard()
 }
 
-// Dismiss round summary and start next round
-function dismissRoundSummary() {
-  showRoundSummary.value = false
-  store.startNextRound()
-}
-
-function buildDealPlayers() {
-  // Return array indexed by SEAT (0=user, 1=left, 2=top, 3=right)
-  const result: { hand?: StandardCard[]; handSize?: number }[] = []
-  for (let seat = 0; seat < 4; seat++) {
-    const playerId = seatIndexToPlayerId(seat)
-    const player = store.players.find((p: { id: number }) => p.id === playerId)
-    result.push({
-      hand: player?.hand,
-      handSize: player?.handSize ?? player?.hand?.length ?? 0,
-    })
-  }
-  return result
-}
-
-async function animateCompletedTricksDelta() {
-  while (completedTricksAnimated.value < store.completedTricks.length) {
-    const trick = store.completedTricks[completedTricksAnimated.value]
-    if (!trick) {
-      completedTricksAnimated.value++
-      continue
-    }
-
-    const trickCards = trick.cards ?? []
-    for (let i = 0; i < trickCards.length; i++) {
-      const played = trickCards[i]
-      if (!played || animatedTrickCardIds.value.has(played.card.id)) continue
-      await cardController.playCard(played.card, played.playerId, i)
-      animatedTrickCardIds.value.add(played.card.id)
-    }
-
-    await cardController.completeTrick(trick.winnerId ?? 0)
-    completedTricksAnimated.value++
-  }
-}
-
-async function animateCurrentTrickDelta() {
-  const cards = store.currentTrick.cards ?? []
-  for (let i = 0; i < cards.length; i++) {
-    const played = cards[i]
-    if (!played || animatedTrickCardIds.value.has(played.card.id)) continue
-    await cardController.playCard(played.card, played.playerId, i)
-    animatedTrickCardIds.value.add(played.card.id)
-  }
-}
-
-async function processMultiplayerAnimationPass() {
-  if (props.mode !== 'multiplayer') return
-
-  if (processingMultiplayerAnimations.value) {
-    pendingMultiplayerAnimationPass.value = true
-    return
-  }
-
-  processingMultiplayerAnimations.value = true
-  try {
-    do {
-      pendingMultiplayerAnimationPass.value = false
-      await animateCompletedTricksDelta()
-      await animateCurrentTrickDelta()
-    } while (pendingMultiplayerAnimationPass.value)
-  } finally {
-    processingMultiplayerAnimations.value = false
-  }
-}
-
-// Initialize card engine with hands
-async function initializeBoard() {
-  await nextTick()
-
-  // Get board reference from CardTable
-  if (tableRef.value) {
-    boardRef.value = tableRef.value.boardRef
-  }
-
-  cardController.setupTable(store.dealer)
-}
-
-// Watch for game state changes and update cards
-watch(() => store.phase, async (newPhase) => {
-  if (newPhase === SpadesPhase.Dealing) {
-    if (props.mode === 'multiplayer') {
-      store.enableQueueMode()
-    }
-
-    await initializeBoard()
-
-    opponentsHidden.value = false
-    animatedTrickCardIds.value = new Set<string>()
-    completedTricksAnimated.value = 0
-
-    await cardController.dealFromPlayers(buildDealPlayers(), {
-      revealUserHand: false,
-      focusUserHand: true,
-      dealDelayMs: 50,
-      dealFlightMs: 200,
-      fanDurationMs: 450,
-      dealerSeatIndex: store.dealer,
-      sortAfterDeal: false,
-      sortUserHand: (cards) => {
-        const sorted = [...cards]
-        sorted.sort((a, b) => {
-          const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99)
-          if (suitDiff !== 0) return suitDiff
-          // High cards on left (descending)
-          return (rankOrder[b.rank] ?? 0) - (rankOrder[a.rank] ?? 0)
-        })
-        return sorted
-      },
-    })
-
-    await cardController.revealUserHand(350)
-    await cardController.sortUserHand((cards) => {
-      const sorted = [...cards]
-      sorted.sort((a, b) => {
-        const suitDiff = (suitOrder[a.suit] ?? 99) - (suitOrder[b.suit] ?? 99)
-        if (suitDiff !== 0) return suitDiff
-        // High cards on left (descending)
-        return (rankOrder[b.rank] ?? 0) - (rankOrder[a.rank] ?? 0)
-      })
-      return sorted
-    }, 300)
-
-    if (props.mode === 'multiplayer') {
-      store.disableQueueMode()
-    }
-
-    store.dealAnimationComplete()
-  }
-  
-  // Show round summary modal when round completes
-  if (newPhase === SpadesPhase.RoundComplete) {
-    await new Promise(r => setTimeout(r, 800))
-    // Calculate round scores
-    const usScore = Spades.calculateRoundScore(store.players, 0, store.scores[0]?.bags ?? 0)
-    const themScore = Spades.calculateRoundScore(store.players, 1, store.scores[1]?.bags ?? 0)
-    
-    // Calculate bags (overtricks) for this hand
-    const usBags = Math.max(0, usScore.tricksWon - usScore.baseBid)
-    const themBags = Math.max(0, themScore.tricksWon - themScore.baseBid)
-    
-    roundSummary.value = {
-      usBid: usScore.baseBid,
-      themBid: themScore.baseBid,
-      usTricks: usScore.tricksWon,
-      themTricks: themScore.tricksWon,
-      usBags,
-      themBags,
-      usBasePoints: usScore.tricksWon >= usScore.baseBid ? usScore.baseBid * 10 : -usScore.baseBid * 10,
-      themBasePoints: themScore.tricksWon >= themScore.baseBid ? themScore.baseBid * 10 : -themScore.baseBid * 10,
-      usNilBonus: usScore.nilBonus,
-      themNilBonus: themScore.nilBonus,
-      usNilPenalty: usScore.nilPenalty,
-      themNilPenalty: themScore.nilPenalty,
-      usBagPenalty: Math.abs(usScore.bagsPenalty),
-      themBagPenalty: Math.abs(themScore.bagsPenalty),
-      usTotal: usScore.roundPoints,
-      themTotal: themScore.roundPoints,
-    }
-    
-    showRoundSummary.value = true
-  }
-
-  if (props.mode === 'multiplayer' && newPhase !== SpadesPhase.RoundComplete) {
-    showRoundSummary.value = false
-  }
-}, { immediate: true })
-
-watch(
-  () => [store.currentTrick.cards.length, store.completedTricks.length, store.phase],
-  async () => {
-    if (props.mode !== 'multiplayer') return
-    if (store.phase === SpadesPhase.Setup || store.phase === SpadesPhase.Dealing) return
-    await processMultiplayerAnimationPass()
-  },
-  { immediate: true }
-)
-
-watch(
-  () => [store.phase, store.bidsComplete, store.currentTrick.cards.length],
-  async ([phase, bidsComplete, trickCount]) => {
-    if (phase === SpadesPhase.Playing && bidsComplete && trickCount === 0 && !opponentsHidden.value) {
-      await cardController.hideOpponentHands()
-      opponentsHidden.value = true
-    }
-  }
-)
-
-// Watch for game_lost signal from server — bail out to menu
-watch(() => store.gameLost, (lost) => {
-  if (lost) {
-    console.warn('[SpadesBoard] Game lost — returning to menu')
-    emit('leave-game')
-  }
-})
-
-// Reset bid selector to default (3) when bidding phase starts
-watch(() => store.phase, (newPhase) => {
-  if (newPhase === SpadesPhase.Bidding) {
-    selectedBid.value = 3
-  }
-})
-
-onMounted(async () => {
-  await nextTick()
-  // Ensure CardTable has mounted and boardRef is available
-  if (tableRef.value) {
-    boardRef.value = tableRef.value.boardRef
-  }
-
-  cardController.setupTable(store.dealer)
-
-  store.setPlayAnimationCallback(async ({ card, playerId }: { card: StandardCard; playerId: number }) => {
-    const cardIndex = Math.max(0, store.currentTrick.cards.length - 1)
-    await cardController.playCard(card, playerId, cardIndex)
-  })
-
-  store.setTrickCompleteCallback(async (winnerId: number) => {
-    await cardController.completeTrick(winnerId)
-  })
-
-  if (props.mode === 'multiplayer') {
-    store.initialize()
-  } else {
-    store.startNewGame()
-  }
-})
-
-onUnmounted(() => {
-  if (props.mode === 'multiplayer') {
-    store.cleanup()
-  }
-  engine.reset()
-})
 </script>
 
 <style scoped lang="scss">
@@ -923,6 +595,11 @@ onUnmounted(() => {
     color: #aaa;
     font-size: 0.9rem;
     margin-bottom: 8px;
+
+    &.warning {
+      color: #f39c12;
+      font-weight: 600;
+    }
   }
 }
 

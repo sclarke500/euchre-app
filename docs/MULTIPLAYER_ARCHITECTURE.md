@@ -1,5 +1,15 @@
 # Multiplayer Game Architecture
 
+> Status: Reference architecture guide
+>
+> This document is kept as a detailed implementation reference. Some examples reflect patterns from earlier phases.
+> It is a reference artifact and not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 A guide to implementing multiplayer card games based on our experience with Euchre, Spades, and President.
 
 ## Overview

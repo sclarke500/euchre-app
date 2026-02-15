@@ -1,5 +1,15 @@
 # Euchre Frontend MVP - Implementation Plan
 
+> Status: Historical (legacy MVP planning doc)
+>
+> This checklist predates the current multi-game monorepo architecture and multiplayer alignment work.
+> It is preserved for context and is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 ## Phase 1: Project Setup & Core Architecture
 
 ### 1.1 Project Configuration

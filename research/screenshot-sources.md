@@ -1,5 +1,14 @@
 # Screenshot Sources - Card Game Table Layouts
 
+> Status: Research helper reference
+>
+> This document is preserved for research context and is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 Open these links to view actual gameplay screenshots. Save ones you like to the `screenshots/` folder, then add them to the ranker tool.
 
 ## How to Use

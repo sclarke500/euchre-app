@@ -1,5 +1,14 @@
 # Card Game App Research
 
+> Status: Research notes (working artifact)
+>
+> This document is preserved for research context and is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 Last updated: 2026-02-04
 
 ## Apps to Study

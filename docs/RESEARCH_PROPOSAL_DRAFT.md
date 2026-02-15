@@ -1,6 +1,18 @@
 # Card Game UX/UI Competitor Research Proposal
 ## Draft for Review
 
+> Status: Research planning draft (historical)
+>
+> This document is preserved for research context and is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+>
+> Related research artifact:
+> - `docs/RESEARCH_PROPOSAL_v2.md`
+
 ### Context
 We're building 67cardgames.com - a PWA-based multiplayer card game platform starting with Euchre, President, and Klondike solitaire. Before investing heavily in UI polish, we want to understand what works (and doesn't) in the competitive landscape.
 

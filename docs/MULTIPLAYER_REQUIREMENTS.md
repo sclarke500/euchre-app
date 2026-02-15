@@ -1,5 +1,15 @@
 # Multiplayer Requirements
 
+> Status: Historical requirements draft
+>
+> This document captures pre-implementation requirements and assumptions.
+> It is preserved for context and is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 ## Overview
 
 Add multiplayer support to the Euchre app, allowing players to join public games with other human players. The existing single-player mode (1 human + 3 AIs) remains available.

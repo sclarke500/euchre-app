@@ -11,6 +11,10 @@ import type {
 import { PresidentPhase } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
 import { updateIfChanged } from './utils'
+import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from './multiplayerDebug'
+import { createMultiplayerQueueController } from './multiplayerQueue'
+import { createMultiplayerResyncWatchdog } from './multiplayerResync'
+import { getExpectedStateSeq, handleCommonMultiplayerError, isSyncRequiredError, updateLastStateSeq } from './multiplayerSync'
 
 export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', () => {
   // State from server
@@ -41,14 +45,23 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
   // Sync tracking
   const lastStateSeq = ref<number>(0)
-  let syncCheckInterval: ReturnType<typeof setInterval> | null = null
-  let lastStateReceivedAt = 0
 
   // Message queue — when enabled, messages are buffered instead of applied
   // immediately. The director's processing loop dequeues and applies them
   // one at a time, with animation pauses between each.
-  const messageQueue: ServerMessage[] = []
-  let queueMode = false
+  const queueController = createMultiplayerQueueController<ServerMessage>(applyMessage)
+  const resyncWatchdog = createMultiplayerResyncWatchdog({
+    isGameActive: () => gameState.value !== null,
+    isWaitingForUs: () => isMyTurn.value || isAwaitingGiveCards.value,
+    onStaleState: ({ staleThresholdMs, timeSinceLastUpdate, isWaitingForUs }) => {
+      logMultiplayerEvent('president-mp', 'stale_state_resync', getDebugSnapshot(), {
+        staleThresholdMs,
+        timeSinceLastUpdate,
+        isWaitingForUs,
+      })
+      requestStateResync()
+    },
+  })
 
   // Computed getters for easy access
   const phase = computed(() => gameState.value?.phase ?? PresidentPhase.Setup)
@@ -73,25 +86,45 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   const myRank = computed(() => myPlayer.value?.rank ?? null)
   const myFinishOrder = computed(() => myPlayer.value?.finishOrder ?? null)
 
+  function getDebugSnapshot() {
+    return buildMultiplayerDebugSnapshot({
+      store: 'president-mp',
+      phase: String(phase.value),
+      stateSeq: lastStateSeq.value,
+      currentPlayer: gameState.value?.currentPlayer ?? null,
+      myPlayerId: myPlayerId.value >= 0 ? myPlayerId.value : null,
+      isMyTurn: isMyTurn.value,
+      queueMode: queueController.isEnabled(),
+      queueLength: queueController.length(),
+      validActionsCount: validActions.value.length,
+      validPlaysCount: validPlays.value.length,
+      gameLost: gameLost.value,
+      timedOutPlayer: gameState.value?.timedOutPlayer ?? null,
+    })
+  }
+
   // Active players (not yet finished)
   const activePlayers = computed(() => players.value.filter(p => p.finishOrder === null))
 
   // WebSocket message entry point — buffers in queue mode, applies directly otherwise
   function handleMessage(message: ServerMessage): void {
-    if (queueMode) {
+    if (queueController.isEnabled()) {
       // Keep state sequence tracking up to date even while buffering.
       // Otherwise, outgoing actions can include a stale expectedStateSeq and be rejected.
       if (message.type === 'president_game_state') {
-        lastStateSeq.value = message.state.stateSeq
-        lastStateReceivedAt = Date.now()
+        updateLastStateSeq(lastStateSeq, message.state.stateSeq)
+        resyncWatchdog.markStateReceived()
       }
 
       // If server tells us we're out of sync, request resync immediately.
-      if (message.type === 'error' && message.code === 'sync_required') {
+      if (isSyncRequiredError(message)) {
         requestStateResync()
       }
 
-      messageQueue.push(message)
+      queueController.enqueue(message)
+      logMultiplayerEvent('president-mp', 'queue_message', getDebugSnapshot(), {
+        messageType: message.type,
+      })
     } else {
       applyMessage(message)
     }
@@ -103,31 +136,23 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   function applyMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'president_game_state':
-        const myPlayerInState = message.state.players.find(p => p.hand !== undefined)
-        console.log('[DEBUG] president_game_state received:', {
-          phase: message.state.phase,
-          seq: message.state.stateSeq,
-          currentPlayer: message.state.currentPlayer,
-          myPlayerId: myPlayerInState?.id,
-          myHand: myPlayerInState?.hand?.map(c => c.id),
-        })
         updateIfChanged(isMyTurn, false)
         updateIfChanged(validActions, [])
         updateIfChanged(validPlays, [])
         gameState.value = message.state
-        lastStateSeq.value = message.state.stateSeq
-        lastStateReceivedAt = Date.now()
+        updateLastStateSeq(lastStateSeq, message.state.stateSeq)
+        resyncWatchdog.markStateReceived()
+        logMultiplayerEvent('president-mp', 'apply_game_state', getDebugSnapshot())
         break
 
       case 'president_your_turn':
-        console.log('[DEBUG] president_your_turn received:', {
-          validActions: message.validActions,
-          validPlays: message.validPlays,
-          myHand: myHand.value.map(c => c.id),
-        })
         updateIfChanged(isMyTurn, true)
         updateIfChanged(validActions, message.validActions)
         updateIfChanged(validPlays, message.validPlays)
+        logMultiplayerEvent('president-mp', 'apply_your_turn', getDebugSnapshot(), {
+          validActions: message.validActions,
+          validPlaysCount: message.validPlays.length,
+        })
         break
 
       case 'president_play_made':
@@ -210,13 +235,14 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
       case 'error':
         console.error('[MP] Server error:', message.message)
-        if (message.code === 'game_lost') {
+        logMultiplayerEvent('president-mp', 'apply_error', getDebugSnapshot(), {
+          code: message.code ?? null,
+          message: message.message,
+        })
+        const commonError = handleCommonMultiplayerError(message, gameLost, requestStateResync)
+        if (commonError.gameLost) {
           console.warn('[MP] Game lost - returning to menu')
-          gameLost.value = true
           return
-        }
-        if (message.code === 'sync_required') {
-          requestStateResync()
         }
         break
     }
@@ -239,7 +265,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     websocket.send({
       type: 'president_play_cards',
       cardIds,
-      expectedStateSeq: lastStateSeq.value,
+      expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
     isMyTurn.value = false
@@ -253,7 +279,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
     websocket.send({
       type: 'president_pass',
-      expectedStateSeq: lastStateSeq.value,
+      expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
     isMyTurn.value = false
@@ -273,7 +299,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     websocket.send({
       type: 'president_give_cards',
       cardIds,
-      expectedStateSeq: lastStateSeq.value,
+      expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
     // Clear state - server will send exchange_info after processing
@@ -288,30 +314,26 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   }
 
   function requestStateResync(): void {
-    console.log('Requesting President state resync from server')
+    logMultiplayerEvent('president-mp', 'request_state_resync', getDebugSnapshot())
     websocket.send({
       type: 'request_state',
     })
   }
 
   function enableQueueMode(): void {
-    queueMode = true
+    queueController.enable()
   }
 
   function disableQueueMode(): void {
-    queueMode = false
-    // Flush remaining messages directly
-    while (messageQueue.length > 0) {
-      applyMessage(messageQueue.shift()!)
-    }
+    queueController.disable()
   }
 
   function dequeueMessage(): ServerMessage | null {
-    return messageQueue.shift() ?? null
+    return queueController.dequeue() ?? null
   }
 
   function getQueueLength(): number {
-    return messageQueue.length
+    return queueController.length()
   }
 
   // Initialize - set up WebSocket listener
@@ -320,24 +342,9 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   function initialize(): void {
     if (unsubscribe) return
     unsubscribe = websocket.onMessage(handleMessage)
-
-    // Set up periodic sync check
-    syncCheckInterval = setInterval(() => {
-      // Always check for stale state when in a game
-      if (!gameState.value) return
-
-      const timeSinceLastUpdate = Date.now() - lastStateReceivedAt
-      
-      // More aggressive resync when it's our turn (10s), otherwise still check but less frequently (30s)
-      const isWaitingForUs = isMyTurn.value || isAwaitingGiveCards.value
-      const staleThreshold = isWaitingForUs ? 10000 : 30000
-      
-      if (timeSinceLastUpdate > staleThreshold) {
-        console.log(`No state update for ${staleThreshold/1000}s - requesting resync`)
-        requestStateResync()
-        lastStateReceivedAt = Date.now()
-      }
-    }, 5000)
+    resyncWatchdog.start()
+    logMultiplayerEvent('president-mp', 'initialize', getDebugSnapshot())
+    requestStateResync()
   }
 
   function cleanup(): void {
@@ -345,10 +352,8 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
       unsubscribe()
       unsubscribe = null
     }
-    if (syncCheckInterval) {
-      clearInterval(syncCheckInterval)
-      syncCheckInterval = null
-    }
+    resyncWatchdog.stop()
+    resyncWatchdog.reset()
     gameState.value = null
     isMyTurn.value = false
     validActions.value = []
@@ -359,10 +364,9 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     receivedCardsForGiveBack.value = []
     giveBackRole.value = ''
     lastStateSeq.value = 0
-    lastStateReceivedAt = 0
-    messageQueue.length = 0
+    queueController.clear()
     gameLost.value = false
-    queueMode = false
+    logMultiplayerEvent('president-mp', 'cleanup', getDebugSnapshot())
   }
 
   return {
@@ -401,6 +405,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     myRank,
     myFinishOrder,
     activePlayers,
+    getDebugSnapshot,
 
     // Actions
     playCards,

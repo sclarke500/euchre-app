@@ -20,9 +20,9 @@ import {
   games,
   presidentGames,
   spadesGames,
-  gameHosts,
-  gameTypes,
   getCurrentStateSeq,
+  getRuntime,
+  findRuntimeByPlayer,
 } from './sessions/registry.js'
 
 const PORT = parseInt(process.env.PORT || '3001', 10)
@@ -86,6 +86,14 @@ function broadcastToGame(gameId: string, message: ServerMessage): void {
   }
 }
 
+function logOrchestrationEvent(event: string, details: Record<string, unknown>): void {
+  console.info('[MP][orchestration]', {
+    ts: Date.now(),
+    event,
+    ...details,
+  })
+}
+
 const lobbyHandlers = createLobbyHandlers({
   clients,
   tables,
@@ -134,36 +142,14 @@ function tryRecoverGameId(client: ConnectedClient): boolean {
 
   const odusId = client.player.odusId
 
-  // Check Euchre games
-  for (const [gameId, game] of games) {
-    const playerInfo = game.getPlayerInfo(odusId)
-    if (playerInfo) {
-      console.log(`[Recovery] Restored gameId for ${client.player.nickname} -> Euchre game ${gameId}`)
-      client.gameId = gameId
-      return true
-    }
+  const runtimeEntry = findRuntimeByPlayer(odusId)
+  if (runtimeEntry) {
+    client.gameId = runtimeEntry.gameId
+    console.log(
+      `[Recovery] Restored gameId for ${client.player.nickname} -> ${runtimeEntry.entry.type} game ${runtimeEntry.gameId}`
+    )
+    return true
   }
-
-  // Check President games
-  for (const [gameId, game] of presidentGames) {
-    const playerInfo = game.getPlayerInfo(odusId)
-    if (playerInfo) {
-      console.log(`[Recovery] Restored gameId for ${client.player.nickname} -> President game ${gameId}`)
-      client.gameId = gameId
-      return true
-    }
-  }
-
-  // Check Spades games
-  for (const [gameId, game] of spadesGames) {
-    const playerInfo = game.getPlayerInfo(odusId)
-    if (playerInfo) {
-      console.log(`[Recovery] Restored gameId for ${client.player.nickname} -> Spades game ${gameId}`)
-      client.gameId = gameId
-      return true
-    }
-  }
-
   return false
 }
 
@@ -237,7 +223,14 @@ function handlePlayCard(ws: WebSocket, client: ConnectedClient, cardId: string):
     return
   }
 
-  const gameType = gameTypes.get(client.gameId)
+  const runtimeEntry = getRuntime(client.gameId)
+  if (!runtimeEntry) {
+    send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
+    client.gameId = null
+    return
+  }
+
+  const gameType = runtimeEntry.type
   let success = false
 
   if (gameType === 'spades') {
@@ -303,7 +296,14 @@ function handleBootPlayer(ws: WebSocket, client: ConnectedClient, playerId: numb
     return
   }
 
-  const gameType = gameTypes.get(client.gameId)
+  const runtimeEntry = getRuntime(client.gameId)
+  if (!runtimeEntry) {
+    send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
+    client.gameId = null
+    return
+  }
+
+  const gameType = runtimeEntry.type
   let success = false
 
   if (gameType === 'president') {
@@ -423,61 +423,47 @@ function replacePlayerWithAI(client: ConnectedClient, trackForReconnect: boolean
 
   const odusId = client.player.odusId
   const gameId = client.gameId
-  const gameType = gameTypes.get(gameId) || 'euchre'
+  const runtimeEntry = getRuntime(gameId)
+  const gameType = runtimeEntry?.type || 'euchre'
 
-  if (gameType === 'president') {
-    const game = presidentGames.get(gameId)
-    if (!game) return
-    const idx = game.findPlayerIndexByOdusId(odusId)
+  logOrchestrationEvent('replace_player_with_ai_start', {
+    gameId,
+    gameType,
+    trackForReconnect,
+    playerId: client.player.odusId,
+    playerName: client.player.nickname,
+  })
+
+  if (runtimeEntry) {
+    const idx = runtimeEntry.runtime.findPlayerIndexByOdusId(odusId)
     if (idx >= 0) {
       // Track for reconnection before replacing
       if (trackForReconnect) {
         disconnectedPlayers.set(odusId, {
           gameId,
           seatIndex: idx,
-          gameType: 'president',
+          gameType,
           disconnectTime: Date.now(),
         })
-        console.log(`Tracking ${client.player.nickname} for reconnection (President, seat ${idx})`)
+        console.log(`Tracking ${client.player.nickname} for reconnection (${gameType}, seat ${idx})`)
       }
-      game.replaceWithAI(idx)
+      runtimeEntry.runtime.replaceWithAI(idx)
     }
-  } else if (gameType === 'spades') {
-    const game = spadesGames.get(gameId)
-    if (!game) return
-    const idx = game.findPlayerIndexByOdusId(odusId)
-    if (idx >= 0) {
-      if (trackForReconnect) {
-        disconnectedPlayers.set(odusId, {
-          gameId,
-          seatIndex: idx,
-          gameType: 'spades',
-          disconnectTime: Date.now(),
-        })
-        console.log(`Tracking ${client.player.nickname} for reconnection (Spades, seat ${idx})`)
-      }
-      game.replaceWithAI(idx)
-    }
+    client.gameId = null
   } else {
-    const game = games.get(gameId)
-    if (!game) return
-    const idx = game.findPlayerIndexByOdusId(odusId)
-    if (idx >= 0) {
-      // Track for reconnection before replacing
-      if (trackForReconnect) {
-        disconnectedPlayers.set(odusId, {
-          gameId,
-          seatIndex: idx,
-          gameType: 'euchre',
-          disconnectTime: Date.now(),
-        })
-        console.log(`Tracking ${client.player.nickname} for reconnection (Euchre, seat ${idx})`)
-      }
-      game.replaceWithAI(idx)
-    }
+    logOrchestrationEvent('replace_player_with_ai_missing_runtime', {
+      gameId,
+      playerId: client.player.odusId,
+    })
+    return
   }
 
-  client.gameId = null
+  logOrchestrationEvent('replace_player_with_ai_done', {
+    gameId,
+    gameType,
+    trackForReconnect,
+    playerId: client.player.odusId,
+  })
 }
 
 function handleLeaveGame(ws: WebSocket, client: ConnectedClient): void {
@@ -486,14 +472,34 @@ function handleLeaveGame(ws: WebSocket, client: ConnectedClient): void {
 }
 
 function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMessage): void {
+  logOrchestrationEvent('client_message_received', {
+    messageType: message.type,
+    gameId: client.gameId,
+    gameType: client.gameId ? getRuntime(client.gameId)?.type ?? null : null,
+    playerId: client.player?.odusId ?? null,
+    clientSeq: message.clientSeq ?? null,
+    expectedStateSeq: message.expectedStateSeq ?? null,
+  })
+
   if (isDuplicateCommand(client, message.commandId)) {
     console.warn('Ignoring duplicate command', message.type, message.commandId)
+    logOrchestrationEvent('client_message_duplicate', {
+      messageType: message.type,
+      commandId: message.commandId ?? null,
+      playerId: client.player?.odusId ?? null,
+    })
     return
   }
 
   if (typeof message.clientSeq === 'number') {
     if (client.lastClientSeq !== undefined && message.clientSeq <= client.lastClientSeq) {
       console.warn('Ignoring duplicate/out-of-order client message', message.type, message.clientSeq)
+      logOrchestrationEvent('client_message_out_of_order', {
+        messageType: message.type,
+        messageClientSeq: message.clientSeq,
+        lastClientSeq: client.lastClientSeq,
+        playerId: client.player?.odusId ?? null,
+      })
       return
     }
     client.lastClientSeq = message.clientSeq
@@ -502,6 +508,13 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
   if (typeof message.expectedStateSeq === 'number' && client.gameId) {
     const currentSeq = getCurrentStateSeq(client.gameId)
     if (currentSeq !== null && message.expectedStateSeq !== currentSeq) {
+      logOrchestrationEvent('client_message_seq_mismatch', {
+        messageType: message.type,
+        gameId: client.gameId,
+        expectedStateSeq: message.expectedStateSeq,
+        currentStateSeq: currentSeq,
+        playerId: client.player?.odusId ?? null,
+      })
       send(ws, { type: 'error', message: 'State out of date. Resyncing.', code: 'sync_required' })
       sessionHandlers.handleRequestState(ws, client)
       return
@@ -510,6 +523,11 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
 
   const routeGameCommand = (action: () => void) => {
     if (client.gameId) {
+      logOrchestrationEvent('queue_game_command', {
+        gameId: client.gameId,
+        gameType: getRuntime(client.gameId)?.type ?? null,
+        messageType: message.type,
+      })
       enqueueGameCommand(client.gameId, action)
     } else {
       action()

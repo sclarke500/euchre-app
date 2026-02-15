@@ -1,42 +1,66 @@
 # euchre-app
 
-This template should help get you started developing with Vue 3 in Vite.
+Monorepo card game platform featuring Euchre, President, Spades, and Klondike with a Vue client and Node WebSocket server.
 
-## Recommended IDE Setup
+## Documentation
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Start here for current documentation map and statuses:
 
-## Recommended Browser Setup
+- `docs/DOCUMENTATION_INDEX.md`
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+Canonical multiplayer planning/execution docs:
 
-## Type Support for `.vue` Imports in TS
+- `docs/ROADMAP.md`
+- `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## Monorepo Structure
 
-## Customize configuration
+```
+packages/
+├── client/   # Vue 3 + Vite frontend (@euchre/client)
+├── server/   # WebSocket game server (@euchre/server)
+└── shared/   # Shared rules/types/utilities (@euchre/shared)
+e2e/          # Playwright end-to-end tests
+docs/         # Planning, architecture, and research docs
+```
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Prerequisites
 
-## Project Setup
+- Node.js `^20.19.0 || >=22.12.0`
+- npm
+
+## Setup
 
 ```sh
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+## Common Commands
 
 ```sh
+# Client dev server (http://localhost:4200)
 npm run dev
+
+# Server (http://localhost:3001)
+npm run start:server
+
+# Build in dependency order
+npm run build:shared
+npm run build:server
+npm run build:client
 ```
 
-### Type-Check, Compile and Minify for Production
+## E2E Quickstart
 
 ```sh
-npm run build
+# Terminal 1
+npm run start:server
+
+# Terminal 2
+npm run dev
+
+# Terminal 3
+cd e2e && npm run test:phase0
 ```
+
+`test:phase0` includes preflight checks for client/server availability to fail fast when local services are not running.

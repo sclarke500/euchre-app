@@ -1,6 +1,15 @@
 # Card Game UX/UI Competitor Research Proposal v2
 ## Updated based on Grok + ChatGPT feedback
 
+> Status: Research planning artifact
+>
+> This document is preserved for research context and is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 ### Context
 We're building 67cardgames.com - a PWA-based multiplayer card game platform starting with Euchre, President, and Klondike solitaire. Before investing heavily in UI polish, we want to understand what works (and doesn't) in the competitive landscape.
 

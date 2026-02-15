@@ -6,7 +6,12 @@ This file provides context for Claude Code when working on this project.
 
 ## Project Overview
 
-A card game application featuring Euchre (multiplayer), Klondike solitaire, and President. Built as a monorepo with Vue 3 frontend and Node.js WebSocket server.
+A card game platform featuring Euchre, President, Spades, and Klondike. Built as a monorepo with a Vue 3 frontend and Node.js WebSocket server.
+
+Canonical status/planning docs:
+- `docs/DOCUMENTATION_INDEX.md`
+- `docs/ROADMAP.md`
+- `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
 
 ## Project Structure
 
@@ -57,6 +62,9 @@ const isMyTurn = computed(() => game.isMyTurn.value)
 - `lobbyStore.ts` - Multiplayer lobby/table management
 - `klondikeStore.ts` - Klondike solitaire
 - `presidentGameStore.ts` - President card game
+- `presidentMultiplayerStore.ts` - Multiplayer President via WebSocket
+- `spadesStore.ts` - Singleplayer Spades game state
+- `spadesMultiplayerStore.ts` - Multiplayer Spades via WebSocket
 
 ### WebSocket Messages
 Message types defined in `packages/shared/src/multiplayer.ts`:

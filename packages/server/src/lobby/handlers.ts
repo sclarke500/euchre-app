@@ -10,6 +10,7 @@ import type { Game } from '../Game.js'
 import type { PresidentGame } from '../PresidentGame.js'
 import type { SpadesGame } from '../SpadesGame.js'
 import type { ConnectedClient } from '../ws/types.js'
+import { findRuntimeByPlayer, getRuntime } from '../sessions/registry.js'
 
 export interface LobbyHandlers {
   handleJoinLobby: (ws: WebSocket, client: ConnectedClient, nickname: string, odusId?: string) => void
@@ -52,9 +53,6 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
   const {
     clients,
     tables,
-    games,
-    presidentGames,
-    spadesGames,
     disconnectedPlayers,
     generateId,
     send,
@@ -86,39 +84,16 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     if (disconnectedInfo) {
       const elapsed = Date.now() - disconnectedInfo.disconnectTime
       if (elapsed <= RECONNECT_GRACE_PERIOD_MS) {
-        // Try to restore their seat
-        if (disconnectedInfo.gameType === 'president') {
-          const game = presidentGames.get(disconnectedInfo.gameId)
-          if (game) {
-            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
-            if (restored) {
-              client.gameId = disconnectedInfo.gameId
-              console.log(`Player ${nickname} restored to President game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
-              reconnectedToGame = true
-              game.resendStateToPlayer(playerId)
-            }
-          }
-        } else if (disconnectedInfo.gameType === 'spades') {
-          const game = spadesGames.get(disconnectedInfo.gameId)
-          if (game) {
-            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
-            if (restored) {
-              client.gameId = disconnectedInfo.gameId
-              console.log(`Player ${nickname} restored to Spades game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
-              reconnectedToGame = true
-              game.resendStateToPlayer(playerId)
-            }
-          }
-        } else {
-          const game = games.get(disconnectedInfo.gameId)
-          if (game) {
-            const restored = game.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
-            if (restored) {
-              client.gameId = disconnectedInfo.gameId
-              console.log(`Player ${nickname} restored to Euchre game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`)
-              reconnectedToGame = true
-              game.resendStateToPlayer(playerId)
-            }
+        const runtimeEntry = getRuntime(disconnectedInfo.gameId)
+        if (runtimeEntry) {
+          const restored = runtimeEntry.runtime.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
+          if (restored) {
+            client.gameId = disconnectedInfo.gameId
+            console.log(
+              `Player ${nickname} restored to ${runtimeEntry.type} game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`
+            )
+            reconnectedToGame = true
+            runtimeEntry.runtime.resendStateToPlayer(playerId)
           }
         }
       }
@@ -128,45 +103,12 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     
     // Also check if they're still in a game with their odusId intact (didn't disconnect long enough to be replaced)
     if (!reconnectedToGame) {
-      for (const [gameId, game] of presidentGames) {
-        const playerInfo = game.getPlayerInfo(playerId)
-        if (playerInfo) {
-          // Found their game - restore the connection
-          client.gameId = gameId
-          console.log(`Player ${nickname} reconnected to President game ${gameId}`)
-          reconnectedToGame = true
-
-          // Immediately send them the current game state
-          game.resendStateToPlayer(playerId)
-          break
-        }
-      }
-    }
-
-    // Also check regular games
-    if (!reconnectedToGame) {
-      for (const [gameId, game] of spadesGames) {
-        const playerInfo = game.getPlayerInfo(playerId)
-        if (playerInfo) {
-          client.gameId = gameId
-          console.log(`Player ${nickname} reconnected to Spades game ${gameId}`)
-          reconnectedToGame = true
-          game.resendStateToPlayer(playerId)
-          break
-        }
-      }
-    }
-
-    if (!reconnectedToGame) {
-      for (const [gameId, game] of games) {
-        const playerInfo = game.getPlayerInfo(playerId)
-        if (playerInfo) {
-          client.gameId = gameId
-          console.log(`Player ${nickname} reconnected to Euchre game ${gameId}`)
-          reconnectedToGame = true
-          game.resendStateToPlayer(playerId)
-          break
-        }
+      const runtimeMatch = findRuntimeByPlayer(playerId)
+      if (runtimeMatch) {
+        client.gameId = runtimeMatch.gameId
+        console.log(`Player ${nickname} reconnected to ${runtimeMatch.entry.type} game ${runtimeMatch.gameId}`)
+        reconnectedToGame = true
+        runtimeMatch.entry.runtime.resendStateToPlayer(playerId)
       }
     }
 

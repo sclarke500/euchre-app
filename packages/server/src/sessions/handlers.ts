@@ -23,9 +23,9 @@ import {
   games,
   presidentGames,
   spadesGames,
-  gameHosts,
-  gameTypes,
-  gameSettings,
+  getRuntime,
+  registerRuntime,
+  unregisterRuntime,
 } from './registry.js'
 
 export interface SessionHandlers {
@@ -55,6 +55,14 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     broadcastToGame,
   } = deps
 
+  function logSessionEvent(event: string, details: Record<string, unknown>): void {
+    console.info('[MP][session]', {
+      ts: Date.now(),
+      event,
+      ...details,
+    })
+  }
+
   function handleStartGame(ws: WebSocket, client: ConnectedClient): void {
     if (!client.player || !client.tableId) {
       send(ws, { type: 'error', message: 'Not at a table' })
@@ -76,6 +84,15 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     const tableId = client.tableId
     const gameType = table.gameType || 'euchre'
 
+    logSessionEvent('start_game_requested', {
+      tableId,
+      gameId,
+      gameType,
+      hostId: client.player.odusId,
+      hostName: client.player.nickname,
+      seatCount: table.seats.length,
+    })
+
     // Collect human players from the table
     const humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }> = []
     for (const seat of table.seats) {
@@ -88,10 +105,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       }
     }
 
-    // Track game type
-    gameTypes.set(gameId, gameType)
-    gameHosts.set(gameId, table.hostId)
-    gameSettings.set(gameId, table.settings)
+    // Track runtime + metadata
 
     if (gameType === 'president') {
       // Create President game
@@ -197,6 +211,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       presidentGame.initializePlayers(humanPlayers)
       presidentGames.set(gameId, presidentGame)
+      registerRuntime(gameId, {
+        type: gameType,
+        runtime: presidentGame,
+        hostId: table.hostId,
+        settings: table.settings,
+      })
 
       // Update all clients at table to be in game
       for (const [, c] of clients) {
@@ -220,6 +240,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       // Start the game
       presidentGame.start()
+      logSessionEvent('start_game_completed', {
+        gameId,
+        tableId,
+        gameType,
+        playerCount: humanPlayers.length,
+      })
       return
     }
 
@@ -278,6 +304,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       spadesGame.initializePlayers(humanPlayers)
       spadesGames.set(gameId, spadesGame)
+      registerRuntime(gameId, {
+        type: gameType,
+        runtime: spadesGame,
+        hostId: table.hostId,
+        settings: table.settings,
+      })
 
       for (const [, c] of clients) {
         if (c.tableId === tableId) {
@@ -297,6 +329,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       broadcast({ type: 'table_removed', tableId })
 
       spadesGame.start()
+      logSessionEvent('start_game_completed', {
+        gameId,
+        tableId,
+        gameType,
+        playerCount: humanPlayers.length,
+      })
       return
     }
 
@@ -381,6 +419,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     game.initializePlayers(humanPlayers)
     games.set(gameId, game)
+    registerRuntime(gameId, {
+      type: gameType,
+      runtime: game,
+      hostId: table.hostId,
+      settings: table.settings,
+    })
 
     // Update all clients at table to be in game
     for (const [, c] of clients) {
@@ -404,6 +448,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     // Start the game
     game.start()
+    logSessionEvent('start_game_completed', {
+      gameId,
+      tableId,
+      gameType,
+      playerCount: humanPlayers.length,
+    })
   }
 
   function handleRequestState(ws: WebSocket, client: ConnectedClient): void {
@@ -413,36 +463,29 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       return
     }
 
-    const gameType = gameTypes.get(client.gameId)
-
-    if (gameType === 'president') {
-      const presidentGame = presidentGames.get(client.gameId)
-      if (!presidentGame) {
-        // Game was destroyed (server restart?) - tell client to bail
-        send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
-        client.gameId = null  // Clear stale reference
-        return
-      }
-      presidentGame.resendStateToPlayer(client.player.odusId)
-    } else if (gameType === 'spades') {
-      const spadesGame = spadesGames.get(client.gameId)
-      if (!spadesGame) {
-        send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
-        client.gameId = null
-        return
-      }
-      spadesGame.resendStateToPlayer(client.player.odusId)
-    } else {
-      const game = games.get(client.gameId)
-      if (!game) {
-        send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
-        client.gameId = null
-        return
-      }
-      game.resendStateToPlayer(client.player.odusId)
+    const runtimeEntry = getRuntime(client.gameId)
+    if (!runtimeEntry) {
+      send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
+      client.gameId = null
+      return
     }
 
+    const gameType = runtimeEntry.type
+    logSessionEvent('request_state_received', {
+      gameId: client.gameId,
+      gameType: gameType ?? 'euchre',
+      playerId: client.player.odusId,
+      playerName: client.player.nickname,
+    })
+
+    runtimeEntry.runtime.resendStateToPlayer(client.player.odusId)
+
     console.log(`Resent state to ${client.player.nickname} (requested resync)`) 
+    logSessionEvent('request_state_completed', {
+      gameId: client.gameId,
+      gameType: gameType ?? 'euchre',
+      playerId: client.player.odusId,
+    })
   }
 
   function handleRestartGame(ws: WebSocket, client: ConnectedClient): void {
@@ -452,14 +495,23 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     }
 
     const oldGameId = client.gameId
-    const hostId = gameHosts.get(oldGameId)
-    const gameType = gameTypes.get(oldGameId) || 'euchre'
-    const previousSettings = gameSettings.get(oldGameId)
-
-    if (!hostId) {
-      send(ws, { type: 'error', message: 'Game host not found' })
+    const runtimeEntry = getRuntime(oldGameId)
+    if (!runtimeEntry) {
+      send(ws, { type: 'error', message: 'Game not found', code: 'game_lost' })
+      client.gameId = null
       return
     }
+
+    const hostId = runtimeEntry.hostId
+    const gameType = runtimeEntry.type
+    const previousSettings = runtimeEntry.settings
+
+    logSessionEvent('restart_game_requested', {
+      oldGameId,
+      gameType,
+      requesterId: client.player.odusId,
+      requesterName: client.player.nickname,
+    })
 
     // Only host can restart
     if (client.player.odusId !== hostId) {
@@ -467,12 +519,13 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       return
     }
 
-    // Get old game to find player info
-    const oldEuchreGame = games.get(oldGameId)
-    const oldPresidentGame = presidentGames.get(oldGameId)
-    const oldSpadesGame = spadesGames.get(oldGameId)
+    // Get old runtime to find player info
+    const oldRuntime = runtimeEntry?.runtime
+    const oldEuchreGame = oldRuntime ? null : games.get(oldGameId)
+    const oldPresidentGame = oldRuntime ? null : presidentGames.get(oldGameId)
+    const oldSpadesGame = oldRuntime ? null : spadesGames.get(oldGameId)
 
-    if (!oldEuchreGame && !oldPresidentGame && !oldSpadesGame) {
+    if (!oldRuntime && !oldEuchreGame && !oldPresidentGame && !oldSpadesGame) {
       send(ws, { type: 'error', message: 'Game not found' })
       return
     }
@@ -482,7 +535,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     for (const [, c] of clients) {
       if (c.gameId === oldGameId && c.player) {
         // Find their seat index from the old game
-        const playerInfo = oldEuchreGame?.getPlayerInfo(c.player.odusId) ||
+        const playerInfo = oldRuntime?.getPlayerInfo(c.player.odusId) ||
+               oldEuchreGame?.getPlayerInfo(c.player.odusId) ||
                            oldPresidentGame?.getPlayerInfo(c.player.odusId) ||
                            oldSpadesGame?.getPlayerInfo(c.player.odusId)
         if (playerInfo) {
@@ -500,9 +554,6 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     // Create new game
     const newGameId = generateId()
-    gameTypes.set(newGameId, gameType)
-    gameHosts.set(newGameId, hostId)
-    gameSettings.set(newGameId, previousSettings)
 
     if (gameType === 'president') {
       // Create new President game
@@ -606,6 +657,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       newPresidentGame.initializePlayers(humanPlayers)
       presidentGames.set(newGameId, newPresidentGame)
+      registerRuntime(newGameId, {
+        type: gameType,
+        runtime: newPresidentGame,
+        hostId,
+        settings: previousSettings,
+      })
 
       // Update all clients to the new game
       for (const [, c] of clients) {
@@ -616,9 +673,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       // Clean up old game
       presidentGames.delete(oldGameId)
-      gameHosts.delete(oldGameId)
-      gameTypes.delete(oldGameId)
-      gameSettings.delete(oldGameId)
+      unregisterRuntime(oldGameId)
 
       console.log(`President game restarted: ${oldGameId} -> ${newGameId}`)
 
@@ -630,6 +685,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       // Start the new game
       newPresidentGame.start()
+      logSessionEvent('restart_game_completed', {
+        oldGameId,
+        newGameId,
+        gameType,
+        playerCount: humanPlayers.length,
+      })
       return
     }
 
@@ -678,6 +739,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       newSpadesGame.initializePlayers(humanPlayers)
       spadesGames.set(newGameId, newSpadesGame)
+      registerRuntime(newGameId, {
+        type: gameType,
+        runtime: newSpadesGame,
+        hostId,
+        settings: previousSettings,
+      })
 
       for (const [, c] of clients) {
         if (c.gameId === oldGameId) {
@@ -686,9 +753,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       }
 
       spadesGames.delete(oldGameId)
-      gameHosts.delete(oldGameId)
-      gameTypes.delete(oldGameId)
-      gameSettings.delete(oldGameId)
+      unregisterRuntime(oldGameId)
 
       console.log(`Spades game restarted: ${oldGameId} -> ${newGameId}`)
 
@@ -698,6 +763,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       })
 
       newSpadesGame.start()
+      logSessionEvent('restart_game_completed', {
+        oldGameId,
+        newGameId,
+        gameType,
+        playerCount: humanPlayers.length,
+      })
       return
     }
 
@@ -782,6 +853,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     newGame.initializePlayers(humanPlayers)
     games.set(newGameId, newGame)
+    registerRuntime(newGameId, {
+      type: gameType,
+      runtime: newGame,
+      hostId,
+      settings: previousSettings,
+    })
 
     // Update all clients to the new game
     for (const [, c] of clients) {
@@ -792,9 +869,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     // Clean up old game
     games.delete(oldGameId)
-    gameHosts.delete(oldGameId)
-    gameTypes.delete(oldGameId)
-    gameSettings.delete(oldGameId)
+    unregisterRuntime(oldGameId)
 
     console.log(`Euchre game restarted: ${oldGameId} -> ${newGameId}`)
 
@@ -806,6 +881,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     // Start the new game
     newGame.start()
+    logSessionEvent('restart_game_completed', {
+      oldGameId,
+      newGameId,
+      gameType,
+      playerCount: humanPlayers.length,
+    })
   }
 
   return {

@@ -1,5 +1,15 @@
 # Code Review: 67 Card Games
 
+> Status: Historical snapshot (2026-02-03)
+>
+> This is a point-in-time review. Some findings are now resolved by subsequent roadmap phases.
+> It is preserved for context and is not a canonical implementation status source.
+>
+> Canonical docs:
+> - `docs/DOCUMENTATION_INDEX.md`
+> - `docs/ROADMAP.md`
+> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
+
 **Date:** 2026-02-03  
 **Reviewer:** Ringo  
 

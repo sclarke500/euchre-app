@@ -15,6 +15,10 @@ import { websocket } from '@/services/websocket'
 import { useToast } from '@/composables/useToast'
 import { sendBugReport } from '@/services/autoBugReport'
 import { updateIfChanged } from './utils'
+import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from './multiplayerDebug'
+import { createMultiplayerQueueController } from './multiplayerQueue'
+import { createMultiplayerResyncWatchdog } from './multiplayerResync'
+import { getExpectedStateSeq, handleCommonMultiplayerError, isSyncRequiredError, updateLastStateSeq } from './multiplayerSync'
 
 export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   // State from server
@@ -73,27 +77,34 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   // immediately. The director's processing loop dequeues and applies them
   // one at a time, with animation pauses between each.
 
-  const messageQueue: ServerMessage[] = []
-  let queueMode = false
+  const queueController = createMultiplayerQueueController<ServerMessage>(applyMessage)
+  const resyncWatchdog = createMultiplayerResyncWatchdog({
+    isGameActive: () => gameState.value !== null,
+    isWaitingForUs: () => isMyTurn.value,
+    onStaleState: ({ staleThresholdMs, timeSinceLastUpdate, isWaitingForUs }) => {
+      logMultiplayerEvent('euchre-mp', 'stale_state_resync', getDebugSnapshot(), {
+        staleThresholdMs,
+        timeSinceLastUpdate,
+        isWaitingForUs,
+      })
+      requestStateResync()
+    },
+  })
 
   function enableQueueMode(): void {
-    queueMode = true
+    queueController.enable()
   }
 
   function disableQueueMode(): void {
-    queueMode = false
-    // Flush remaining messages directly
-    while (messageQueue.length > 0) {
-      applyMessage(messageQueue.shift()!)
-    }
+    queueController.disable()
   }
 
   function dequeueMessage(): ServerMessage | null {
-    return messageQueue.shift() ?? null
+    return queueController.dequeue()
   }
 
   function getQueueLength(): number {
-    return messageQueue.length
+    return queueController.length()
   }
 
   // Computed getters for easy access
@@ -123,26 +134,47 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   const myHand = computed(() => myPlayer.value?.hand ?? [])
   const myTeamId = computed(() => myPlayer.value?.teamId ?? 0)
 
+  function getDebugSnapshot() {
+    return buildMultiplayerDebugSnapshot({
+      store: 'euchre-mp',
+      phase: String(phase.value),
+      stateSeq: lastStateSeq.value,
+      currentPlayer: gameState.value?.currentPlayer ?? null,
+      myPlayerId: myPlayerId.value >= 0 ? myPlayerId.value : null,
+      isMyTurn: isMyTurn.value,
+      queueMode: queueController.isEnabled(),
+      queueLength: queueController.length(),
+      validActionsCount: validActions.value.length,
+      validCardsCount: validCards.value.length,
+      gameLost: gameLost.value,
+      timedOutPlayer: gameState.value?.timedOutPlayer ?? null,
+    })
+  }
+
   // WebSocket message entry point — buffers in queue mode, applies directly otherwise
   function handleMessage(message: ServerMessage): void {
-    if (queueMode) {
+    if (queueController.isEnabled()) {
       // Keep state sequence tracking up to date even while buffering messages.
       // Otherwise, outgoing actions can include a stale expectedStateSeq and be rejected,
       // which looks like a "hang" after the user acts.
       if (message.type === 'game_state') {
-        lastStateSeq.value = message.state.stateSeq
+        updateLastStateSeq(lastStateSeq, message.state.stateSeq)
+        resyncWatchdog.markStateReceived()
       }
 
       // If the server tells us we're out of sync, request a resync immediately.
       // (The error message itself is still queued so UI can show it if needed.)
-      if (message.type === 'error' && message.code === 'sync_required') {
+      if (isSyncRequiredError(message)) {
         requestStateResync()
       }
 
       // All messages queued — even turn_reminder. Bypassing the queue would
       // set isMyTurn=true before earlier messages (like AI bids) are processed,
       // causing premature "your turn" UI while the queue is still catching up.
-      messageQueue.push(message)
+      queueController.enqueue(message)
+      logMultiplayerEvent('euchre-mp', 'queue_message', getDebugSnapshot(), {
+        messageType: message.type,
+      })
     } else {
       applyMessage(message)
     }
@@ -159,7 +191,8 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
           lastTrickWinnerId.value = null
         }
         gameState.value = message.state
-        lastStateSeq.value = message.state.stateSeq
+        updateLastStateSeq(lastStateSeq, message.state.stateSeq)
+        resyncWatchdog.markStateReceived()
         pushStateSummary(message.state)
 
         // Fallback: if a `your_turn` message was missed (can happen during view transitions),
@@ -217,6 +250,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
           validActions.value = []
           validCards.value = []
         }
+        logMultiplayerEvent('euchre-mp', 'apply_game_state', getDebugSnapshot())
         break
 
       case 'your_turn':
@@ -229,15 +263,23 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
         updateIfChanged(isMyTurn, true)
         updateIfChanged(validActions, message.validActions)
         updateIfChanged(validCards, message.validCards ?? [])
+        logMultiplayerEvent('euchre-mp', 'apply_your_turn', getDebugSnapshot(), {
+          validActions: message.validActions,
+          validCardsCount: message.validCards?.length ?? 0,
+        })
         break
 
       case 'error':
         console.error('[MP] Server error:', message.message)
+        logMultiplayerEvent('euchre-mp', 'apply_error', getDebugSnapshot(), {
+          code: message.code ?? null,
+          message: message.message,
+        })
 
-        // Game is unrecoverable - tell UI to bail out
-        if (message.code === 'game_lost') {
+        const commonError = handleCommonMultiplayerError(message, gameLost, requestStateResync)
+
+        if (commonError.gameLost) {
           console.warn('[MP] Game lost - returning to menu')
-          gameLost.value = true
           return
         }
 
@@ -270,7 +312,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
               },
               multiplayer: {
                 stateSeq: lastStateSeq.value,
-                queueLength: messageQueue.length,
+                queueLength: queueController.length(),
                 timedOutPlayer: gameState.value?.timedOutPlayer ?? null,
                 recentStateSummaries: recentStateSummaries.value.slice(-5), // Last 5 only
               },
@@ -284,9 +326,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
           }
         }
 
-        if (message.code === 'sync_required') {
-          requestStateResync()
-        } else {
+        if (!commonError.syncRequired) {
           // If the server rejected an action but state indicates it's still our turn,
           // restore local turn state so the UI doesn't get stuck.
           const state = gameState.value
@@ -419,7 +459,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
       action,
       suit,
       goingAlone,
-      expectedStateSeq: lastStateSeq.value,
+      expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
     isMyTurn.value = false
@@ -441,7 +481,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     websocket.send({
       type: 'play_card',
       cardId,
-      expectedStateSeq: lastStateSeq.value,
+      expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
     isMyTurn.value = false
@@ -461,7 +501,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
     websocket.send({
       type: 'discard_card',
       cardId,
-      expectedStateSeq: lastStateSeq.value,
+      expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
     isMyTurn.value = false
@@ -477,6 +517,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   }
 
   function requestStateResync(): void {
+    logMultiplayerEvent('euchre-mp', 'request_state_resync', getDebugSnapshot())
     websocket.send({
       type: 'request_state',
     })
@@ -488,6 +529,9 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
   function initialize(): void {
     if (unsubscribe) return
     unsubscribe = websocket.onMessage(handleMessage)
+    resyncWatchdog.start()
+    logMultiplayerEvent('euchre-mp', 'initialize', getDebugSnapshot())
+    requestStateResync()
   }
 
   function cleanup(): void {
@@ -495,14 +539,16 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
       unsubscribe()
       unsubscribe = null
     }
-    messageQueue.length = 0
-    queueMode = false
+    resyncWatchdog.stop()
+    resyncWatchdog.reset()
+    queueController.clear()
     gameState.value = null
     isMyTurn.value = false
     validActions.value = []
     validCards.value = []
     lastStateSeq.value = 0
     gameLost.value = false
+    logMultiplayerEvent('euchre-mp', 'cleanup', getDebugSnapshot())
   }
 
   return {
@@ -549,6 +595,7 @@ export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
 
     // Debug
     recentStateSummaries,
+    getDebugSnapshot,
 
     // Queue control (for director)
     enableQueueMode,
