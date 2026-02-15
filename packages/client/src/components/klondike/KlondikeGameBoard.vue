@@ -51,14 +51,14 @@ const score = computed(() => {
 // Card positions - using ref to maintain object identity for animations
 const cardPositionsRef = ref<Map<string, CardPosition>>(new Map())
 
-// Track whether we're animating a deal
-const isDealing = ref(false)
+// Track whether we're animating (deal or draw)
+const isAnimating = ref(false)
 
 // Update positions when state changes
 watch(
   () => store.gameState,
   () => {
-    if (isDealing.value) return // Skip during deal animation
+    if (isAnimating.value) return // Skip during animations
     
     const newPositions = layout.calculatePositions(store.gameState)
     const map = cardPositionsRef.value
@@ -96,13 +96,13 @@ const cardPositions = computed<CardPosition[]>(() => {
 
 // Animate dealing cards from stock to tableau
 async function animateDeal() {
-  isDealing.value = true
+  isAnimating.value = true
   const map = cardPositionsRef.value
   map.clear()
   
   const stockRect = layout.containers.value.stock
   if (!stockRect) {
-    isDealing.value = false
+    isAnimating.value = false
     return
   }
   
@@ -161,7 +161,7 @@ async function animateDeal() {
   
   // Wait for all animations to complete
   await new Promise(r => setTimeout(r, delay + 350)) // 350ms for the CSS transition
-  isDealing.value = false
+  isAnimating.value = false
 }
 
 // Board ref for reading CSS variables
@@ -217,13 +217,13 @@ function handleContainerMeasured(
   layout.setContainerRect(type, index, rect)
 }
 
-// Track cards that should animate from stock
-const animatingFromStock = ref<Set<string>>(new Set())
-
 // Click handlers
 async function handleStockClick() {
   const stockRect = layout.containers.value.stock
   const prevWasteCount = store.waste.length
+  
+  // Block the watcher during animation
+  isAnimating.value = true
   
   store.handleDrawCard()
   
@@ -231,7 +231,6 @@ async function handleStockClick() {
   const newWasteCount = store.waste.length
   if (stockRect && newWasteCount > prevWasteCount) {
     const drawnCards = store.waste.slice(prevWasteCount)
-    const drawnIds = new Set(drawnCards.map(c => c.id))
     
     // Position new cards at stock initially
     const map = cardPositionsRef.value
@@ -250,11 +249,25 @@ async function handleStockClick() {
       }
     }
     
-    // Wait a frame then animate to final positions
+    // Also update existing waste card positions (they shift right-to-left)
+    const allWastePositions = finalPositions.filter(p => 
+      store.waste.some(c => c.id === p.id)
+    )
+    for (const pos of allWastePositions) {
+      const existing = map.get(pos.id)
+      if (existing && !drawnCards.some(c => c.id === pos.id)) {
+        // Update position of existing waste cards
+        existing.x = pos.x
+        existing.y = pos.y
+        existing.z = pos.z
+      }
+    }
+    
+    // Wait a frame then animate new cards to final positions
     await nextTick()
     await new Promise(r => setTimeout(r, 20))
     
-    // Stagger the animations
+    // Stagger the animations for new cards
     let delay = 0
     for (const card of drawnCards) {
       const finalPos = finalPositions.find(p => p.id === card.id)
@@ -270,11 +283,12 @@ async function handleStockClick() {
         delay += 60 // Stagger each card
       }
     }
-  } else if (store.waste.length === 0 && store.stock.length > 0) {
-    // Cards recycled from waste to stock - clear waste cards from map
-    const map = cardPositionsRef.value
-    // Waste cards no longer exist in our positions after recycle
+    
+    // Wait for animation to complete
+    await new Promise(r => setTimeout(r, delay + 350))
   }
+  
+  isAnimating.value = false
 }
 
 function handleWasteClick() {
