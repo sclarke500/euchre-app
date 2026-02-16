@@ -50,17 +50,19 @@
 
       <!-- Give-back phase -->
       <template v-if="game.isHumanGivingCards.value">
+        <span class="action-hint">Select {{ game.cardsToGiveCount.value }} card{{ game.cardsToGiveCount.value > 1 ? 's' : '' }} to give</span>
         <button
           class="action-btn primary"
           :disabled="selectedCardIds.size !== game.cardsToGiveCount.value"
           @click="confirmGiveBack"
         >
-          Give{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size}/${game.cardsToGiveCount.value})` : ` ${game.cardsToGiveCount.value}` }}
+          Give{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size}/${game.cardsToGiveCount.value})` : '' }}
         </button>
       </template>
 
       <!-- Playing phase, user's turn -->
       <template v-else-if="game.isHumanTurn.value">
+        <span class="action-hint">{{ game.currentPile.value.currentRank === null ? 'Your lead' : 'Your turn' }}</span>
         <button
           class="action-btn primary"
           :disabled="!canPlaySelection"
@@ -495,8 +497,11 @@ onUnmounted(() => {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
-.user-rank {
-  font-size: 32px;
+// Action hint text above buttons
+.action-hint {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
 }
 
 // Invalid hint style for UserActions labels
