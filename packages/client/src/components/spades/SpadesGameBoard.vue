@@ -154,24 +154,17 @@
       </div>
     </Modal>
 
-    <!-- Action panel -->
-    <div class="action-panel" :class="{ 'is-my-turn': store.isHumanTurn }">
-      <div class="panel-header">
-        <div class="panel-name">
-          {{ userName }}
-          <span v-if="store.humanPlayer?.bid" class="info-chip bid-chip user-bid-chip">
-            {{ getBidDisplay(store.humanPlayer.bid) }}
-          </span>
-        </div>
-        <TurnTimer
-          v-if="mode === 'multiplayer'"
-          ref="turnTimerRef"
-          :active="store.isHumanTurn"
-          :grace-period-ms="timerSettings.gracePeriodMs"
-          :countdown-ms="timerSettings.countdownMs"
-          @timeout="handleTurnTimeout"
-        />
-      </div>
+    <!-- Action buttons - floating, no container -->
+    <div class="action-buttons">
+      <TurnTimer
+        v-if="mode === 'multiplayer'"
+        ref="turnTimerRef"
+        class="floating-timer"
+        :active="store.isHumanTurn"
+        :grace-period-ms="timerSettings.gracePeriodMs"
+        :countdown-ms="timerSettings.countdownMs"
+        @timeout="handleTurnTimeout"
+      />
 
       <template v-if="mode === 'multiplayer' && timedOutPlayerName">
         <div class="panel-message warning">{{ timedOutPlayerName }} timed out</div>
@@ -186,30 +179,13 @@
 
       <!-- Bidding phase -->
       <template v-if="store.isHumanBidding">
-        <div class="panel-message">Your bid</div>
         <div class="bid-selector">
           <select v-model="selectedBid" class="bid-select">
             <option v-for="n in 14" :key="n-1" :value="n-1">{{ n-1 }}</option>
           </select>
           <button class="action-btn primary" @click="handleBid">Bid {{ selectedBid }}</button>
         </div>
-        <div class="special-bids">
-          <button class="action-btn nil-btn" @click="handleNilBid">Nil</button>
-        </div>
-      </template>
-
-      <!-- Playing phase -->
-      <template v-else-if="store.isHumanPlaying">
-        <div class="panel-message">Your turn - play a card</div>
-      </template>
-
-      <!-- Waiting -->
-      <template v-else-if="store.phase === 'bidding'">
-        <div class="panel-message">Waiting for bids...</div>
-      </template>
-
-      <template v-else-if="store.phase === 'playing' || store.phase === 'trick_complete'">
-        <div class="panel-message">{{ currentPlayerName }}'s turn</div>
+        <button class="action-btn nil-btn" @click="handleNilBid">Nil</button>
       </template>
     </div>
   </CardTable>
@@ -539,68 +515,80 @@ function handlePlayAgain() {
   justify-content: center;
 }
 
-.action-panel {
+.action-buttons {
   position: absolute;
-  bottom: 12px;
+  bottom: 100px; /* Above user avatar */
   right: max(12px, env(safe-area-inset-right));
   z-index: 600;
-  background: rgba(20, 20, 30, 0.9);
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 12px 16px;
-  backdrop-filter: blur(8px);
-  min-width: 180px;
-  
-  &.is-my-turn {
-    border: 2px solid rgba(255, 215, 0, 0.5);
-    background: rgba(40, 38, 20, 0.92);
-    box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.2),
-      0 0 30px rgba(255, 215, 0, 0.08);
-  }
-  
-  .panel-header {
-    margin-bottom: 8px;
-  }
-  
-  .panel-name {
-    font-weight: 600;
-    color: #fff;
-    font-size: 1rem;
-  }
-  
-  .panel-message {
-    color: #aaa;
-    font-size: 0.9rem;
-    margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 140px;
 
-    &.warning {
-      color: #f39c12;
-      font-weight: 600;
-    }
+  &:empty {
+    display: none;
+  }
+}
+
+.floating-timer {
+  align-self: center;
+  margin-bottom: 4px;
+}
+
+.panel-message {
+  font-size: 12px;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  padding: 4px 0;
+
+  &.warning {
+    color: #f39c12;
+    font-weight: 600;
   }
 }
 
 .action-btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: none;
-  font-size: 0.95rem;
+  padding: 10px 8px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: rgba(50, 50, 65, 0.95);
+  backdrop-filter: blur(8px);
+  color: #ccc;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  
+  transition: background 0.15s, transform 0.15s;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(70, 70, 90, 0.98);
+    color: #fff;
   }
-  
+
+  &:active {
+    transform: scale(0.97);
+  }
+
   &.primary {
-    background: linear-gradient(135deg, #d4a84b 0%, #b8942f 100%);
-    color: #1a1a1a;
-    
+    background: rgba(36, 115, 90, 0.95);
+    border-color: #2a8a6a;
+    color: #fff;
+
     &:hover {
-      background: linear-gradient(135deg, #e0b555 0%, #c9a340 100%);
+      background: rgba(46, 135, 110, 0.98);
+    }
+  }
+
+  &.nil-btn {
+    background: rgba(200, 80, 60, 0.9);
+    border-color: #c44;
+    color: #fff;
+
+    &:hover {
+      background: rgba(220, 100, 80, 0.95);
     }
   }
 }
@@ -649,28 +637,18 @@ function handlePlayAgain() {
 
 .bid-selector {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  margin-bottom: 8px;
 }
 
 .bid-select {
-  padding: 8px 12px;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: none;
-  background: white;
-  color: #1e4d2b;
-}
-
-.special-bids {
-  display: flex;
-  gap: 8px;
-}
-
-.nil-btn {
-  background: #e74c3c !important;
-  color: white !important;
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: rgba(240, 240, 245, 0.95);
+  color: #333;
+  flex: 0 0 auto;
 }
 
 .info-chip {
