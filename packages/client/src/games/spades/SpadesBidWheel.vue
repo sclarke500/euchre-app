@@ -1,12 +1,7 @@
 <template>
   <Transition name="wheel-fade">
     <div v-if="visible" class="bid-wheel-container">
-      <div class="bid-wheel">
-        <!-- Up arrow -->
-        <button class="wheel-arrow up" @click="increment" :disabled="modelValue >= 13">
-          <span>▲</span>
-        </button>
-        
+      <div class="bid-wheel" @wheel.prevent="handleWheel">
         <!-- Visible values -->
         <div class="wheel-viewport" ref="viewportRef">
           <div class="wheel-track" :style="trackStyle">
@@ -20,11 +15,6 @@
             </div>
           </div>
         </div>
-        
-        <!-- Down arrow -->
-        <button class="wheel-arrow down" @click="decrement" :disabled="modelValue <= 0">
-          <span>▼</span>
-        </button>
       </div>
       
       <!-- Bid button -->
@@ -59,14 +49,11 @@ const trackStyle = computed(() => ({
   transform: `translateY(${-props.modelValue * itemHeight}px)`
 }))
 
-function increment() {
-  if (props.modelValue < 13) {
+function handleWheel(e: WheelEvent) {
+  // Scroll down = increase value, scroll up = decrease
+  if (e.deltaY > 0 && props.modelValue < 13) {
     emit('update:modelValue', props.modelValue + 1)
-  }
-}
-
-function decrement() {
-  if (props.modelValue > 0) {
+  } else if (e.deltaY < 0 && props.modelValue > 0) {
     emit('update:modelValue', props.modelValue - 1)
   }
 }
@@ -89,40 +76,13 @@ function decrement() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(20, 20, 30, 0.9);
+  background: rgba(245, 245, 248, 0.95);
   backdrop-filter: blur(12px);
-  border-radius: 24px;
-  padding: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.wheel-arrow {
-  width: 56px;
-  height: 32px;
-  background: rgba(60, 60, 80, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &:hover:not(:disabled) {
-    background: rgba(80, 80, 100, 0.9);
-  }
-  
-  &:active:not(:disabled) {
-    transform: scale(0.95);
-  }
-  
-  &:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
+  border-radius: 20px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  cursor: ns-resize;
 }
 
 .wheel-viewport {
@@ -130,20 +90,19 @@ function decrement() {
   height: calc(44px * 3); // Show 3 items
   overflow: hidden;
   position: relative;
-  margin: 4px 0;
   
   // Fade edges
   mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    black 30%,
-    black 70%,
+    black 25%,
+    black 75%,
     transparent 100%
   );
 }
 
 .wheel-track {
-  transition: transform 0.2s ease-out;
+  transition: transform 0.15s ease-out;
   padding-top: 44px; // Offset so selected item is centered
 }
 
@@ -154,31 +113,31 @@ function decrement() {
   justify-content: center;
   font-size: 18px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
-  transition: all 0.2s ease;
+  color: rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
   
   &.selected {
-    font-size: 24px;
-    color: #fff;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    font-size: 26px;
+    font-weight: 700;
+    color: #1a1a2e;
   }
 }
 
 .bid-button {
   padding: 12px 24px;
-  background: rgba(42, 138, 106, 0.9);
-  border: 1px solid rgba(42, 138, 106, 0.6);
+  background: rgba(42, 138, 106, 0.95);
+  border: none;
   border-radius: 12px;
   color: #fff;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 12px rgba(42, 138, 106, 0.4);
   min-width: 100px;
   
   &:hover {
-    background: rgba(52, 158, 126, 0.95);
+    background: rgba(52, 158, 126, 1);
     transform: scale(1.02);
   }
   
