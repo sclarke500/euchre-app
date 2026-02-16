@@ -6,9 +6,9 @@ import type {
   GameType,
   ServerMessage,
 } from '@67cards/shared'
-import type { Game } from '../Game.js'
-import type { PresidentGame } from '../PresidentGame.js'
-import type { SpadesGame } from '../SpadesGame.js'
+import type { EuchreGame } from '../games/euchre/EuchreGame.js'
+import type { PresidentGame } from '../games/president/PresidentGame.js'
+import type { SpadesGame } from '../games/spades/SpadesGame.js'
 import type { ConnectedClient } from '../ws/types.js'
 import { findRuntimeByPlayer, getRuntime } from '../sessions/registry.js'
 
@@ -36,7 +36,7 @@ export interface DisconnectedPlayer {
 export interface LobbyDependencies {
   clients: Map<WebSocket, ConnectedClient>
   tables: Map<string, Table>
-  games: Map<string, Game>
+  games: Map<string, EuchreGame>
   presidentGames: Map<string, PresidentGame>
   spadesGames: Map<string, SpadesGame>
   disconnectedPlayers: Map<string, DisconnectedPlayer>

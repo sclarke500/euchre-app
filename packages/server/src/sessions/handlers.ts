@@ -15,9 +15,9 @@ import type {
   Table,
   ServerMessage,
 } from '@67cards/shared'
-import { Game } from '../Game.js'
-import { PresidentGame } from '../PresidentGame.js'
-import { SpadesGame } from '../SpadesGame.js'
+import { EuchreGame } from '../games/euchre/EuchreGame.js'
+import { PresidentGame } from '../games/president/PresidentGame.js'
+import { SpadesGame } from '../games/spades/SpadesGame.js'
 import type { ConnectedClient } from '../ws/types.js'
 import {
   games,
@@ -339,7 +339,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     }
 
     // Create Euchre game with event handlers
-    const game = new Game(gameId, {
+    const game = new EuchreGame(gameId, {
       onStateChange: (playerId: string | null, state: ClientGameState) => {
         if (playerId) {
           sendToPlayer(playerId, { type: 'game_state', state })
@@ -773,7 +773,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     }
 
     // Create new Euchre game
-    const newGame = new Game(newGameId, {
+    const newGame = new EuchreGame(newGameId, {
       onStateChange: (playerId: string | null, state: ClientGameState) => {
         if (playerId) {
           sendToPlayer(playerId, { type: 'game_state', state })

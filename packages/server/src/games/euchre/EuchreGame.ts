@@ -65,7 +65,7 @@ export interface GameOptions {
   aiDifficulty?: 'easy' | 'hard'
 }
 
-export class Game {
+export class EuchreGame {
   public readonly id: string
   private players: GamePlayer[] = []
   private currentRound: Round | null = null

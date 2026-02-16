@@ -1,7 +1,7 @@
 import { type GameType, type TableSettings } from '@67cards/shared'
-import type { Game } from '../Game.js'
-import type { PresidentGame } from '../PresidentGame.js'
-import type { SpadesGame } from '../SpadesGame.js'
+import type { EuchreGame } from '../games/euchre/EuchreGame.js'
+import type { PresidentGame } from '../games/president/PresidentGame.js'
+import type { SpadesGame } from '../games/spades/SpadesGame.js'
 import type { GameRuntime } from './runtime.js'
 
 export interface RuntimeRegistryEntry {
@@ -11,7 +11,7 @@ export interface RuntimeRegistryEntry {
   settings?: TableSettings
 }
 
-export const games = new Map<string, Game>()
+export const games = new Map<string, EuchreGame>()
 export const presidentGames = new Map<string, PresidentGame>()
 export const spadesGames = new Map<string, SpadesGame>()
 export const gameHosts = new Map<string, string>()
