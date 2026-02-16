@@ -591,9 +591,16 @@ export function useCardController(
   }
 
   async function hideOpponentHands() {
-    const layout = tableLayout.value
     const board = boardRef.value
-    if (!layout || !board) return
+    if (!board) return
+
+    // Compute layout if not already set (e.g., Euchre sets up engine directly)
+    const layout = tableLayout.value ?? computeTableLayout(
+      board.offsetWidth,
+      board.offsetHeight,
+      config.layout ?? 'normal',
+      config.playerCount
+    )
 
     const duration = config.opponentCollapseDurationMs ?? 250
     const hands = engine.getHands()
