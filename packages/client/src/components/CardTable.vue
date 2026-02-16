@@ -324,7 +324,7 @@ defineExpose({
 // Dealer chip - positioned on table near each seat
 .dealer-chip {
   position: absolute;
-  z-index: 2;
+  z-index: 10;
   width: 28px;
   height: 28px;
   border-radius: 50%;
