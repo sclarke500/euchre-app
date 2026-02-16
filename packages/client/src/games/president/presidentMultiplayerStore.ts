@@ -252,13 +252,13 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   function playCards(cardIds: string[]): void {
     if (!isMyTurn.value) return
 
-    // Validate the play is in validPlays
-    const isValid = validPlays.value.some(vp =>
-      vp.length === cardIds.length &&
-      vp.every(id => cardIds.includes(id))
-    )
-    if (!isValid) {
-      console.warn('Invalid play attempted:', cardIds)
+    // NOTE: We don't strictly validate card IDs here because findValidPlays()
+    // only returns example combinations (first N cards of each rank), not all
+    // possible combinations. The UI already validates with isValidPlay() which
+    // checks by rank, and the server also validates properly. Strict ID matching
+    // would reject valid plays like selecting 4♥+4♦ when server sent [4♠,4♥].
+    if (cardIds.length === 0) {
+      console.warn('Empty play attempted')
       return
     }
 

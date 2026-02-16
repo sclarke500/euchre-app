@@ -156,8 +156,11 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
   let cachedValidPlays: StandardCard[][] = []
   
   const validPlays = computed<StandardCard[][]>(() => {
-    // Create a key from the input to detect changes
-    const newKey = store.validPlays.map(p => p.join(',')).join('|')
+    // Create a key from the input AND hand state to detect changes
+    // Include hand IDs in key because we resolve card IDs against the hand
+    const handKey = store.myHand.map(c => c.id).join(',')
+    const playsKey = store.validPlays.map(p => p.join(',')).join('|')
+    const newKey = `${handKey}::${playsKey}`
     if (newKey === cachedValidPlaysKey) {
       return cachedValidPlays
     }
