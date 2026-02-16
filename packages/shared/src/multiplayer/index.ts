@@ -1,8 +1,8 @@
 // Multiplayer Types for WebSocket Communication
 
-import type { Suit, Card, GameState, Bid, GamePhase, TeamScore, Trick } from './game.js'
-import type { StandardCard } from './core/types.js'
-import type { PresidentPhase, PresidentPile, PlayerRank, PlayType } from './president/types.js'
+import type { Suit, Card, GameState, Bid, GamePhase, TeamScore, Trick } from '../euchre/types.js'
+import type { StandardCard } from '../core/types.js'
+import type { PresidentPhase, PresidentPile, PlayerRank, PlayType } from '../president/types.js'
 import type {
   SpadesPhase,
   SpadesBidType,
@@ -10,7 +10,7 @@ import type {
   SpadesTeamScore,
   SpadesTrick,
   SpadesClientPlayer,
-} from './spades/types.js'
+} from '../spades/types.js'
 
 // ============================================
 // Lobby & Table Types

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { Suit } from './game.js'
-import type { Trick, Trump } from './game.js'
-import { calculateRoundScore, updateScores, isGameOver, getWinner } from './scoring.js'
+import { Suit } from '../types.js'
+import type { Trick, Trump } from '../types.js'
+import { calculateRoundScore, updateScores, isGameOver, getWinner } from '../scoring.js'
 
 function makeTricks(winners: number[]): Trick[] {
   return winners.map(winnerId => ({

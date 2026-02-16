@@ -1,4 +1,4 @@
-import type { Trick, Trump } from './game.js'
+import type { Trick, Trump } from './types.js'
 import { countTricksWonByTeam } from './trick.js'
 
 /**

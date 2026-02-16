@@ -1,5 +1,5 @@
-import type { Card, Player, Trick, Suit, Bid } from './game.js'
-import { BidAction, Rank, Suit as SuitEnum } from './game.js'
+import type { Card, Player, Trick, Suit, Bid } from './types.js'
+import { BidAction, Rank, Suit as SuitEnum } from './types.js'
 import { getLegalPlays, getEffectiveSuit } from './trick.js'
 import { compareCards, getCardValue, getSameColorSuit } from './deck.js'
 import { shouldOrderUp, chooseSuitRound2, shouldGoAlone } from './trump.js'

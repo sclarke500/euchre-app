@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { Suit, Rank } from './game.js'
-import type { Card, Trick } from './game.js'
+import { Suit, Rank } from '../types.js'
+import type { Card, Trick } from '../types.js'
 import {
   createTrick,
   isLegalPlay,
@@ -11,7 +11,7 @@ import {
   countTricksWonByTeam,
   isTrickComplete,
   isPlayerSittingOut,
-} from './trick.js'
+} from '../trick.js'
 
 // Helper to make cards concisely
 function card(suit: Suit, rank: Rank): Card {

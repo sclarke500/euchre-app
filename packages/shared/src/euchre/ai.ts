@@ -1,5 +1,5 @@
-import type { Card, Player, Trick, Suit, Bid } from './game.js'
-import { BidAction, Rank } from './game.js'
+import type { Card, Player, Trick, Suit, Bid } from './types.js'
+import { BidAction, Rank } from './types.js'
 import {
   shouldOrderUp,
   chooseSuitRound2,

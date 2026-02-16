@@ -1,4 +1,4 @@
-import type { Card, Trick, PlayedCard, Suit } from './game.js'
+import type { Card, Trick, PlayedCard, Suit } from './types.js'
 import { compareCards, getEffectiveSuit } from './deck.js'
 
 export { getEffectiveSuit }

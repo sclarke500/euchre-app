@@ -1,5 +1,5 @@
-import type { Card, Suit, Trump, Bid } from './game.js'
-import { BidAction, Suit as SuitEnum } from './game.js'
+import type { Card, Suit, Trump, Bid } from './types.js'
+import { BidAction, Suit as SuitEnum } from './types.js'
 import { getSameColorSuit } from './deck.js'
 
 /**

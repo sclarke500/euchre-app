@@ -1,5 +1,5 @@
-import type { Card, Suit } from './game.js'
-import { Suit as SuitEnum, Rank } from './game.js'
+import type { Card, Suit } from './types.js'
+import { Suit as SuitEnum, Rank } from './types.js'
 
 /**
  * Create a standard Euchre deck (24 cards: 9, 10, J, Q, K, A in all suits)
