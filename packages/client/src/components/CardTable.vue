@@ -8,22 +8,22 @@
           <img src="@/assets/AppLogo.png" alt="" class="watermark-logo" />
           <span class="watermark-name">{{ gameName }}</span>
         </div>
-        
-        <!-- Opponent avatars positioned on the table rail -->
-        <PlayerAvatar
-          v-for="(seat, i) in seatData"
-          :key="'avatar-' + i"
-          v-show="!seat.isUser"
-          :name="playerNames[i] ?? 'Player'"
-          :is-current-turn="currentTurnSeat === i"
-          :is-dealer="dealerSeat === i"
-          :status="playerStatuses[i]"
-          :position="getRailPosition(seat.side)"
-          :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
-        >
-          <slot :name="`player-info-${i}`" />
-        </PlayerAvatar>
       </div>
+      
+      <!-- Opponent avatars - outside table-surface for proper z-index stacking -->
+      <PlayerAvatar
+        v-for="(seat, i) in seatData"
+        :key="'avatar-' + i"
+        v-show="!seat.isUser"
+        :name="playerNames[i] ?? 'Player'"
+        :is-current-turn="currentTurnSeat === i"
+        :is-dealer="dealerSeat === i"
+        :status="playerStatuses[i]"
+        :position="getRailPosition(seat.side)"
+        :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
+      >
+        <slot :name="`player-info-${i}`" />
+      </PlayerAvatar>
 
       <!-- All cards rendered here -->
       <BoardCard
@@ -110,7 +110,7 @@ function getRailPosition(side: string): AvatarPosition {
 }
 
 /**
- * Compute CSS position for each avatar relative to the table surface.
+ * Compute CSS position for each avatar in board-space pixels.
  * Avatars are positioned ON the rail (straddling the table edge).
  */
 const avatarStyles = computed(() => {
@@ -122,20 +122,16 @@ const avatarStyles = computed(() => {
     // User avatar handled separately (fixed at bottom center)
     if (seat.isUser) return {}
 
-    // Convert board-space hand position to table-relative percentage
-    const pctX = ((seat.handPosition.x - tableBounds.left) / tableBounds.width * 100)
-    const pctY = ((seat.handPosition.y - tableBounds.top) / tableBounds.height * 100)
-
-    // Position ON the rail - avatar straddles the table edge
+    // Position ON the rail edge in board-space pixels
     switch (seat.side) {
       case 'left':
-        return { left: '0%', top: `${pctY}%` }
+        return { left: `${tableBounds.left}px`, top: `${seat.handPosition.y}px` }
       case 'right':
-        return { left: '100%', top: `${pctY}%` }
+        return { left: `${tableBounds.right}px`, top: `${seat.handPosition.y}px` }
       case 'top':
-        return { left: `${pctX}%`, top: '0%' }
+        return { left: `${seat.handPosition.x}px`, top: `${tableBounds.top}px` }
       default: // bottom (shouldn't happen - user is at bottom)
-        return { left: `${pctX}%`, top: '100%' }
+        return { left: `${seat.handPosition.x}px`, top: `${tableBounds.bottom}px` }
     }
   })
 })
