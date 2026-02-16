@@ -121,12 +121,18 @@ const positionStyle = computed(() => props.customStyle ?? {})
   }
 
   .player-status {
-    font-size: 10px;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 4px;
+    font-size: 11px;
     color: #ffd700;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 2px 6px;
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 3px 8px;
+    border-radius: 4px;
     font-weight: 600;
+    white-space: nowrap;
     opacity: 0;
     transition: opacity var(--anim-slow, 0.3s) ease;
     pointer-events: none;
@@ -157,12 +163,12 @@ const positionStyle = computed(() => props.customStyle ?? {})
 
   // Dealer chip - inline with name label
   .dealer-chip {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
     color: #2c3e50;
-    font-size: 10px;
+    font-size: 13px;
     font-weight: bold;
     display: flex;
     align-items: center;

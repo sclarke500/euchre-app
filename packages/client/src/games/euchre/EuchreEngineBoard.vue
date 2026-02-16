@@ -537,26 +537,32 @@ onUnmounted(() => {
 }
 
 .info-chip {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: bold;
 }
 
 .trump-chip {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
-  font-size: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 // User trump badge in avatar slot
 .user-trump-badge {
-  font-size: 16px;
-  margin-top: 2px;
+  font-size: 20px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
 }
 
 // Suit buttons need specific styling
