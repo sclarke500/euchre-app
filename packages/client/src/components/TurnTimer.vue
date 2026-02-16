@@ -1,12 +1,21 @@
 <template>
-  <div 
-    v-if="visible" 
-    class="turn-timer"
-    :class="phase"
-    :style="{ '--progress': progress }"
-  >
-    <div class="timer-pie"></div>
-  </div>
+  <Transition name="timer-slide">
+    <div v-if="visible" class="timer-panel">
+      <div 
+        class="turn-timer"
+        :class="phase"
+        :style="{ '--progress': progress }"
+      >
+        <div class="timer-pie"></div>
+      </div>
+      <button 
+        v-if="showResetButton" 
+        class="timer-reset-btn"
+        @click="handleReset"
+        title="Reset timer"
+      >↻</button>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -18,11 +27,13 @@ const props = withDefaults(defineProps<{
   countdownMs?: number    // Time to count down (default 30s)
   yellowAtMs?: number     // Turn yellow at this remaining time (default 15s)
   redAtMs?: number        // Turn red at this remaining time (default 5s)
+  showResetButton?: boolean // Show reset button (default true)
 }>(), {
   gracePeriodMs: 30000,
   countdownMs: 30000,
   yellowAtMs: 15000,
   redAtMs: 5000,
+  showResetButton: true,
 })
 
 const emit = defineEmits<{
@@ -156,6 +167,14 @@ function reset() {
   hasPlayedWhistle.value = false
   hasPlayedDing.value = false
   remainingMs.value = props.countdownMs
+  // Restart grace period
+  if (props.active) {
+    startGracePeriod()
+  }
+}
+
+function handleReset() {
+  reset()
 }
 
 // Watch active prop to start/stop timer
@@ -163,7 +182,11 @@ watch(() => props.active, (isActive) => {
   if (isActive) {
     startGracePeriod()
   } else {
-    reset()
+    cleanup()
+    visible.value = false
+    hasPlayedWhistle.value = false
+    hasPlayedDing.value = false
+    remainingMs.value = props.countdownMs
   }
 }, { immediate: true })
 
@@ -176,6 +199,23 @@ defineExpose({ reset })
 </script>
 
 <style scoped lang="scss">
+.timer-panel {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  bottom: 50%;
+  transform: translateY(50%);
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid #444;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+}
+
 .turn-timer {
   width: 32px;
   height: 32px;
@@ -206,6 +246,30 @@ defineExpose({ reset })
   }
 }
 
+.timer-reset-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: rgba(60, 60, 80, 0.8);
+  color: #aaa;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background: rgba(80, 80, 100, 0.9);
+    color: #fff;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
 // Color phases
 .turn-timer.green {
   --timer-color: #4ade80;
@@ -229,5 +293,20 @@ defineExpose({ reset })
 @keyframes pulse-red {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
+}
+
+// Slide animation
+.timer-slide-enter-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.timer-slide-leave-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease;
+}
+
+.timer-slide-enter-from,
+.timer-slide-leave-to {
+  opacity: 0;
+  transform: translateY(50%) translateX(-100%);
 }
 </style>

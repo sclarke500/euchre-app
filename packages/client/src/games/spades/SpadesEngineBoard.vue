@@ -174,24 +174,16 @@
       </button>
     </div>
 
-    <!-- Turn timer panel (left side, slides in) -->
-    <Transition name="timer-slide">
-      <div v-if="showTimerPanel" class="timer-panel">
-        <TurnTimer
-          ref="turnTimerRef"
-          :active="store.isHumanTurn"
-          :grace-period-ms="timerSettings.gracePeriodMs"
-          :countdown-ms="timerSettings.countdownMs"
-          @timeout="handleTurnTimeout"
-        />
-        <button 
-          v-if="humanCount < 3" 
-          class="timer-reset-btn"
-          @click="resetTimer"
-          title="Reset timer"
-        >↻</button>
-      </div>
-    </Transition>
+    <!-- Turn timer (left side, self-contained with panel and animation) -->
+    <TurnTimer
+      v-if="mode === 'multiplayer'"
+      ref="turnTimerRef"
+      :active="store.isHumanTurn || store.showBidWheel"
+      :grace-period-ms="timerSettings.gracePeriodMs"
+      :countdown-ms="timerSettings.countdownMs"
+      :show-reset-button="humanCount < 3"
+      @timeout="handleTurnTimeout"
+    />
 
     <!-- Blind nil prompt (right side) - shows before cards revealed -->
     <BlindNilPrompt
@@ -331,20 +323,10 @@ const timerSettings = computed(() => {
   return { gracePeriodMs: 30000, countdownMs: 30000 }
 })
 
-// Timer panel - shows when multiplayer and user's turn or bidding
-const showTimerPanel = computed(() => 
-  props.mode === 'multiplayer' && (store.isHumanTurn || store.showBidWheel)
-)
-
 // Count human players (for reset button visibility)
 const humanCount = computed(() => 
   store.players.filter((p: { isHuman?: boolean }) => p.isHuman).length
 )
-
-// Reset timer and restart grace period
-function resetTimer() {
-  turnTimerRef.value?.reset()
-}
 
 const timedOutPlayerName = computed(() => {
   if (store.timedOutPlayer === null || store.timedOutPlayer === undefined) return null
@@ -381,63 +363,6 @@ function handlePlayAgain() {
 </script>
 
 <style scoped lang="scss">
-// Timer panel - slides in from left
-.timer-panel {
-  position: fixed;
-  left: max(12px, env(safe-area-inset-left));
-  bottom: 50%;
-  transform: translateY(50%);
-  z-index: 600;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  background: rgba(20, 20, 30, 0.85);
-  border: 1px solid #444;
-  border-radius: 10px;
-  backdrop-filter: blur(8px);
-}
-
-.timer-reset-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid #555;
-  border-radius: 6px;
-  background: rgba(60, 60, 80, 0.8);
-  color: #aaa;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &:hover {
-    background: rgba(80, 80, 100, 0.9);
-    color: #fff;
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-}
-
-// Timer slide animation
-.timer-slide-enter-active {
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
-}
-
-.timer-slide-leave-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease;
-}
-
-.timer-slide-enter-from,
-.timer-slide-leave-to {
-  opacity: 0;
-  transform: translateY(50%) translateX(-100%);
-}
-
 // Standard layout: scoreboard fixed top-right, action panel bottom-left
 .scoreboard {
   position: fixed;
