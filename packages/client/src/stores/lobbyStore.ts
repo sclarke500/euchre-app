@@ -122,6 +122,15 @@ export const useLobbyStore = defineStore('lobby', () => {
       case 'error':
         console.error('Server error:', message.message)
         connectionError.value = message.message
+        
+        // If error is about table not found, clear current table state
+        // so user isn't stuck at a non-existent table
+        if (message.message?.toLowerCase().includes('table') && 
+            message.message?.toLowerCase().includes('not found')) {
+          currentTable.value = null
+          currentSeat.value = null
+        }
+        
         setTimeout(() => {
           connectionError.value = null
         }, 5000)
