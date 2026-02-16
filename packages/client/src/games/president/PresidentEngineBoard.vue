@@ -10,7 +10,7 @@
     :dimmed-card-ids="dimmedCardIds"
     :selected-card-ids="selectedCardIds"
     :highlighted-card-ids="highlightedCardIds"
-    layout="wide"
+    :layout="playerCount > 5 ? 'wide' : 'normal'"
     game-name="PRESIDENT"
     @card-click="handleCardClick"
   >
@@ -30,14 +30,11 @@
       @resync="game.requestResync?.()"
     />
 
-    <!-- Game info (top-left) -->
-    <div class="game-info">
-      <div class="game-title">President</div>
-      <div v-if="pileStatus" class="pile-status">{{ pileStatus }}</div>
-    </div>
-    
     <!-- Round counter (top-right) -->
     <div class="round-indicator">Round {{ game.roundNumber.value }}</div>
+    
+    <!-- Pile status (on table, below center play area) -->
+    <div v-if="pileStatus" class="pile-status">{{ pileStatus }}</div>
 
     <!-- User actions — bottom bar -->
     <UserActions :active="game.isHumanTurn.value || game.isHumanGivingCards.value">
@@ -456,31 +453,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-.game-info {
+// Pile status - on table below center play area
+.pile-status {
   position: absolute;
-  top: 10px;
-  left: max(100px, calc(env(safe-area-inset-left) + 90px)); // Make room for GameHUD
-  z-index: 500;
-  background: rgba(20, 20, 30, 0.88);
-  border: 1px solid #444;
-  border-radius: 8px;
-  padding: 8px 12px;
-  backdrop-filter: blur(8px);
-  font-size: 12px;
-  color: #ccc;
-
-  .game-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #eee;
-    margin-bottom: 2px;
-  }
-
-  .pile-status {
-    color: #f4d03f;
-    font-weight: 600;
-    font-size: 11px;
-  }
+  top: 55%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
 }
 
 // Round indicator - top right (similar to Spades scoreboard)
