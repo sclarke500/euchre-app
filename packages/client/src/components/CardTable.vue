@@ -224,46 +224,45 @@ defineExpose({
   top: 15%;
   bottom: 20%;
   border-radius: 40px;
-  background:
-    radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 70%);
-  border: 10px solid transparent;
+  // No background on main element - felt goes in ::after
+  background: none;
+  border: none;
   
-  // Glossy wood rail effect using pseudo-element
+  // Wood rail - sits behind the felt
   &::before {
     content: '';
     position: absolute;
-    inset: -10px;
-    border-radius: 44px;
-    background: 
-      // Wood grain texture simulation
-      linear-gradient(
-        90deg,
-        #3d2817 0%,
-        #5c4033 8%,
-        #4a3525 15%,
-        #6b4c35 25%,
-        #4a3525 35%,
-        #5c4033 45%,
-        #3d2817 55%,
-        #5c4033 65%,
-        #4a3525 75%,
-        #6b4c35 85%,
-        #4a3525 92%,
-        #3d2817 100%
-      );
-    z-index: -1;
-    // Glossy highlight on top edge
+    inset: 0;
+    border-radius: 40px;
+    // Wood grain gradient - top to bottom for glossy effect
+    background: linear-gradient(
+      180deg,
+      #7a5c38 0%,
+      #5c4033 15%,
+      #4a3525 35%,
+      #3d2817 65%,
+      #2a1d10 100%
+    );
+    // Glossy highlight on top, shadow on bottom
     box-shadow:
-      inset 0 2px 4px rgba(255, 255, 255, 0.15),
-      inset 0 -3px 6px rgba(0, 0, 0, 0.4),
+      inset 0 2px 4px rgba(255, 255, 255, 0.25),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.5),
       0 4px 20px rgba(0, 0, 0, 0.5);
   }
   
-  // Inner shadow for 3D depth - felt sits below rail
-  box-shadow:
-    inset 0 4px 12px rgba(0, 0, 0, 0.5),
-    inset 0 0 40px rgba(0, 0, 0, 0.3),
-    inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+  // Green felt - inset from rail
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    border-radius: 28px;
+    background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 70%);
+    // Inner shadow - felt recessed below rail
+    box-shadow:
+      inset 0 4px 12px rgba(0, 0, 0, 0.5),
+      inset 0 0 40px rgba(0, 0, 0, 0.3),
+      inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+  }
 
   // Watermark with game name
   .table-watermark {
@@ -307,8 +306,18 @@ defineExpose({
     border-radius: 30px;
     
     &::before {
-      border-radius: 34px;
+      border-radius: 30px;
     }
+    
+    &::after {
+      border-radius: 18px;
+    }
+  }
+  
+  // Ensure children (watermark, avatars) appear above the felt
+  > * {
+    position: relative;
+    z-index: 1;
   }
 }
 
