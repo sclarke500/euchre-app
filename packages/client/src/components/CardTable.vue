@@ -251,7 +251,7 @@ defineExpose({
       width: 120px;
       height: 120px;
       object-fit: contain;
-      opacity: 0.1;
+      opacity: 0.18;
     }
     
     .watermark-name {
