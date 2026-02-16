@@ -162,11 +162,11 @@ const positionStyle = computed(() => props.customStyle ?? {})
     pointer-events: none;
   }
 
-  // Dealer chip - absolutely positioned at bottom-right of avatar
+  // Dealer chip - centered vertically at circle/name junction, pushed out to side
   .dealer-chip {
     position: absolute;
-    bottom: 8px;
-    right: -10px;
+    top: 36px;
+    right: -16px;
     width: 26px;
     height: 26px;
     border-radius: 50%;
@@ -180,10 +180,10 @@ const positionStyle = computed(() => props.customStyle ?? {})
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     z-index: 5;
     
-    // Bottom-left for rail-right position
+    // Left side for rail-right position
     &.chip-left {
       right: auto;
-      left: -10px;
+      left: -16px;
     }
   }
 
