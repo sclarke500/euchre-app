@@ -20,6 +20,13 @@
       </div>
     </template>
 
+    <!-- User avatar bid tag -->
+    <template #user-info>
+      <div v-if="store.humanPlayer?.bid" class="info-chip bid-chip">
+        {{ getBidDisplay(store.humanPlayer.bid) }}
+      </div>
+    </template>
+
     <!-- Scoreboard (points and bags with column headers) -->
     <div class="scoreboard spades-scoreboard">
       <div class="score-row">

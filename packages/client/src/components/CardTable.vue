@@ -50,7 +50,7 @@
         @click="$emit('card-click', managed.card.id)"
       />
 
-      <!-- User avatar at bottom center of screen -->
+      <!-- User avatar at bottom-right of screen -->
       <div class="user-avatar-bottom" :class="{ 'is-current-turn': currentTurnSeat === 0 }">
         <div class="avatar-container">
           <div class="avatar-border">
@@ -59,7 +59,9 @@
           </div>
           <div class="avatar-glow" v-if="currentTurnSeat === 0"></div>
         </div>
-        <slot name="user-info" />
+        <div class="info-tags">
+          <slot name="user-info" />
+        </div>
       </div>
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
@@ -380,7 +382,7 @@ defineExpose({
   &.dealer-seat-3 { left: calc(100% - 20px); top: calc(50% + 50px); }
 }
 
-// User avatar at bottom left of screen
+// User avatar at bottom-right of screen
 .user-avatar-bottom {
   position: fixed;
   bottom: 12px;
@@ -431,6 +433,13 @@ defineExpose({
 
   .avatar-glow {
     display: none;
+  }
+
+  .info-tags {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 2px;
   }
 
   &.is-current-turn .avatar-circle {
