@@ -27,9 +27,11 @@ packages/
 │       └── stores/         # Shared multiplayer utilities + lobby state
 ├── server/          # Node WebSocket server
 │   └── src/
-│       ├── Game.ts              # Euchre game logic
-│       ├── PresidentGame.ts     # President game logic
-│       ├── SpadesGame.ts        # Spades game logic
+│       ├── games/
+│       │   ├── euchre/          # Euchre runtime + helpers (types/state/turns/ai)
+│       │   ├── president/       # President runtime + helpers (types/state/turns/ai/cardExchange)
+│       │   ├── spades/          # Spades runtime + helpers (types/state/turns/ai)
+│       │   └── shared/          # Cross-game server helpers (e.g. reminders)
 │       ├── sessions/            # Multiplayer orchestration
 │       └── ws/                  # WebSocket routing
 └── shared/          # Shared types, rules, utilities
@@ -84,11 +86,14 @@ Router → Handlers → GameRuntime → Game Class
 
 ### Understanding a complete game:
 1. `packages/shared/src/spades/` — Types and rules
-2. `packages/server/src/SpadesGame.ts` — Server implementation
-3. `packages/client/src/games/spades/spadesMultiplayerStore.ts` — Client store
-4. `packages/client/src/games/spades/useSpadesGameAdapter.ts` — Adapter
-5. `packages/client/src/games/spades/useSpadesDirector.ts` — Director
-6. `packages/client/src/games/spades/SpadesEngineBoard.vue` — UI
+2. `packages/server/src/games/spades/SpadesGame.ts` — Server runtime orchestration
+3. `packages/server/src/games/spades/state.ts` — Server game/client state builders
+4. `packages/server/src/games/spades/turns.ts` — Turn options builder
+5. `packages/server/src/games/spades/ai.ts` — AI bid/play helpers
+6. `packages/client/src/games/spades/spadesMultiplayerStore.ts` — Client store
+7. `packages/client/src/games/spades/useSpadesGameAdapter.ts` — Adapter
+8. `packages/client/src/games/spades/useSpadesDirector.ts` — Director
+9. `packages/client/src/games/spades/SpadesEngineBoard.vue` — UI
 
 ---
 

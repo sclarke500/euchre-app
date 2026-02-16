@@ -1,7 +1,5 @@
 import type {
-  PresidentPlayer,
   PresidentPile,
-  PresidentGameState,
   PlayerRank,
   PlayType,
   StandardCard,
@@ -15,49 +13,21 @@ import {
   assignRanks,
   getNextActivePlayer,
   createEmptyPile,
-  findValidPlays,
   isValidPlay,
-  canPlay,
-  choosePresidentPlay,
-  choosePresidentPlayHard,
-  chooseCardsToGive,
-  getLowestCards,
-  getHighestCards,
   getRankDisplayName,
   getRandomAINames,
 } from '@67cards/shared'
-import type {
-  PresidentClientGameState,
-  PresidentClientPlayer,
-} from '@67cards/shared'
-
-export interface PresidentGamePlayer {
-  odusId: string | null // null for AI players
-  seatIndex: number
-  name: string
-  isHuman: boolean
-  hand: StandardCard[]
-  rank: PlayerRank | null
-  finishOrder: number | null
-  cardsToGive: number
-  cardsToReceive: number
-}
-
-export interface PresidentGameEvents {
-  onStateChange: (playerId: string | null, state: PresidentClientGameState) => void
-  onPlayMade: (playerId: number, cards: StandardCard[], playType: PlayType, playerName: string) => void
-  onPassed: (playerId: number, playerName: string) => void
-  onPileCleared: (nextPlayerId: number) => void
-  onPlayerFinished: (playerId: number, playerName: string, finishPosition: number, rank: PlayerRank) => void
-  onRoundComplete: (rankings: Array<{ playerId: number; rank: PlayerRank; name: string }>, roundNumber: number) => void
-  onGameOver: (finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>) => void
-  onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => void
-  onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string) => void
-  onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => void
-  onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => void
-  onPlayerTimedOut: (playerId: number, playerName: string) => void
-  onPlayerBooted: (playerId: number, playerName: string) => void
-}
+import type { PresidentClientGameState, PresidentClientPlayer } from '@67cards/shared'
+import type { PresidentGameEvents, PresidentGamePlayer } from './types.js'
+import {
+  applyPresidentGameState,
+  buildPresidentClientState,
+  buildPresidentGameState,
+} from './state.js'
+import { buildPresidentTurnOptions } from './turns.js'
+import { computePresidentAIPlay } from './ai.js'
+import { createPresidentCardExchangeController } from './cardExchange.js'
+import { advanceReminderTick } from '../shared/reminders.js'
 
 export class PresidentGame {
   public readonly id: string
@@ -86,6 +56,7 @@ export class PresidentGame {
 
   // AI difficulty
   private readonly aiDifficulty: 'easy' | 'hard'
+  private readonly cardExchange: ReturnType<typeof createPresidentCardExchangeController>
 
   constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false, aiDifficulty: 'easy' | 'hard' = 'easy') {
     this.id = id
@@ -93,6 +64,31 @@ export class PresidentGame {
     this.maxPlayers = maxPlayers
     this.superTwosMode = superTwosMode
     this.aiDifficulty = aiDifficulty
+    this.cardExchange = createPresidentCardExchangeController({
+      players: this.players,
+      pendingExchangeReceivedCards: this.pendingExchangeReceivedCards,
+      getPhase: () => this.phase,
+      setPhase: (phase) => {
+        this.phase = phase
+      },
+      getAwaitingGiveCards: () => this.awaitingGiveCards,
+      setAwaitingGiveCards: (seatIndex) => {
+        this.awaitingGiveCards = seatIndex
+      },
+      setCurrentPlayer: (seatIndex) => {
+        this.currentPlayer = seatIndex
+      },
+      broadcastState: () => {
+        this.broadcastState()
+      },
+      processCurrentTurn: () => {
+        this.processCurrentTurn()
+      },
+      events: {
+        onAwaitingGiveCards: this.events.onAwaitingGiveCards,
+        onCardExchangeInfo: this.events.onCardExchangeInfo,
+      },
+    })
   }
 
   getStateSeq(): number {
@@ -160,26 +156,12 @@ export class PresidentGame {
    * Get the current game state filtered for a specific player
    */
   getStateForPlayer(odusId: string | null): PresidentClientGameState {
-    const playerIndex = odusId ? this.players.findIndex((p) => p.odusId === odusId) : -1
-
-    const clientPlayers: PresidentClientPlayer[] = this.players.map((p, index) => ({
-      id: index,
-      name: p.name,
-      handSize: p.hand.length,
-      hand: index === playerIndex ? p.hand : undefined, // Only include cards for this player
-      isHuman: p.isHuman,
-      rank: p.rank,
-      finishOrder: p.finishOrder,
-      cardsToGive: p.cardsToGive,
-      cardsToReceive: p.cardsToReceive,
-    }))
-
-    return {
-      gameType: 'president',
+    return buildPresidentClientState({
+      odusId,
+      players: this.players,
       phase: this.phase,
-      players: clientPlayers,
-      currentPlayer: this.currentPlayer,
       currentPile: this.currentPile,
+      currentPlayer: this.currentPlayer,
       consecutivePasses: this.consecutivePasses,
       finishedPlayers: this.finishedPlayers,
       roundNumber: this.roundNumber,
@@ -188,7 +170,7 @@ export class PresidentGame {
       superTwosMode: this.superTwosMode,
       stateSeq: this.stateSeq,
       timedOutPlayer: this.timedOutPlayer,
-    }
+    })
   }
 
   /**
@@ -345,7 +327,19 @@ export class PresidentGame {
       this.phase = PresidentPhase.Dealing
 
       // Build game state for shared functions
-      const gameState = this.buildGameState()
+      const gameState = buildPresidentGameState({
+        players: this.players,
+        phase: this.phase,
+        currentPile: this.currentPile,
+        currentPlayer: this.currentPlayer,
+        consecutivePasses: this.consecutivePasses,
+        finishedPlayers: this.finishedPlayers,
+        roundNumber: this.roundNumber,
+        gameOver: this.gameOver,
+        lastPlayerId: this.lastPlayerId,
+        superTwosMode: this.superTwosMode,
+        awaitingGiveCards: this.awaitingGiveCards,
+      })
 
       // Deal cards using shared function
       const dealtState = dealPresidentCards(gameState)
@@ -414,274 +408,53 @@ export class PresidentGame {
   }
 
   private processCardExchange(): void {
-    try {
-      this.processCardExchangeInternal()
-    } catch (error) {
-      console.error('Error in processCardExchange:', error)
-      console.error('Players state:', JSON.stringify(this.players.map(p => ({
-        id: p.seatIndex,
-        name: p.name,
-        rank: p.rank,
-        handSize: p.hand.length,
-        cardsToGive: p.cardsToGive,
-        cardsToReceive: p.cardsToReceive,
-      })), null, 2))
-      throw error
-    }
-  }
-
-  private processCardExchangeInternal(): void {
-    // Two-phase card exchange:
-    // Phase 1: Scum/Vice-Scum MUST give their best cards (automatic)
-    // Phase 2: President/VP CHOOSE which cards to give back (manual for humans)
-
-    const president = this.players.find(p => p.rank === 1) // PlayerRank.President
-    const scum = this.players.find(p => p.rank === 4) // PlayerRank.Scum
-    const vp = this.players.find(p => p.rank === 2) // PlayerRank.VicePresident
-    // Vice Scum is a Citizen with cardsToGive = 1
-    const viceScum = this.players.find(p => p.cardsToGive === 1 && p.rank === 3) // PlayerRank.Citizen
-
-    // Helper to convert to PresidentPlayer for shared functions
-    const toPresidentPlayer = (p: PresidentGamePlayer): PresidentPlayer => ({
-      id: p.seatIndex,
-      name: p.name,
-      hand: p.hand,
-      isHuman: p.isHuman,
-      rank: p.rank,
-      finishOrder: p.finishOrder,
-      cardsToGive: p.cardsToGive,
-      cardsToReceive: p.cardsToReceive,
-    })
-
-    // Clear pending exchange state
-    this.pendingExchangeReceivedCards.clear()
-
-    // PHASE 1: Scum gives best cards to President (automatic)
-    if (president && scum) {
-      const scumCards = chooseCardsToGive(toPresidentPlayer(scum), 2)
-      const scumCardIds = new Set(scumCards.map(c => c.id))
-      
-      // Remove cards from Scum, add to President
-      scum.hand = scum.hand.filter(c => !scumCardIds.has(c.id))
-      president.hand = [...president.hand, ...scumCards]
-      
-      // Track what President received (for give-back phase)
-      this.pendingExchangeReceivedCards.set(president.seatIndex, scumCards)
-      
-      // Notify Scum what they gave (they don't choose, it's automatic)
-      if (scum.isHuman && scum.odusId) {
-        // Scum will see their exchange info after President gives back
-      }
-    }
-
-    // PHASE 1b: Vice-Scum gives best card to VP (automatic) 
-    if (vp && viceScum) {
-      const viceScumCards = chooseCardsToGive(toPresidentPlayer(viceScum), 1)
-      const viceScumCardIds = new Set(viceScumCards.map(c => c.id))
-      
-      // Remove cards from Vice-Scum, add to VP
-      viceScum.hand = viceScum.hand.filter(c => !viceScumCardIds.has(c.id))
-      vp.hand = [...vp.hand, ...viceScumCards]
-      
-      // Track what VP received
-      this.pendingExchangeReceivedCards.set(vp.seatIndex, viceScumCards)
-    }
-
-    this.broadcastState()
-
-    // PHASE 2: President/VP choose which cards to give back
-    // Start with President
-    if (president) {
-      this.startGiveBackPhase(president.seatIndex)
-    } else {
-      // No president? Start playing (shouldn't happen)
-      this.finishCardExchange()
-    }
+    this.cardExchange.processCardExchange()
   }
 
   private startGiveBackPhase(playerSeatIndex: number): void {
-    const player = this.players[playerSeatIndex]
-    if (!player) {
-      this.finishCardExchange()
-      return
-    }
-
-    const cardsToGive = player.rank === 1 ? 2 : 1 // President gives 2, VP gives 1
-    const receivedCards = this.pendingExchangeReceivedCards.get(playerSeatIndex) ?? []
-    const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President' }
-    const yourRole = roleNames[player.rank ?? 0] ?? 'Unknown'
-
-    if (player.isHuman && player.odusId) {
-      // Human player - wait for their choice
-      this.phase = PresidentPhase.PresidentGiving
-      this.awaitingGiveCards = playerSeatIndex
-      
-      this.events.onAwaitingGiveCards(
-        player.odusId,
-        cardsToGive,
-        receivedCards,
-        yourRole
-      )
-      this.broadcastState()
-    } else {
-      // AI player - auto-choose lowest cards
-      const toPresidentPlayer = (p: PresidentGamePlayer): PresidentPlayer => ({
-        id: p.seatIndex,
-        name: p.name,
-        hand: p.hand,
-        isHuman: p.isHuman,
-        rank: p.rank,
-        finishOrder: p.finishOrder,
-        cardsToGive: p.cardsToGive,
-        cardsToReceive: p.cardsToReceive,
-      })
-      
-      const cardsToGiveBack = getLowestCards(player.hand, cardsToGive)
-      
-      // Small delay for AI to feel more natural
-      setTimeout(() => {
-        this.completeGiveBack(playerSeatIndex, cardsToGiveBack)
-      }, 500)
-    }
+    this.cardExchange.startGiveBackPhase(playerSeatIndex)
   }
 
   // Called when a player submits their give-back cards
   public giveCards(playerSeatIndex: number, cards: StandardCard[]): void {
-    if (this.phase !== PresidentPhase.PresidentGiving) {
-      console.warn('giveCards called but not in PresidentGiving phase')
-      return
-    }
-    if (this.awaitingGiveCards !== playerSeatIndex) {
-      console.warn('giveCards called by wrong player')
-      return
-    }
-    
-    const player = this.players[playerSeatIndex]
-    if (!player) return
-    
-    const expectedCount = player.rank === 1 ? 2 : 1
-    if (cards.length !== expectedCount) {
-      console.warn(`Expected ${expectedCount} cards but got ${cards.length}`)
-      return
-    }
-    
-    // Validate player has these cards
-    const cardIds = new Set(cards.map(c => c.id))
-    const hasAllCards = cards.every(c => player.hand.some(h => h.id === c.id))
-    if (!hasAllCards) {
-      console.warn('Player does not have all submitted cards')
-      return
-    }
-    
-    this.completeGiveBack(playerSeatIndex, cards)
+    this.cardExchange.giveCards(playerSeatIndex, cards)
   }
 
   private completeGiveBack(playerSeatIndex: number, cards: StandardCard[]): void {
-    const player = this.players[playerSeatIndex]
-    if (!player) {
-      console.error('completeGiveBack: player not found for seatIndex', playerSeatIndex)
-      return
-    }
-
-    console.log('completeGiveBack:', {
-      playerSeatIndex,
-      playerRank: player.rank,
-      playerName: player.name,
-      cardsToGive: cards.map(c => c.id),
-      playerHandSize: player.hand.length,
-    })
-
-    // Find the recipient (Scum for President, Vice-Scum for VP)
-    let recipient: PresidentGamePlayer | undefined
-    if (player.rank === 1) {
-      recipient = this.players.find(p => p.rank === 4) // Scum
-      console.log('Looking for Scum (rank 4), found:', recipient?.name ?? 'NONE', 'All ranks:', this.players.map(p => ({ name: p.name, rank: p.rank })))
-    } else if (player.rank === 2) {
-      recipient = this.players.find(p => p.cardsToGive === 1 && p.rank === 3) // Vice-Scum
-      console.log('Looking for Vice-Scum, found:', recipient?.name ?? 'NONE')
-    }
-
-    if (recipient) {
-      const cardIds = new Set(cards.map(c => c.id))
-      
-      // Remove cards from giver, add to recipient
-      player.hand = player.hand.filter(c => !cardIds.has(c.id))
-      recipient.hand = [...recipient.hand, ...cards]
-
-      // Notify both players of the exchange
-      const receivedCards = this.pendingExchangeReceivedCards.get(playerSeatIndex) ?? []
-      const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President', 3: 'Citizen', 4: 'Scum' }
-      
-      // Notify the giver (President/VP)
-      if (player.isHuman && player.odusId) {
-        this.events.onCardExchangeInfo(
-          player.odusId,
-          cards,
-          receivedCards,
-          recipient.name,
-          roleNames[player.rank ?? 0] ?? 'Unknown'
-        )
-      }
-      
-      // Notify the recipient (Scum/Vice-Scum)
-      const recipientReceivedCards = this.pendingExchangeReceivedCards.get(recipient.seatIndex)
-      const recipientGaveCards = recipientReceivedCards // What they gave = what giver received
-      if (recipient.isHuman && recipient.odusId) {
-        // For Scum: they gave their best cards, received the cards President just gave
-        const scumGave = receivedCards // Scum gave what President received
-        this.events.onCardExchangeInfo(
-          recipient.odusId,
-          scumGave,
-          cards, // Scum received what President gave
-          player.name,
-          roleNames[recipient.rank ?? 0] ?? 'Scum'
-        )
-      }
-    } else {
-      // BUG: recipient not found! Cards won't be transferred!
-      console.error('completeGiveBack: NO RECIPIENT FOUND! Cards not transferred!', {
-        playerRank: player.rank,
-        allPlayers: this.players.map(p => ({ name: p.name, rank: p.rank, seatIndex: p.seatIndex })),
-      })
-    }
-
-    this.awaitingGiveCards = null
-    this.broadcastState()
-
-    // Check if VP also needs to give cards
-    const vp = this.players.find(p => p.rank === 2)
-    if (player.rank === 1 && vp && this.pendingExchangeReceivedCards.has(vp.seatIndex)) {
-      // President done, now VP's turn
-      setTimeout(() => {
-        this.startGiveBackPhase(vp.seatIndex)
-      }, 500)
-    } else {
-      // All done, start playing
-      setTimeout(() => {
-        this.finishCardExchange()
-      }, 1500)
-    }
+    this.cardExchange.completeGiveBack(playerSeatIndex, cards)
   }
 
   private finishCardExchange(): void {
-    // Scum leads after card exchange (default rule)
-    const scum = this.players.find(p => p.rank === 4)
-    this.currentPlayer = scum?.seatIndex ?? 0
-    this.phase = PresidentPhase.Playing
-    this.pendingExchangeReceivedCards.clear()
-    this.broadcastState()
-    this.processCurrentTurn()
+    this.cardExchange.finishCardExchange()
   }
 
   private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {
     const player = this.players[playerIndex]!
 
     // Use shared processPlay function
-    const gameState = this.buildGameState()
+    const gameState = buildPresidentGameState({
+      players: this.players,
+      phase: this.phase,
+      currentPile: this.currentPile,
+      currentPlayer: this.currentPlayer,
+      consecutivePasses: this.consecutivePasses,
+      finishedPlayers: this.finishedPlayers,
+      roundNumber: this.roundNumber,
+      gameOver: this.gameOver,
+      lastPlayerId: this.lastPlayerId,
+      superTwosMode: this.superTwosMode,
+      awaitingGiveCards: this.awaitingGiveCards,
+    })
     const newState = processPlay(gameState, playerIndex, cards)
 
-    // Update local state from result
-    this.updateFromGameState(newState)
+    const nextState = applyPresidentGameState(this.players, newState)
+    this.phase = nextState.phase
+    this.currentPile = nextState.currentPile
+    this.currentPlayer = nextState.currentPlayer
+    this.consecutivePasses = nextState.consecutivePasses
+    this.finishedPlayers = nextState.finishedPlayers
+    this.gameOver = nextState.gameOver
+    this.lastPlayerId = nextState.lastPlayerId
 
     // Get play type for the broadcast
     const playType = cards.length === 1 ? 'single' :
@@ -735,15 +508,33 @@ export class PresidentGame {
     const player = this.players[playerIndex]!
 
     // Use shared processPass function
-    const gameState = this.buildGameState()
+    const gameState = buildPresidentGameState({
+      players: this.players,
+      phase: this.phase,
+      currentPile: this.currentPile,
+      currentPlayer: this.currentPlayer,
+      consecutivePasses: this.consecutivePasses,
+      finishedPlayers: this.finishedPlayers,
+      roundNumber: this.roundNumber,
+      gameOver: this.gameOver,
+      lastPlayerId: this.lastPlayerId,
+      superTwosMode: this.superTwosMode,
+      awaitingGiveCards: this.awaitingGiveCards,
+    })
     const newState = processPass(gameState, playerIndex)
 
     // Check if pile was cleared
     const pileCleared = newState.currentPile.currentRank === null &&
                         this.currentPile.currentRank !== null
 
-    // Update local state
-    this.updateFromGameState(newState)
+    const nextState = applyPresidentGameState(this.players, newState)
+    this.phase = nextState.phase
+    this.currentPile = nextState.currentPile
+    this.currentPlayer = nextState.currentPlayer
+    this.consecutivePasses = nextState.consecutivePasses
+    this.finishedPlayers = nextState.finishedPlayers
+    this.gameOver = nextState.gameOver
+    this.lastPlayerId = nextState.lastPlayerId
 
     // Broadcast the pass
     this.events.onPassed(playerIndex, player.name)
@@ -766,11 +557,30 @@ export class PresidentGame {
       console.log('handleRoundComplete called, roundNumber:', this.roundNumber)
 
       // Assign ranks based on finish order
-      const gameState = this.buildGameState()
+      const gameState = buildPresidentGameState({
+        players: this.players,
+        phase: this.phase,
+        currentPile: this.currentPile,
+        currentPlayer: this.currentPlayer,
+        consecutivePasses: this.consecutivePasses,
+        finishedPlayers: this.finishedPlayers,
+        roundNumber: this.roundNumber,
+        gameOver: this.gameOver,
+        lastPlayerId: this.lastPlayerId,
+        superTwosMode: this.superTwosMode,
+        awaitingGiveCards: this.awaitingGiveCards,
+      })
       console.log('Game state built, players finishOrders:', gameState.players.map(p => p.finishOrder))
       const rankedState = assignRanks(gameState)
       console.log('Ranks assigned:', rankedState.players.map(p => ({ id: p.id, rank: p.rank, cardsToGive: p.cardsToGive })))
-      this.updateFromGameState(rankedState)
+      const nextState = applyPresidentGameState(this.players, rankedState)
+      this.phase = nextState.phase
+      this.currentPile = nextState.currentPile
+      this.currentPlayer = nextState.currentPlayer
+      this.consecutivePasses = nextState.consecutivePasses
+      this.finishedPlayers = nextState.finishedPlayers
+      this.gameOver = nextState.gameOver
+      this.lastPlayerId = nextState.lastPlayerId
 
     // Build rankings for broadcast
     const rankings = this.players
@@ -820,7 +630,19 @@ export class PresidentGame {
 
     // Skip if player is finished
     if (player.finishOrder !== null) {
-      const gameState = this.buildGameState()
+      const gameState = buildPresidentGameState({
+        players: this.players,
+        phase: this.phase,
+        currentPile: this.currentPile,
+        currentPlayer: this.currentPlayer,
+        consecutivePasses: this.consecutivePasses,
+        finishedPlayers: this.finishedPlayers,
+        roundNumber: this.roundNumber,
+        gameOver: this.gameOver,
+        lastPlayerId: this.lastPlayerId,
+        superTwosMode: this.superTwosMode,
+        awaitingGiveCards: this.awaitingGiveCards,
+      })
       this.currentPlayer = getNextActivePlayer(gameState, this.currentPlayer)
       this.processCurrentTurn()
       return
@@ -836,21 +658,25 @@ export class PresidentGame {
     setTimeout(() => {
       if (this.phase !== PresidentPhase.Playing) return
 
-      const presidentPlayer: PresidentPlayer = {
-        id: player.seatIndex,
-        name: player.name,
-        hand: player.hand,
-        isHuman: false,
-        rank: player.rank,
-        finishOrder: player.finishOrder,
-        cardsToGive: player.cardsToGive,
-        cardsToReceive: player.cardsToReceive,
-      }
-
-      const gameState = this.buildGameState()
-      const play = this.aiDifficulty === 'hard'
-        ? choosePresidentPlayHard(presidentPlayer, this.currentPile, gameState)
-        : choosePresidentPlay(presidentPlayer, this.currentPile, gameState)
+      const gameState = buildPresidentGameState({
+        players: this.players,
+        phase: this.phase,
+        currentPile: this.currentPile,
+        currentPlayer: this.currentPlayer,
+        consecutivePasses: this.consecutivePasses,
+        finishedPlayers: this.finishedPlayers,
+        roundNumber: this.roundNumber,
+        gameOver: this.gameOver,
+        lastPlayerId: this.lastPlayerId,
+        superTwosMode: this.superTwosMode,
+        awaitingGiveCards: this.awaitingGiveCards,
+      })
+      const play = computePresidentAIPlay({
+        player,
+        currentPile: this.currentPile,
+        gameState,
+        aiDifficulty: this.aiDifficulty,
+      })
 
       if (play === null) {
         this.passInternal(player.seatIndex)
@@ -878,15 +704,11 @@ export class PresidentGame {
     if (playerIndex === -1) return
 
     const player = this.players[playerIndex]!
-    const validPlays = findValidPlays(player.hand, this.currentPile, this.superTwosMode)
-    const canPassFlag = this.currentPile.currentRank !== null
-
-    const validActions: string[] = []
-    if (validPlays.length > 0) validActions.push('play')
-    if (canPassFlag) validActions.push('pass')
-
-    // Convert valid plays to card ID arrays
-    const validPlayIds = validPlays.map(vp => vp.map(c => c.id))
+    const { validActions, validPlayIds } = buildPresidentTurnOptions({
+      hand: player.hand,
+      currentPile: this.currentPile,
+      superTwosMode: this.superTwosMode,
+    })
 
     // Clear any existing reminder timeout
     this.clearTurnReminderTimeout()
@@ -909,24 +731,28 @@ export class PresidentGame {
       return
     }
 
-    this.turnReminderCount++
     const player = this.players[playerIndex]!
+    const reminderTick = advanceReminderTick({
+      reminderCount: this.turnReminderCount,
+      timeoutAfterReminders: this.TIMEOUT_AFTER_REMINDERS,
+      timedOutPlayer: this.timedOutPlayer,
+      playerIndex,
+    })
+
+    this.turnReminderCount = reminderTick.nextReminderCount
 
     // Check if player has timed out (exceeded reminder limit)
-    if (this.turnReminderCount >= this.TIMEOUT_AFTER_REMINDERS && this.timedOutPlayer === null) {
+    if (reminderTick.didTimeOut) {
       console.log(`Player ${playerIndex} (${player.name}) has timed out`)
-      this.timedOutPlayer = playerIndex
+      this.timedOutPlayer = reminderTick.nextTimedOutPlayer
       this.events.onPlayerTimedOut(playerIndex, player.name)
     }
 
-    const validPlays = findValidPlays(player.hand, this.currentPile, this.superTwosMode)
-    const canPassFlag = this.currentPile.currentRank !== null
-
-    const validActions: string[] = []
-    if (validPlays.length > 0) validActions.push('play')
-    if (canPassFlag) validActions.push('pass')
-
-    const validPlayIds = validPlays.map(vp => vp.map(c => c.id))
+    const { validActions, validPlayIds } = buildPresidentTurnOptions({
+      hand: player.hand,
+      currentPile: this.currentPile,
+      superTwosMode: this.superTwosMode,
+    })
 
     console.log(`Sending turn reminder ${this.turnReminderCount} to player ${playerIndex}`)
     this.events.onTurnReminder(odusId, validActions, validPlayIds)
@@ -1039,57 +865,4 @@ export class PresidentGame {
     return this.timedOutPlayer === playerIndex
   }
 
-  // ---- Helper methods to bridge local state and shared game state ----
-
-  private buildGameState(): PresidentGameState {
-    return {
-      gameType: 'president',
-      players: this.players.map(p => ({
-        id: p.seatIndex,
-        name: p.name,
-        hand: p.hand,
-        isHuman: p.isHuman,
-        rank: p.rank,
-        finishOrder: p.finishOrder,
-        cardsToGive: p.cardsToGive,
-        cardsToReceive: p.cardsToReceive,
-      })),
-      phase: this.phase,
-      currentPile: this.currentPile,
-      currentPlayer: this.currentPlayer,
-      consecutivePasses: this.consecutivePasses,
-      finishedPlayers: this.finishedPlayers,
-      roundNumber: this.roundNumber,
-      gameOver: this.gameOver,
-      lastPlayerId: this.lastPlayerId,
-      rules: {
-        superTwosMode: this.superTwosMode,
-        whoLeads: 'scum',
-        playStyle: 'multiLoop',
-      },
-      pendingExchanges: [],
-      awaitingGiveBack: this.awaitingGiveCards,
-    }
-  }
-
-  private updateFromGameState(state: PresidentGameState): void {
-    // Update players
-    for (let i = 0; i < this.players.length && i < state.players.length; i++) {
-      const statePlayer = state.players[i]!
-      const localPlayer = this.players[i]!
-      localPlayer.hand = statePlayer.hand
-      localPlayer.rank = statePlayer.rank
-      localPlayer.finishOrder = statePlayer.finishOrder
-      localPlayer.cardsToGive = statePlayer.cardsToGive
-      localPlayer.cardsToReceive = statePlayer.cardsToReceive
-    }
-
-    this.phase = state.phase
-    this.currentPile = state.currentPile
-    this.currentPlayer = state.currentPlayer
-    this.consecutivePasses = state.consecutivePasses
-    this.finishedPlayers = state.finishedPlayers
-    this.gameOver = state.gameOver
-    this.lastPlayerId = state.lastPlayerId
-  }
 }

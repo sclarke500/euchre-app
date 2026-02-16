@@ -1,15 +1,10 @@
 import type {
-  Player,
   Card,
-  Trick,
-  Trump,
   Bid,
   Suit,
-  GameState,
   Round,
   TeamScore,
   ClientGameState,
-  ClientPlayer,
 } from '@67cards/shared'
 import {
   GamePhase,
@@ -26,44 +21,15 @@ import {
   isGameOver,
   getWinner,
   processBid,
-  makeAIBidRound1,
-  makeAIBidRound2,
-  chooseCardToPlay,
   chooseDealerDiscard,
-  isPartnerWinning,
   GameTracker,
-  makeAIBidRound1Hard,
-  makeAIBidRound2Hard,
-  chooseCardToPlayHard,
-  isPartnerWinningHard,
 } from '@67cards/shared'
 import { getRandomAINames } from '@67cards/shared'
-
-export interface GamePlayer {
-  odusId: string | null // null for AI players
-  seatIndex: number
-  name: string
-  isHuman: boolean
-  hand: Card[]
-  teamId: number
-}
-
-export interface GameEvents {
-  onStateChange: (playerId: string | null, state: ClientGameState) => void
-  onBidMade: (playerId: number, bid: Bid, playerName: string) => void
-  onCardPlayed: (playerId: number, card: Card, playerName: string) => void
-  onTrickComplete: (winnerId: number, winnerName: string, cards: Array<{ playerId: number; card: Card }>) => void
-  onRoundComplete: (scores: TeamScore[], tricksTaken: [number, number], pointsAwarded: [number, number]) => void
-  onGameOver: (winningTeam: number, finalScores: TeamScore[]) => void
-  onYourTurn: (playerId: string, validActions: string[], validCards?: string[]) => void
-  onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => void
-  onPlayerTimedOut: (playerId: number, playerName: string) => void
-  onPlayerBooted: (playerId: number, playerName: string) => void
-}
-
-export interface GameOptions {
-  aiDifficulty?: 'easy' | 'hard'
-}
+import type { GameEvents, GameOptions, GamePlayer } from './types.js'
+import { buildEuchreClientState } from './state.js'
+import { buildEuchreTurnOptions } from './turns.js'
+import { computeEuchreAIAction } from './ai.js'
+import { advanceReminderTick } from '../shared/reminders.js'
 
 export class EuchreGame {
   public readonly id: string
@@ -156,53 +122,18 @@ export class EuchreGame {
    * Get the current game state filtered for a specific player
    */
   getStateForPlayer(odusId: string | null): ClientGameState {
-    const playerIndex = odusId ? this.players.findIndex((p) => p.odusId === odusId) : -1
-
-    const clientPlayers: ClientPlayer[] = this.players.map((p, index) => ({
-      id: index,
-      name: p.name,
-      handSize: p.hand.length,
-      hand: index === playerIndex ? p.hand : undefined, // Only include cards for this player
-      isHuman: p.isHuman,
-      teamId: p.teamId,
-    }))
-
-    // Count tricks taken by each team and player
-    let team0Tricks = 0
-    let team1Tricks = 0
-    const tricksWonByPlayer: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
-    if (this.currentRound) {
-      for (const trick of this.currentRound.tricks) {
-        if (trick.winnerId !== null) {
-          if (trick.winnerId % 2 === 0) team0Tricks++
-          else team1Tricks++
-          tricksWonByPlayer[trick.winnerId] = (tricksWonByPlayer[trick.winnerId] ?? 0) + 1
-        }
-      }
-    }
-
-    console.log('Server getStateForPlayer - this.currentRound?.trump:', this.currentRound?.trump)
-
-    return {
+    return buildEuchreClientState({
+      odusId,
+      players: this.players,
+      currentRound: this.currentRound,
       phase: this.phase,
-      players: clientPlayers,
-      currentPlayer: this.currentRound?.currentPlayer ?? 0,
       scores: this.scores,
-      currentTrick: this.currentRound?.currentTrick ?? null,
-      completedTricks: this.currentRound?.tricks.length ?? 0,
-      trump: this.currentRound?.trump?.suit ?? null,
-      trumpCalledBy: this.currentRound?.trump?.calledBy ?? null,
-      goingAlone: this.currentRound?.goingAlone ?? false,
-      turnUpCard: this.currentRound?.turnUpCard ?? null,
-      biddingRound: this.currentRound?.biddingRound ?? null,
-      dealer: this.currentDealer,
+      currentDealer: this.currentDealer,
       gameOver: this.gameOver,
       winner: this.winner,
-      tricksTaken: [team0Tricks, team1Tricks] as [number, number],
-      tricksWonByPlayer,
       stateSeq: this.stateSeq,
       timedOutPlayer: this.timedOutPlayer,
-    }
+    })
   }
 
   /**
@@ -610,50 +541,18 @@ export class EuchreGame {
     setTimeout(() => {
       if (!this.currentRound) return
 
-      if (this.phase === GamePhase.BiddingRound1) {
-        if (!this.currentRound.turnUpCard) return
-        const aiPlayer = { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId }
-        const bid = this.aiDifficulty === 'hard'
-          ? makeAIBidRound1Hard(aiPlayer, this.currentRound.turnUpCard, this.currentRound.dealer)
-          : makeAIBidRound1(aiPlayer, this.currentRound.turnUpCard, this.currentRound.dealer)
-        this.processBidInternal(bid)
-      } else if (this.phase === GamePhase.BiddingRound2) {
-        if (!this.currentRound.turnUpCard) return
-        const aiPlayer = { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId }
-        const bid = this.aiDifficulty === 'hard'
-          ? makeAIBidRound2Hard(aiPlayer, this.currentRound.turnUpCard.suit, this.currentRound.dealer)
-          : makeAIBidRound2(aiPlayer, this.currentRound.turnUpCard.suit, this.currentRound.dealer)
-        this.processBidInternal(bid)
-      } else if (this.phase === GamePhase.Playing && this.currentRound.trump) {
-        const aiPlayer = { id: player.seatIndex, name: player.name, hand: player.hand, isHuman: false, teamId: player.teamId }
-        let card: Card
-        if (this.aiDifficulty === 'hard' && this.aiTracker) {
-          const partnerWinning = isPartnerWinningHard(
-            this.currentRound.currentTrick,
-            player.seatIndex,
-            this.currentRound.trump.suit
-          )
-          card = chooseCardToPlayHard(
-            aiPlayer,
-            this.currentRound.currentTrick,
-            this.currentRound.trump.suit,
-            partnerWinning,
-            this.aiTracker
-          )
-        } else {
-          const partnerWinning = isPartnerWinning(
-            this.currentRound.currentTrick,
-            player.seatIndex,
-            this.currentRound.trump.suit
-          )
-          card = chooseCardToPlay(
-            aiPlayer,
-            this.currentRound.currentTrick,
-            this.currentRound.trump.suit,
-            partnerWinning
-          )
-        }
-        this.playCardInternal(player.seatIndex, card)
+      const action = computeEuchreAIAction({
+        phase: this.phase,
+        currentRound: this.currentRound,
+        player,
+        aiDifficulty: this.aiDifficulty,
+        aiTracker: this.aiTracker,
+      })
+
+      if (action.type === 'bid') {
+        this.processBidInternal(action.bid)
+      } else if (action.type === 'play') {
+        this.playCardInternal(player.seatIndex, action.card)
       }
     }, 800)
   }
@@ -676,7 +575,14 @@ export class EuchreGame {
     if (playerIndex === -1) return
 
     const player = this.players[playerIndex]!
-    const { validActions, validCards } = this.getValidActionsForPlayer(playerIndex)
+    const { validActions, validCards } = buildEuchreTurnOptions({
+      playerIndex,
+      player,
+      phase: this.phase,
+      currentDealer: this.currentDealer,
+      passCount: this.passCount,
+      currentRound: this.currentRound,
+    })
 
     // Clear any existing reminder timeout
     this.clearTurnReminderTimeout()
@@ -693,52 +599,38 @@ export class EuchreGame {
     }, this.TURN_REMINDER_DELAY)
   }
 
-  private getValidActionsForPlayer(playerIndex: number): { validActions: string[]; validCards: string[] | undefined } {
-    const player = this.players[playerIndex]!
-    let validActions: string[] = []
-    let validCards: string[] | undefined
-
-    if (this.phase === GamePhase.BiddingRound1) {
-      validActions = playerIndex === this.currentDealer
-        ? [BidAction.PickUp, BidAction.Pass]
-        : [BidAction.OrderUp, BidAction.Pass]
-    } else if (this.phase === GamePhase.BiddingRound2) {
-      // Dealer must call (stick the dealer)
-      if (playerIndex === this.currentDealer && this.passCount >= 3) {
-        validActions = [BidAction.CallTrump]
-      } else {
-        validActions = [BidAction.CallTrump, BidAction.Pass]
-      }
-    } else if (this.phase === GamePhase.Playing && this.currentRound?.trump) {
-      validActions = ['play_card']
-      const legalPlays = getLegalPlays(player.hand, this.currentRound.currentTrick, this.currentRound.trump.suit)
-      validCards = legalPlays.map((c) => c.id)
-    } else if (this.phase === GamePhase.DealerDiscard) {
-      validActions = ['discard']
-      validCards = player.hand.map((c) => c.id)
-    }
-
-    return { validActions, validCards }
-  }
-
   private sendTurnReminder(odusId: string, playerIndex: number): void {
     // Verify it's still this player's turn
     if (!this.currentRound || this.currentRound.currentPlayer !== playerIndex) {
       return
     }
 
-    this.turnReminderCount++
     const player = this.players[playerIndex]!
+    const reminderTick = advanceReminderTick({
+      reminderCount: this.turnReminderCount,
+      timeoutAfterReminders: this.TIMEOUT_AFTER_REMINDERS,
+      timedOutPlayer: this.timedOutPlayer,
+      playerIndex,
+    })
+
+    this.turnReminderCount = reminderTick.nextReminderCount
 
     // Check if player has timed out (exceeded reminder limit)
-    if (this.turnReminderCount >= this.TIMEOUT_AFTER_REMINDERS && this.timedOutPlayer === null) {
+    if (reminderTick.didTimeOut) {
       console.log(`Player ${playerIndex} (${player.name}) has timed out`)
-      this.timedOutPlayer = playerIndex
+      this.timedOutPlayer = reminderTick.nextTimedOutPlayer
       this.events.onPlayerTimedOut(playerIndex, player.name)
       // Continue sending reminders but player is now marked as timed out
     }
 
-    const { validActions, validCards } = this.getValidActionsForPlayer(playerIndex)
+    const { validActions, validCards } = buildEuchreTurnOptions({
+      playerIndex,
+      player,
+      phase: this.phase,
+      currentDealer: this.currentDealer,
+      passCount: this.passCount,
+      currentRound: this.currentRound,
+    })
     console.log(`Sending turn reminder ${this.turnReminderCount} to player ${playerIndex}`)
     this.events.onTurnReminder(odusId, validActions, validCards)
 

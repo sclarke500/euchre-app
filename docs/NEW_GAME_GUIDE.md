@@ -587,7 +587,10 @@ Study these files for the cleanest example (Spades):
 
 ```
 packages/shared/src/spades/types.ts
-packages/server/src/SpadesGame.ts
+packages/server/src/games/spades/SpadesGame.ts
+packages/server/src/games/spades/state.ts
+packages/server/src/games/spades/turns.ts
+packages/server/src/games/spades/ai.ts
 packages/client/src/games/spades/spadesMultiplayerStore.ts
 packages/client/src/games/spades/useSpadesGameAdapter.ts
 packages/client/src/games/spades/useSpadesDirector.ts
