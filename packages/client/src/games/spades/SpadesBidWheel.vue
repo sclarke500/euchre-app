@@ -121,8 +121,9 @@ onMounted(() => {
   gap: 16px;
   padding: 20px 16px;
   padding-right: max(16px, env(safe-area-inset-right));
-  background: rgba(20, 20, 30, 0.5);
-  backdrop-filter: blur(20px);
+  background-color: rgba(20, 20, 30, 0.4) !important;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border-radius: 20px 0 0 20px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-right: none;
