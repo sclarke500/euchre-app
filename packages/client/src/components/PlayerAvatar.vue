@@ -99,13 +99,13 @@ const positionStyle = computed(() => props.customStyle ?? {})
   }
 
   .player-name {
-    margin-top: 3px;
+    margin-top: -8px;
     padding: 2px 10px;
     font-size: 13px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: rgba(0, 0, 0, 0.5);
+    background: #1a1a24;
     border-radius: 4px;
   }
 
