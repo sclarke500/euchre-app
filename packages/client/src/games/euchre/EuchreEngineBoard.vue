@@ -84,12 +84,11 @@
       <span v-if="userTrumpInfo" class="user-trump-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
     </template>
 
-    <!-- User action buttons — floating, no container -->
-    <div class="action-buttons" :class="{ 'is-my-turn': game.isMyTurn.value && !director.isAnimating.value }">
+    <!-- User actions — bottom bar -->
+    <UserActions :active="game.isMyTurn.value && !director.isAnimating.value">
       <TurnTimer 
         v-if="mode === 'multiplayer'"
         ref="turnTimerRef"
-        class="floating-timer"
         :active="game.isMyTurn.value && !director.isAnimating.value"
         :grace-period-ms="timerSettings.gracePeriodMs"
         :countdown-ms="timerSettings.countdownMs"
@@ -102,7 +101,7 @@
           {{ isUserDealer ? 'Pick Up' : 'Order Up' }}
         </button>
         <button class="action-btn" @click="handlePass">Pass</button>
-        <label class="alone-toggle">
+        <label class="action-checkbox">
           <input type="checkbox" v-model="goAlone" />
           Alone
         </label>
@@ -110,20 +109,19 @@
 
       <!-- Round 2: Pass or Call Suit -->
       <template v-else-if="showBidding && game.biddingRound.value === 2">
-        <div class="panel-message">Call trump{{ mustCall ? ' (must call)' : '' }}</div>
-        <div class="suit-row">
-          <button
-            v-for="suit in availableSuits"
-            :key="suit.name"
-            class="action-btn suit-btn"
-            :style="{ color: suit.color }"
-            @click="handleCallSuit(suit.name)"
-          >
-            {{ suit.symbol }}
-          </button>
-        </div>
+        <span class="action-label">{{ mustCall ? 'Must call' : 'Call trump' }}</span>
+        <button
+          v-for="suit in availableSuits"
+          :key="suit.name"
+          class="action-btn suit-btn"
+          :style="{ color: suit.color }"
+          @click="handleCallSuit(suit.name)"
+        >
+          {{ suit.symbol }}
+        </button>
         <button v-if="!mustCall" class="action-btn" @click="handlePass">Pass</button>
-        <label class="alone-toggle">
+        <span class="action-divider" />
+        <label class="action-checkbox">
           <input type="checkbox" v-model="goAlone" />
           Alone
         </label>
@@ -131,11 +129,9 @@
 
       <!-- Dealer discard -->
       <template v-else-if="game.phase.value === 'dealer_discard' && isUserDealer">
-        <div class="panel-message">Discard a card</div>
+        <span class="action-label">Tap a card to discard</span>
       </template>
-
-      <!-- Playing phase — your turn (no message needed, turn indicator on avatar) -->
-    </div>
+    </UserActions>
   </CardTable>
 </template>
 
@@ -146,6 +142,7 @@ import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
+import UserActions from '@/components/UserActions.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useEuchreGameAdapter } from './useEuchreGameAdapter'
 import { useEuchreDirector } from './useEuchreDirector'
@@ -543,100 +540,15 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 
-// Floating action buttons — no container, just buttons
-.action-buttons {
-  position: absolute;
-  bottom: 100px; /* Above user avatar */
-  right: max(12px, env(safe-area-inset-right));
-  z-index: 600;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  width: 130px;
-
-  &:empty {
-    display: none;
-  }
-}
-
-.floating-timer {
-  align-self: center;
-  margin-bottom: 4px;
-}
-
-.panel-message {
-  font-size: 12px;
-  color: #fff;
-  text-align: center;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-  padding: 4px 0;
-}
-
-.action-btn {
-  padding: 10px 8px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  background: rgba(50, 50, 65, 0.95);
-  backdrop-filter: blur(8px);
-  color: #ccc;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--anim-fast), transform var(--anim-fast);
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+// Suit buttons need specific styling
+.suit-btn {
+  font-size: 24px !important;
+  padding: 8px 16px !important;
+  background: rgba(240, 240, 245, 0.95) !important;
+  border-color: #bbb !important;
 
   &:hover {
-    background: rgba(70, 70, 90, 0.98);
-    color: #fff;
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
-
-  &.primary {
-    background: rgba(36, 115, 90, 0.95);
-    border-color: #2a8a6a;
-    color: #fff;
-
-    &:hover {
-      background: rgba(46, 135, 110, 0.98);
-    }
-  }
-
-  &.suit-btn {
-    font-size: 22px;
-    padding: 8px 0;
-    flex: 1;
-    min-width: 0;
-    background: rgba(240, 240, 245, 0.92);
-    border-color: #aaa;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.97);
-    }
-  }
-}
-
-.suit-row {
-  display: flex;
-  gap: 4px;
-}
-
-.alone-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #999;
-  cursor: pointer;
-  user-select: none;
-
-  input {
-    accent-color: #2a8a6a;
+    background: rgba(255, 255, 255, 0.98) !important;
   }
 }
 
