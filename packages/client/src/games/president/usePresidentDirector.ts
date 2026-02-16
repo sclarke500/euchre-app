@@ -435,19 +435,34 @@ export function usePresidentDirector(
     // For user's own play: cards are real cards already in hand
     // For opponent play: consume placeholder cards, replace with real card data
     const cardIdsToMove: string[] = []
+    const usedPlaceholderIndices = new Set<number>()
 
     for (const card of cards) {
       const hasCard = hand.cards.some(m => m.card.id === card.id)
       if (hasCard) {
         cardIdsToMove.push(card.id)
       } else if (seatIndex !== 0 && hand.cards.length > 0) {
-        // Opponent placeholder — consume last placeholder, swap visual data
-        const managed = hand.cards[hand.cards.length - 1]!
+        // Opponent placeholder — find an unused placeholder from the end
+        let placeholderIdx = hand.cards.length - 1
+        while (placeholderIdx >= 0 && usedPlaceholderIndices.has(placeholderIdx)) {
+          placeholderIdx--
+        }
+        if (placeholderIdx < 0) {
+          console.warn('[PresidentDirector] No available placeholder for opponent card')
+          continue
+        }
+        usedPlaceholderIndices.add(placeholderIdx)
+        
+        const managed = hand.cards[placeholderIdx]!
         const effectiveId = managed.card.id
         managed.card = { id: effectiveId, suit: card.suit, rank: card.rank }
-        engine.refreshCards()
         cardIdsToMove.push(effectiveId)
       }
+    }
+    
+    // Refresh cards after all placeholders are updated
+    if (cardIdsToMove.length > 0) {
+      engine.refreshCards()
     }
 
     // Disable arc fan for user cards being played
