@@ -44,7 +44,6 @@ export function useSpadesDirector(
     opponentFanSpacing: 16,
     userFanCurve: 0,
     playMoveMs: 350,
-    opponentCollapseScale: 0.05, // Collapse to nearly invisible (match Euchre)
     ...cardControllerPresets.spades,
   })
 
