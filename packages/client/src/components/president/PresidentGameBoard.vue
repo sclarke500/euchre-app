@@ -575,57 +575,24 @@ const showRoundComplete = computed(() =>
       </div>
     </div>
 
-    <!-- Floating action panel -->
-    <div :class="['floating-action-panel', { active: isHumanTurn || isHumanGivingCards }]">
-      <div class="player-info-panel">
-        <div class="player-name-panel">
-          <span v-if="humanPlayer && getPlayerRankBadge(humanPlayer.id)" class="rank-badge">{{ getPlayerRankBadge(humanPlayer.id) }}</span>
-          {{ humanPlayer?.name || 'You' }}
-        </div>
-      </div>
-
-      <!-- Selection feedback for give-back phase -->
-      <div v-if="isHumanGivingCards" class="selection-feedback giving-mode">
-        <div v-if="selectedGiveBackCards.size > 0" class="selection-count">
-          {{ selectedGiveBackCards.size }}/{{ cardsToGiveCount }} selected
-        </div>
-        <div v-else class="hint-text">
-          Tap cards to select
-        </div>
-      </div>
-
-      <!-- Selection feedback for normal play -->
-      <div v-else-if="isHumanTurn" class="selection-feedback">
-        <div v-if="selectedCards.length > 0" class="selection-count">
-          {{ selectedCards.length }} card{{ selectedCards.length !== 1 ? 's' : '' }} selected
-        </div>
-        <div v-if="!canPlaySelection && selectedCards.length > 0" class="invalid-hint">
-          Invalid play
-        </div>
-        <div v-if="selectedCards.length === 0" class="hint-text">
-          Tap cards to select
-        </div>
-      </div>
-
-      <!-- Spacer to push buttons to bottom -->
-      <div class="panel-spacer"></div>
-
-      <!-- Action buttons for give-back phase -->
-      <div v-if="isHumanGivingCards" class="action-buttons">
+    <!-- Action buttons - floating, no container -->
+    <div class="action-buttons">
+      <!-- Give-back phase -->
+      <template v-if="isHumanGivingCards">
         <button
           class="action-btn give-btn"
           :disabled="!canConfirmGiveBack"
           @click="confirmGiveBack"
         >
-          Give Cards ({{ selectedGiveBackCards.size }}/{{ cardsToGiveCount }})
+          Give ({{ selectedGiveBackCards.size }}/{{ cardsToGiveCount }})
         </button>
-      </div>
+      </template>
 
-      <!-- Action buttons for normal play -->
-      <div v-else class="action-buttons">
+      <!-- Normal play -->
+      <template v-else-if="isHumanTurn">
         <button
           class="action-btn play-btn"
-          :disabled="!isHumanTurn || !canPlaySelection"
+          :disabled="!canPlaySelection"
           @click="playSelectedCards"
         >
           Play {{ selectedCards.length > 0 ? `(${selectedCards.length})` : '' }}
@@ -637,7 +604,7 @@ const showRoundComplete = computed(() =>
         >
           Pass
         </button>
-      </div>
+      </template>
     </div>
 
     <!-- Card exchange modal (for Scum/Vice-Scum showing what was exchanged) -->
@@ -1159,156 +1126,75 @@ const showRoundComplete = computed(() =>
   }
 }
 
-// Floating action panel
-.floating-action-panel {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  width: 180px;
-  min-height: 180px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: $spacing-md;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  z-index: 100;
-  border: 2px solid transparent;
-  transition: border-color var(--anim-fast) ease, box-shadow var(--anim-fast) ease;
-
-  @media (max-height: 500px) {
-    width: 150px;
-    min-height: 150px;
-    padding: $spacing-sm;
-    gap: $spacing-xs;
-  }
-
-  &.active {
-    border-color: #f4d03f;
-    box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
-  }
-}
-
-.player-info-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-xs;
-}
-
-.player-name-panel {
-  font-weight: bold;
-  font-size: 1rem;
-
-  @media (max-height: 500px) {
-    font-size: 0.9rem;
-  }
-}
-
-.player-rank-panel {
-  background: $secondary-color;
-  padding: 2px $spacing-xs;
-  border-radius: 4px;
-  font-size: 0.75rem;
-}
-
-.selection-feedback {
-  padding: $spacing-xs $spacing-sm;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  font-size: 0.8rem;
-  color: white;
-  text-align: center;
-
-  @media (max-height: 500px) {
-    padding: $spacing-xs;
-    font-size: 0.75rem;
-  }
-
-  .selection-count {
-    font-weight: bold;
-  }
-
-  .invalid-hint {
-    color: #ff6b6b;
-    font-size: 0.75rem;
-    font-style: italic;
-  }
-
-  .hint-text {
-    opacity: 0.8;
-    font-style: italic;
-    font-size: 0.75rem;
-  }
-}
-
-.panel-spacer {
-  flex: 1;
-}
-
+// Action buttons - floating, no container
 .action-buttons {
+  position: fixed;
+  bottom: 100px; // Above user avatar
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 600;
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  align-items: stretch;
+  gap: 8px;
+  width: 130px;
+
+  &:empty {
+    display: none;
+  }
 }
 
 .action-btn {
-  padding: $spacing-sm $spacing-md;
-  font-size: 0.95rem;
-  font-weight: bold;
-  border-radius: 8px;
-  transition: all var(--anim-fast);
-  width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border: none;
+  padding: 10px 8px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: rgba(50, 50, 65, 0.95);
+  backdrop-filter: blur(8px);
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+
+  &:hover {
+    background: rgba(70, 70, 90, 0.98);
+    color: #fff;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
 
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
-    box-shadow: none;
-  }
-
-  @media (max-height: 500px) {
-    padding: $spacing-xs $spacing-sm;
-    font-size: 0.85rem;
   }
 }
 
 .play-btn {
-  background: $secondary-color;
-  color: white;
+  background: rgba(36, 115, 90, 0.95);
+  border-color: #2a8a6a;
+  color: #fff;
 
-  &:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  &:disabled {
-    background: rgba(255, 255, 255, 0.1);
+  &:hover {
+    background: rgba(46, 135, 110, 0.98);
   }
 }
 
 .give-btn {
-  background: #9b59b6;
-  color: white;
+  background: rgba(36, 115, 90, 0.95);
+  border-color: #2a8a6a;
+  color: #fff;
 
-  &:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  &:disabled {
-    background: rgba(255, 255, 255, 0.1);
+  &:hover {
+    background: rgba(46, 135, 110, 0.98);
   }
 }
 
 .pass-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-
-  &:active:not(:disabled) {
-    transform: scale(0.98);
-  }
+  background: rgba(80, 80, 100, 0.95);
+  color: #ccc;
 }
 
 // Give cards prompt (inline in center area)
@@ -1375,11 +1261,6 @@ const showRoundComplete = computed(() =>
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.9; }
   50% { opacity: 1; text-shadow: 0 0 10px rgba(212, 165, 232, 0.5); }
-}
-
-.selection-feedback.giving-mode {
-  background: rgba(155, 89, 182, 0.2);
-  border: 1px solid rgba(155, 89, 182, 0.4);
 }
 
 // Modal styles
