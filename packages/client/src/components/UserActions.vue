@@ -39,9 +39,9 @@ const hasContent = computed(() => !!slots.default)
 
 .actions-content {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 /* Transition */
