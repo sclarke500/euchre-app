@@ -226,11 +226,44 @@ defineExpose({
   border-radius: 40px;
   background:
     radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 70%);
-  border: 8px solid var(--rail);
+  border: 10px solid transparent;
+  
+  // Glossy wood rail effect using pseudo-element
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 44px;
+    background: 
+      // Wood grain texture simulation
+      linear-gradient(
+        90deg,
+        #3d2817 0%,
+        #5c4033 8%,
+        #4a3525 15%,
+        #6b4c35 25%,
+        #4a3525 35%,
+        #5c4033 45%,
+        #3d2817 55%,
+        #5c4033 65%,
+        #4a3525 75%,
+        #6b4c35 85%,
+        #4a3525 92%,
+        #3d2817 100%
+      );
+    z-index: -1;
+    // Glossy highlight on top edge
+    box-shadow:
+      inset 0 2px 4px rgba(255, 255, 255, 0.15),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.4),
+      0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+  
+  // Inner shadow for 3D depth - felt sits below rail
   box-shadow:
-    inset 0 0 60px rgba(0, 0, 0, 0.25),
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    0 0 0 2px var(--rail-accent);
+    inset 0 4px 12px rgba(0, 0, 0, 0.5),
+    inset 0 0 40px rgba(0, 0, 0, 0.3),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.2);
 
   // Watermark with game name
   .table-watermark {
@@ -272,6 +305,10 @@ defineExpose({
   // Normal layout (4 players) - more square
   &.normal {
     border-radius: 30px;
+    
+    &::before {
+      border-radius: 34px;
+    }
   }
 }
 
