@@ -19,6 +19,7 @@
             :key="val"
             class="wheel-item"
             :class="{ selected: val === modelValue }"
+            @click="selectValue(val)"
           >
             {{ val === 0 ? 'Nil' : val }}
           </div>
@@ -85,6 +86,11 @@ function scrollToValue(val: number, smooth = true) {
     behavior: smooth ? 'smooth' : 'instant'
   })
   setTimeout(() => { isScrolling = false }, 150)
+}
+
+function selectValue(val: number) {
+  emit('update:modelValue', val)
+  scrollToValue(val)
 }
 
 // Scroll to initial value when visible
@@ -182,6 +188,11 @@ onMounted(() => {
   color: rgba(0, 0, 0, 0.35);
   scroll-snap-align: center;
   transition: color 0.15s ease, font-size 0.15s ease;
+  cursor: pointer;
+  
+  &:hover:not(.selected) {
+    color: rgba(0, 0, 0, 0.5);
+  }
   
   &.selected {
     font-size: 26px;
