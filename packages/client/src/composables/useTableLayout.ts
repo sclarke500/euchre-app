@@ -121,18 +121,20 @@ export function computeTableLayout(
     let handX: number
     let handY: number
 
+    // Position opponent hands at the table edge (under avatar center)
+    // Avatar is positioned at the edge, so hand should be too
     switch (seat.side) {
       case 'left':
-        handX = tableLeft + handInset
+        handX = tableLeft
         handY = tableTop + seat.pos * tableH
         break
       case 'right':
-        handX = tableRight - handInset
+        handX = tableRight
         handY = tableTop + seat.pos * tableH
         break
       case 'top':
         handX = tableLeft + seat.pos * tableW
-        handY = tableTop + handInset
+        handY = tableTop
         break
       default: // bottom (user) - position below table so cards overlap the bottom edge
         handX = tableX

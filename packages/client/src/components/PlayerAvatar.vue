@@ -117,6 +117,8 @@ const positionStyle = computed(() => props.customStyle ?? {})
     white-space: nowrap;
     background: #1a1a24;
     border-radius: 10px;
+    position: relative;
+    z-index: 10;
   }
 
   .player-status {
