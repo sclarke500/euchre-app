@@ -390,7 +390,7 @@ export function useEuchreDirector(
 
     const dealerIdx = dealerSeat.value >= 0 ? dealerSeat.value : 0
     engine.createDeck(getDealerDeckPosition(dealerIdx, tl), CENTER_CARD_SCALE)
-    engine.createPile('trick', tl.tableCenter, TRICK_PLAY_SCALE)
+    engine.createPile('center', tl.tableCenter, TRICK_PLAY_SCALE)
 
     // Create trick-won piles for each player (positioned when tricks are won)
     for (let i = 0; i < 4; i++) {
@@ -657,7 +657,7 @@ export function useEuchreDirector(
 
     const seatIndex = playerIdToSeatIndex(playerId)
     const hand = engine.getHands()[seatIndex]
-    const trickPile = engine.getPiles().find(p => p.id === 'trick')
+    const trickPile = engine.getPiles().find(p => p.id === 'center')
     if (!hand || !trickPile) return
 
     // In multiplayer, opponent hands contain placeholder cards.
@@ -714,40 +714,9 @@ export function useEuchreDirector(
 
   // ── Trick sweep → won-trick stacks ──────────────────────────────────────
 
+  /** Animate trick sweep - delegates to shared card controller */
   async function animateTrickSweep(winnerId: number) {
-    const trickPile = engine.getPiles().find(p => p.id === 'trick')
-    if (!trickPile || trickPile.cards.length === 0) return
-
-    const tl = getTableLayout()
-    if (!tl) return
-
-    const wonPile = engine.getPiles().find(p => p.id === `tricks-won-player-${winnerId}`)
-    if (!wonPile) return
-
-    const trickNum = tricksWonByPlayer.value[winnerId] ?? 0
-
-    // Animate each trick card to the player's won-stack position
-    const cardsToMove = [...trickPile.cards]
-    await Promise.all(cardsToMove.map((m, i) => {
-      const ref = engine.getCardRef(m.card.id)
-      if (!ref) return Promise.resolve()
-
-      const targetPos = getPlayerTrickPosition(winnerId, trickNum, i, tl)
-      wonPile.setCardTargetPosition(m.card.id, targetPos)
-
-      return ref.moveTo(targetPos, TRICK_SWEEP_MS)
-    }))
-
-    // Move cards from trick pile to won pile
-    for (const m of cardsToMove) {
-      trickPile.removeCard(m.card.id)
-      m.faceUp = false
-      wonPile.addManagedCard(m)
-    }
-
-    trickPile.clear()
-    tricksWonByPlayer.value[winnerId] = trickNum + 1
-    engine.refreshCards()
+    await cardController.completeTrick(winnerId)
   }
 
   // ── Round-end: sweep trick piles off table ─────────────────────────────
