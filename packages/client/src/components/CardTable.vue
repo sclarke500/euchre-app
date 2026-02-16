@@ -8,14 +8,15 @@
           <img src="@/assets/AppLogo.png" alt="" class="watermark-logo" />
           <span class="watermark-name">{{ gameName }}</span>
         </div>
-        
-        <!-- Dealer chip - positioned on table, animates between seats -->
-        <div
-          v-if="dealerSeat >= 0"
-          class="dealer-chip"
-          :class="`dealer-seat-${dealerSeat}`"
-        >D</div>
       </div>
+      
+      <!-- Dealer chip - outside table-surface for proper z-index above cards -->
+      <div
+        v-if="dealerSeat >= 0"
+        class="dealer-chip"
+        :class="`dealer-seat-${dealerSeat}`"
+        :style="dealerChipStyle"
+      >D</div>
       
       <!-- Opponent avatars - outside table-surface for proper z-index stacking -->
       <PlayerAvatar
@@ -139,6 +140,30 @@ const avatarStyles = computed(() => {
         return { left: `${seat.handPosition.x}px`, top: `${tableBounds.bottom}px` }
     }
   })
+})
+
+/**
+ * Compute dealer chip position in board-space pixels.
+ * Positioned inside table near each seat.
+ */
+const dealerChipStyle = computed(() => {
+  const layout = lastLayoutResult.value
+  if (!layout) return {}
+  const { tableBounds } = layout
+  const inset = 50 // pixels inset from table edge
+
+  switch (props.dealerSeat) {
+    case 0: // bottom (user)
+      return { left: `${tableBounds.centerX}px`, top: `${tableBounds.bottom - inset}px` }
+    case 1: // left
+      return { left: `${tableBounds.left + inset}px`, top: `${tableBounds.centerY}px` }
+    case 2: // top
+      return { left: `${tableBounds.centerX}px`, top: `${tableBounds.top + inset}px` }
+    case 3: // right
+      return { left: `${tableBounds.right - inset}px`, top: `${tableBounds.centerY}px` }
+    default:
+      return {}
+  }
 })
 
 function computeLayout() {
@@ -321,10 +346,10 @@ defineExpose({
   }
 }
 
-// Dealer chip - positioned on table near each seat
+// Dealer chip - positioned on table near each seat (outside table-surface for z-index)
 .dealer-chip {
   position: absolute;
-  z-index: 10;
+  z-index: 400; // Above table cards (~200), below avatars and user hand
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -338,11 +363,5 @@ defineExpose({
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transform: translate(-50%, -50%);
   transition: left var(--anim-slower, 0.5s) ease, top var(--anim-slower, 0.5s) ease;
-
-  // Position on table near each player (inset from edges)
-  &.dealer-seat-0 { left: 50%; top: calc(100% - 40px); }      // bottom (user)
-  &.dealer-seat-1 { left: 60px; top: 50%; }                    // left
-  &.dealer-seat-2 { left: 50%; top: 40px; }                    // top
-  &.dealer-seat-3 { left: calc(100% - 60px); top: 50%; }       // right
 }
 </style>
