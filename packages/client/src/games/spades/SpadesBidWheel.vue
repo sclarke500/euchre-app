@@ -121,12 +121,12 @@ onMounted(() => {
   gap: 16px;
   padding: 20px 16px;
   padding-right: max(16px, env(safe-area-inset-right));
-  background: rgba(15, 15, 20, 0.7);
+  background: rgba(20, 20, 30, 0.5);
   backdrop-filter: blur(20px);
   border-radius: 20px 0 0 20px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-right: none;
-  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.5);
+  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.4);
 }
 
 // Shiny overlay effect - sits on top
@@ -135,10 +135,11 @@ onMounted(() => {
   inset: 0;
   border-radius: 20px 0 0 20px;
   background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.15) 0%,
-    rgba(255, 255, 255, 0.05) 30%,
-    transparent 50%
+    135deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 70%
   );
   pointer-events: none;
   z-index: 10;
