@@ -437,7 +437,11 @@ export function usePresidentDirector(
     const cardIdsToMove: string[] = []
     const usedPlaceholderIndices = new Set<number>()
 
-    console.log(`[PresidentDirector] animateCardPlayMP: seat=${seatIndex}, cards=${cards.map(c => c.id).join(',')}, handSize=${hand.cards.length}`)
+    const myId = game.humanPlayer.value?.id ?? -1
+    console.log(`[PresidentDirector] animateCardPlayMP: playerId=${playerId}, myId=${myId}, seat=${seatIndex}, cards=${cards.map(c => c.id).join(',')}, handSize=${hand.cards.length}`)
+    if (seatIndex === 0) {
+      console.log(`[PresidentDirector] User play - engine hand cards:`, hand.cards.map(m => m.card.id))
+    }
 
     for (const card of cards) {
       const hasCard = hand.cards.some(m => m.card.id === card.id)
