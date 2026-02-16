@@ -406,7 +406,7 @@ export function useEuchreDirector(
     for (let i = 0; i < tl.seats.length; i++) {
       const seat = tl.seats[i]!
       const isUser = seat.isUser
-      const hand = engine.createHand(`player-${i}`, seat.handPosition, {
+      engine.createHand(`player-${i}`, seat.handPosition, {
         faceUp: false,
         fanDirection: 'horizontal',
         fanSpacing: isUser ? 30 : 12,  // ~40% overlap at user hand scale
@@ -416,8 +416,6 @@ export function useEuchreDirector(
         angleToCenter: seat.angleToCenter,
         isUser,
       })
-      // Set stack position (under avatar) for looseStack mode
-      hand.stackPosition = seat.stackPosition
     }
   }
 

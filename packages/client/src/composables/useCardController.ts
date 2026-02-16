@@ -99,7 +99,7 @@ export function useCardController(
     const baseScale = config.opponentHandScale ?? 0.7
     for (let i = 0; i < config.playerCount; i++) {
       const seat = layout.seats[i]!
-      const hand = engine.createHand(`hand-${i}`, seat.handPosition, {
+      engine.createHand(`hand-${i}`, seat.handPosition, {
         fanSpacing: seat.isUser ? (config.userFanSpacing ?? 30) : (config.opponentFanSpacing ?? 16),
         faceUp: false,
         rotation: seat.rotation,
@@ -108,8 +108,6 @@ export function useCardController(
         angleToCenter: seat.angleToCenter,
         isUser: seat.isUser,
       })
-      // Set stack position (under avatar) for looseStack mode
-      hand.stackPosition = seat.stackPosition
     }
 
     engine.createPile('center', { x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
