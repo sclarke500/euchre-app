@@ -474,6 +474,37 @@ export function usePresidentDirector(
     }
   }
 
+  // ── Pile sync (for resync after server restart) ────────────────────────
+
+  function syncVisualPileWithServer(serverPile: { plays?: Array<{ cards: StandardCard[] }> } | null) {
+    const centerPile = engine.getPiles().find(p => p.id === 'center')
+    if (!centerPile) return
+
+    // Get all card IDs that should be in the pile according to server
+    const serverCardIds = new Set<string>()
+    if (serverPile?.plays) {
+      for (const play of serverPile.plays) {
+        for (const card of play.cards) {
+          serverCardIds.add(card.id)
+        }
+      }
+    }
+
+    // Get all card IDs currently in the visual pile
+    const visualCardIds = new Set(centerPile.cards.map(m => m.card.id))
+
+    // If they match, no sync needed
+    if (serverCardIds.size === visualCardIds.size && 
+        [...serverCardIds].every(id => visualCardIds.has(id))) {
+      return
+    }
+
+    // Mismatch detected - clear visual pile (server state is source of truth)
+    console.log('[PresidentDirector] Pile sync: clearing stale visual pile')
+    centerPile.clear()
+    engine.refreshCards()
+  }
+
   // ── Pile sweep animation ──────────────────────────────────────────────
 
   async function animatePileSweep() {
@@ -642,6 +673,8 @@ export function usePresidentDirector(
         if (newPhase !== oldPhase) {
           await handlePhaseTransitionMP(newPhase, oldPhase)
         }
+        // Sync visual pile with server state (handles resync after server restart)
+        syncVisualPileWithServer(msg.state.currentPile)
         // Sync pile play count from game state
         mpPilePlayCount = msg.state.currentPile?.plays?.length ?? 0
         break
