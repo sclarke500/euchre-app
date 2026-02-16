@@ -445,12 +445,19 @@ export function usePresidentDirector(
 
     for (const card of cards) {
       const hasCard = hand.cards.some(m => m.card.id === card.id)
+      console.log(`[PresidentDirector] Looking for ${card.id}, found=${hasCard}`)
       if (hasCard) {
         cardIdsToMove.push(card.id)
       } else if (seatIndex === 0) {
         // User's card not found in engine hand - this shouldn't happen
-        console.warn(`[PresidentDirector] User card ${card.id} not found in engine hand!`, 
+        console.warn(`[PresidentDirector] User card ${card.id} NOT FOUND in engine hand!`, 
           'Engine has:', hand.cards.map(m => m.card.id))
+        // Try to find by rank/suit instead of ID
+        const byRankSuit = hand.cards.find(m => m.card.rank === card.rank && m.card.suit === card.suit)
+        if (byRankSuit) {
+          console.log(`[PresidentDirector] Found by rank/suit: ${byRankSuit.card.id}`)
+          cardIdsToMove.push(byRankSuit.card.id)
+        }
       } else if (hand.cards.length > 0) {
         // Opponent placeholder — find an unused placeholder from the end
         let placeholderIdx = hand.cards.length - 1
@@ -482,7 +489,12 @@ export function usePresidentDirector(
       }
     }
 
-    console.log(`[PresidentDirector] animateCardPlayMP: moving ${cardIdsToMove.length} cards to pile`)
+    console.log(`[PresidentDirector] animateCardPlayMP: moving ${cardIdsToMove.length} cards to pile:`, cardIdsToMove)
+    
+    if (cardIdsToMove.length === 0) {
+      console.warn(`[PresidentDirector] No cards to move! seat=${seatIndex}`)
+      return
+    }
     
     // Animate all cards to pile position
     const movePromises = cardIdsToMove.map((cardId, i) => {
