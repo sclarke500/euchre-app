@@ -49,12 +49,19 @@ const trackStyle = computed(() => ({
   transform: `translateY(${-props.modelValue * itemHeight}px)`
 }))
 
+// Accumulate scroll delta for slower response
+let scrollAccumulator = 0
+const scrollThreshold = 80 // Higher = slower scrolling
+
 function handleWheel(e: WheelEvent) {
-  // Scroll down = increase value, scroll up = decrease
-  if (e.deltaY > 0 && props.modelValue < 13) {
+  scrollAccumulator += e.deltaY
+  
+  if (scrollAccumulator >= scrollThreshold && props.modelValue < 13) {
     emit('update:modelValue', props.modelValue + 1)
-  } else if (e.deltaY < 0 && props.modelValue > 0) {
+    scrollAccumulator = 0
+  } else if (scrollAccumulator <= -scrollThreshold && props.modelValue > 0) {
     emit('update:modelValue', props.modelValue - 1)
+    scrollAccumulator = 0
   }
 }
 </script>
@@ -91,14 +98,37 @@ function handleWheel(e: WheelEvent) {
   overflow: hidden;
   position: relative;
   
-  // Fade edges
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 25%,
-    black 75%,
-    transparent 100%
-  );
+  // Gradient shadows top and bottom for 3D depth
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 40px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  &::before {
+    top: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(245, 245, 248, 1) 0%,
+      rgba(245, 245, 248, 0.8) 40%,
+      transparent 100%
+    );
+  }
+  
+  &::after {
+    bottom: 0;
+    background: linear-gradient(
+      to top,
+      rgba(245, 245, 248, 1) 0%,
+      rgba(245, 245, 248, 0.8) 40%,
+      transparent 100%
+    );
+  }
 }
 
 .wheel-track {
