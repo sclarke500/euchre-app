@@ -58,20 +58,29 @@ function handleSeatClick(seatIndex: number) {
 </script>
 
 <template>
-  <!-- LIST VIEW (compact row for lobby) -->
+  <!-- LIST VIEW (row for lobby with full seat boxes) -->
   <div v-if="!isCurrent" class="table-row">
     <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
-    <span class="host-name">{{ hostName }}</span>
-    <div class="seat-dots">
-      <span 
-        v-for="(seat, index) in seats" 
-        :key="index" 
-        class="dot"
-        :class="{ filled: !seat.isEmpty, clickable: seat.isEmpty }"
+    <div class="seats-list">
+      <div
+        v-for="(seat, index) in seats"
+        :key="index"
+        class="seat-box"
+        :class="{ 
+          occupied: !seat.isEmpty, 
+          empty: seat.isEmpty,
+        }"
         @click.stop="seat.isEmpty && handleSeatClick(index)"
-      />
+      >
+        <span class="seat-name">
+          <template v-if="seat.player">
+            {{ seat.player.nickname }}
+            <span v-if="seat.isHost" class="host-tag">H</span>
+          </template>
+          <template v-else>Join</template>
+        </span>
+      </div>
     </div>
-    <span class="table-name">{{ table.name }}</span>
   </div>
 
   <!-- CURRENT TABLE VIEW (spacious, centered) -->
@@ -127,46 +136,54 @@ function handleSeatClick(seatIndex: number) {
   }
 }
 
-.host-name {
-  font-size: 0.85rem;
-  font-weight: 500;
-  min-width: 80px;
-}
-
-.seat-dots {
+.seats-list {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
 }
 
-.dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid transparent;
+.seat-box {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  text-align: center;
   transition: all 0.15s ease;
-  
-  &.filled {
-    background: $secondary-color;
+  min-width: 60px;
+
+  &.occupied {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
   }
 
-  &.clickable {
+  &.empty {
+    background: rgba(42, 138, 106, 0.3);
+    border: 1px dashed rgba(42, 138, 106, 0.6);
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    border-color: rgba(255, 255, 255, 0.3);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.4);
+      background: rgba(42, 138, 106, 0.5);
       border-color: $secondary-color;
-      transform: scale(1.2);
+      color: #fff;
     }
   }
-}
 
-.table-row .table-name {
-  font-size: 0.75rem;
-  opacity: 0.5;
-  text-align: right;
+  .seat-name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .host-tag {
+    font-size: 0.65rem;
+    background: rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+  }
 }
 
 // ============ CURRENT TABLE VIEW ============
