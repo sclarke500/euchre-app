@@ -102,16 +102,27 @@
       <span v-if="userTrumpInfo" class="user-trump-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
     </template>
 
+    <!-- Turn timer panel (left side, slides in) -->
+    <Transition name="timer-slide">
+      <div v-if="showTimerPanel" class="timer-panel">
+        <TurnTimer 
+          ref="turnTimerRef"
+          :active="game.isMyTurn.value && !director.isAnimating.value"
+          :grace-period-ms="timerSettings.gracePeriodMs"
+          :countdown-ms="timerSettings.countdownMs"
+          @timeout="handleTurnTimeout"
+        />
+        <button 
+          v-if="humanCount < 3" 
+          class="timer-reset-btn"
+          @click="resetTimer"
+          title="Reset timer"
+        >↻</button>
+      </div>
+    </Transition>
+
     <!-- User actions — bottom bar -->
     <UserActions :active="game.isMyTurn.value && !director.isAnimating.value">
-      <TurnTimer 
-        v-if="mode === 'multiplayer'"
-        ref="turnTimerRef"
-        :active="game.isMyTurn.value && !director.isAnimating.value"
-        :grace-period-ms="timerSettings.gracePeriodMs"
-        :countdown-ms="timerSettings.countdownMs"
-        @timeout="handleTurnTimeout"
-      />
 
       <!-- Round 1: Pass or Order Up -->
       <template v-if="showBidding && game.biddingRound.value === 1">
@@ -219,6 +230,22 @@ const timerSettings = computed(() => {
   // Default: 30s grace + 30s countdown = 60s total
   return { gracePeriodMs: 30000, countdownMs: 30000 }
 })
+
+// Timer panel - shows when multiplayer and user's turn
+const showTimerPanel = computed(() => 
+  props.mode === 'multiplayer' && game.isMyTurn.value
+)
+
+// Count human players (for reset button visibility)
+const humanCount = computed(() => 
+  game.players.value.filter(p => p.isHuman).length
+)
+
+// Reset timer and restart grace period
+function resetTimer() {
+  turnTimerRef.value?.reset()
+}
+
 const userTrumpInfo = computed(() => {
   const playerTrumpInfo = director.playerInfo.value[0]
   if (!playerTrumpInfo?.trumpSymbol) return null
@@ -465,6 +492,63 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+// Timer panel - slides in from left
+.timer-panel {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  bottom: 50%;
+  transform: translateY(50%);
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid #444;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+}
+
+.timer-reset-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: rgba(60, 60, 80, 0.8);
+  color: #aaa;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background: rgba(80, 80, 100, 0.9);
+    color: #fff;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Timer slide animation
+.timer-slide-enter-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.timer-slide-leave-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease;
+}
+
+.timer-slide-enter-from,
+.timer-slide-leave-to {
+  opacity: 0;
+  transform: translateY(50%) translateX(-100%);
+}
+
 .scoreboard {
   position: fixed;
   top: 8px;
