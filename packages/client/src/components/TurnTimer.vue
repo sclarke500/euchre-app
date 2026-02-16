@@ -45,6 +45,7 @@ const visible = ref(false)
 const remainingMs = ref(props.countdownMs)
 const hasPlayedWhistle = ref(false)
 const hasPlayedDing = ref(false)
+let shouldEmitTimeout = true // Guard against race conditions
 
 let graceTimer: ReturnType<typeof setTimeout> | null = null
 let countdownInterval: ReturnType<typeof setInterval> | null = null
@@ -138,12 +139,13 @@ function startCountdown() {
   visible.value = true
   startTime = Date.now()
   remainingMs.value = props.countdownMs
+  shouldEmitTimeout = true
   
   countdownInterval = setInterval(() => {
     const elapsed = Date.now() - startTime
     remainingMs.value = Math.max(0, props.countdownMs - elapsed)
     
-    if (remainingMs.value <= 0) {
+    if (remainingMs.value <= 0 && shouldEmitTimeout) {
       cleanup()
       emit('timeout')
     }
@@ -162,6 +164,7 @@ function cleanup() {
 }
 
 function reset() {
+  shouldEmitTimeout = false // Prevent any pending timeout from firing
   cleanup()
   visible.value = false
   hasPlayedWhistle.value = false
@@ -182,6 +185,7 @@ watch(() => props.active, (isActive) => {
   if (isActive) {
     startGracePeriod()
   } else {
+    shouldEmitTimeout = false // Prevent timeout when turn ends normally
     cleanup()
     visible.value = false
     hasPlayedWhistle.value = false
