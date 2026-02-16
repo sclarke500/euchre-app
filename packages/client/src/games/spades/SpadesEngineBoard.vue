@@ -161,40 +161,34 @@
       </div>
     </Modal>
 
-    <!-- User actions — bottom bar -->
-    <UserActions :active="store.isHumanTurn || store.isHumanBidding">
-      <TurnTimer
-        v-if="mode === 'multiplayer'"
-        ref="turnTimerRef"
-        :active="store.isHumanTurn"
-        :grace-period-ms="timerSettings.gracePeriodMs"
-        :countdown-ms="timerSettings.countdownMs"
-        @timeout="handleTurnTimeout"
-      />
+    <!-- Multiplayer timeout controls -->
+    <div v-if="mode === 'multiplayer' && timedOutPlayerName" class="timeout-controls">
+      <span class="timeout-label">{{ timedOutPlayerName }} timed out</span>
+      <button
+        v-if="store.timedOutPlayer !== null && store.timedOutPlayer !== store.humanPlayer?.id"
+        class="action-btn danger"
+        @click="store.bootPlayer?.(store.timedOutPlayer)"
+      >
+        Boot Player
+      </button>
+    </div>
 
-      <template v-if="mode === 'multiplayer' && timedOutPlayerName">
-        <span class="action-label warning">{{ timedOutPlayerName }} timed out</span>
-        <button
-          v-if="store.timedOutPlayer !== null && store.timedOutPlayer !== store.humanPlayer?.id"
-          class="action-btn danger"
-          @click="store.bootPlayer?.(store.timedOutPlayer)"
-        >
-          Boot Player
-        </button>
-      </template>
+    <!-- Turn timer (multiplayer) -->
+    <TurnTimer
+      v-if="mode === 'multiplayer'"
+      ref="turnTimerRef"
+      :active="store.isHumanTurn"
+      :grace-period-ms="timerSettings.gracePeriodMs"
+      :countdown-ms="timerSettings.countdownMs"
+      @timeout="handleTurnTimeout"
+    />
 
-      <!-- Bidding phase -->
-      <template v-if="store.isHumanBidding">
-        <span class="action-label">Your bid</span>
-        <select v-model="selectedBid" class="action-select">
-          <option :value="0">Nil</option>
-          <option v-for="n in 13" :key="n" :value="n">{{ n }}</option>
-        </select>
-        <button class="action-btn primary" @click="handleBid">
-          {{ selectedBid === 0 ? 'Bid Nil' : `Bid ${selectedBid}` }}
-        </button>
-      </template>
-    </UserActions>
+    <!-- Bidding wheel (right side) -->
+    <SpadesBidWheel
+      v-model="selectedBid"
+      :visible="store.isHumanBidding"
+      @bid="handleBid"
+    />
   </CardTable>
 </template>
 
@@ -205,7 +199,7 @@ import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
-import UserActions from '@/components/UserActions.vue'
+import SpadesBidWheel from './SpadesBidWheel.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useSpadesGameAdapter } from './useSpadesGameAdapter'
 import { useSpadesDirector } from './useSpadesDirector'
@@ -525,6 +519,44 @@ function handlePlayAgain() {
 // Warning label style
 .warning {
   color: #f39c12 !important;
+}
+
+// Timeout controls (multiplayer)
+.timeout-controls {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  
+  .timeout-label {
+    color: #f39c12;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+  
+  .action-btn.danger {
+    padding: 8px 16px;
+    background: rgba(180, 60, 60, 0.85);
+    border: 1px solid rgba(180, 60, 60, 0.6);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    
+    &:hover {
+      background: rgba(200, 80, 80, 0.9);
+    }
+  }
 }
 
 .spades-broken-indicator {
