@@ -318,30 +318,36 @@ export function useEuchreDirector(
     }
   }
 
-  /** Collapse opponent hands into their avatar positions. Cards stay in containers. */
+  /** Hide opponent hands - move all cards to user avatar position (bottom center, tiny scale) */
   async function hideOpponentHands() {
     const tl = getTableLayout()
-    if (!tl) return
+    if (!tl || !boardRef.value) return
 
     const hands = engine.getHands()
     const promises: Promise<void>[] = []
+
+    // Hide position: bottom center under user avatar
+    const hidePosition = {
+      x: tl.tableBounds.centerX,
+      y: boardRef.value.offsetHeight - 60,
+    }
+    const hideScale = 0.05 // Essentially invisible
 
     for (let i = 1; i < 4; i++) {
       const hand = hands[i]
       if (!hand || hand.cards.length === 0) continue
 
-      const avatarPos = getAvatarBoardPosition(i, tl)
-      hiddenHandOrigins.set(i, avatarPos)
+      hiddenHandOrigins.set(i, hidePosition)
 
       for (const m of hand.cards) {
         const cardRef = engine.getCardRef(m.card.id)
         if (cardRef) {
           promises.push(cardRef.moveTo({
-            x: avatarPos.x,
-            y: avatarPos.y,
+            x: hidePosition.x,
+            y: hidePosition.y,
             rotation: 0,
             zIndex: 50,
-            scale: HAND_COLLAPSE_SCALE,
+            scale: hideScale,
           }, HAND_COLLAPSE_MS))
         }
       }

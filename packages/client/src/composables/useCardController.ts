@@ -575,12 +575,19 @@ export function useCardController(
 
   async function hideOpponentHands() {
     const layout = tableLayout.value
-    if (!layout) return
+    const board = boardRef.value
+    if (!layout || !board) return
 
-    const scale = config.opponentCollapseScale ?? 0.5
     const duration = config.opponentCollapseDurationMs ?? 250
     const hands = engine.getHands()
     const promises: Promise<void>[] = []
+
+    // Hide all opponent cards under user's avatar (bottom center, tiny scale)
+    const hidePosition = {
+      x: layout.tableBounds.centerX,
+      y: board.offsetHeight - 60, // Near user avatar at bottom
+    }
+    const hideScale = 0.05 // Essentially invisible
 
     for (let seatIndex = 0; seatIndex < config.playerCount; seatIndex++) {
       const userSeatIndex = getUserSeatIndex()
@@ -588,18 +595,16 @@ export function useCardController(
       const hand = hands[seatIndex]
       if (!hand || hand.cards.length === 0) continue
 
-      const avatarPos = getAvatarBoardPosition(seatIndex, layout)
       hiddenSeatIndices.add(seatIndex)
       for (const managed of hand.cards) {
         const ref = engine.getCardRef(managed.card.id)
         if (ref) {
-          // Omit flipY - moveTo will preserve current flip state
           promises.push(ref.moveTo({
-            x: avatarPos.x,
-            y: avatarPos.y,
+            x: hidePosition.x,
+            y: hidePosition.y,
             rotation: 0,
             zIndex: 50,
-            scale,
+            scale: hideScale,
           }, duration))
         }
       }
