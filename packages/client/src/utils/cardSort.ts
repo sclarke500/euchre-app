@@ -1,5 +1,5 @@
-import type { Card } from '@euchre/shared'
-import { Suit, Rank } from '@euchre/shared'
+import type { Card } from '@67cards/shared'
+import { Suit, Rank } from '@67cards/shared'
 
 const suitOrder: Record<Suit, number> = {
   [Suit.Spades]: 0,

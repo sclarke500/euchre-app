@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch, nextTick, triggerRef } from 'vue'
 import { useKlondikeStore } from './klondikeStore'
 import { useKlondikeLayout, type ContainerRect, type CardPosition } from './useKlondikeLayout'
-import { canMoveToTableau, canMoveToFoundation } from '@euchre/shared'
+import { canMoveToTableau, canMoveToFoundation } from '@67cards/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '@/components/Modal.vue'

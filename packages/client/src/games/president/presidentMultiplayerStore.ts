@@ -7,8 +7,8 @@ import type {
   StandardCard,
   PlayerRank,
   ServerMessage,
-} from '@euchre/shared'
-import { PresidentPhase } from '@euchre/shared'
+} from '@67cards/shared'
+import { PresidentPhase } from '@67cards/shared'
 import { websocket } from '@/services/websocket'
 import { updateIfChanged } from '@/stores/utils'
 import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from '@/stores/multiplayerDebug'

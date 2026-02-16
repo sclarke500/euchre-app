@@ -9,8 +9,8 @@ import type {
   TeamScore,
   ServerMessage,
   BidAction,
-} from '@euchre/shared'
-import { GamePhase, getLegalPlays, BidAction as BidActionEnum } from '@euchre/shared'
+} from '@67cards/shared'
+import { GamePhase, getLegalPlays, BidAction as BidActionEnum } from '@67cards/shared'
 import { websocket } from '@/services/websocket'
 import { useToast } from '@/composables/useToast'
 import { sendBugReport } from '@/services/autoBugReport'

@@ -8,8 +8,8 @@
  */
 
 import { watch, nextTick, computed, ref, type Ref } from 'vue'
-import { PresidentPhase, sortHandByRank } from '@euchre/shared'
-import type { StandardCard, PendingExchange, ServerMessage } from '@euchre/shared'
+import { PresidentPhase, sortHandByRank } from '@67cards/shared'
+import type { StandardCard, PendingExchange, ServerMessage } from '@67cards/shared'
 import type { PresidentGameAdapter } from './usePresidentGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'

@@ -7,8 +7,8 @@
  */
 
 import { watch, nextTick, computed, ref, type Ref } from 'vue'
-import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@euchre/shared'
-import type { Card, Suit, ServerMessage } from '@euchre/shared'
+import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@67cards/shared'
+import type { Card, Suit, ServerMessage } from '@67cards/shared'
 import type { EuchreGameAdapter } from './useEuchreGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'

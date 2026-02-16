@@ -1,5 +1,5 @@
 {
-  "name": "@euchre/client",
+  "name": "@67cards/client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
-    "@euchre/shared": "*",
+    "@67cards/shared": "*",
     "pinia": "^3.0.4",
     "vue": "^3.5.26"
   },

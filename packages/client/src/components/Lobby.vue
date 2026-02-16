@@ -7,7 +7,7 @@ import Modal from '@/components/Modal.vue'
 import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
 import PresidentOptions from '@/games/president/PresidentOptions.vue'
 import SpadesOptions from '@/games/spades/SpadesOptions.vue'
-import type { GameType } from '@euchre/shared'
+import type { GameType } from '@67cards/shared'
 
 const settings = useSettingsStore()
 

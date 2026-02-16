@@ -1,7 +1,7 @@
 import { ref, type Ref, nextTick } from 'vue'
 import { computeTableLayout } from './useTableLayout'
 import type { CardTableEngine } from './useCardTable'
-import type { StandardCard } from '@euchre/shared'
+import type { StandardCard } from '@67cards/shared'
 
 export interface TrickTableConfig {
   layout?: 'normal' | 'wide'

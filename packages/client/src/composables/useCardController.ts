@@ -1,9 +1,9 @@
 import { ref, type Ref, nextTick } from 'vue'
 import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
 import type { CardTableEngine } from './useCardTable'
-import type { StandardCard } from '@euchre/shared'
-import { Suit } from '@euchre/shared'
-import { FullRank } from '@euchre/shared'
+import type { StandardCard } from '@67cards/shared'
+import { Suit } from '@67cards/shared'
+import { FullRank } from '@67cards/shared'
 import type { CardPosition } from '@/components/cardContainers'
 
 export type PlayAreaMode = 'trick' | 'overlay'

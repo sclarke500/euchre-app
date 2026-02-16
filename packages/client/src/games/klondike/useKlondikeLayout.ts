@@ -1,5 +1,5 @@
 import { ref, computed, type Ref } from 'vue'
-import type { KlondikeState, KlondikeCard } from '@euchre/shared'
+import type { KlondikeState, KlondikeCard } from '@67cards/shared'
 
 export interface ContainerRect {
   x: number

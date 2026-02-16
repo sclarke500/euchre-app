@@ -154,7 +154,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { PresidentPhase, isValidPlay, sortHandByRank, type StandardCard } from '@euchre/shared'
+import { PresidentPhase, isValidPlay, sortHandByRank, type StandardCard } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import Modal from '@/components/Modal.vue'

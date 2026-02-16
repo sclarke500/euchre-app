@@ -1,5 +1,5 @@
 import { computed, ref, watch } from 'vue'
-import { Spades, SpadesBidType, SpadesPhase, type SpadesBid } from '@euchre/shared'
+import { Spades, SpadesBidType, SpadesPhase, type SpadesBid } from '@67cards/shared'
 import type { SpadesGameAdapter } from './useSpadesGameAdapter'
 
 export interface SpadesRoundSummary {

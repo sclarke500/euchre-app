@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Suit } from '@euchre/shared'
+import { Suit } from '@67cards/shared'
 
 // Generic card interface that works with Euchre, President, and Klondike cards
 interface GenericCard {

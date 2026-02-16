@@ -1,5 +1,5 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
-import { SpadesPhase, type SpadesBid, type StandardCard } from '@euchre/shared'
+import { SpadesPhase, type SpadesBid, type StandardCard } from '@67cards/shared'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import type { SpadesGameAdapter } from './useSpadesGameAdapter'

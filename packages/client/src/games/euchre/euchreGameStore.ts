@@ -9,7 +9,7 @@ import type {
   Trump,
   Bid,
   TeamScore,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import {
   GamePhase,
   BidAction,
@@ -35,7 +35,7 @@ import {
   GameTracker,
   chooseCardToPlayHard,
   isPartnerWinningHard,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 export const useEuchreGameStore = defineStore('game', () => {

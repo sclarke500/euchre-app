@@ -16,7 +16,7 @@ import {
   canAutoComplete,
   autoCompleteStep,
   hasAvailableMoves,
-} from '@euchre/shared'
+} from '@67cards/shared'
 
 export const useKlondikeStore = defineStore('klondike', () => {
   // State

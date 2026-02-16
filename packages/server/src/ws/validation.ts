@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { BidAction, Suit } from '@euchre/shared'
-import type { ClientMessage } from '@euchre/shared'
+import { BidAction, Suit } from '@67cards/shared'
+import type { ClientMessage } from '@67cards/shared'
 
 const gameTypeSchema = z.enum(['euchre', 'president', 'spades'])
 

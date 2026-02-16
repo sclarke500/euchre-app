@@ -7,13 +7,13 @@ import type {
   SpadesClientGameState,
   SpadesClientPlayer,
   StandardCard,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import {
   SpadesPhase,
   SpadesBidType,
   Spades,
   getRandomAINames,
-} from '@euchre/shared'
+} from '@67cards/shared'
 
 export interface SpadesGamePlayer {
   odusId: string | null // null for AI players

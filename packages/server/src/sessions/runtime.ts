@@ -1,4 +1,4 @@
-import type { GameType } from '@euchre/shared'
+import type { GameType } from '@67cards/shared'
 
 export interface RuntimePlayerInfo {
   seatIndex: number

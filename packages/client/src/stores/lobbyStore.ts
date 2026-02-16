@@ -7,7 +7,7 @@ import type {
   ServerMessage,
   GameType,
   TableSettings,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import { websocket } from '@/services/websocket'
 import { useSettingsStore } from '@/stores/settingsStore'
 

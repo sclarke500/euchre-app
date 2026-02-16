@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Table } from '@euchre/shared'
+import type { Table } from '@67cards/shared'
 
 const props = defineProps<{
   table: Table

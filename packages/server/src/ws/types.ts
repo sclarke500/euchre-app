@@ -1,5 +1,5 @@
 import type { WebSocket } from 'ws'
-import type { LobbyPlayer } from '@euchre/shared'
+import type { LobbyPlayer } from '@67cards/shared'
 
 export interface ConnectedClient {
   ws: WebSocket

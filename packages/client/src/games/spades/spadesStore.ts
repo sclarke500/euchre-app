@@ -14,7 +14,7 @@ import {
   SpadesTracker,
   chooseSpadesCardHard,
   chooseSpadesBidHard,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 export const useSpadesStore = defineStore('spadesGame', () => {

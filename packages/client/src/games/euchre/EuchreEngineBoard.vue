@@ -141,7 +141,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { GamePhase, BidAction, Suit, type TeamScore } from '@euchre/shared'
+import { GamePhase, BidAction, Suit, type TeamScore } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import GameHUD from '@/components/GameHUD.vue'

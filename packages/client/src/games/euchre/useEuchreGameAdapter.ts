@@ -9,8 +9,8 @@
 import { computed, type ComputedRef, type Ref } from 'vue'
 import { useEuchreGameStore } from './euchreGameStore'
 import { useEuchreMultiplayerStore } from './euchreMultiplayerStore'
-import { GamePhase, Suit, Rank, BidAction, getLegalPlays } from '@euchre/shared'
-import type { Card, Trick, TeamScore, Bid, ServerMessage } from '@euchre/shared'
+import { GamePhase, Suit, Rank, BidAction, getLegalPlays } from '@67cards/shared'
+import type { Card, Trick, TeamScore, Bid, ServerMessage } from '@67cards/shared'
 
 // Euchre adapter player interface that works for both modes
 export interface EuchreAdapterPlayer {

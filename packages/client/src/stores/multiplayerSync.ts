@@ -1,4 +1,4 @@
-import type { ServerMessage } from '@euchre/shared'
+import type { ServerMessage } from '@67cards/shared'
 import type { Ref } from 'vue'
 
 type ErrorServerMessage = Extract<ServerMessage, { type: 'error' }>

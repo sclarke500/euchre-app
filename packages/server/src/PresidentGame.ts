@@ -5,7 +5,7 @@ import type {
   PlayerRank,
   PlayType,
   StandardCard,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import {
   PresidentPhase,
   createPresidentGame,
@@ -25,11 +25,11 @@ import {
   getHighestCards,
   getRankDisplayName,
   getRandomAINames,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import type {
   PresidentClientGameState,
   PresidentClientPlayer,
-} from '@euchre/shared'
+} from '@67cards/shared'
 
 export interface PresidentGamePlayer {
   odusId: string | null // null for AI players

@@ -4,8 +4,8 @@
  */
 
 import { ref, computed, shallowRef, type Ref, type ComputedRef, type ShallowRef } from 'vue'
-import type { KlondikeCard } from '@euchre/shared'
-import { Suit } from '@euchre/shared'
+import type { KlondikeCard } from '@67cards/shared'
+import { Suit } from '@67cards/shared'
 
 export interface CardPosition {
   x: number

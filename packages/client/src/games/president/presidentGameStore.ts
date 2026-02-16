@@ -27,7 +27,7 @@ import {
   getRankDisplayName,
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 export const usePresidentGameStore = defineStore('presidentGame', () => {

@@ -10,7 +10,7 @@ import type {
   TeamScore,
   ClientGameState,
   ClientPlayer,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import {
   GamePhase,
   BidAction,
@@ -36,8 +36,8 @@ import {
   makeAIBidRound2Hard,
   chooseCardToPlayHard,
   isPartnerWinningHard,
-} from '@euchre/shared'
-import { getRandomAINames } from '@euchre/shared'
+} from '@67cards/shared'
+import { getRandomAINames } from '@67cards/shared'
 
 export interface GamePlayer {
   odusId: string | null // null for AI players

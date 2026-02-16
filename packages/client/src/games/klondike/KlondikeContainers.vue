@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { ContainerRect } from './useKlondikeLayout'
-import type { KlondikeState } from '@euchre/shared'
+import type { KlondikeState } from '@67cards/shared'
 
 const props = defineProps<{
   state: KlondikeState

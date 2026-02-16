@@ -9,8 +9,8 @@ import type {
   PlayerRank,
   PendingExchange,
   ServerMessage,
-} from '@euchre/shared'
-import { PresidentPhase as Phase } from '@euchre/shared'
+} from '@67cards/shared'
+import { PresidentPhase as Phase } from '@67cards/shared'
 
 export interface PresidentExchangeInfo {
   youGive: StandardCard[]

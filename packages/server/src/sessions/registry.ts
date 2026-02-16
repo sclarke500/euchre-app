@@ -1,4 +1,4 @@
-import { type GameType, type TableSettings } from '@euchre/shared'
+import { type GameType, type TableSettings } from '@67cards/shared'
 import type { Game } from '../Game.js'
 import type { PresidentGame } from '../PresidentGame.js'
 import type { SpadesGame } from '../SpadesGame.js'

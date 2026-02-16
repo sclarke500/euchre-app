@@ -202,7 +202,7 @@
 
 <script setup lang="ts">
 import { computed, proxyRefs, ref } from 'vue'
-import { type SpadesBid } from '@euchre/shared'
+import { type SpadesBid } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'

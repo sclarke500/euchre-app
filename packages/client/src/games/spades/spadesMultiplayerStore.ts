@@ -6,8 +6,8 @@ import type {
   SpadesClientPlayer,
   SpadesBidType,
   StandardCard,
-} from '@euchre/shared'
-import { SpadesPhase } from '@euchre/shared'
+} from '@67cards/shared'
+import { SpadesPhase } from '@67cards/shared'
 import { websocket } from '@/services/websocket'
 import { updateIfChanged } from '@/stores/utils'
 import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from '@/stores/multiplayerDebug'

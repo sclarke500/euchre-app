@@ -1,5 +1,5 @@
 import { computed, ref, toRef, type ComputedRef, type Ref } from 'vue'
-import { FullRank, Suit, SpadesBidType, type ServerMessage } from '@euchre/shared'
+import { FullRank, Suit, SpadesBidType, type ServerMessage } from '@67cards/shared'
 import type {
   SpadesBid,
   SpadesClientPlayer,
@@ -7,7 +7,7 @@ import type {
   SpadesTeamScore,
   SpadesTrick,
   StandardCard,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import { useSpadesStore } from './spadesStore'
 import { useSpadesMultiplayerStore } from './spadesMultiplayerStore'
 

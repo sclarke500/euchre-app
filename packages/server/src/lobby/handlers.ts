@@ -5,7 +5,7 @@ import type {
   TableSettings,
   GameType,
   ServerMessage,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import type { Game } from '../Game.js'
 import type { PresidentGame } from '../PresidentGame.js'
 import type { SpadesGame } from '../SpadesGame.js'

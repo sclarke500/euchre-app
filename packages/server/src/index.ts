@@ -7,7 +7,7 @@ import type {
   Card,
   Bid,
   SpadesBidType,
-} from '@euchre/shared'
+} from '@67cards/shared'
 import { parseClientMessage } from './ws/validation.js'
 import { routeClientMessage } from './ws/router.js'
 import type { ConnectedClient } from './ws/types.js'

@@ -10,14 +10,14 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "npm run dev -w @euchre/client",
-    "build": "npm run build -w @euchre/shared && npm run build -w @euchre/client",
-    "build:client": "npm run build -w @euchre/client",
-    "build:server": "npm run build -w @euchre/server",
-    "build:shared": "npm run build -w @euchre/shared",
-    "start:server": "npm run start -w @euchre/server",
-    "preview": "npm run preview -w @euchre/client",
-    "test": "npm test -w @euchre/shared && npm test -w @euchre/server",
+    "dev": "npm run dev -w @67cards/client",
+    "build": "npm run build -w @67cards/shared && npm run build -w @67cards/client",
+    "build:client": "npm run build -w @67cards/client",
+    "build:server": "npm run build -w @67cards/server",
+    "build:shared": "npm run build -w @67cards/shared",
+    "start:server": "npm run start -w @67cards/server",
+    "preview": "npm run preview -w @67cards/client",
+    "test": "npm test -w @67cards/shared && npm test -w @67cards/server",
     "prepush": "npm run build:shared && npm test && npm run build"
   },
   "dependencies": {

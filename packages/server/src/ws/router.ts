@@ -1,5 +1,5 @@
 import type { WebSocket } from 'ws'
-import type { ClientMessage, Bid, Suit } from '@euchre/shared'
+import type { ClientMessage, Bid, Suit } from '@67cards/shared'
 import type { ConnectedClient } from './types.js'
 
 export interface MessageHandlers {

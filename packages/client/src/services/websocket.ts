@@ -1,7 +1,7 @@
 import type {
   ClientMessage,
   ServerMessage,
-} from '@euchre/shared'
+} from '@67cards/shared'
 
 type MessageHandler = (message: ServerMessage) => void
 type ReconnectHandler = () => void
