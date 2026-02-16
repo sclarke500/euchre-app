@@ -1,20 +1,35 @@
 <template>
   <Transition name="wheel-fade">
     <div v-if="visible" class="bid-wheel-container">
-      <div class="bid-wheel" @wheel.prevent="handleWheel">
-        <!-- Visible values -->
-        <div class="wheel-viewport" ref="viewportRef">
-          <div class="wheel-track" :style="trackStyle">
-            <div 
-              v-for="val in allValues" 
-              :key="val"
-              class="wheel-item"
-              :class="{ selected: val === modelValue }"
-            >
-              {{ val === 0 ? 'Nil' : val }}
-            </div>
+      <div class="bid-wheel">
+        <!-- Scrollable viewport with snap -->
+        <div 
+          class="wheel-viewport" 
+          ref="viewportRef"
+          @scroll="handleScroll"
+        >
+          <!-- Spacer top -->
+          <div class="wheel-spacer"></div>
+          
+          <div 
+            v-for="val in allValues" 
+            :key="val"
+            class="wheel-item"
+            :class="{ selected: val === modelValue }"
+          >
+            {{ val === 0 ? 'Nil' : val }}
           </div>
+          
+          <!-- Spacer bottom -->
+          <div class="wheel-spacer"></div>
         </div>
+        
+        <!-- Gradient overlays -->
+        <div class="wheel-gradient top"></div>
+        <div class="wheel-gradient bottom"></div>
+        
+        <!-- Selection highlight -->
+        <div class="wheel-highlight"></div>
       </div>
       
       <!-- Bid button -->
@@ -26,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 
 const props = defineProps<{
   modelValue: number
@@ -45,25 +60,49 @@ const allValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
 const itemHeight = 44 // px per item
 
-const trackStyle = computed(() => ({
-  transform: `translateY(${-props.modelValue * itemHeight}px)`
-}))
+let isScrolling = false
 
-// Accumulate scroll delta for slower response
-let scrollAccumulator = 0
-const scrollThreshold = 80 // Higher = slower scrolling
-
-function handleWheel(e: WheelEvent) {
-  scrollAccumulator += e.deltaY
+function handleScroll() {
+  if (!viewportRef.value || isScrolling) return
   
-  if (scrollAccumulator >= scrollThreshold && props.modelValue < 13) {
-    emit('update:modelValue', props.modelValue + 1)
-    scrollAccumulator = 0
-  } else if (scrollAccumulator <= -scrollThreshold && props.modelValue > 0) {
-    emit('update:modelValue', props.modelValue - 1)
-    scrollAccumulator = 0
+  const scrollTop = viewportRef.value.scrollTop
+  const index = Math.round(scrollTop / itemHeight)
+  const clampedIndex = Math.max(0, Math.min(13, index))
+  
+  if (clampedIndex !== props.modelValue) {
+    emit('update:modelValue', clampedIndex)
   }
 }
+
+function scrollToValue(val: number, smooth = true) {
+  if (!viewportRef.value) return
+  isScrolling = true
+  viewportRef.value.scrollTo({
+    top: val * itemHeight,
+    behavior: smooth ? 'smooth' : 'instant'
+  })
+  setTimeout(() => { isScrolling = false }, 150)
+}
+
+// Scroll to initial value when visible
+watch(() => props.visible, (visible) => {
+  if (visible) {
+    nextTick(() => scrollToValue(props.modelValue, false))
+  }
+})
+
+// Sync scroll position when modelValue changes externally
+watch(() => props.modelValue, (val) => {
+  if (!isScrolling) {
+    scrollToValue(val)
+  }
+})
+
+onMounted(() => {
+  if (props.visible) {
+    nextTick(() => scrollToValue(props.modelValue, false))
+  }
+})
 </script>
 
 <style scoped lang="scss">
@@ -80,60 +119,31 @@ function handleWheel(e: WheelEvent) {
 }
 
 .bid-wheel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
   background: rgba(245, 245, 248, 0.95);
   backdrop-filter: blur(12px);
-  border-radius: 20px;
-  padding: 8px 12px;
+  border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  cursor: ns-resize;
+  overflow: hidden;
 }
 
 .wheel-viewport {
-  width: 56px;
+  width: 72px;
   height: calc(44px * 3); // Show 3 items
-  overflow: hidden;
-  position: relative;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   
-  // Gradient shadows top and bottom for 3D depth
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 40px;
-    pointer-events: none;
-    z-index: 1;
-  }
-  
-  &::before {
-    top: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(245, 245, 248, 1) 0%,
-      rgba(245, 245, 248, 0.8) 40%,
-      transparent 100%
-    );
-  }
-  
-  &::after {
-    bottom: 0;
-    background: linear-gradient(
-      to top,
-      rgba(245, 245, 248, 1) 0%,
-      rgba(245, 245, 248, 0.8) 40%,
-      transparent 100%
-    );
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-.wheel-track {
-  transition: transform 0.15s ease-out;
-  padding-top: 44px; // Offset so selected item is centered
+.wheel-spacer {
+  height: 44px; // One item height for centering
+  scroll-snap-align: none;
 }
 
 .wheel-item {
@@ -141,16 +151,61 @@ function handleWheel(e: WheelEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.25);
-  transition: all 0.15s ease;
+  color: rgba(0, 0, 0, 0.35);
+  scroll-snap-align: center;
+  transition: color 0.15s ease, font-size 0.15s ease;
   
   &.selected {
     font-size: 26px;
     font-weight: 700;
     color: #1a1a2e;
   }
+}
+
+// Gradient overlays for depth
+.wheel-gradient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50px;
+  pointer-events: none;
+  z-index: 2;
+  
+  &.top {
+    top: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(245, 245, 248, 0.95) 0%,
+      rgba(245, 245, 248, 0.7) 50%,
+      transparent 100%
+    );
+  }
+  
+  &.bottom {
+    bottom: 0;
+    background: linear-gradient(
+      to top,
+      rgba(245, 245, 248, 0.95) 0%,
+      rgba(245, 245, 248, 0.7) 50%,
+      transparent 100%
+    );
+  }
+}
+
+// Selection highlight bar
+.wheel-highlight {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  right: 4px;
+  height: 40px;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .bid-button {
