@@ -49,28 +49,17 @@
 
       <!-- Give-back phase -->
       <template v-if="game.isHumanGivingCards.value">
-        <span class="action-label">
-          Give {{ game.cardsToGiveCount.value }} card{{ game.cardsToGiveCount.value > 1 ? 's' : '' }}
-          <template v-if="selectedCardIds.size > 0">
-            ({{ selectedCardIds.size }}/{{ game.cardsToGiveCount.value }})
-          </template>
-        </span>
         <button
           class="action-btn primary"
           :disabled="selectedCardIds.size !== game.cardsToGiveCount.value"
           @click="confirmGiveBack"
         >
-          Give Cards
+          Give{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size}/${game.cardsToGiveCount.value})` : ` ${game.cardsToGiveCount.value}` }}
         </button>
       </template>
 
       <!-- Playing phase, user's turn -->
       <template v-else-if="game.isHumanTurn.value">
-        <span v-if="selectedCardIds.size > 0" class="action-label">
-          {{ selectedCardIds.size }} selected
-          <span v-if="!canPlaySelection" class="invalid-hint">— Invalid</span>
-        </span>
-        <span v-else class="action-label">Your turn</span>
         <button
           class="action-btn primary"
           :disabled="!canPlaySelection"
