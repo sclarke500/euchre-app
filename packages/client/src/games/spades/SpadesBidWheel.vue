@@ -121,27 +121,27 @@ onMounted(() => {
   gap: 16px;
   padding: 20px 16px;
   padding-right: max(16px, env(safe-area-inset-right));
-  background: rgba(10, 10, 15, 0.85);
-  backdrop-filter: blur(16px);
+  background: rgba(15, 15, 20, 0.7);
+  backdrop-filter: blur(20px);
   border-radius: 20px 0 0 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-right: none;
   box-shadow: -4px 0 30px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
 }
 
-// Shiny overlay effect
+// Shiny overlay effect - sits on top
 .shiny-overlay {
   position: absolute;
   inset: 0;
+  border-radius: 20px 0 0 20px;
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    transparent 40%,
-    transparent 60%,
-    rgba(255, 255, 255, 0.05) 100%
+    145deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    transparent 50%
   );
   pointer-events: none;
+  z-index: 10;
 }
 
 .bid-wheel {
