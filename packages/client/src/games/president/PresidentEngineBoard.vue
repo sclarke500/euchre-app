@@ -62,7 +62,7 @@
 
       <!-- Playing phase, user's turn -->
       <template v-else-if="game.isHumanTurn.value">
-        <span class="action-hint">{{ game.currentPile.value.currentRank === null ? 'Your lead' : 'Your turn' }}</span>
+        <span v-if="game.currentPile.value.currentRank === null" class="action-hint">Your lead</span>
         <button
           class="action-btn primary"
           :disabled="!canPlaySelection"
