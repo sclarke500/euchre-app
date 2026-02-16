@@ -36,9 +36,9 @@ import {
   chooseCardToPlayHard,
   isPartnerWinningHard,
 } from '@euchre/shared'
-import { useSettingsStore } from './settingsStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
-export const useGameStore = defineStore('game', () => {
+export const useEuchreGameStore = defineStore('game', () => {
   // Get settings
   const settingsStore = useSettingsStore()
 

@@ -8,8 +8,8 @@ import type {
   SpadesTrick,
   StandardCard,
 } from '@euchre/shared'
-import { useSpadesStore } from '@/stores/spadesStore'
-import { useSpadesMultiplayerStore } from '@/stores/spadesMultiplayerStore'
+import { useSpadesStore } from './spadesStore'
+import { useSpadesMultiplayerStore } from './spadesMultiplayerStore'
 
 export interface SpadesAdapterPlayer extends Omit<SpadesClientPlayer, 'hand'> {
   hand: StandardCard[]

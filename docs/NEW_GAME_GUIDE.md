@@ -298,14 +298,14 @@ case 'hearts_play_card':
 ### 3.1 Create multiplayer store
 
 ```typescript
-// packages/client/src/stores/heartsMultiplayerStore.ts
+// packages/client/src/games/hearts/heartsMultiplayerStore.ts
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { websocket } from '@/services/websocket'
-import { createMultiplayerQueueController } from './multiplayerQueue'
-import { createResyncController } from './multiplayerResync'
-import { updateIfChanged } from './utils'
+import { createMultiplayerQueueController } from '@/stores/multiplayerQueue'
+import { createResyncController } from '@/stores/multiplayerResync'
+import { updateIfChanged } from '@/stores/utils'
 import type { HeartsClientGameState, ServerMessage } from '@euchre/shared'
 
 export const useHeartsMultiplayerStore = defineStore('heartsMultiplayer', () => {
@@ -402,11 +402,11 @@ export const useHeartsMultiplayerStore = defineStore('heartsMultiplayer', () => 
 ### 4.1 Create adapter
 
 ```typescript
-// packages/client/src/composables/useHeartsGameAdapter.ts
+// packages/client/src/games/hearts/useHeartsGameAdapter.ts
 
 import { computed } from 'vue'
-import { useHeartsStore } from '@/stores/heartsStore'
-import { useHeartsMultiplayerStore } from '@/stores/heartsMultiplayerStore'
+import { useHeartsStore } from './heartsStore'
+import { useHeartsMultiplayerStore } from './heartsMultiplayerStore'
 
 export function useHeartsGameAdapter(mode: 'singleplayer' | 'multiplayer') {
   if (mode === 'multiplayer') {
@@ -443,7 +443,7 @@ function useHeartsMultiplayerAdapter() {
 ### 4.2 Create director
 
 ```typescript
-// packages/client/src/composables/useHeartsDirector.ts
+// packages/client/src/games/hearts/useHeartsDirector.ts
 
 import { ref, watch } from 'vue'
 import type { useHeartsGameAdapter } from './useHeartsGameAdapter'
@@ -488,14 +488,14 @@ export function useHeartsDirector(
 ### 5.1 Create game board
 
 ```vue
-<!-- packages/client/src/components/hearts/HeartsGameBoard.vue -->
+<!-- packages/client/src/games/hearts/HeartsEngineBoard.vue -->
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { useHeartsGameAdapter } from '@/composables/useHeartsGameAdapter'
-import { useHeartsDirector } from '@/composables/useHeartsDirector'
+import { useHeartsGameAdapter } from './useHeartsGameAdapter'
+import { useHeartsDirector } from './useHeartsDirector'
 import { useCardTable } from '@/composables/useCardTable'
-import CardTable from '../CardTable.vue'
-import GameHUD from '../GameHUD.vue'
+import CardTable from '@/components/CardTable.vue'
+import GameHUD from '@/components/GameHUD.vue'
 
 const props = defineProps<{
   mode: 'singleplayer' | 'multiplayer'
@@ -588,8 +588,8 @@ Study these files for the cleanest example (Spades):
 ```
 packages/shared/src/spades/types.ts
 packages/server/src/SpadesGame.ts
-packages/client/src/stores/spadesMultiplayerStore.ts
-packages/client/src/composables/useSpadesGameAdapter.ts
-packages/client/src/composables/useSpadesDirector.ts
-packages/client/src/components/spades/SpadesGameBoard.vue
+packages/client/src/games/spades/spadesMultiplayerStore.ts
+packages/client/src/games/spades/useSpadesGameAdapter.ts
+packages/client/src/games/spades/useSpadesDirector.ts
+packages/client/src/games/spades/SpadesEngineBoard.vue
 ```

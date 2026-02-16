@@ -162,7 +162,7 @@
     </Modal>
 
     <!-- Action buttons - floating, no container -->
-    <div class="action-buttons">
+    <div class="action-buttons action-panel">
       <TurnTimer
         v-if="mode === 'multiplayer'"
         ref="turnTimerRef"
@@ -203,14 +203,14 @@
 <script setup lang="ts">
 import { computed, proxyRefs, ref } from 'vue'
 import { type SpadesBid } from '@euchre/shared'
-import CardTable from '../CardTable.vue'
-import GameHUD from '../GameHUD.vue'
-import Modal from '../Modal.vue'
-import TurnTimer from '../TurnTimer.vue'
+import CardTable from '@/components/CardTable.vue'
+import GameHUD from '@/components/GameHUD.vue'
+import Modal from '@/components/Modal.vue'
+import TurnTimer from '@/components/TurnTimer.vue'
 import { useCardTable } from '@/composables/useCardTable'
-import { useSpadesGameAdapter } from '@/composables/useSpadesGameAdapter'
-import { useSpadesDirector } from '@/composables/useSpadesDirector'
-import { useSpadesBoardUi } from '@/composables/useSpadesBoardUi'
+import { useSpadesGameAdapter } from './useSpadesGameAdapter'
+import { useSpadesDirector } from './useSpadesDirector'
+import { useSpadesBoardUi } from './useSpadesBoardUi'
 
 const props = withDefaults(defineProps<{
   mode?: 'singleplayer' | 'multiplayer'

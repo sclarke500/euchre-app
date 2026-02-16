@@ -1,6 +1,6 @@
 import { computed, ref, toRef, type ComputedRef, type Ref } from 'vue'
-import { usePresidentGameStore } from '@/stores/presidentGameStore'
-import { usePresidentMultiplayerStore } from '@/stores/presidentMultiplayerStore'
+import { usePresidentGameStore } from './presidentGameStore'
+import { usePresidentMultiplayerStore } from './presidentMultiplayerStore'
 import type {
   PresidentPhase,
   PresidentPlayer,
@@ -12,7 +12,7 @@ import type {
 } from '@euchre/shared'
 import { PresidentPhase as Phase } from '@euchre/shared'
 
-export interface ExchangeInfo {
+export interface PresidentExchangeInfo {
   youGive: StandardCard[]
   youReceive: StandardCard[]
   otherPlayerName: string
@@ -29,7 +29,7 @@ export interface PresidentGameAdapter {
   validPlays: ComputedRef<StandardCard[][]>
   humanPlayer: ComputedRef<PresidentPlayer | undefined>
   superTwosMode: ComputedRef<boolean>  // Convenience accessor for rules.superTwosMode
-  exchangeInfo: ComputedRef<ExchangeInfo | null>
+  exchangeInfo: ComputedRef<PresidentExchangeInfo | null>
   isHumanGivingCards: ComputedRef<boolean>  // True when human President/VP needs to select cards
   cardsToGiveCount: ComputedRef<number>     // Number of cards human needs to give back
   lastPlayedCards: ComputedRef<StandardCard[] | null>

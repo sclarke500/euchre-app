@@ -7,7 +7,7 @@ import {
   CardContainer,
   type ManagedCard,
   type BoardCardRef,
-  type SandboxCard,
+  type EngineCard,
   type CardPosition,
 } from '@/components/cardContainers'
 
@@ -30,7 +30,7 @@ export interface CardTableEngine {
   removeContainer: (id: string) => void
 
   // Card operations
-  addCardToDeck: (card: SandboxCard, faceUp?: boolean) => ManagedCard
+  addCardToDeck: (card: EngineCard, faceUp?: boolean) => ManagedCard
   dealCard: (from: Deck, to: Hand, flightMs?: number) => Promise<ManagedCard | null>
   moveCard: (cardId: string, from: CardContainer, to: CardContainer, targetPos?: CardPosition, duration?: number) => Promise<void>
   flipCard: (cardId: string, faceUp: boolean, duration?: number) => Promise<void>
@@ -167,7 +167,7 @@ export function useCardTable(): CardTableEngine {
   }
 
   // Card operations
-  function addCardToDeck(card: SandboxCard, faceUp: boolean = false): ManagedCard {
+  function addCardToDeck(card: EngineCard, faceUp: boolean = false): ManagedCard {
     if (!deck.value) throw new Error('No deck created')
     return deck.value.addCard(card, faceUp)
   }

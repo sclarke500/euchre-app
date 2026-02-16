@@ -11,7 +11,6 @@ A card game platform featuring Euchre, President, Spades, and Klondike. Built as
 Canonical status/planning docs:
 - `docs/DOCUMENTATION_INDEX.md`
 - `docs/ROADMAP.md`
-- `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
 
 ## Project Structure
 
@@ -128,14 +127,15 @@ Two AI implementations in `packages/shared/src/`:
 - Considers opponent voids when deciding to protect partner's win
 - Tracker must be reset each round and updated after each trick
 
-## Card Engine v2 (Sandbox)
+## Card Engine v2
 
-A new animation system being developed in `packages/client/src/components/sandbox/`. The goal is a cleaner, container-based architecture for card positioning and animation.
+The app uses a shared container-based card animation engine for Euchre, President, and Spades.
 
 ### Key Files
-- `SandboxTable.vue` - Test harness with table surface, player avatars, controls
+- `CardTable.vue` - Shared table surface and avatar/chip rendering
 - `BoardCard.vue` - Single card component with position/animation methods
 - `cardContainers.ts` - Container classes that own and position cards
+- `useCardTable.ts` - Engine API for decks/hands/piles + card moves
 
 ### Architecture Concepts
 
@@ -146,7 +146,7 @@ A new animation system being developed in `packages/client/src/components/sandbo
 **ManagedCard**: Wrapper that tracks a card + its face-up state + ref to the DOM component:
 ```typescript
 interface ManagedCard {
-  card: SandboxCard
+  card: EngineCard
   faceUp: boolean
   ref: BoardCardRef | null
 }

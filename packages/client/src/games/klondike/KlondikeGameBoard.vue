@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch, nextTick, triggerRef } from 'vue'
-import { useKlondikeStore } from '@/stores/klondikeStore'
-import { useKlondikeLayout, type ContainerRect, type CardPosition } from '@/composables/useKlondikeLayout'
+import { useKlondikeStore } from './klondikeStore'
+import { useKlondikeLayout, type ContainerRect, type CardPosition } from './useKlondikeLayout'
 import { canMoveToTableau, canMoveToFoundation } from '@euchre/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
-import Modal from '../Modal.vue'
+import Modal from '@/components/Modal.vue'
 
 const emit = defineEmits<{
   leaveGame: []

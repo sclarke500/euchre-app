@@ -1,6 +1,6 @@
 # Documentation Index
 
-**Last reviewed:** 2026-02-15
+**Last reviewed:** 2026-02-16
 
 ## Start Here (LLM Onboarding)
 
@@ -12,7 +12,6 @@
 - `README.md` — Project overview, setup, commands
 - `CLAUDE.md` — Session conventions for Claude coding sessions
 - `docs/ROADMAP.md` — Shared multiplayer flow reference, checklists, deferred work
-- `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md` — Current execution plan and progress
 - `docs/MULTIPLAYER_ARCHITECTURE.md` — Detailed architecture reference
 
 ## Maintenance Rule
@@ -20,6 +19,7 @@
 When architecture changes, update in this order:
 
 1. `docs/ROADMAP.md`
-2. `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
-3. `docs/DOCUMENTATION_INDEX.md`
-4. `README.md` (if setup changed)
+2. `docs/DOCUMENTATION_INDEX.md`
+3. `README.md` (if setup changed)
+
+Keep this docs set focused on current architecture and workflows; obsolete planning docs should be removed rather than retained.

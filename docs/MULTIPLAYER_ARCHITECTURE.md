@@ -8,7 +8,6 @@
 > Canonical docs:
 > - `docs/DOCUMENTATION_INDEX.md`
 > - `docs/ROADMAP.md`
-> - `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
 
 A guide to implementing multiplayer card games based on our experience with Euchre, Spades, and President.
 
@@ -45,7 +44,9 @@ A guide to implementing multiplayer card games based on our experience with Euch
 
 ## Client Architecture
 
-### 1. Multiplayer Store (`stores/xxxMultiplayerStore.ts`)
+> Current layout: game-local multiplayer files live in `packages/client/src/games/<game>/`, while shared queue/resync/sync/debug helpers live in `packages/client/src/stores/`.
+
+### 1. Multiplayer Store (`games/xxx/xxxMultiplayerStore.ts`)
 
 **Purpose**: Manages WebSocket communication and raw game state.
 
@@ -114,7 +115,7 @@ export const useXxxMultiplayerStore = defineStore('xxxMultiplayer', () => {
 })
 ```
 
-### 2. Game Adapter (`composables/useXxxGameAdapter.ts`)
+### 2. Game Adapter (`games/xxx/useXxxGameAdapter.ts`)
 
 **Purpose**: Unified interface for single-player and multiplayer modes.
 
@@ -163,7 +164,7 @@ export function useXxxGameAdapter(mode: 'singleplayer' | 'multiplayer') {
 }
 ```
 
-### 3. Director (`composables/useXxxDirector.ts`)
+### 3. Director (`games/xxx/useXxxDirector.ts`)
 
 **Purpose**: Orchestrates card animations and visual updates.
 
@@ -212,7 +213,7 @@ export function useXxxDirector(
 }
 ```
 
-### 4. GameBoard (`components/XxxGameBoard.vue`)
+### 4. GameBoard (`games/xxx/XxxEngineBoard.vue`)
 
 **Purpose**: UI component that renders the game.
 
@@ -704,16 +705,16 @@ async function restoreGames() {
 
 ### Server Side
 - [ ] Create `XxxGame.ts` with game logic
-- [ ] Add message types to `shared/types.ts`
+- [ ] Add message types to `packages/shared/src/multiplayer.ts` (and game-specific types under `packages/shared/src/<game>/`)
 - [ ] Add handlers in `sessions/handlers.ts`
 - [ ] Add routing in `ws/router.ts`
 - [ ] Add validation in `ws/validation.ts`
 
 ### Client Side
-- [ ] Create `xxxMultiplayerStore.ts`
-- [ ] Create `useXxxGameAdapter.ts` 
-- [ ] Create `useXxxDirector.ts`
-- [ ] Create `XxxGameBoard.vue`
+- [ ] Create `packages/client/src/games/xxx/xxxMultiplayerStore.ts`
+- [ ] Create `packages/client/src/games/xxx/useXxxGameAdapter.ts` 
+- [ ] Create `packages/client/src/games/xxx/useXxxDirector.ts`
+- [ ] Create `packages/client/src/games/xxx/XxxEngineBoard.vue`
 - [ ] Add to `App.vue` routing
 - [ ] Add to lobby game type selection
 

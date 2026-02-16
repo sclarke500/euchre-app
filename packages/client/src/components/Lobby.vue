@@ -4,9 +4,9 @@ import { useLobbyStore } from '@/stores/lobbyStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import TableCard from '@/components/TableCard.vue'
 import Modal from '@/components/Modal.vue'
-import EuchreOptions from '@/components/options/EuchreOptions.vue'
-import PresidentOptions from '@/components/options/PresidentOptions.vue'
-import SpadesOptions from '@/components/options/SpadesOptions.vue'
+import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
+import PresidentOptions from '@/games/president/PresidentOptions.vue'
+import SpadesOptions from '@/games/spades/SpadesOptions.vue'
 import type { GameType } from '@euchre/shared'
 
 const settings = useSettingsStore()

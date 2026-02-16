@@ -142,16 +142,16 @@
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { GamePhase, BidAction, Suit, type TeamScore } from '@euchre/shared'
-import CardTable from './CardTable.vue'
-import TurnTimer from './TurnTimer.vue'
-import GameHUD from './GameHUD.vue'
-import Modal from './Modal.vue'
+import CardTable from '@/components/CardTable.vue'
+import TurnTimer from '@/components/TurnTimer.vue'
+import GameHUD from '@/components/GameHUD.vue'
+import Modal from '@/components/Modal.vue'
 import { useCardTable } from '@/composables/useCardTable'
-import { useGameAdapter } from '@/composables/useGameAdapter'
-import { useEuchreDirector } from '@/composables/useEuchreDirector'
-import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
+import { useEuchreGameAdapter } from './useEuchreGameAdapter'
+import { useEuchreDirector } from './useEuchreDirector'
+import { useEuchreMultiplayerStore } from './euchreMultiplayerStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
-import { useGameStore } from '@/stores/gameStore'
+import { useEuchreGameStore } from './euchreGameStore'
 import { websocket } from '@/services/websocket'
 
 const SUIT_SYMBOLS: Record<string, string> = {
@@ -170,7 +170,7 @@ const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 // Create engine externally — shared between CardTable and Director
 const engine = useCardTable()
-const game = useGameAdapter(props.mode)
+const game = useEuchreGameAdapter(props.mode)
 
 // boardRef is resolved after CardTable mounts
 const boardRef = ref<HTMLElement | null>(null)
@@ -205,9 +205,9 @@ const timerSettings = computed(() => {
   return { gracePeriodMs: 30000, countdownMs: 30000 }
 })
 const userTrumpInfo = computed(() => {
-  const info = director.playerInfo.value[0]
-  if (!info?.trumpSymbol) return null
-  return { symbol: info.trumpSymbol, color: info.trumpColor }
+  const playerTrumpInfo = director.playerInfo.value[0]
+  if (!playerTrumpInfo?.trumpSymbol) return null
+  return { symbol: playerTrumpInfo.trumpSymbol, color: playerTrumpInfo.trumpColor }
 })
 
 // Map display row (0="Us", 1="Them") to actual team ID based on user's team
@@ -381,9 +381,9 @@ function handleCardClick(cardId: string) {
 }
 
 // Multiplayer lifecycle
-const mpStore = props.mode === 'multiplayer' ? useMultiplayerGameStore() : null
+const mpStore = props.mode === 'multiplayer' ? useEuchreMultiplayerStore() : null
 const lobbyStore = props.mode === 'multiplayer' ? useLobbyStore() : null
-const gameStore = props.mode === 'singleplayer' ? useGameStore() : null
+const gameStore = props.mode === 'singleplayer' ? useEuchreGameStore() : null
 const isHost = computed(() => lobbyStore?.isHost ?? false)
 
 // Game over state

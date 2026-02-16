@@ -15,7 +15,7 @@ import {
   chooseSpadesCardHard,
   chooseSpadesBidHard,
 } from '@euchre/shared'
-import { useSettingsStore } from './settingsStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 export const useSpadesStore = defineStore('spadesGame', () => {
   const settingsStore = useSettingsStore()

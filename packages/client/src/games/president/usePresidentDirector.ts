@@ -11,9 +11,9 @@ import { watch, nextTick, computed, ref, type Ref } from 'vue'
 import { PresidentPhase, sortHandByRank } from '@euchre/shared'
 import type { StandardCard, PendingExchange, ServerMessage } from '@euchre/shared'
 import type { PresidentGameAdapter } from './usePresidentGameAdapter'
-import type { CardTableEngine } from './useCardTable'
-import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
-import type { SandboxCard, CardPosition } from '@/components/cardContainers'
+import type { CardTableEngine } from '@/composables/useCardTable'
+import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
+import type { EngineCard, CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
 
 // ── Animation timing ─────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ const PILE_CARD_SCALE = 1.0
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function cardToSandbox(card: StandardCard): SandboxCard {
+function cardToEngineCard(card: StandardCard): EngineCard {
   return { id: card.id, suit: card.suit, rank: card.rank }
 }
 
@@ -171,12 +171,12 @@ export function usePresidentDirector(
 
     // Build deal queue: one card to each player, round-robin
     const maxCards = Math.max(...players.map(p => p.hand.length))
-    const dealQueue: { seatIdx: number; card: SandboxCard }[] = []
+    const dealQueue: { seatIdx: number; card: EngineCard }[] = []
     for (let round = 0; round < maxCards; round++) {
       for (let seatIdx = 0; seatIdx < count; seatIdx++) {
         const player = players[seatIndexToPlayerId(seatIdx)]
         const card = player?.hand[round]
-        if (card) dealQueue.push({ seatIdx, card: cardToSandbox(card) })
+        if (card) dealQueue.push({ seatIdx, card: cardToEngineCard(card) })
       }
     }
 

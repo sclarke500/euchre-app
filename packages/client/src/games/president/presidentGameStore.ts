@@ -28,7 +28,7 @@ import {
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
 } from '@euchre/shared'
-import { useSettingsStore } from './settingsStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 export const usePresidentGameStore = defineStore('presidentGame', () => {
   // Settings

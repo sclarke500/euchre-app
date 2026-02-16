@@ -1,7 +1,7 @@
 /**
  * Euchre Director
  *
- * Watches the GameAdapter and translates game state changes into imperative
+ * Watches the EuchreGameAdapter and translates game state changes into imperative
  * commands on the CardTableEngine. The adapter remains the source of truth
  * for game state; the director is purely a "state → animation" translator.
  */
@@ -9,10 +9,10 @@
 import { watch, nextTick, computed, ref, type Ref } from 'vue'
 import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@euchre/shared'
 import type { Card, Suit, ServerMessage } from '@euchre/shared'
-import type { GameAdapter } from './useGameAdapter'
-import type { CardTableEngine } from './useCardTable'
-import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
-import type { SandboxCard, CardPosition } from '@/components/cardContainers'
+import type { EuchreGameAdapter } from './useEuchreGameAdapter'
+import type { CardTableEngine } from '@/composables/useCardTable'
+import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
+import type { EngineCard, CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
 
 // ── Animation timing ─────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ function sortEuchreHand(cards: Card[], trump: Suit | null): Card[] {
   })
 }
 
-function cardToSandbox(card: Card): SandboxCard {
+function cardToEngineCard(card: Card): EngineCard {
   return { id: card.id, suit: card.suit, rank: card.rank }
 }
 
@@ -101,7 +101,7 @@ export interface EuchreDirectorOptions {
 }
 
 export function useEuchreDirector(
-  game: GameAdapter,
+  game: EuchreGameAdapter,
   engine: CardTableEngine,
   options: EuchreDirectorOptions
 ) {
@@ -355,10 +355,10 @@ export function useEuchreDirector(
    * player's avatar (or animate the user's hand offscreen if user sits out).
    * Uses the same isPlayerSittingOut() logic that the turn-skipping uses.
    */
-  async function handleAloneVisuals(trumpInfo: { calledBy: number; goingAlone: boolean }) {
-    if (!trumpInfo.goingAlone) return
+  async function handleAloneVisuals(trumpCallInfo: { calledBy: number; goingAlone: boolean }) {
+    if (!trumpCallInfo.goingAlone) return
 
-    const alonePlayerId = trumpInfo.calledBy
+    const alonePlayerId = trumpCallInfo.calledBy
     const sittingOutPid = (alonePlayerId + 2) % 4
     const seat = playerIdToSeatIndex(sittingOutPid)
 
@@ -437,14 +437,14 @@ export function useEuchreDirector(
     }
     const turnUpCard = game.turnUpCard.value
     if (turnUpCard) {
-      engine.addCardToDeck(cardToSandbox(turnUpCard), false)
+      engine.addCardToDeck(cardToEngineCard(turnUpCard), false)
     }
 
     // Player cards in reverse deal order (pop takes from end)
     for (let round = cardsPerPlayer - 1; round >= 0; round--) {
       for (let seatIdx = 3; seatIdx >= 0; seatIdx--) {
         const card = players[seatIndexToPlayerId(seatIdx)]?.hand[round]
-        if (card) engine.addCardToDeck(cardToSandbox(card), false)
+        if (card) engine.addCardToDeck(cardToEngineCard(card), false)
       }
     }
 
@@ -642,8 +642,8 @@ export function useEuchreDirector(
     await sleep(AnimationDurations.medium + AnimationBuffers.settle)
     await Promise.all([animateDeckOffscreen(), hideOpponentHands()])
 
-    const trumpInfo = game.trump.value
-    if (trumpInfo) await handleAloneVisuals(trumpInfo)
+    const currentTrumpInfo = game.trump.value
+    if (currentTrumpInfo) await handleAloneVisuals(currentTrumpInfo)
 
     isAnimating.value = false
   }
@@ -888,15 +888,15 @@ export function useEuchreDirector(
   // ── Multiplayer: trump-called handler ─────────────────────────────────
 
   async function handleTrumpCalledMP() {
-    const trumpInfo = game.trump.value
-    if (!trumpInfo) return
+    const currentTrumpInfo = game.trump.value
+    if (!currentTrumpInfo) return
 
     const turnUp = game.turnUpCard.value
-    const isOrderUp = turnUp && trumpInfo.suit === turnUp.suit
+    const isOrderUp = turnUp && currentTrumpInfo.suit === turnUp.suit
     const dealerSeatIdx = dealerSeat.value
     const isDealerUser = dealerSeatIdx === 0
     const dealerPlayerId = seatIndexToPlayerId(dealerSeatIdx)
-    const dealerSitsOut = isPlayerSittingOut(dealerPlayerId, trumpInfo.goingAlone ? trumpInfo.calledBy : null)
+    const dealerSitsOut = isPlayerSittingOut(dealerPlayerId, currentTrumpInfo.goingAlone ? currentTrumpInfo.calledBy : null)
 
     if (isOrderUp && !dealerSitsOut) {
       // Normal order-up: dealer exchanges a card
@@ -930,7 +930,7 @@ export function useEuchreDirector(
       await hideOpponentHands()
     }
 
-    await handleAloneVisuals(trumpInfo)
+    await handleAloneVisuals(currentTrumpInfo)
   }
 
   // ── Multiplayer: phase transition handler ─────────────────────────────
@@ -995,8 +995,8 @@ export function useEuchreDirector(
               await sleep(AnimationDurations.medium + AnimationBuffers.settle)
               await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
               await hideOpponentHands()
-              const trumpInfo = game.trump.value
-              if (trumpInfo) await handleAloneVisuals(trumpInfo)
+              const currentTrumpInfo = game.trump.value
+              if (currentTrumpInfo) await handleAloneVisuals(currentTrumpInfo)
             } finally {
               isAnimating.value = false
             }

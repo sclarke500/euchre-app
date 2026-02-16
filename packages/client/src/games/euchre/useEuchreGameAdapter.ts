@@ -7,13 +7,13 @@
  */
 
 import { computed, type ComputedRef, type Ref } from 'vue'
-import { useGameStore } from '@/stores/gameStore'
-import { useMultiplayerGameStore } from '@/stores/multiplayerGameStore'
+import { useEuchreGameStore } from './euchreGameStore'
+import { useEuchreMultiplayerStore } from './euchreMultiplayerStore'
 import { GamePhase, Suit, Rank, BidAction, getLegalPlays } from '@euchre/shared'
 import type { Card, Trick, TeamScore, Bid, ServerMessage } from '@euchre/shared'
 
-// Unified player interface that works for both modes
-export interface UnifiedPlayer {
+// Euchre adapter player interface that works for both modes
+export interface EuchreAdapterPlayer {
   id: number
   name: string
   hand: Card[]
@@ -22,22 +22,22 @@ export interface UnifiedPlayer {
   teamId: number
 }
 
-// Trump info interface
-export interface TrumpInfo {
+// Euchre trump info interface
+export interface EuchreTrumpInfo {
   suit: Suit
   calledBy: number
   goingAlone: boolean
 }
 
-// Unified game adapter interface
-export interface GameAdapter {
+// Euchre game adapter interface
+export interface EuchreGameAdapter {
   // Game state
   phase: ComputedRef<GamePhase>
-  players: ComputedRef<UnifiedPlayer[]>
+  players: ComputedRef<EuchreAdapterPlayer[]>
   currentPlayer: ComputedRef<number>
   scores: ComputedRef<TeamScore[]>
   currentTrick: ComputedRef<Trick>
-  trump: ComputedRef<TrumpInfo | null>
+  trump: ComputedRef<EuchreTrumpInfo | null>
   turnUpCard: ComputedRef<Card | null>
   biddingRound: ComputedRef<1 | 2 | null>
   dealer: ComputedRef<number>
@@ -80,17 +80,17 @@ function createEmptyTrick(): Trick {
   return { cards: [], leadingSuit: null, winnerId: null }
 }
 
-export function useGameAdapter(mode: 'singleplayer' | 'multiplayer'): GameAdapter {
+export function useEuchreGameAdapter(mode: 'singleplayer' | 'multiplayer'): EuchreGameAdapter {
   if (mode === 'multiplayer') {
     return createMultiplayerAdapter()
   }
   return createSinglePlayerAdapter()
 }
 
-function createSinglePlayerAdapter(): GameAdapter {
-  const store = useGameStore()
+function createSinglePlayerAdapter(): EuchreGameAdapter {
+  const store = useEuchreGameStore()
 
-  const players = computed<UnifiedPlayer[]>(() => {
+  const players = computed<EuchreAdapterPlayer[]>(() => {
     return store.players.map(p => ({
       id: p.id,
       name: p.name,
@@ -101,7 +101,7 @@ function createSinglePlayerAdapter(): GameAdapter {
     }))
   })
 
-  const trump = computed<TrumpInfo | null>(() => {
+  const trump = computed<EuchreTrumpInfo | null>(() => {
     const round = store.currentRound
     if (!round?.trump) return null
     return {
@@ -226,10 +226,10 @@ function createSinglePlayerAdapter(): GameAdapter {
   }
 }
 
-function createMultiplayerAdapter(): GameAdapter {
-  const store = useMultiplayerGameStore()
+function createMultiplayerAdapter(): EuchreGameAdapter {
+  const store = useEuchreMultiplayerStore()
 
-  const players = computed<UnifiedPlayer[]>(() => {
+  const players = computed<EuchreAdapterPlayer[]>(() => {
     return store.players.map(p => ({
       id: p.id,
       name: p.name,
@@ -246,7 +246,7 @@ function createMultiplayerAdapter(): GameAdapter {
     }))
   })
 
-  const trump = computed<TrumpInfo | null>(() => {
+  const trump = computed<EuchreTrumpInfo | null>(() => {
     if (!store.trump || store.trumpCalledBy === null) return null
     return {
       suit: store.trump,

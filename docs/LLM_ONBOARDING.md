@@ -21,9 +21,10 @@ A multiplayer card game platform (PWA) with:
 packages/
 ├── client/          # Vue 3 + Vite frontend
 │   └── src/
-│       ├── components/     # Vue components (game boards, UI)
-│       ├── composables/    # Vue composables (adapters, directors)
-│       └── stores/         # Pinia stores (game state, multiplayer)
+│       ├── games/          # Game-domain folders (euchre, president, spades, klondike)
+│       ├── components/     # Shared Vue UI components
+│       ├── composables/    # Shared composables (card table/engine helpers)
+│       └── stores/         # Shared multiplayer utilities + lobby state
 ├── server/          # Node WebSocket server
 │   └── src/
 │       ├── Game.ts              # Euchre game logic
@@ -79,15 +80,15 @@ Router → Handlers → GameRuntime → Game Class
 ### Understanding the architecture:
 1. `packages/shared/src/multiplayer.ts` — Message types
 2. `packages/server/src/sessions/runtime.ts` — Server game interface
-3. `packages/client/src/composables/useSpadesGameAdapter.ts` — Adapter pattern example
+3. `packages/client/src/games/spades/useSpadesGameAdapter.ts` — Adapter pattern example
 
 ### Understanding a complete game:
 1. `packages/shared/src/spades/` — Types and rules
 2. `packages/server/src/SpadesGame.ts` — Server implementation
-3. `packages/client/src/stores/spadesMultiplayerStore.ts` — Client store
-4. `packages/client/src/composables/useSpadesGameAdapter.ts` — Adapter
-5. `packages/client/src/composables/useSpadesDirector.ts` — Director
-6. `packages/client/src/components/spades/SpadesGameBoard.vue` — UI
+3. `packages/client/src/games/spades/spadesMultiplayerStore.ts` — Client store
+4. `packages/client/src/games/spades/useSpadesGameAdapter.ts` — Adapter
+5. `packages/client/src/games/spades/useSpadesDirector.ts` — Director
+6. `packages/client/src/games/spades/SpadesEngineBoard.vue` — UI
 
 ---
 
@@ -149,7 +150,7 @@ import {
 4. Update board component for UI
 
 ### Fix a multiplayer bug:
-1. Check `stores/*MultiplayerStore.ts` for message handling
+1. Check `games/<game>/*MultiplayerStore.ts` for message handling
 2. Check `sessions/handlers.ts` for server-side logic
 3. Use browser DevTools Network tab → WS to see messages
 4. Add debug logging via `multiplayerDebug.ts`

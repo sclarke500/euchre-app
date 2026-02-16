@@ -29,10 +29,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { CardPosition, SandboxCard } from './cardContainers'
+import type { CardPosition, EngineCard } from './cardContainers'
 
 const props = defineProps<{
-  card: SandboxCard
+  card: EngineCard
   faceUp: boolean
   initialPosition?: CardPosition
   dimmed?: boolean

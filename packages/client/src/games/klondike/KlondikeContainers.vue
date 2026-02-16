@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import type { ContainerRect } from '@/composables/useKlondikeLayout'
+import type { ContainerRect } from './useKlondikeLayout'
 import type { KlondikeState } from '@euchre/shared'
 
 const props = defineProps<{

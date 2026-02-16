@@ -11,7 +11,6 @@ Start here for current documentation map and statuses:
 Canonical multiplayer planning/execution docs:
 
 - `docs/ROADMAP.md`
-- `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md`
 
 ## Monorepo Structure
 
@@ -23,6 +22,11 @@ packages/
 e2e/          # Playwright end-to-end tests
 docs/         # Planning, architecture, and research docs
 ```
+
+Client structure (domain-first):
+
+- `packages/client/src/games/<game>/` for game-local boards, adapters, directors, and stores.
+- `packages/client/src/components/`, `packages/client/src/composables/`, and `packages/client/src/stores/` for shared UI/engine/utilities.
 
 ## Prerequisites
 

@@ -10,11 +10,11 @@ import type {
 } from '@euchre/shared'
 import { PresidentPhase } from '@euchre/shared'
 import { websocket } from '@/services/websocket'
-import { updateIfChanged } from './utils'
-import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from './multiplayerDebug'
-import { createMultiplayerQueueController } from './multiplayerQueue'
-import { createMultiplayerResyncWatchdog } from './multiplayerResync'
-import { getExpectedStateSeq, handleCommonMultiplayerError, isSyncRequiredError, updateLastStateSeq } from './multiplayerSync'
+import { updateIfChanged } from '@/stores/utils'
+import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from '@/stores/multiplayerDebug'
+import { createMultiplayerQueueController } from '@/stores/multiplayerQueue'
+import { createMultiplayerResyncWatchdog } from '@/stores/multiplayerResync'
+import { getExpectedStateSeq, handleCommonMultiplayerError, isSyncRequiredError, updateLastStateSeq } from '@/stores/multiplayerSync'
 
 export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', () => {
   // State from server

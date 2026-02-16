@@ -1,11 +1,13 @@
 # Multiplayer Shared Flow Roadmap
 
-**Last updated:** 2026-02-15  
+**Last updated:** 2026-02-16  
 **Scope:** Shared multiplayer architecture for Euchre, President, Spades, and future multiplayer games.
 
 ## Purpose
 
-This is the single canonical roadmap/reference for multiplayer flow in this repo.
+This is the single source of truth for current multiplayer architecture, lifecycle, and implementation guidance in this repo.
+
+If another document conflicts with this one, this document takes precedence.
 
 Use this doc to:
 
@@ -24,7 +26,7 @@ Use this doc to:
 - Reconnect + AI replacement + seat restore behavior implemented across games.
 - `expectedStateSeq` / `sync_required` protection path in place.
 
-### Current canonical games
+### Current multiplayer games in scope
 - Euchre
 - President
 - Spades
@@ -80,14 +82,20 @@ All multiplayer games should implement this lifecycle:
   - turn state
   - queue integration
   - resync/error handling
+  - game-local implementation under `packages/client/src/games/<game>/`.
 - Adapter responsibilities:
   - normalize singleplayer/multiplayer data shape for board/director.
+  - game-local implementation under `packages/client/src/games/<game>/`.
 - Director responsibilities:
   - animation orchestration
   - queue drain coordination
   - seat mapping + board timing.
+  - game-local implementation under `packages/client/src/games/<game>/`.
 - Board responsibilities:
   - rendering + user interactions only.
+  - game-local implementation under `packages/client/src/games/<game>/`.
+
+Shared multiplayer helpers should remain in `packages/client/src/stores/` (e.g., queue/resync/sync/debug utilities).
 
 ---
 
@@ -109,6 +117,7 @@ Use this checklist when adding a new multiplayer game.
 - Create adapter (`singleplayer` + `multiplayer` parity).
 - Create director for animation + queue coordination.
 - Keep board focused on display + interaction.
+- Place game-local files in `packages/client/src/games/<game>/` and keep cross-game utilities in shared top-level folders.
 
 ### 4) UX parity requirements
 - Turn/timer affordance parity.
@@ -150,6 +159,5 @@ These are intentionally deferred until usage/load justifies complexity.
 When multiplayer architecture changes, update in this order:
 
 1. `docs/ROADMAP.md` (this file)
-2. `docs/IMPLEMENTATION_PLAN_MULTIPLAYER_ALIGNMENT.md` (execution log/evidence)
-3. `docs/DOCUMENTATION_INDEX.md`
-4. `README.md` (if setup/run flow changed)
+2. `docs/DOCUMENTATION_INDEX.md`
+3. `README.md` (if setup/run flow changed)

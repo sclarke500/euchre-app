@@ -14,13 +14,13 @@ import { GamePhase, getLegalPlays, BidAction as BidActionEnum } from '@euchre/sh
 import { websocket } from '@/services/websocket'
 import { useToast } from '@/composables/useToast'
 import { sendBugReport } from '@/services/autoBugReport'
-import { updateIfChanged } from './utils'
-import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from './multiplayerDebug'
-import { createMultiplayerQueueController } from './multiplayerQueue'
-import { createMultiplayerResyncWatchdog } from './multiplayerResync'
-import { getExpectedStateSeq, handleCommonMultiplayerError, isSyncRequiredError, updateLastStateSeq } from './multiplayerSync'
+import { updateIfChanged } from '@/stores/utils'
+import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from '@/stores/multiplayerDebug'
+import { createMultiplayerQueueController } from '@/stores/multiplayerQueue'
+import { createMultiplayerResyncWatchdog } from '@/stores/multiplayerResync'
+import { getExpectedStateSeq, handleCommonMultiplayerError, isSyncRequiredError, updateLastStateSeq } from '@/stores/multiplayerSync'
 
-export const useMultiplayerGameStore = defineStore('multiplayerGame', () => {
+export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
   // State from server
   const gameState = ref<ClientGameState | null>(null)
   const validActions = ref<string[]>([])

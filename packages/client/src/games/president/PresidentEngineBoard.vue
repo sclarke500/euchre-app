@@ -11,6 +11,7 @@
     :selected-card-ids="selectedCardIds"
     :highlighted-card-ids="highlightedCardIds"
     layout="wide"
+    game-name="PRESIDENT"
     @card-click="handleCardClick"
   >
     <!-- Player rank badges via named slots -->
@@ -154,14 +155,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { PresidentPhase, isValidPlay, sortHandByRank, type StandardCard } from '@euchre/shared'
-import CardTable from './CardTable.vue'
-import TurnTimer from './TurnTimer.vue'
-import Modal from './Modal.vue'
-import GameHUD from './GameHUD.vue'
+import CardTable from '@/components/CardTable.vue'
+import TurnTimer from '@/components/TurnTimer.vue'
+import Modal from '@/components/Modal.vue'
+import GameHUD from '@/components/GameHUD.vue'
 import { useCardTable } from '@/composables/useCardTable'
-import { usePresidentGameAdapter } from '@/composables/usePresidentGameAdapter'
-import { usePresidentDirector } from '@/composables/usePresidentDirector'
-import { usePresidentGameStore } from '@/stores/presidentGameStore'
+import { usePresidentGameAdapter } from './usePresidentGameAdapter'
+import { usePresidentDirector } from './usePresidentDirector'
+import { usePresidentGameStore } from './presidentGameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { websocket } from '@/services/websocket'
 

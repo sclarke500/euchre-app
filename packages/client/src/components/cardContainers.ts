@@ -14,14 +14,14 @@ export interface BoardCardRef {
   setArcFan: (enabled: boolean) => void
 }
 
-export interface SandboxCard {
+export interface EngineCard {
   id: string
   suit: string
   rank: string
 }
 
 export interface ManagedCard {
-  card: SandboxCard
+  card: EngineCard
   faceUp: boolean
   ref: BoardCardRef | null
 }
@@ -36,7 +36,7 @@ export abstract class CardContainer {
     this.position = position
   }
   
-  addCard(card: SandboxCard, faceUp: boolean = false): ManagedCard {
+  addCard(card: EngineCard, faceUp: boolean = false): ManagedCard {
     const managed: ManagedCard = { card, faceUp, ref: null }
     this.cards.push(managed)
     return managed

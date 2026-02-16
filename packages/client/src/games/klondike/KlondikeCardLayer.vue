@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import type { CardPosition } from '@/composables/useKlondikeLayout'
+import type { CardPosition } from './useKlondikeLayout'
 import { Suit, type Selection } from '@euchre/shared'
 
 const props = defineProps<{

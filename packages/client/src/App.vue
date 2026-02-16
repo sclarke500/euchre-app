@@ -1,45 +1,27 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
-import { useGameStore } from './stores/gameStore'
-import { usePresidentGameStore } from './stores/presidentGameStore'
 import { useLobbyStore } from './stores/lobbyStore'
-import { useSettingsStore } from './stores/settingsStore'
-import { GamePhase } from '@euchre/shared'
-import UnifiedGameBoard from './components/legacy/UnifiedGameBoard.vue'
-import PresidentEngineBoard from './components/PresidentEngineBoard.vue'
-import KlondikeGameBoard from './components/klondike/KlondikeGameBoard.vue'
-import SpadesGameBoard from './components/spades/SpadesGameBoard.vue'
 import MainMenu, { type GameType } from './components/MainMenu.vue'
 import Lobby from './components/Lobby.vue'
-import SandboxTable from './components/sandbox/SandboxTable.vue'
-import EuchreEngineBoard from './components/EuchreEngineBoard.vue'
 import AppToast from './components/AppToast.vue'
+import { EuchreEngineBoard } from './games/euchre'
+import { PresidentEngineBoard } from './games/president'
+import { KlondikeGameBoard } from './games/klondike'
+import { SpadesEngineBoard } from './games/spades'
 
-const gameStore = useGameStore()
-const presidentStore = usePresidentGameStore()
 const lobbyStore = useLobbyStore()
-const settingsStore = useSettingsStore()
 
 // App view state
-type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'spadesSinglePlayer' | 'lobby' | 'multiplayerGame' | 'sandbox' | 'euchreLegacy'
+type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'spadesSinglePlayer' | 'lobby' | 'multiplayerGame'
 
 // Check for dev URL parameters
 const urlParams = new URLSearchParams(window.location.search)
-const initialView: AppView = urlParams.get('sandbox') !== null ? 'sandbox'
-  : urlParams.get('legacy') !== null ? 'euchreLegacy'
-  : 'menu'
+const initialView: AppView = 'menu'
 const currentView = ref<AppView>(initialView)
 const currentGame = ref<GameType>('euchre')
 
-// Auto-start game when using ?legacy dev parameter
-if (initialView === 'euchreLegacy') {
-  gameStore.startNewGame()
-}
-
-const phase = computed(() => gameStore.phase)
-
 // Views that require landscape orientation
-const landscapeRequiredViews = ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'euchreLegacy', 'lobby']
+const landscapeRequiredViews = ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'lobby']
 
 // Track landscape orientation
 const isLandscape = ref(true)
@@ -201,7 +183,7 @@ function startSinglePlayer(game: GameType) {
     // KlondikeGameBoard initializes the game in onMounted
   } else if (game === 'spades') {
     currentView.value = 'spadesSinglePlayer'
-    // SpadesGameBoard initializes the game in onMounted
+    // SpadesEngineBoard initializes the game in onMounted
   } else {
     currentView.value = 'euchreSinglePlayer'
     // EuchreEngineBoard initializes the game in onMounted
@@ -322,7 +304,7 @@ function backToMenu() {
     />
 
     <!-- Spades Single Player Game - delay until landscape -->
-    <SpadesGameBoard
+    <SpadesEngineBoard
       v-else-if="currentView === 'spadesSinglePlayer' && canRenderLandscapeView"
       mode="singleplayer"
       @leave-game="currentView = 'menu'"
@@ -341,18 +323,6 @@ function backToMenu() {
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
     />
 
-    <!-- Animation Sandbox (access via ?sandbox) -->
-    <SandboxTable
-      v-else-if="currentView === 'sandbox'"
-    />
-
-    <!-- Legacy Euchre board (access via ?legacy) - delay until landscape -->
-    <UnifiedGameBoard
-      v-else-if="currentView === 'euchreLegacy' && canRenderLandscapeView"
-      mode="singleplayer"
-      @leave-game="currentView = 'menu'"
-    />
-
     <!-- Multiplayer President Game - delay until landscape -->
     <PresidentEngineBoard
       v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'president' && canRenderLandscapeView"
@@ -361,7 +331,7 @@ function backToMenu() {
     />
 
     <!-- Multiplayer Spades Game - delay until landscape -->
-    <SpadesGameBoard
+    <SpadesEngineBoard
       v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'spades' && canRenderLandscapeView"
       mode="multiplayer"
       @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"

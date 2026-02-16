@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useSettingsStore, type AIDifficulty } from '@/stores/settingsStore'
-import EuchreOptions from '@/components/options/EuchreOptions.vue'
-import PresidentOptions from '@/components/options/PresidentOptions.vue'
-import SpadesOptions from '@/components/options/SpadesOptions.vue'
+import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
+import PresidentOptions from '@/games/president/PresidentOptions.vue'
+import SpadesOptions from '@/games/spades/SpadesOptions.vue'
 import Modal from '@/components/Modal.vue'
 
 defineProps<{
