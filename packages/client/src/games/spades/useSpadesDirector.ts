@@ -199,8 +199,11 @@ export function useSpadesDirector(
         sortUserHand: sortSpadesHand,
       })
 
-      await cardController.revealUserHand(350)
-      await cardController.sortUserHand(sortSpadesHand, 300)
+      // Only reveal and sort user hand if cards should be visible (not in blind nil decision)
+      if (game.userCardsRevealed.value) {
+        await cardController.revealUserHand(350)
+        await cardController.sortUserHand(sortSpadesHand, 300)
+      }
 
       if (mode === 'multiplayer') {
         game.disableQueueMode?.()
@@ -227,6 +230,17 @@ export function useSpadesDirector(
       if (phase === SpadesPhase.Playing && bidsComplete && trickCount === 0 && !opponentsHidden.value) {
         await cardController.hideOpponentHands()
         opponentsHidden.value = true
+      }
+    }
+  )
+
+  // Watch for blind nil decision - reveal cards when user chooses to see them
+  watch(
+    () => game.userCardsRevealed.value,
+    async (revealed) => {
+      if (revealed && game.phase.value === SpadesPhase.Bidding) {
+        await cardController.revealUserHand(350)
+        await cardController.sortUserHand(sortSpadesHand, 300)
       }
     }
   )

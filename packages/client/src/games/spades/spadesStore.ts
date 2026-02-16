@@ -40,6 +40,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   const gameLost = ref(false) // Always false for singleplayer, but keeps interface consistent
   const winScore = ref(500)
   const loseScore = ref(-200)
+  const userCardsRevealed = ref(true) // Whether user can see their cards (false during blind nil decision)
 
   // Animation callbacks
   let dealCompleteResolve: (() => void) | null = null
@@ -76,6 +77,16 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
   const isHumanBidding = computed(() => {
     return isHumanTurn.value && phase.value === SpadesPhase.Bidding
+  })
+
+  // Blind nil decision pending when: blind nil enabled, user's turn to bid, cards not revealed yet
+  const blindNilDecisionPending = computed(() => {
+    return settingsStore.spadesBlindNil && isHumanBidding.value && !userCardsRevealed.value
+  })
+  
+  // Show normal bid wheel only after cards revealed (or blind nil disabled)
+  const showBidWheel = computed(() => {
+    return isHumanBidding.value && userCardsRevealed.value
   })
 
   const isHumanPlaying = computed(() => {
@@ -140,6 +151,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     const dealtState = Spades.dealSpadesCards(gameState.value)
     applyState(dealtState)
     phase.value = SpadesPhase.Dealing
+    
+    // Reset blind nil state: hide cards if blind nil is enabled
+    userCardsRevealed.value = !settingsStore.spadesBlindNil
 
     // Wait for deal animation
     const advancePhase = () => {
@@ -177,6 +191,26 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     } else {
       processAITurn()
     }
+  }
+
+  // Blind nil: user chooses to bid blind nil without seeing cards
+  function submitBlindNil() {
+    const human = humanPlayer.value
+    if (!human || !blindNilDecisionPending.value) return
+    
+    // Import is at top of file
+    const blindNilBid: SpadesBid = { type: SpadesBidType.BlindNil, count: 0 }
+    userCardsRevealed.value = true // Reveal cards after bidding
+    
+    const state = Spades.processBid(gameState.value, human.id, blindNilBid)
+    applyState(state)
+    processAITurn()
+  }
+
+  // Blind nil: user chooses to see cards (forfeits blind nil option)
+  function revealCards() {
+    if (!blindNilDecisionPending.value) return
+    userCardsRevealed.value = true
   }
 
   async function playCard(card: StandardCard) {
@@ -321,6 +355,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     validPlays,
     teamBids,
     teamTricks,
+    blindNilDecisionPending,
+    showBidWheel,
+    userCardsRevealed,
 
     // Actions
     startNewGame,
@@ -331,5 +368,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     dealAnimationComplete,
     setPlayAnimationCallback,
     setTrickCompleteCallback,
+    submitBlindNil,
+    revealCards,
   }
 })

@@ -19,18 +19,18 @@ const settings = useSettingsStore()
         </button>
       </div>
     </div>
-    <div class="option-row disabled">
+    <div class="option-row">
       <span class="option-label">Blind Nil</span>
       <div class="toggle-group">
         <button
           :class="['toggle-btn', { active: !settings.spadesBlindNil }]"
-          disabled
+          @click="settings.setSpadesBlindNil(false)"
         >
           Off
         </button>
         <button
           :class="['toggle-btn', { active: settings.spadesBlindNil }]"
-          disabled
+          @click="settings.setSpadesBlindNil(true)"
         >
           On
         </button>
@@ -41,12 +41,4 @@ const settings = useSettingsStore()
 
 <style scoped lang="scss">
 @use '@/assets/styles/compact-options';
-
-.option-row.disabled {
-  opacity: 0.5;
-  
-  .toggle-btn {
-    cursor: not-allowed;
-  }
-}
 </style>

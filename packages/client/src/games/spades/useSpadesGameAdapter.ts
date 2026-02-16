@@ -36,9 +36,14 @@ export interface SpadesGameAdapter {
   validPlays: ComputedRef<StandardCard[]>
   timedOutPlayer: ComputedRef<number | null>
   gameLost: Ref<boolean>
+  blindNilDecisionPending: ComputedRef<boolean>
+  showBidWheel: ComputedRef<boolean>
+  userCardsRevealed: ComputedRef<boolean>
 
   makeBid: (bid: SpadesBid) => void
   playCard: (card: StandardCard) => void
+  submitBlindNil: () => void
+  revealCards: () => void
   requestStateResync?: () => void
   bootPlayer?: (playerId: number) => void
 
@@ -104,9 +109,14 @@ function useSpadesSinglePlayerAdapter(): SpadesGameAdapter {
     validPlays: computed(() => store.validPlays),
     timedOutPlayer: computed(() => null),
     gameLost: ref(false),
+    blindNilDecisionPending: computed(() => !!store.blindNilDecisionPending),
+    showBidWheel: computed(() => !!store.showBidWheel),
+    userCardsRevealed: computed(() => store.userCardsRevealed),
 
     makeBid: (bid) => store.makeBid(bid),
     playCard: (card) => { void store.playCard(card) },
+    submitBlindNil: () => store.submitBlindNil(),
+    revealCards: () => store.revealCards(),
 
     setPlayAnimationCallback: (cb) => store.setPlayAnimationCallback(cb),
     setTrickCompleteCallback: (cb) => store.setTrickCompleteCallback(cb),
@@ -156,9 +166,15 @@ function useSpadesMultiplayerAdapter(): SpadesGameAdapter {
     validPlays: computed(() => store.validPlays),
     timedOutPlayer: computed(() => store.timedOutPlayer),
     gameLost: toRef(store, 'gameLost'),
+    // Blind nil not yet supported in multiplayer
+    blindNilDecisionPending: computed(() => false),
+    showBidWheel: computed(() => store.isHumanBidding),
+    userCardsRevealed: computed(() => true),
 
     makeBid: (bid) => store.makeBid(bid),
     playCard: (card) => store.playCard(card),
+    submitBlindNil: () => { /* Not supported in multiplayer yet */ },
+    revealCards: () => { /* Not supported in multiplayer yet */ },
     requestStateResync: () => store.requestStateResync(),
     bootPlayer: (playerId) => store.bootPlayer(playerId),
 

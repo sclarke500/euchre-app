@@ -183,10 +183,17 @@
       @timeout="handleTurnTimeout"
     />
 
-    <!-- Bidding wheel (right side) -->
+    <!-- Blind nil prompt (right side) - shows before cards revealed -->
+    <BlindNilPrompt
+      :visible="store.blindNilDecisionPending"
+      @blind-nil="store.submitBlindNil"
+      @show-cards="store.revealCards"
+    />
+
+    <!-- Bidding wheel (right side) - shows after cards revealed -->
     <SpadesBidWheel
       v-model="selectedBid"
-      :visible="store.isHumanBidding"
+      :visible="store.showBidWheel"
       @bid="handleBid"
     />
   </CardTable>
@@ -200,6 +207,7 @@ import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import SpadesBidWheel from './SpadesBidWheel.vue'
+import BlindNilPrompt from './BlindNilPrompt.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useSpadesGameAdapter } from './useSpadesGameAdapter'
 import { useSpadesDirector } from './useSpadesDirector'
