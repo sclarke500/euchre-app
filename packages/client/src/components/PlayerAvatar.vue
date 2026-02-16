@@ -69,7 +69,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  z-index: 300;
+  z-index: 350; // Above table cards (~100-250), below user hand (~1000+)
 
   .avatar-container {
     position: relative;
@@ -86,15 +86,17 @@ const positionStyle = computed(() => props.customStyle ?? {})
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: #333344;
-    border: 2px solid #4a4a60;
+    background: linear-gradient(145deg, #4a4a5c, #3a3a4c);
+    border: 2px solid #5a5a70;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     font-weight: bold;
-    color: #ccc;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    color: #ddd;
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.5),
+      0 2px 4px rgba(0, 0, 0, 0.3);
     transition: border-color var(--anim-slow, 0.3s) ease, box-shadow var(--anim-slow, 0.3s) ease;
   }
 
@@ -170,10 +172,12 @@ const positionStyle = computed(() => props.customStyle ?? {})
   // Position variants
   &.position-bottom {
     position: fixed;
-    bottom: 12px;
+    // Position so avatar sits on table edge, name label ~5px above user's cards
+    // User cards are at ~80% from top (table bottom is 20% from bottom)
+    bottom: calc(20% + 60px);
     left: 50%;
     transform: translateX(-50%);
-    z-index: 400;
+    z-index: 500; // Above table cards, below user hand (~1000+)
   }
 
   &.position-rail-left {
