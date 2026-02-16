@@ -16,9 +16,12 @@
   >
     <!-- Player rank badges via named slots -->
     <template v-for="(player, i) in game.players.value" :key="i" #[`player-info-${playerIdToSeatIndex(i)}`]>
-      <div v-if="getRankBadge(i)" class="info-chip rank-chip">
-        {{ getRankBadge(i) }}
-      </div>
+      <span v-if="getRankBadge(i)" class="rank-badge">{{ getRankBadge(i) }}</span>
+    </template>
+
+    <!-- User rank badge -->
+    <template #user-info>
+      <span v-if="userRankBadge" class="rank-badge user-rank">{{ userRankBadge }}</span>
     </template>
 
     <!-- HUD: Menu button -->
@@ -261,6 +264,12 @@ const dimmedCardIds = computed(() => {
     return ids
   }
 
+  // In multiplayer, if validPlays is empty, don't dim anything yet
+  // (wait for server to send valid plays)
+  if (props.mode === 'multiplayer' && game.validPlays.value.length === 0) {
+    return ids
+  }
+
   // During play, dim cards whose rank can't be part of any valid play
   const validRanks = new Set<string>()
   for (const play of game.validPlays.value) {
@@ -479,13 +488,15 @@ onUnmounted(() => {
   }
 }
 
-.info-chip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
+// Rank badges (President 👑, Scum 💩, etc.)
+.rank-badge {
+  font-size: 28px;
   line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.user-rank {
+  font-size: 32px;
 }
 
 // Invalid hint style for UserActions labels
