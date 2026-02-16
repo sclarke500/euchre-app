@@ -197,8 +197,12 @@ export function useCardTable(): CardTableEngine {
     targetPos?: CardPosition,
     duration: number = 350
   ): Promise<void> {
+    console.log(`[CardTable] moveCard: ${cardId} from ${from.id} to ${to.id}`)
     const managed = from.removeCard(cardId)
-    if (!managed) return
+    if (!managed) {
+      console.warn(`[CardTable] moveCard: ${cardId} not found in ${from.id}`)
+      return
+    }
 
     if (to instanceof Hand) {
       to.addManagedCard(managed)
@@ -213,7 +217,10 @@ export function useCardTable(): CardTableEngine {
     if (cardRef) {
       to.setCardRef(cardId, cardRef)
       const target = targetPos ?? to.getCardPosition(to.cards.length - 1)
+      console.log(`[CardTable] moveCard: animating ${cardId} to`, target)
       await cardRef.moveTo(target, duration)
+    } else {
+      console.warn(`[CardTable] moveCard: no cardRef for ${cardId}`)
     }
 
     refreshCards()
