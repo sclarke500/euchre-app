@@ -1,3 +1,20 @@
+/**
+ * Shared Card Controller
+ * 
+ * Provides unified card animation methods used across all games.
+ * Games should use these methods rather than implementing their own.
+ * 
+ * TODO: Euchre has additional implementations in useEuchreDirector.ts that
+ * should be moved here when needed by other games:
+ * - animateDeal() - deals with kitty/turn-up card handling
+ * - animateCardPlay() - plays card to trick area
+ * - animateTrickSweep() - sweeps completed trick to winner
+ * - animateDeckOffscreen() - moves deck off screen
+ * - flipTurnUpFaceDown() - flips turn-up card
+ * - animateTurnUpToDealer() - moves turn-up to dealer's hand
+ * - handleDealerDiscard() - discards dealer's card
+ */
+
 import { ref, type Ref, nextTick } from 'vue'
 import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
 import type { CardTableEngine } from './useCardTable'
