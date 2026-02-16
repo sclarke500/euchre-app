@@ -605,12 +605,6 @@ export function useCardController(
     const duration = config.opponentCollapseDurationMs ?? 250
     const hands = engine.getHands()
     const promises: Promise<void>[] = []
-
-    // Hide all opponent cards under user's avatar (bottom center, tiny scale)
-    const hidePosition = {
-      x: layout.tableBounds.centerX,
-      y: board.offsetHeight - 60, // Near user avatar at bottom
-    }
     const hideScale = 0.05 // Essentially invisible
 
     for (let seatIndex = 0; seatIndex < config.playerCount; seatIndex++) {
@@ -619,13 +613,16 @@ export function useCardController(
       const hand = hands[seatIndex]
       if (!hand || hand.cards.length === 0) continue
 
+      // Position at each opponent's own avatar (so plays animate from correct spot)
+      const avatarPos = getAvatarBoardPosition(seatIndex, layout)
+      
       hiddenSeatIndices.add(seatIndex)
       for (const managed of hand.cards) {
         const ref = engine.getCardRef(managed.card.id)
         if (ref) {
           promises.push(ref.moveTo({
-            x: hidePosition.x,
-            y: hidePosition.y,
+            x: avatarPos.x,
+            y: avatarPos.y,
             rotation: 0,
             zIndex: 50,
             scale: hideScale,
