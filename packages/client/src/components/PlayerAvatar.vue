@@ -173,7 +173,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
   &.position-bottom {
     position: fixed;
     // Position so avatar sits just above user's cards
-    bottom: calc(20% + 10px);
+    bottom: calc(20% - 10px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 500; // Above table cards, below user hand (~1000+)
