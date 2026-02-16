@@ -8,33 +8,21 @@
           <img src="@/assets/AppLogo.png" alt="" class="watermark-logo" />
           <span class="watermark-name">{{ gameName }}</span>
         </div>
-        <!-- Player avatars positioned outside the table -->
-        <div
+        
+        <!-- Opponent avatars positioned on the table rail -->
+        <PlayerAvatar
           v-for="(seat, i) in seatData"
           :key="'avatar-' + i"
-          class="player-avatar"
-          :class="{ 'is-user': seat.isUser, 'is-current-turn': currentTurnSeat === i }"
-          :style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
+          v-show="!seat.isUser"
+          :name="playerNames[i] ?? 'Player'"
+          :is-current-turn="currentTurnSeat === i"
+          :is-dealer="dealerSeat === i"
+          :status="playerStatuses[i]"
+          :position="getRailPosition(seat.side)"
+          :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
         >
-          <div class="avatar-container">
-            <div class="avatar-border">
-              <div class="avatar-circle">{{ playerNames[i]?.[0] ?? '?' }}</div>
-              <div class="player-name">{{ playerNames[i] }}</div>
-            </div>
-            <div class="avatar-glow" v-if="currentTurnSeat === i"></div>
-          </div>
-          <div class="player-status" :class="{ visible: !!playerStatuses[i] }">{{ playerStatuses[i] }}</div>
-          <div class="info-tags">
-            <slot :name="`player-info-${i}`" />
-          </div>
-        </div>
-
-        <!-- Dealer chip - single element that animates between seats -->
-        <div
-          v-if="dealerSeat >= 0"
-          class="dealer-chip"
-          :class="`dealer-seat-${dealerSeat}`"
-        >D</div>
+          <slot :name="`player-info-${i}`" />
+        </PlayerAvatar>
       </div>
 
       <!-- All cards rendered here -->
@@ -50,19 +38,16 @@
         @click="$emit('card-click', managed.card.id)"
       />
 
-      <!-- User avatar at bottom-right of screen -->
-      <div class="user-avatar-bottom" :class="{ 'is-current-turn': currentTurnSeat === 0 }">
-        <div class="avatar-container">
-          <div class="avatar-border">
-            <div class="avatar-circle">{{ playerNames[0]?.[0] ?? '?' }}</div>
-            <div class="player-name">{{ playerNames[0] }}</div>
-          </div>
-          <div class="avatar-glow" v-if="currentTurnSeat === 0"></div>
-        </div>
-        <div class="info-tags">
-          <slot name="user-info" />
-        </div>
-      </div>
+      <!-- User avatar at bottom center of screen -->
+      <PlayerAvatar
+        :name="playerNames[0] ?? 'You'"
+        :is-current-turn="currentTurnSeat === 0"
+        :is-user="true"
+        :is-dealer="dealerSeat === 0"
+        position="bottom"
+      >
+        <slot name="user-info" />
+      </PlayerAvatar>
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
@@ -73,6 +58,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
 import BoardCard from './BoardCard.vue'
+import PlayerAvatar, { type AvatarPosition } from './PlayerAvatar.vue'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 
@@ -112,9 +98,20 @@ const seatData = ref<SeatLayout[]>([])
 const lastLayoutResult = ref<TableLayoutResult | null>(null)
 
 /**
+ * Map seat side to avatar position class
+ */
+function getRailPosition(side: string): AvatarPosition {
+  switch (side) {
+    case 'left': return 'rail-left'
+    case 'right': return 'rail-right'
+    case 'top': return 'rail-top'
+    default: return 'bottom'
+  }
+}
+
+/**
  * Compute CSS position for each avatar relative to the table surface.
- * Uses hand positions from the layout result, converting from board-space px
- * to table-relative percentages so avatars sit just outside the table edge.
+ * Avatars are positioned ON the rail (straddling the table edge).
  */
 const avatarStyles = computed(() => {
   const layout = lastLayoutResult.value
@@ -122,22 +119,23 @@ const avatarStyles = computed(() => {
   const { tableBounds } = layout
 
   return seatData.value.map((seat) => {
-    // Hide user avatar at table - shown separately at bottom of screen
-    if (seat.isUser) return { display: 'none' }
+    // User avatar handled separately (fixed at bottom center)
+    if (seat.isUser) return {}
 
     // Convert board-space hand position to table-relative percentage
     const pctX = ((seat.handPosition.x - tableBounds.left) / tableBounds.width * 100)
     const pctY = ((seat.handPosition.y - tableBounds.top) / tableBounds.height * 100)
 
+    // Position ON the rail - avatar straddles the table edge
     switch (seat.side) {
       case 'left':
-        return { left: '-50px', top: `${pctY}%` }
+        return { left: '0%', top: `${pctY}%` }
       case 'right':
-        return { left: 'calc(100% + 50px)', top: `${pctY}%` }
+        return { left: '100%', top: `${pctY}%` }
       case 'top':
-        return { left: `${pctX}%`, top: '-40px' }
-      default: // bottom
-        return { left: `${pctX}%`, top: 'calc(100% + 40px)' }
+        return { left: `${pctX}%`, top: '0%' }
+      default: // bottom (shouldn't happen - user is at bottom)
+        return { left: `${pctX}%`, top: '100%' }
     }
   })
 })
@@ -277,182 +275,6 @@ defineExpose({
   }
 }
 
-.player-avatar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 300;
-
-  .avatar-container {
-    position: relative;
-  }
-
-  .avatar-border {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-  }
-
-  .avatar-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #333344;
-    border: 2px solid #4a4a60;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: bold;
-    color: #ccc;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
-  }
-
-  .player-name {
-    margin-top: 3px;
-    padding: 2px 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #ccc;
-    white-space: nowrap;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
-  }
-
-  .player-status {
-    font-size: 10px;
-    color: #ffd700;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity var(--anim-slow) ease;
-    pointer-events: none;
-
-    &.visible {
-      opacity: 1;
-    }
-  }
-
-  .info-tags {
-    display: flex;
-    gap: 4px;
-  }
-
-  .avatar-glow {
-    display: none;
-  }
-
-  &.is-current-turn .avatar-circle {
-    border-color: rgba(255, 215, 0, 0.7);
-    box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.3),
-      0 0 30px rgba(255, 215, 0, 0.15),
-      0 0 50px rgba(255, 215, 0, 0.08);
-  }
-}
-
-.dealer-chip {
-  position: absolute;
-  z-index: 310;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
-  color: #2c3e50;
-  font-size: 13px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transform: translate(-50%, -50%);
-  transition: left var(--anim-slower) ease, top var(--anim-slower) ease;
-
-  // On-table, 50px offset to each player's left (from their perspective)
-  &.dealer-seat-0 { left: calc(50% - 50px); top: calc(100% - 20px); }
-  &.dealer-seat-1 { left: 20px; top: calc(50% - 50px); }
-  &.dealer-seat-2 { left: calc(50% + 50px); top: 20px; }
-  &.dealer-seat-3 { left: calc(100% - 20px); top: calc(50% + 50px); }
-}
-
-// User avatar at bottom-right of screen
-.user-avatar-bottom {
-  position: fixed;
-  bottom: 12px;
-  right: max(12px, env(safe-area-inset-right));
-  z-index: 400;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-
-  .avatar-container {
-    position: relative;
-  }
-
-  .avatar-border {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-  }
-
-  .avatar-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #333344;
-    border: 2px solid #4a4a60;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: bold;
-    color: #ccc;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    transition: border-color var(--anim-slow) ease, box-shadow var(--anim-slow) ease;
-  }
-
-  .player-name {
-    margin-top: 3px;
-    padding: 2px 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #ccc;
-    white-space: nowrap;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
-  }
-
-  .avatar-glow {
-    display: none;
-  }
-
-  .info-tags {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
-    margin-top: 2px;
-  }
-
-  &.is-current-turn .avatar-circle {
-    border-color: rgba(255, 215, 0, 0.7);
-    box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.3),
-      0 0 30px rgba(255, 215, 0, 0.15),
-      0 0 50px rgba(255, 215, 0, 0.08);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-}
+// PlayerAvatar component handles all avatar styling
+// No additional CSS needed here
 </style>
