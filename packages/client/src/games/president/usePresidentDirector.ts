@@ -683,16 +683,25 @@ export function usePresidentDirector(
   } else {
     // ── Singleplayer: watcher-based reactivity ──
 
-    // Phase changes
-    watch(() => game.phase.value, (newPhase) => {
-      handlePhase(newPhase)
-    })
+    // Phase changes - must be async and await handlePhase
+    watch(
+      () => game.phase.value,
+      async (newPhase) => {
+        // Wait for board to be ready
+        if (!boardRef.value) {
+          await nextTick()
+          if (!boardRef.value) return
+        }
+        await handlePhase(newPhase)
+      },
+      { immediate: true }
+    )
 
     // Board mount — handle mid-game join
-    watch(boardRef, (newRef) => {
+    watch(boardRef, async (newRef) => {
       if (newRef && lastAnimatedPhase.value === null) {
         const phase = game.phase.value
-        if (phase !== PresidentPhase.Setup) handlePhase(phase)
+        if (phase !== PresidentPhase.Setup) await handlePhase(phase)
       }
     })
 
