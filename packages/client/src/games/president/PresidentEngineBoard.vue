@@ -32,9 +32,6 @@
 
     <!-- Round counter (top-right) -->
     <div class="round-indicator">Round {{ game.roundNumber.value }}</div>
-    
-    <!-- Pile status (on table, below center play area) -->
-    <div v-if="pileStatus" class="pile-status">{{ pileStatus }}</div>
 
     <!-- User actions — bottom bar -->
     <UserActions :active="game.isHumanTurn.value || game.isHumanGivingCards.value" :class="{ 'normal-table': playerCount <= 5 }">
@@ -230,18 +227,6 @@ function getRankBadge(playerId: number): string | null {
   }
   return badges[display] ?? null
 }
-
-// ── Pile status ─────────────────────────────────────────────────────────
-
-const pileStatus = computed(() => {
-  const pile = game.currentPile.value
-  if (!pile.currentRank) return ''
-  const typeLabel =
-    pile.currentPlayType === 'pair' ? 'Pair of ' :
-    pile.currentPlayType === 'triple' ? 'Triple ' :
-    pile.currentPlayType === 'quad' ? 'Quad ' : ''
-  return `Beat: ${typeLabel}${pile.currentRank}s`
-})
 
 // ── Dimmed cards (unplayable during user's turn) ────────────────────────
 
@@ -442,20 +427,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-// Pile status - on table below center play area
-.pile-status {
-  position: absolute;
-  top: 55%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-  font-weight: 600;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  white-space: nowrap;
-}
-
 // Round indicator - top right (similar to Spades scoreboard)
 .round-indicator {
   position: fixed;
