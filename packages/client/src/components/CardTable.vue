@@ -17,7 +17,6 @@
         v-show="!seat.isUser"
         :name="playerNames[i] ?? 'Player'"
         :is-current-turn="currentTurnSeat === i"
-        :is-dealer="dealerSeat === i"
         :status="playerStatuses[i]"
         :position="getRailPosition(seat.side)"
         :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
@@ -43,11 +42,20 @@
         :name="playerNames[0] ?? 'You'"
         :is-current-turn="currentTurnSeat === 0"
         :is-user="true"
-        :is-dealer="dealerSeat === 0"
         position="bottom"
       >
         <slot name="user-info" />
       </PlayerAvatar>
+
+      <!-- Dealer chip - animates between player positions -->
+      <Transition name="dealer-chip-move">
+        <div 
+          v-if="dealerSeat >= 0" 
+          :key="dealerSeat"
+          class="dealer-chip-table"
+          :style="dealerChipStyle"
+        >D</div>
+      </Transition>
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
@@ -134,6 +142,53 @@ const avatarStyles = computed(() => {
         return { left: `${seat.handPosition.x}px`, top: `${tableBounds.bottom}px` }
     }
   })
+})
+
+/**
+ * Dealer chip position - positioned near the dealer's avatar
+ */
+const dealerChipStyle = computed(() => {
+  const layout = lastLayoutResult.value
+  const board = boardRef.value
+  if (!layout || !board || props.dealerSeat < 0) return {}
+  
+  const seat = seatData.value[props.dealerSeat]
+  if (!seat) return {}
+  
+  const { tableBounds } = layout
+  
+  // For user (seat 0), position at bottom center
+  if (seat.isUser) {
+    return {
+      left: `${tableBounds.centerX}px`,
+      bottom: 'calc(20% - 10px + 44px)', // Align with user avatar name
+      transform: 'translateX(40px)', // Offset to the right of center
+    }
+  }
+  
+  // For opponents, position near their avatar
+  const avatarPos = avatarStyles.value[props.dealerSeat]
+  const chipOffset = seat.side === 'right' ? -30 : 30 // Left of avatar if on right side
+  
+  switch (seat.side) {
+    case 'left':
+      return { 
+        left: `${tableBounds.left + chipOffset}px`, 
+        top: `${seat.handPosition.y + 20}px`,
+      }
+    case 'right':
+      return { 
+        left: `${tableBounds.right + chipOffset}px`, 
+        top: `${seat.handPosition.y + 20}px`,
+      }
+    case 'top':
+      return { 
+        left: `${seat.handPosition.x + 30}px`, 
+        top: `${tableBounds.top + 20}px`,
+      }
+    default:
+      return {}
+  }
 })
 
 function computeLayout() {
@@ -314,6 +369,40 @@ defineExpose({
     position: relative;
     z-index: 1;
   }
+}
+
+// Dealer chip - positioned on table, animates between positions
+.dealer-chip-table {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  color: #2c3e50;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  z-index: 400;
+  pointer-events: none;
+}
+
+// Dealer chip move animation
+.dealer-chip-move-enter-active,
+.dealer-chip-move-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dealer-chip-move-enter-from {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.dealer-chip-move-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
 }
 
 </style>

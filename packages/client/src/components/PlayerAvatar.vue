@@ -5,8 +5,7 @@
       positionClass,
       { 
         'is-current-turn': props.isCurrentTurn,
-        'is-user': props.isUser,
-        'is-dealer': props.isDealer
+        'is-user': props.isUser
       }
     ]"
     :style="positionStyle"
@@ -23,9 +22,6 @@
       <div class="info-tags">
         <slot />
       </div>
-      
-      <!-- Dealer chip - bottom right (or bottom left for rail-right position) -->
-      <div v-if="props.isDealer" class="dealer-chip" :class="{ 'chip-left': props.position === 'rail-right' }">D</div>
       
       <!-- Turn indicator glow -->
       <div v-if="props.isCurrentTurn" class="avatar-glow"></div>
@@ -45,7 +41,6 @@ const props = withDefaults(defineProps<{
   name: string
   isCurrentTurn?: boolean
   isUser?: boolean
-  isDealer?: boolean
   status?: string
   position?: AvatarPosition
   /** Custom positioning style (for table-relative placement) */
@@ -53,7 +48,6 @@ const props = withDefaults(defineProps<{
 }>(), {
   isCurrentTurn: false,
   isUser: false,
-  isDealer: false,
   status: '',
   position: 'bottom',
 })
@@ -160,31 +154,6 @@ const positionStyle = computed(() => props.customStyle ?? {})
     background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
     animation: pulse 2s ease-in-out infinite;
     pointer-events: none;
-  }
-
-  // Dealer chip - inline with name label, overlapping just the padding
-  .dealer-chip {
-    position: absolute;
-    top: 44px; // Vertically aligned with name label
-    right: -16px; // Overlaps padding only, not text
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
-    color: #2c3e50;
-    font-size: 11px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    z-index: 15; // Above name label (z-index 10)
-    
-    // Left side for rail-right position
-    &.chip-left {
-      right: auto;
-      left: -16px;
-    }
   }
 
   // Turn indicator - golden glow on circle
