@@ -234,14 +234,13 @@ defineExpose({
     position: absolute;
     inset: 0;
     border-radius: 40px;
-    // Wood grain gradient - top to bottom for glossy effect
+    // Wood grain - subtle top-to-bottom shading for depth
     background: linear-gradient(
       180deg,
-      #7a5c38 0%,
-      #5c4033 15%,
-      #4a3525 35%,
-      #3d2817 65%,
-      #2a1d10 100%
+      #6b5035 0%,
+      #5c4430 30%,
+      #4f3a2a 70%,
+      #4a3525 100%
     );
     // Glossy highlight on top, shadow on bottom
     box-shadow:
