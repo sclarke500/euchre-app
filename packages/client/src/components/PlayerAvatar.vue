@@ -15,11 +15,7 @@
       <div class="avatar-border">
         <div class="avatar-circle">{{ initial }}</div>
         <div class="name-row">
-          <!-- Dealer chip - left side for right-rail avatars -->
-          <div v-if="props.isDealer && props.position === 'rail-right'" class="dealer-chip left">D</div>
           <div class="player-name">{{ props.name }}</div>
-          <!-- Dealer chip - right side for other avatars -->
-          <div v-if="props.isDealer && props.position !== 'rail-right'" class="dealer-chip right">D</div>
         </div>
       </div>
       
@@ -27,6 +23,9 @@
       <div class="info-tags">
         <slot />
       </div>
+      
+      <!-- Dealer chip - bottom right (or bottom left for rail-right position) -->
+      <div v-if="props.isDealer" class="dealer-chip" :class="{ 'chip-left': props.position === 'rail-right' }">D</div>
       
       <!-- Turn indicator glow -->
       <div v-if="props.isCurrentTurn" class="avatar-glow"></div>
@@ -161,8 +160,11 @@ const positionStyle = computed(() => props.customStyle ?? {})
     pointer-events: none;
   }
 
-  // Dealer chip - inline with name label
+  // Dealer chip - absolutely positioned at bottom-right of avatar
   .dealer-chip {
+    position: absolute;
+    bottom: 12px;
+    right: -4px;
     width: 26px;
     height: 26px;
     border-radius: 50%;
@@ -174,7 +176,13 @@ const positionStyle = computed(() => props.customStyle ?? {})
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    flex-shrink: 0;
+    z-index: 5;
+    
+    // Bottom-left for rail-right position
+    &.chip-left {
+      right: auto;
+      left: -4px;
+    }
   }
 
   // Turn indicator - golden glow on circle
