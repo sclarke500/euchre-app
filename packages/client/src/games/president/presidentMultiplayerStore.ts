@@ -141,21 +141,24 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
                      message.state.players?.find((p: any) => p.hand !== undefined)?.id
         const isStillMyTurn = myId !== undefined && message.state.currentPlayer === myId
         
-        // Only clear turn state if it's definitely not our turn
-        // This prevents flashing when game_state and your_turn arrive together
+        // Only clear isMyTurn if it's definitely not our turn.
+        // We intentionally DON'T clear validActions/validPlays here to prevent
+        // UI flashing. If it's still our turn, president_your_turn will follow
+        // with the same valid plays. If it's not our turn, isMyTurn=false is
+        // sufficient to disable interaction (the UI checks isMyTurn first).
         if (!isStillMyTurn) {
           updateIfChanged(isMyTurn, false)
-          updateIfChanged(validActions, [])
-          updateIfChanged(validPlays, [])
+          // Note: validActions and validPlays are left as-is to prevent flash.
+          // They'll be cleared when president_your_turn sets new values, or
+          // they'll be stale but harmless since isMyTurn is false.
         }
         
         gameState.value = message.state
         updateLastStateSeq(lastStateSeq, message.state.stateSeq)
         resyncWatchdog.markStateReceived()
-        break
-      }
         logMultiplayerEvent('president-mp', 'apply_game_state', getDebugSnapshot())
         break
+      }
 
       case 'president_your_turn':
         updateIfChanged(isMyTurn, true)
