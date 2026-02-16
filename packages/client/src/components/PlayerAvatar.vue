@@ -146,8 +146,8 @@ const positionStyle = computed(() => props.customStyle ?? {})
   // Info tags - positioned at top-right of avatar circle
   .info-tags {
     position: absolute;
-    top: -4px;
-    right: -4px;
+    top: -8px;
+    right: -10px;
     display: flex;
     gap: 4px;
     z-index: 5;
@@ -165,8 +165,8 @@ const positionStyle = computed(() => props.customStyle ?? {})
   // Dealer chip - absolutely positioned at bottom-right of avatar
   .dealer-chip {
     position: absolute;
-    bottom: 12px;
-    right: -4px;
+    bottom: 8px;
+    right: -10px;
     width: 26px;
     height: 26px;
     border-radius: 50%;
@@ -183,7 +183,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
     // Bottom-left for rail-right position
     &.chip-left {
       right: auto;
-      left: -4px;
+      left: -10px;
     }
   }
 
