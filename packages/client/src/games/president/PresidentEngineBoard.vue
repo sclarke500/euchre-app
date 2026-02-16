@@ -37,7 +37,7 @@
     <div v-if="pileStatus" class="pile-status">{{ pileStatus }}</div>
 
     <!-- User actions — bottom bar -->
-    <UserActions :active="game.isHumanTurn.value || game.isHumanGivingCards.value">
+    <UserActions :active="game.isHumanTurn.value || game.isHumanGivingCards.value" :class="{ 'normal-table': playerCount <= 5 }">
       <TurnTimer 
         v-if="props.mode === 'multiplayer'"
         ref="turnTimerRef"
@@ -481,6 +481,23 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: 600;
   color: #ccc;
+}
+
+// Action button overrides for President
+:deep(.user-actions) {
+  .action-btn {
+    min-width: 100px;
+  }
+  
+  // More padding for normal-sized table (≤5 players)
+  &.normal-table {
+    padding: 24px 20px;
+    
+    .action-btn {
+      min-width: 120px;
+      padding: 14px 24px;
+    }
+  }
 }
 
 .info-chip {
