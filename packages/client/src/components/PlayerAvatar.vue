@@ -102,13 +102,13 @@ const positionStyle = computed(() => props.customStyle ?? {})
 
   .player-name {
     margin-top: -8px;
-    padding: 2px 10px;
+    padding: 2px 12px;
     font-size: 13px;
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
     background: #1a1a24;
-    border-radius: 4px;
+    border-radius: 10px;
   }
 
   .player-status {
@@ -172,9 +172,8 @@ const positionStyle = computed(() => props.customStyle ?? {})
   // Position variants
   &.position-bottom {
     position: fixed;
-    // Position so avatar sits on table edge, name label ~5px above user's cards
-    // User cards are at ~80% from top (table bottom is 20% from bottom)
-    bottom: calc(20% + 60px);
+    // Position so avatar sits just above user's cards
+    bottom: calc(20% + 10px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 500; // Above table cards, below user hand (~1000+)
