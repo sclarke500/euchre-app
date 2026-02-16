@@ -813,6 +813,13 @@ export function useEuchreDirector(
 
   async function handlePhase(newPhase: GamePhase, oldPhase: GamePhase | null) {
     if (newPhase === lastAnimatedPhase.value) return
+    
+    // For Dealing phase, don't mark as animated until boardRef is available
+    // This allows the boardRef watcher to retry when the ref becomes available
+    if (newPhase === GamePhase.Dealing && !boardRef.value) {
+      return  // Will be retried by boardRef watcher
+    }
+    
     lastAnimatedPhase.value = newPhase
 
     switch (newPhase) {
@@ -1160,9 +1167,12 @@ export function useEuchreDirector(
     })
 
     watch(boardRef, (newRef) => {
-      if (newRef && lastAnimatedPhase.value === null) {
+      if (newRef) {
         const phase = game.phase.value
-        if (phase !== GamePhase.Setup) handlePhase(phase, null)
+        // Retry phase handling if current phase hasn't been animated yet
+        if (phase !== GamePhase.Setup && phase !== lastAnimatedPhase.value) {
+          handlePhase(phase, null)
+        }
       }
     })
 
