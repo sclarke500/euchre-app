@@ -475,34 +475,39 @@ export function usePresidentDirector(
   }
 
   // ── Pile sync (for resync after server restart) ────────────────────────
+  // Only syncs when there's a clear mismatch - avoids interfering with normal animations
 
   function syncVisualPileWithServer(serverPile: { plays?: Array<{ cards: StandardCard[] }> } | null) {
     const centerPile = engine.getPiles().find(p => p.id === 'center')
     if (!centerPile) return
 
-    // Get all card IDs that should be in the pile according to server
-    const serverCardIds = new Set<string>()
+    // Count cards in server pile
+    let serverCardCount = 0
+    let serverPlayCount = 0
     if (serverPile?.plays) {
+      serverPlayCount = serverPile.plays.length
       for (const play of serverPile.plays) {
-        for (const card of play.cards) {
-          serverCardIds.add(card.id)
-        }
+        serverCardCount += play.cards.length
       }
     }
 
-    // Get all card IDs currently in the visual pile
-    const visualCardIds = new Set(centerPile.cards.map(m => m.card.id))
+    const visualCardCount = centerPile.cards.length
 
-    // If they match, no sync needed
-    if (serverCardIds.size === visualCardIds.size && 
-        [...serverCardIds].every(id => visualCardIds.has(id))) {
-      return
+    // Only clear if server says pile is empty but we have visual cards
+    // (this handles the case where pile was cleared on server but we missed the message)
+    if (serverCardCount === 0 && visualCardCount > 0) {
+      console.log('[PresidentDirector] Pile sync: server pile empty, clearing', visualCardCount, 'stale visual cards')
+      centerPile.clear()
+      engine.refreshCards()
+      mpPilePlayCount = 0
     }
-
-    // Mismatch detected - clear visual pile (server state is source of truth)
-    console.log('[PresidentDirector] Pile sync: clearing stale visual pile')
-    centerPile.clear()
-    engine.refreshCards()
+    
+    // Also sync mpPilePlayCount if it drifted significantly
+    // (allows animations to use correct play indices after resync)
+    if (Math.abs(mpPilePlayCount - serverPlayCount) > 1) {
+      console.log('[PresidentDirector] Pile sync: correcting mpPilePlayCount from', mpPilePlayCount, 'to', serverPlayCount)
+      mpPilePlayCount = serverPlayCount
+    }
   }
 
   // ── Pile sweep animation ──────────────────────────────────────────────
