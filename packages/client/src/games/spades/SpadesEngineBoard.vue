@@ -161,12 +161,11 @@
       </div>
     </Modal>
 
-    <!-- Action buttons - floating, no container -->
-    <div class="action-buttons action-panel">
+    <!-- User actions — bottom bar -->
+    <UserActions :active="store.isHumanTurn || store.isHumanBidding">
       <TurnTimer
         v-if="mode === 'multiplayer'"
         ref="turnTimerRef"
-        class="floating-timer"
         :active="store.isHumanTurn"
         :grace-period-ms="timerSettings.gracePeriodMs"
         :countdown-ms="timerSettings.countdownMs"
@@ -174,10 +173,10 @@
       />
 
       <template v-if="mode === 'multiplayer' && timedOutPlayerName">
-        <div class="panel-message warning">{{ timedOutPlayerName }} timed out</div>
+        <span class="action-label warning">{{ timedOutPlayerName }} timed out</span>
         <button
           v-if="store.timedOutPlayer !== null && store.timedOutPlayer !== store.humanPlayer?.id"
-          class="action-btn"
+          class="action-btn danger"
           @click="store.bootPlayer?.(store.timedOutPlayer)"
         >
           Boot Player
@@ -186,17 +185,16 @@
 
       <!-- Bidding phase -->
       <template v-if="store.isHumanBidding">
-        <div class="bid-selector">
-          <select v-model="selectedBid" class="bid-select">
-            <option :value="0">Nil</option>
-            <option v-for="n in 13" :key="n" :value="n">{{ n }}</option>
-          </select>
-          <button class="action-btn primary" @click="handleBid">
-            {{ selectedBid === 0 ? 'Bid Nil' : `Bid ${selectedBid}` }}
-          </button>
-        </div>
+        <span class="action-label">Your bid</span>
+        <select v-model="selectedBid" class="action-select">
+          <option :value="0">Nil</option>
+          <option v-for="n in 13" :key="n" :value="n">{{ n }}</option>
+        </select>
+        <button class="action-btn primary" @click="handleBid">
+          {{ selectedBid === 0 ? 'Bid Nil' : `Bid ${selectedBid}` }}
+        </button>
       </template>
-    </div>
+    </UserActions>
   </CardTable>
 </template>
 
@@ -207,6 +205,7 @@ import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
+import UserActions from '@/components/UserActions.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useSpadesGameAdapter } from './useSpadesGameAdapter'
 import { useSpadesDirector } from './useSpadesDirector'
@@ -523,73 +522,9 @@ function handlePlayAgain() {
   justify-content: center;
 }
 
-.action-buttons {
-  position: absolute;
-  bottom: 100px; /* Above user avatar */
-  right: max(12px, env(safe-area-inset-right));
-  z-index: 600;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  width: 140px;
-
-  &:empty {
-    display: none;
-  }
-}
-
-.floating-timer {
-  align-self: center;
-  margin-bottom: 4px;
-}
-
-.panel-message {
-  font-size: 12px;
-  color: #fff;
-  text-align: center;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-  padding: 4px 0;
-
-  &.warning {
-    color: #f39c12;
-    font-weight: 600;
-  }
-}
-
-.action-btn {
-  padding: 10px 8px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  background: rgba(50, 50, 65, 0.95);
-  backdrop-filter: blur(8px);
-  color: #ccc;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.15s;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-
-  &:hover {
-    background: rgba(70, 70, 90, 0.98);
-    color: #fff;
-  }
-
-  &:active {
-    transform: scale(0.97);
-  }
-
-  &.primary {
-    background: rgba(36, 115, 90, 0.95);
-    border-color: #2a8a6a;
-    color: #fff;
-
-    &:hover {
-      background: rgba(46, 135, 110, 0.98);
-    }
-  }
-
+// Warning label style
+.warning {
+  color: #f39c12 !important;
 }
 
 .spades-broken-indicator {
@@ -632,22 +567,6 @@ function handlePlayAgain() {
   border-radius: 4px;
   font-size: 0.7rem;
   margin-left: 4px;
-}
-
-.bid-selector {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.bid-select {
-  padding: 8px 10px;
-  font-size: 14px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  background: rgba(240, 240, 245, 0.95);
-  color: #333;
-  flex: 0 0 auto;
 }
 
 .info-chip {

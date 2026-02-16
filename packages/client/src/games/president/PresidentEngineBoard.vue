@@ -37,31 +37,25 @@
       <div v-if="pileStatus" class="pile-status">{{ pileStatus }}</div>
     </div>
 
-    <!-- User action panel — bottom right -->
-    <div class="action-panel" :class="{ 'is-my-turn': game.isHumanTurn.value || game.isHumanGivingCards.value }">
-      <div class="panel-header">
-        <div class="panel-name">
-          <span v-if="userRankBadge" class="panel-badge">{{ userRankBadge }}</span>
-          {{ userName }}
-        </div>
-        <TurnTimer 
-          v-if="props.mode === 'multiplayer'"
-          ref="turnTimerRef"
-          :active="game.isHumanTurn.value && !director.isAnimating.value"
-          :grace-period-ms="timerSettings.gracePeriodMs"
-          :countdown-ms="timerSettings.countdownMs"
-          @timeout="handleTurnTimeout"
-        />
-      </div>
+    <!-- User actions — bottom bar -->
+    <UserActions :active="game.isHumanTurn.value || game.isHumanGivingCards.value">
+      <TurnTimer 
+        v-if="props.mode === 'multiplayer'"
+        ref="turnTimerRef"
+        :active="game.isHumanTurn.value && !director.isAnimating.value"
+        :grace-period-ms="timerSettings.gracePeriodMs"
+        :countdown-ms="timerSettings.countdownMs"
+        @timeout="handleTurnTimeout"
+      />
 
       <!-- Give-back phase -->
       <template v-if="game.isHumanGivingCards.value">
-        <div class="panel-message giving">
+        <span class="action-label">
           Give {{ game.cardsToGiveCount.value }} card{{ game.cardsToGiveCount.value > 1 ? 's' : '' }}
-        </div>
-        <div v-if="selectedCardIds.size > 0" class="selection-count">
-          {{ selectedCardIds.size }}/{{ game.cardsToGiveCount.value }}
-        </div>
+          <template v-if="selectedCardIds.size > 0">
+            ({{ selectedCardIds.size }}/{{ game.cardsToGiveCount.value }})
+          </template>
+        </span>
         <button
           class="action-btn primary"
           :disabled="selectedCardIds.size !== game.cardsToGiveCount.value"
@@ -73,11 +67,11 @@
 
       <!-- Playing phase, user's turn -->
       <template v-else-if="game.isHumanTurn.value">
-        <div v-if="selectedCardIds.size > 0" class="selection-count">
+        <span v-if="selectedCardIds.size > 0" class="action-label">
           {{ selectedCardIds.size }} selected
-          <span v-if="!canPlaySelection" class="invalid-hint">Invalid</span>
-        </div>
-        <div v-else class="panel-message">Your turn</div>
+          <span v-if="!canPlaySelection" class="invalid-hint">— Invalid</span>
+        </span>
+        <span v-else class="action-label">Your turn</span>
         <button
           class="action-btn primary"
           :disabled="!canPlaySelection"
@@ -93,12 +87,7 @@
           Pass
         </button>
       </template>
-
-      <!-- Waiting -->
-      <template v-else-if="phase === PresidentPhase.Playing">
-        <div class="panel-message">Waiting...</div>
-      </template>
-    </div>
+    </UserActions>
 
     <!-- Round complete modal -->
     <Modal :show="phase === PresidentPhase.RoundComplete" @close="() => {}">
@@ -159,6 +148,7 @@ import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import Modal from '@/components/Modal.vue'
 import GameHUD from '@/components/GameHUD.vue'
+import UserActions from '@/components/UserActions.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { usePresidentGameAdapter } from './usePresidentGameAdapter'
 import { usePresidentDirector } from './usePresidentDirector'
@@ -505,111 +495,10 @@ onUnmounted(() => {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 
-.action-panel {
-  position: absolute;
-  bottom: 12px;
-  right: max(12px, env(safe-area-inset-right));
-  z-index: 600;
-  background: rgba(20, 20, 30, 0.92);
-  border: 1px solid #444;
-  border-radius: 10px;
-  padding: 8px 10px;
-  backdrop-filter: blur(10px);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 5px;
-  width: 110px;
-  min-height: 110px;
-  transition: box-shadow var(--anim-slow) ease, border-color var(--anim-slow) ease, background var(--anim-slow) ease;
-
-  &.is-my-turn {
-    border: 2px solid rgba(255, 215, 0, 0.5);
-    background: rgba(40, 38, 20, 0.92);
-    box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.2),
-      0 0 30px rgba(255, 215, 0, 0.08);
-  }
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.panel-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: #eee;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-
-  .panel-badge {
-    font-size: 14px;
-    line-height: 1;
-  }
-}
-
-.panel-message {
-  font-size: 11px;
-  color: #aaa;
-  text-align: center;
-
-  &.giving {
-    color: #d4a5e8;
-    font-weight: 600;
-  }
-}
-
-.selection-count {
-  font-size: 11px;
-  font-weight: 600;
-  color: #eee;
-  text-align: center;
-
-  .invalid-hint {
-    color: #ff6b6b;
-    font-size: 10px;
-    font-style: italic;
-  }
-}
-
-.action-btn {
-  padding: 5px 8px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  background: rgba(50, 50, 65, 0.9);
-  color: #ccc;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--anim-fast);
-  text-align: center;
-
-  &:hover:not(:disabled) {
-    background: rgba(70, 70, 90, 0.95);
-    color: #fff;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  &.primary {
-    background: rgba(36, 115, 90, 0.9);
-    border-color: #2a8a6a;
-    color: #fff;
-
-    &:hover:not(:disabled) {
-      background: rgba(46, 135, 110, 0.95);
-    }
-  }
+// Invalid hint style for UserActions labels
+.invalid-hint {
+  color: #ff6b6b;
+  font-style: italic;
 }
 
 // Modals
