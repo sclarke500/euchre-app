@@ -649,67 +649,11 @@ export function useEuchreDirector(
     return hand.cards.find(m => !gameCardIds.has(m.card.id))?.card.id ?? null
   }
 
-  // ── Card play animation ─────────────────────────────────────────────────
-
+  /** Animate card play - delegates to shared card controller */
   async function animateCardPlay(cardId: string, playerId: number) {
-    const tl = getTableLayout()
-    if (!tl) return
-
-    const seatIndex = playerIdToSeatIndex(playerId)
-    const hand = engine.getHands()[seatIndex]
     const trickPile = engine.getPiles().find(p => p.id === 'center')
-    if (!hand || !trickPile) return
-
-    // In multiplayer, opponent hands contain placeholder cards.
-    // The real card ID won't match any placeholder, so consume one.
-    let effectiveCardId = cardId
-    const hasCard = hand.cards.some(m => m.card.id === cardId)
-    if (!hasCard && seatIndex !== 0 && hand.cards.length > 0) {
-      // Use the last placeholder — keep its ID (so Vue key stays stable)
-      // Replace the card object so Vue detects the prop change on BoardCard
-      const managed = hand.cards[hand.cards.length - 1]!
-      effectiveCardId = managed.card.id
-      const parts = cardId.split('-')
-      managed.card = { id: managed.card.id, suit: parts[0]!, rank: parts[1]! }
-      engine.refreshCards()
-    }
-
-    const targetPos = getTrickCardPosition(playerId, tl.tableCenter, trickPile.cards.length)
-
-    // Add 180° spin relative to card's current rotation for a visible twirl
-    const cardRef = engine.getCardRef(effectiveCardId)
-    const currentRot = cardRef?.getPosition().rotation ?? 0
-    targetPos.rotation = currentRot + 180 + (targetPos.rotation ?? 0)
-
-    trickPile.setCardTargetPosition(effectiveCardId, targetPos)
-
-    const isHidden = hiddenHandOrigins.has(seatIndex)
-
-    if (seatIndex === 0) {
-      engine.getCardRef(effectiveCardId)?.setArcFan(false)
-    }
-
-    // For hidden hands, flip face-up before animating so card is visible as it flies from avatar
-    if (isHidden && seatIndex !== 0) {
-      const managed = hand.cards.find(m => m.card.id === effectiveCardId)
-      if (managed) managed.faceUp = true
-      engine.refreshCards()
-      await nextTick()
-    }
-
-    await engine.moveCard(effectiveCardId, hand, trickPile, targetPos, CARD_PLAY_MS)
-
-    // For visible opponent hands, flip after the move
-    if (!isHidden && seatIndex !== 0) {
-      const managed = trickPile.cards.find(m => m.card.id === effectiveCardId)
-      if (managed) managed.faceUp = true
-      engine.refreshCards()
-    }
-
-    // Only re-fan visible hands
-    if (!isHidden) {
-      await hand.setMode('fanned', AnimationDurations.fast)
-    }
+    const cardIndex = trickPile?.cards.length ?? 0
+    await cardController.playCard(cardId, playerId, cardIndex)
   }
 
   // ── Trick sweep → won-trick stacks ──────────────────────────────────────
