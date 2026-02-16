@@ -384,7 +384,7 @@ defineExpose({
 .user-avatar-bottom {
   position: fixed;
   bottom: 12px;
-  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
   z-index: 400;
   display: flex;
   flex-direction: column;

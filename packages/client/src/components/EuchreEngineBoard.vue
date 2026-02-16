@@ -546,7 +546,7 @@ onUnmounted(() => {
 // Floating action buttons — no container, just buttons
 .action-buttons {
   position: absolute;
-  bottom: 12px;
+  bottom: 100px; /* Above user avatar */
   right: max(12px, env(safe-area-inset-right));
   z-index: 600;
   display: flex;
@@ -567,11 +567,10 @@ onUnmounted(() => {
 
 .panel-message {
   font-size: 12px;
-  color: #ccc;
+  color: #fff;
   text-align: center;
-  background: rgba(20, 20, 30, 0.85);
-  padding: 6px 10px;
-  border-radius: 6px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  padding: 4px 0;
 }
 
 .action-btn {
