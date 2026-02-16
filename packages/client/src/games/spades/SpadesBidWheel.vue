@@ -1,6 +1,9 @@
 <template>
-  <Transition name="wheel-fade">
+  <Transition name="wheel-slide">
     <div v-if="visible" class="bid-wheel-container">
+      <!-- Shiny overlay -->
+      <div class="shiny-overlay"></div>
+      
       <div class="bid-wheel">
         <!-- Scrollable viewport with snap -->
         <div 
@@ -108,23 +111,44 @@ onMounted(() => {
 <style scoped lang="scss">
 .bid-wheel-container {
   position: fixed;
-  right: max(16px, env(safe-area-inset-right));
+  right: 0;
   top: 50%;
   transform: translateY(-50%);
   z-index: 600;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  padding: 20px 16px;
+  padding-right: max(16px, env(safe-area-inset-right));
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(16px);
+  border-radius: 20px 0 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: none;
+  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+// Shiny overlay effect
+.shiny-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  pointer-events: none;
 }
 
 .bid-wheel {
   position: relative;
   background: rgba(245, 245, 248, 0.95);
-  backdrop-filter: blur(12px);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 
@@ -231,15 +255,18 @@ onMounted(() => {
   }
 }
 
-// Transition
-.wheel-fade-enter-active,
-.wheel-fade-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+// Slide in from right transition
+.wheel-slide-enter-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
 }
 
-.wheel-fade-enter-from,
-.wheel-fade-leave-to {
+.wheel-slide-leave-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease;
+}
+
+.wheel-slide-enter-from,
+.wheel-slide-leave-to {
   opacity: 0;
-  transform: translateY(-50%) translateX(20px);
+  transform: translateY(-50%) translateX(100%);
 }
 </style>
