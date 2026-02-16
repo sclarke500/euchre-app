@@ -4,11 +4,18 @@
  * Provides unified card animation methods used across all games.
  * Games should use these methods rather than implementing their own.
  * 
- * TODO: Euchre has additional implementations in useEuchreDirector.ts that
- * should be moved here when needed by other games:
- * - animateDeal() - deals with kitty/turn-up card handling
- * - animateCardPlay() - plays card to trick area
- * - animateTrickSweep() - sweeps completed trick to winner
+ * Currently unified:
+ * - setupTable() - initializes table layout, deck, hands, piles
+ * - dealFromPlayers() - deals cards from deck to hands
+ * - revealUserHand() - flips user's cards face-up
+ * - sortUserHand() - sorts user's hand with custom sorter
+ * - playCard() - animates playing a card to center pile
+ * - completeTrick() - sweeps trick to winner's pile
+ * - hideOpponentHands() - collapses opponent hands to avatar positions
+ * 
+ * Euchre-specific (kitty mechanics, kept in useEuchreDirector.ts):
+ * - animateDeal() - custom dealing with kitty/turn-up card
+ * - setupTable() - creates deck at dealer position, kitty piles
  * - animateDeckOffscreen() - moves deck off screen
  * - flipTurnUpFaceDown() - flips turn-up card
  * - animateTurnUpToDealer() - moves turn-up to dealer's hand
