@@ -162,11 +162,11 @@ const positionStyle = computed(() => props.customStyle ?? {})
     pointer-events: none;
   }
 
-  // Dealer chip - inline with name label, overlapping the end
+  // Dealer chip - inline with name label, overlapping just the padding
   .dealer-chip {
     position: absolute;
     top: 44px; // Vertically aligned with name label
-    right: -8px; // Overlaps right edge of name label
+    right: -16px; // Overlaps padding only, not text
     width: 22px;
     height: 22px;
     border-radius: 50%;
@@ -183,7 +183,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
     // Left side for rail-right position
     &.chip-left {
       right: auto;
-      left: -8px;
+      left: -16px;
     }
   }
 
