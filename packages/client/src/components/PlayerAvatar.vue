@@ -162,28 +162,28 @@ const positionStyle = computed(() => props.customStyle ?? {})
     pointer-events: none;
   }
 
-  // Dealer chip - centered vertically at circle/name junction, pushed out to side
+  // Dealer chip - inline with name label, overlapping the end
   .dealer-chip {
     position: absolute;
-    top: 36px;
-    right: -16px;
-    width: 26px;
-    height: 26px;
+    top: 44px; // Vertically aligned with name label
+    right: -8px; // Overlaps right edge of name label
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
     color: #2c3e50;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    z-index: 5;
+    z-index: 15; // Above name label (z-index 10)
     
     // Left side for rail-right position
     &.chip-left {
       right: auto;
-      left: -16px;
+      left: -8px;
     }
   }
 
