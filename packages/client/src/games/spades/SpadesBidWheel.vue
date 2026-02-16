@@ -130,7 +130,7 @@ onMounted(() => {
 
 .wheel-viewport {
   width: 72px;
-  height: calc(44px * 3); // Show 3 items
+  height: calc(44px * 5); // Show 5 items
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
@@ -142,7 +142,7 @@ onMounted(() => {
 }
 
 .wheel-spacer {
-  height: 44px; // One item height for centering
+  height: calc(44px * 2); // Two item heights for centering
   scroll-snap-align: none;
 }
 
