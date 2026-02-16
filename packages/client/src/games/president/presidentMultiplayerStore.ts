@@ -135,13 +135,25 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   // In direct mode, called by handleMessage immediately.
   function applyMessage(message: ServerMessage): void {
     switch (message.type) {
-      case 'president_game_state':
-        updateIfChanged(isMyTurn, false)
-        updateIfChanged(validActions, [])
-        updateIfChanged(validPlays, [])
+      case 'president_game_state': {
+        // Check if it's our turn based on game state
+        const myId = gameState.value?.players?.find(p => p.hand !== undefined)?.id ?? 
+                     message.state.players?.find((p: any) => p.hand !== undefined)?.id
+        const isStillMyTurn = myId !== undefined && message.state.currentPlayer === myId
+        
+        // Only clear turn state if it's definitely not our turn
+        // This prevents flashing when game_state and your_turn arrive together
+        if (!isStillMyTurn) {
+          updateIfChanged(isMyTurn, false)
+          updateIfChanged(validActions, [])
+          updateIfChanged(validPlays, [])
+        }
+        
         gameState.value = message.state
         updateLastStateSeq(lastStateSeq, message.state.stateSeq)
         resyncWatchdog.markStateReceived()
+        break
+      }
         logMultiplayerEvent('president-mp', 'apply_game_state', getDebugSnapshot())
         break
 
