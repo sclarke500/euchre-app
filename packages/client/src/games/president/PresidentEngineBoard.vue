@@ -33,9 +33,11 @@
     <!-- Game info (top-left) -->
     <div class="game-info">
       <div class="game-title">President</div>
-      <div class="round-info">Round {{ game.roundNumber.value }}</div>
       <div v-if="pileStatus" class="pile-status">{{ pileStatus }}</div>
     </div>
+    
+    <!-- Round counter (top-right) -->
+    <div class="round-indicator">Round {{ game.roundNumber.value }}</div>
 
     <!-- User actions — bottom bar -->
     <UserActions :active="game.isHumanTurn.value || game.isHumanGivingCards.value">
@@ -474,16 +476,27 @@ onUnmounted(() => {
     margin-bottom: 2px;
   }
 
-  .round-info {
-    font-weight: 600;
-    margin-bottom: 2px;
-  }
-
   .pile-status {
     color: #f4d03f;
     font-weight: 600;
     font-size: 11px;
   }
+}
+
+// Round indicator - top right (similar to Spades scoreboard)
+.round-indicator {
+  position: fixed;
+  top: 8px;
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 500;
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 6px 12px;
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  font-weight: 600;
+  color: #ccc;
 }
 
 .info-chip {
