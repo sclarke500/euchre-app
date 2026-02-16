@@ -8,6 +8,13 @@
           <img src="@/assets/AppLogo.png" alt="" class="watermark-logo" />
           <span class="watermark-name">{{ gameName }}</span>
         </div>
+        
+        <!-- Dealer chip - positioned on table, animates between seats -->
+        <div
+          v-if="dealerSeat >= 0"
+          class="dealer-chip"
+          :class="`dealer-seat-${dealerSeat}`"
+        >D</div>
       </div>
       
       <!-- Opponent avatars - outside table-surface for proper z-index stacking -->
@@ -17,7 +24,6 @@
         v-show="!seat.isUser"
         :name="playerNames[i] ?? 'Player'"
         :is-current-turn="currentTurnSeat === i"
-        :is-dealer="dealerSeat === i"
         :status="playerStatuses[i]"
         :position="getRailPosition(seat.side)"
         :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
@@ -43,7 +49,6 @@
         :name="playerNames[0] ?? 'You'"
         :is-current-turn="currentTurnSeat === 0"
         :is-user="true"
-        :is-dealer="dealerSeat === 0"
         position="bottom"
       >
         <slot name="user-info" />
@@ -316,6 +321,28 @@ defineExpose({
   }
 }
 
-// PlayerAvatar component handles all avatar styling
-// No additional CSS needed here
+// Dealer chip - positioned on table near each seat
+.dealer-chip {
+  position: absolute;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  color: #2c3e50;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  transition: left var(--anim-slower, 0.5s) ease, top var(--anim-slower, 0.5s) ease;
+
+  // Position on table near each player (inset from edges)
+  &.dealer-seat-0 { left: 50%; top: calc(100% - 40px); }      // bottom (user)
+  &.dealer-seat-1 { left: 60px; top: 50%; }                    // left
+  &.dealer-seat-2 { left: 50%; top: 40px; }                    // top
+  &.dealer-seat-3 { left: calc(100% - 60px); top: 50%; }       // right
+}
 </style>
