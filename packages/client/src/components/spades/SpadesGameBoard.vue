@@ -181,11 +181,13 @@
       <template v-if="store.isHumanBidding">
         <div class="bid-selector">
           <select v-model="selectedBid" class="bid-select">
-            <option v-for="n in 14" :key="n-1" :value="n-1">{{ n-1 }}</option>
+            <option :value="0">Nil</option>
+            <option v-for="n in 13" :key="n" :value="n">{{ n }}</option>
           </select>
-          <button class="action-btn primary" @click="handleBid">Bid {{ selectedBid }}</button>
+          <button class="action-btn primary" @click="handleBid">
+            {{ selectedBid === 0 ? 'Bid Nil' : `Bid ${selectedBid}` }}
+          </button>
         </div>
-        <button class="action-btn nil-btn" @click="handleNilBid">Nil</button>
       </template>
     </div>
   </CardTable>
@@ -248,7 +250,6 @@ const {
   winnerText,
   getBidDisplay,
   handleBid,
-  handleNilBid,
   dismissRoundSummary,
 } = useSpadesBoardUi(adapter, props.mode)
 
@@ -582,15 +583,6 @@ function handlePlayAgain() {
     }
   }
 
-  &.nil-btn {
-    background: rgba(200, 80, 60, 0.9);
-    border-color: #c44;
-    color: #fff;
-
-    &:hover {
-      background: rgba(220, 100, 80, 0.95);
-    }
-  }
 }
 
 .spades-broken-indicator {

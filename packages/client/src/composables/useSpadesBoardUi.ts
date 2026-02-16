@@ -87,11 +87,12 @@ export function useSpadesBoardUi(adapter: SpadesGameAdapter, mode: 'singleplayer
   }
 
   function handleBid() {
-    adapter.makeBid({ type: SpadesBidType.Normal, count: selectedBid.value })
-  }
-
-  function handleNilBid() {
-    adapter.makeBid({ type: SpadesBidType.Nil, count: 0 })
+    if (selectedBid.value === 0) {
+      // 0 = Nil bid
+      adapter.makeBid({ type: SpadesBidType.Nil, count: 0 })
+    } else {
+      adapter.makeBid({ type: SpadesBidType.Normal, count: selectedBid.value })
+    }
   }
 
   function dismissRoundSummary() {
@@ -163,7 +164,6 @@ export function useSpadesBoardUi(adapter: SpadesGameAdapter, mode: 'singleplayer
     winnerText,
     getBidDisplay,
     handleBid,
-    handleNilBid,
     dismissRoundSummary,
   }
 }
