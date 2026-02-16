@@ -50,13 +50,14 @@
       </div>
     </div>
 
-    <!-- HUD: Leave + Bug Report buttons -->
+    <!-- HUD: Menu button -->
     <GameHUD
       game-type="spades"
       :build-payload="buildBugReportPayload"
       :show-resync="mode === 'multiplayer'"
       @leave="handleLeaveClick"
       @resync="store.requestStateResync?.()"
+      @rules="showRulesModal = true"
     />
 
     <!-- Spades Broken indicator -->
@@ -197,6 +198,23 @@
       @bid="handleBid"
     />
   </CardTable>
+
+  <!-- Rules Modal -->
+  <Modal :show="showRulesModal" aria-label="Spades Rules" @close="showRulesModal = false">
+    <div class="rules-panel dialog-panel">
+      <h2>Spades Rules</h2>
+      <div class="rules-content">
+        <p><strong>Objective:</strong> Be the first team to reach 500 points.</p>
+        <p><strong>Bidding:</strong> Each player bids the number of tricks they expect to win. Partners' bids are combined into a team contract.</p>
+        <p><strong>Nil Bids:</strong> Bidding zero (Nil) is worth 100 points if successful, -100 if you take any tricks. Blind nil (bidding before seeing cards) is worth 200/-200.</p>
+        <p><strong>Gameplay:</strong> Players must follow suit if possible. Spades cannot be led until "broken" (played on another suit).</p>
+        <p><strong>Scoring:</strong> Making your bid earns 10× bid points. Each overtrick (bag) is +1 point, but 10 bags = -100 penalty.</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-primary" @click="showRulesModal = false">Got it</button>
+      </div>
+    </div>
+  </Modal>
 </template>
 
 <script setup lang="ts">
@@ -230,6 +248,7 @@ const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
 const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 const showLeaveConfirm = ref(false)
+const showRulesModal = ref(false)
 const boardRef = ref<HTMLElement | null>(null)
 
 const {
@@ -612,5 +631,34 @@ function handlePlayAgain() {
 .info-chip {
   display: inline-block;
   margin-right: 4px;
+}
+
+// Rules modal
+.rules-panel {
+  max-width: 400px;
+  
+  h2 {
+    margin: 0 0 16px;
+    font-size: 1.25rem;
+  }
+}
+
+.rules-content {
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #ccc;
+  
+  p {
+    margin: 0 0 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  strong {
+    color: #fff;
+  }
 }
 </style>

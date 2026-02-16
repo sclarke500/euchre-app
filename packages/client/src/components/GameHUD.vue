@@ -1,20 +1,46 @@
 <template>
   <div class="game-hud">
-    <!-- Leave button -->
-    <button class="hud-btn leave-btn" @click="$emit('leave')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" />
+    <!-- Three-dot menu button -->
+    <button class="hud-btn menu-btn" @click="menuOpen = !menuOpen">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="5" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="19" r="2" />
       </svg>
     </button>
 
-    <!-- Bug report button -->
-    <button class="hud-btn bug-btn" title="Report a bug" @click="showBugReport = true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      </svg>
-    </button>
+    <!-- Dropdown menu -->
+    <Transition name="dropdown">
+      <div v-if="menuOpen" class="menu-dropdown">
+        <button class="menu-item" @click="handleLeave">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          Back
+        </button>
+        <button class="menu-item" @click="handleBugReport">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          </svg>
+          Report Bug
+        </button>
+        <button class="menu-item" @click="handleRules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            <path d="M8 7h8" />
+            <path d="M8 11h8" />
+            <path d="M8 15h4" />
+          </svg>
+          Game Rules
+        </button>
+      </div>
+    </Transition>
+
+    <!-- Click outside to close -->
+    <div v-if="menuOpen" class="menu-backdrop" @click="menuOpen = false" />
 
     <!-- Bug Report Modal -->
     <BugReportModal
@@ -38,12 +64,29 @@ defineProps<{
   showResync?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   leave: []
   resync: []
+  rules: []
 }>()
 
+const menuOpen = ref(false)
 const showBugReport = ref(false)
+
+function handleLeave() {
+  menuOpen.value = false
+  emit('leave')
+}
+
+function handleBugReport() {
+  menuOpen.value = false
+  showBugReport.value = true
+}
+
+function handleRules() {
+  menuOpen.value = false
+  emit('rules')
+}
 </script>
 
 <style scoped lang="scss">
@@ -52,8 +95,6 @@ const showBugReport = ref(false)
   top: 10px;
   left: max(10px, env(safe-area-inset-left));
   z-index: 500;
-  display: flex;
-  gap: 8px;
 }
 
 .hud-btn {
@@ -76,5 +117,63 @@ const showBugReport = ref(false)
     width: 24px;
     height: 24px;
   }
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  min-width: 160px;
+  background: rgba(30, 30, 40, 0.95);
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.menu-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: #ddd;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  &:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+// Dropdown animation
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>

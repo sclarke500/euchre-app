@@ -39,13 +39,14 @@
       </div>
     </div>
 
-    <!-- HUD: Leave + Bug Report buttons -->
+    <!-- HUD: Menu button -->
     <GameHUD
       game-type="euchre"
       :build-payload="buildBugReportPayload"
       :show-resync="mode === 'multiplayer'"
       @leave="handleLeaveClick"
       @resync="handleResync"
+      @rules="showRulesModal = true"
     />
 
     <!-- Game Over overlay -->
@@ -75,6 +76,23 @@
         <div class="game-over-actions dialog-actions">
           <button class="action-btn dialog-btn dialog-btn--muted" @click="confirmLeave">Leave</button>
           <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showLeaveConfirm = false">Stay</button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Rules modal -->
+    <Modal :show="showRulesModal" aria-label="Euchre Rules" @close="showRulesModal = false">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Euchre Rules</div>
+        <div class="rules-content dialog-text">
+          <p><strong>Objective:</strong> First team to 10 points wins.</p>
+          <p><strong>Trump:</strong> One suit becomes trump each round. The Jack of trump (Right Bower) and Jack of the same color (Left Bower) are the highest cards.</p>
+          <p><strong>Bidding:</strong> Choose to "order up" the face-up card as trump, or pass. If all pass, you can call any other suit as trump.</p>
+          <p><strong>Play:</strong> Must follow suit if possible. Highest trump wins, or highest card of the led suit.</p>
+          <p><strong>Scoring:</strong> Making your bid = 1 point (2 if alone). Taking all 5 tricks = 2 points. Getting "euchred" = 2 points for opponents.</p>
+        </div>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showRulesModal = false">Got it</button>
         </div>
       </div>
     </Modal>
@@ -401,6 +419,7 @@ function handlePlayAgain() {
 
 // Leave confirmation for multiplayer
 const showLeaveConfirm = ref(false)
+const showRulesModal = ref(false)
 const emit = defineEmits<{
   'leave-game': []
 }>()
@@ -586,5 +605,23 @@ onUnmounted(() => {
   display: flex;
   gap: 8px;
   justify-content: center;
+}
+
+.rules-content {
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  
+  p {
+    margin: 0 0 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  strong {
+    color: #fff;
+  }
 }
 </style>

@@ -21,13 +21,14 @@
       </div>
     </template>
 
-    <!-- HUD: Leave + Bug Report buttons -->
+    <!-- HUD: Menu button -->
     <GameHUD
       game-type="president"
       :build-payload="buildBugReportPayload"
       :show-resync="mode === 'multiplayer'"
       @leave="showLeaveConfirm = true"
       @resync="game.requestResync?.()"
+      @rules="showRulesModal = true"
     />
 
     <!-- Round counter (top-right) -->
@@ -123,6 +124,23 @@
       </div>
     </Modal>
 
+    <!-- Rules Modal -->
+    <Modal :show="showRulesModal" @close="showRulesModal = false">
+      <div class="round-modal dialog-panel">
+        <h3 class="dialog-title">President Rules</h3>
+        <div class="rules-content">
+          <p><strong>Objective:</strong> Be the first to get rid of all your cards to become President.</p>
+          <p><strong>Gameplay:</strong> Play cards equal to or higher than the current pile. You can play singles, pairs, triples, or quads — but must match the play type.</p>
+          <p><strong>Passing:</strong> If you can't or don't want to play, pass. When all players pass, the pile clears and the last player to play starts fresh.</p>
+          <p><strong>Ranks:</strong> President finishes first (best), then Vice President, down to Scum (last). Next round, Scum gives their best cards to President.</p>
+          <p><strong>2s are high:</strong> 2 beats everything except another 2.</p>
+        </div>
+        <div class="modal-buttons dialog-actions">
+          <button class="modal-btn dialog-btn dialog-btn--primary" @click="showRulesModal = false">Got it</button>
+        </div>
+      </div>
+    </Modal>
+
   </CardTable>
 </template>
 
@@ -181,6 +199,7 @@ const timerSettings = computed(() => {
   return { gracePeriodMs: 30000, countdownMs: 30000 }
 })
 const showLeaveConfirm = ref(false)
+const showRulesModal = ref(false)
 
 // Card selection state (multi-select for same-rank cards)
 const selectedCardIds = ref<Set<string>>(new Set())
@@ -549,5 +568,24 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   gap: 12px;
+}
+
+.rules-content {
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #ccc;
+  
+  p {
+    margin: 0 0 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  strong {
+    color: #fff;
+  }
 }
 </style>
