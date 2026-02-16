@@ -90,7 +90,8 @@ export function usePresidentDirector(
 
   function getTableLayout(): TableLayoutResult | null {
     if (!boardRef.value) return null
-    return computeTableLayout(boardRef.value.offsetWidth, boardRef.value.offsetHeight, 'wide', playerCount.value)
+    const layout = playerCount.value > 5 ? 'wide' : 'normal'
+    return computeTableLayout(boardRef.value.offsetWidth, boardRef.value.offsetHeight, layout, playerCount.value)
   }
 
   /**
