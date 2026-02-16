@@ -134,9 +134,9 @@ export function computeTableLayout(
         handX = tableLeft + seat.pos * tableW
         handY = tableTop + handInset
         break
-      default: // bottom (user) - position below table so cards overlap the bottom edge
+      default: // bottom (user) - position inside table, games move to bottom after dealing
         handX = tableX
-        handY = tableBottom + 20 // Cards overlap table bottom
+        handY = tableBottom - handInset // Inside table, same inset as opponents
     }
 
     const handPos = { x: handX, y: handY }
