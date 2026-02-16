@@ -336,67 +336,67 @@ function handlePlayAgain() {
 </script>
 
 <style scoped lang="scss">
-// Standard layout: scoreboard top-right, action panel bottom-left
+// Standard layout: scoreboard fixed top-right, action panel bottom-left
 .scoreboard {
-  position: absolute;
-  top: 10px;
-  right: max(60px, env(safe-area-inset-right) + 50px);
+  position: fixed;
+  top: 8px;
+  right: max(8px, env(safe-area-inset-right));
   z-index: 500;
-  background: rgba(20, 20, 30, 0.88);
+  background: rgba(20, 20, 30, 0.85);
   border: 1px solid #444;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 0;
   backdrop-filter: blur(8px);
-  font-size: 14px;
+  font-size: 11px;
   color: #ccc;
 }
 
 .spades-scoreboard {
-  padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  width: 130px;
+  width: 100px;
   
   .score-row {
     display: grid;
-    grid-template-columns: 40px 1fr 1fr;
-    gap: 4px;
+    grid-template-columns: 28px 1fr 1fr;
+    gap: 2px;
     align-items: center;
-    padding: 6px 10px;
+    padding: 3px 6px;
   }
   
   .score-label {
     font-weight: 600;
+    font-size: 10px;
   }
   
   .score-value {
     font-weight: 700;
-    font-size: 16px;
+    font-size: 12px;
     color: #fff;
     text-align: center;
   }
   
   .score-bags {
-    font-size: 14px;
+    font-size: 11px;
     color: #f39c12;
     text-align: center;
   }
   
   .hand-bags {
-    font-size: 11px;
+    font-size: 9px;
     color: #e74c3c;
-    margin-left: 2px;
+    margin-left: 1px;
   }
   
   .score-header {
     display: grid;
-    grid-template-columns: 40px 1fr 1fr;
-    gap: 4px;
-    padding: 4px 10px;
+    grid-template-columns: 28px 1fr 1fr;
+    gap: 2px;
+    padding: 2px 6px;
     background: rgba(255, 255, 255, 0.05);
     border-top: 1px solid rgba(255,255,255,0.1);
-    font-size: 11px;
+    font-size: 8px;
     color: #888;
     text-align: center;
     

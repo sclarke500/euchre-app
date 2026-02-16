@@ -84,10 +84,10 @@ export function computeTableLayout(
   seatOverrides?: SeatDefinition[]
 ): TableLayoutResult {
   const isWide = layout === 'wide'
-  // On mobile, use asymmetric margins: less on left, more on right for sidebar UI
-  const isMobile = boardWidth < 1000
-  const marginLeft = isWide ? 0.10 : (isMobile ? 0.10 : 0.30)
-  const marginRight = isWide ? 0.10 : (isMobile ? 0.22 : 0.30)
+  // Symmetric margins - table is centered
+  const marginH = isWide ? 0.10 : 0.20
+  const marginLeft = marginH
+  const marginRight = marginH
   const tableMarginTop = 0.15
   const userAreaPct = 0.20
 
