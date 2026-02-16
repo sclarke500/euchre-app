@@ -437,11 +437,17 @@ export function usePresidentDirector(
     const cardIdsToMove: string[] = []
     const usedPlaceholderIndices = new Set<number>()
 
+    console.log(`[PresidentDirector] animateCardPlayMP: seat=${seatIndex}, cards=${cards.map(c => c.id).join(',')}, handSize=${hand.cards.length}`)
+
     for (const card of cards) {
       const hasCard = hand.cards.some(m => m.card.id === card.id)
       if (hasCard) {
         cardIdsToMove.push(card.id)
-      } else if (seatIndex !== 0 && hand.cards.length > 0) {
+      } else if (seatIndex === 0) {
+        // User's card not found in engine hand - this shouldn't happen
+        console.warn(`[PresidentDirector] User card ${card.id} not found in engine hand!`, 
+          'Engine has:', hand.cards.map(m => m.card.id))
+      } else if (hand.cards.length > 0) {
         // Opponent placeholder — find an unused placeholder from the end
         let placeholderIdx = hand.cards.length - 1
         while (placeholderIdx >= 0 && usedPlaceholderIndices.has(placeholderIdx)) {
@@ -472,6 +478,8 @@ export function usePresidentDirector(
       }
     }
 
+    console.log(`[PresidentDirector] animateCardPlayMP: moving ${cardIdsToMove.length} cards to pile`)
+    
     // Animate all cards to pile position
     const movePromises = cardIdsToMove.map((cardId, i) => {
       const targetPos = getPileCardPosition(playIndex, i, cards.length)
