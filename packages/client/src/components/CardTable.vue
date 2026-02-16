@@ -10,14 +10,6 @@
         </div>
       </div>
       
-      <!-- Dealer chip - outside table-surface for proper z-index above cards -->
-      <div
-        v-if="dealerSeat >= 0"
-        class="dealer-chip"
-        :class="`dealer-seat-${dealerSeat}`"
-        :style="dealerChipStyle"
-      >D</div>
-      
       <!-- Opponent avatars - outside table-surface for proper z-index stacking -->
       <PlayerAvatar
         v-for="(seat, i) in seatData"
@@ -25,6 +17,7 @@
         v-show="!seat.isUser"
         :name="playerNames[i] ?? 'Player'"
         :is-current-turn="currentTurnSeat === i"
+        :is-dealer="dealerSeat === i"
         :status="playerStatuses[i]"
         :position="getRailPosition(seat.side)"
         :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
@@ -50,6 +43,7 @@
         :name="playerNames[0] ?? 'You'"
         :is-current-turn="currentTurnSeat === 0"
         :is-user="true"
+        :is-dealer="dealerSeat === 0"
         position="bottom"
       >
         <slot name="user-info" />
@@ -140,30 +134,6 @@ const avatarStyles = computed(() => {
         return { left: `${seat.handPosition.x}px`, top: `${tableBounds.bottom}px` }
     }
   })
-})
-
-/**
- * Compute dealer chip position in board-space pixels.
- * Positioned inside table near each seat.
- */
-const dealerChipStyle = computed(() => {
-  const layout = lastLayoutResult.value
-  if (!layout) return {}
-  const { tableBounds } = layout
-  const inset = 50 // pixels inset from table edge
-
-  switch (props.dealerSeat) {
-    case 0: // bottom (user)
-      return { left: `${tableBounds.centerX}px`, top: `${tableBounds.bottom - inset}px` }
-    case 1: // left
-      return { left: `${tableBounds.left + inset}px`, top: `${tableBounds.centerY}px` }
-    case 2: // top
-      return { left: `${tableBounds.centerX}px`, top: `${tableBounds.top + inset}px` }
-    case 3: // right
-      return { left: `${tableBounds.right - inset}px`, top: `${tableBounds.centerY}px` }
-    default:
-      return {}
-  }
 })
 
 function computeLayout() {
@@ -346,22 +316,4 @@ defineExpose({
   }
 }
 
-// Dealer chip - positioned on table near each seat (outside table-surface for z-index)
-.dealer-chip {
-  position: absolute;
-  z-index: 400; // Above table cards (~200), below avatars and user hand
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
-  color: #2c3e50;
-  font-size: 13px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transform: translate(-50%, -50%);
-  transition: left var(--anim-slower, 0.5s) ease, top var(--anim-slower, 0.5s) ease;
-}
 </style>

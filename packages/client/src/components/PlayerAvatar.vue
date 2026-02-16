@@ -12,12 +12,20 @@
     :style="positionStyle"
   >
     <div class="avatar-container">
-      <!-- Dealer chip attached to avatar -->
-      <div v-if="props.isDealer" class="dealer-chip">D</div>
-      
       <div class="avatar-border">
         <div class="avatar-circle">{{ initial }}</div>
-        <div class="player-name">{{ props.name }}</div>
+        <div class="name-row">
+          <!-- Dealer chip - left side for right-rail avatars -->
+          <div v-if="props.isDealer && props.position === 'rail-right'" class="dealer-chip left">D</div>
+          <div class="player-name">{{ props.name }}</div>
+          <!-- Dealer chip - right side for other avatars -->
+          <div v-if="props.isDealer && props.position !== 'rail-right'" class="dealer-chip right">D</div>
+        </div>
+      </div>
+      
+      <!-- Info tags - top right of avatar circle -->
+      <div class="info-tags">
+        <slot />
       </div>
       
       <!-- Turn indicator glow -->
@@ -26,11 +34,6 @@
     
     <!-- Status text (e.g., "Passed", "Thinking...") -->
     <div class="player-status" :class="{ visible: !!props.status }">{{ props.status }}</div>
-    
-    <!-- Info tags slot (bid chips, tricks, etc.) -->
-    <div class="info-tags">
-      <slot />
-    </div>
   </div>
 </template>
 
@@ -100,8 +103,14 @@ const positionStyle = computed(() => props.customStyle ?? {})
     transition: border-color var(--anim-slow, 0.3s) ease, box-shadow var(--anim-slow, 0.3s) ease;
   }
 
-  .player-name {
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     margin-top: -8px;
+  }
+
+  .player-name {
     padding: 2px 12px;
     font-size: 13px;
     font-weight: 600;
@@ -127,10 +136,14 @@ const positionStyle = computed(() => props.customStyle ?? {})
     }
   }
 
+  // Info tags - positioned at top-right of avatar circle
   .info-tags {
+    position: absolute;
+    top: -4px;
+    right: -4px;
     display: flex;
     gap: 4px;
-    justify-content: center;
+    z-index: 5;
   }
 
   .avatar-glow {
@@ -142,22 +155,20 @@ const positionStyle = computed(() => props.customStyle ?? {})
     pointer-events: none;
   }
 
+  // Dealer chip - inline with name label
   .dealer-chip {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
     color: #2c3e50;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    z-index: 10;
+    flex-shrink: 0;
   }
 
   // Turn indicator - golden glow on circle
