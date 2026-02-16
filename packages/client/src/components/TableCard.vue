@@ -59,7 +59,7 @@ function handleSeatClick(seatIndex: number) {
 
 <template>
   <!-- LIST VIEW (compact row for lobby) -->
-  <div v-if="!isCurrent" class="table-row" @click="handleSeatClick(seats.findIndex(s => s.isEmpty))">
+  <div v-if="!isCurrent" class="table-row">
     <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
     <span class="host-name">{{ hostName }}</span>
     <div class="seat-dots">
@@ -67,7 +67,8 @@ function handleSeatClick(seatIndex: number) {
         v-for="(seat, index) in seats" 
         :key="index" 
         class="dot"
-        :class="{ filled: !seat.isEmpty }"
+        :class="{ filled: !seat.isEmpty, clickable: seat.isEmpty }"
+        @click.stop="seat.isEmpty && handleSeatClick(index)"
       />
     </div>
     <span class="table-name">{{ table.name }}</span>
@@ -139,13 +140,26 @@ function handleSeatClick(seatIndex: number) {
 }
 
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.15);
+  border: 2px solid transparent;
+  transition: all 0.15s ease;
   
   &.filled {
     background: $secondary-color;
+  }
+
+  &.clickable {
+    cursor: pointer;
+    border-color: rgba(255, 255, 255, 0.3);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.4);
+      border-color: $secondary-color;
+      transform: scale(1.2);
+    }
   }
 }
 
