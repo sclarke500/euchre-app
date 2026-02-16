@@ -234,9 +234,9 @@ export function calculateRoundScore(
 
   if (teamBid > 0) {
     if (tricksWon >= teamBid) {
-      // Made bid: 10 × bid + overtricks as bags
-      baseScore = teamBid * 10
+      // Made bid: 10 × bid + 1 per overtrick (bag)
       newBags = tricksWon - teamBid
+      baseScore = teamBid * 10 + newBags
     } else {
       // Failed bid: -10 × bid
       baseScore = -teamBid * 10

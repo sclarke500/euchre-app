@@ -59,7 +59,8 @@ const emit = defineEmits<{
 
 const viewportRef = ref<HTMLElement | null>(null)
 
-// All possible bid values: 0 (Nil), 1-13
+// All possible bid values: Nil (shown as 0), then 1-13
+// Note: 0 in the UI means Nil - there is no "0 tricks" normal bid
 const allValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
 const itemHeight = 44 // px per item

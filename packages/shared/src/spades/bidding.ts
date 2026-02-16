@@ -10,7 +10,8 @@ import { SpadesBidType, type SpadesBid, type SpadesPlayer } from './types.js'
 export function isValidBid(bid: SpadesBid, hand: StandardCard[]): boolean {
   switch (bid.type) {
     case SpadesBidType.Normal:
-      return bid.count >= 0 && bid.count <= 13
+      // Normal bids must be 1-13 (0 is not valid - use Nil instead)
+      return bid.count >= 1 && bid.count <= 13
     case SpadesBidType.Nil:
       return bid.count === 0
     case SpadesBidType.BlindNil:

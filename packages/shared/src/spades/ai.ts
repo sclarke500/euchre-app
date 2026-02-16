@@ -54,13 +54,14 @@ export function chooseSpadesBid(
     }
     // If partner bid high, be more conservative
     else if (partner.bid.count >= 5) {
-      estimate = Math.max(estimate - 1, 0)
+      estimate = Math.max(estimate - 1, 1)
     }
   }
 
   // Add some randomness (-1 to +1)
   const variance = Math.floor(Math.random() * 3) - 1
-  estimate = Math.max(0, Math.min(13, estimate + variance))
+  // Never bid 0 - that would be Nil which is a separate bid type
+  estimate = Math.max(1, Math.min(13, estimate + variance))
 
   return createBid(estimate)
 }
