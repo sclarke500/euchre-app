@@ -121,6 +121,7 @@ export class Hand extends CardContainer {
   fanCurve: number    // degrees of rotation at edges (0 = flat, 15 = curved)
   angleToCenter: number  // angle in degrees pointing toward board center (kitty)
   isUser: boolean     // whether this is the human player's hand (affects fan rendering)
+  stackPosition: { x: number; y: number } | null = null  // optional position for looseStack (under avatar)
 
   constructor(
     id: string,
@@ -159,6 +160,9 @@ export class Hand extends CardContainer {
     const flipY = cardFaceUp ? 180 : 0
     
     if (this.mode === 'looseStack') {
+      // Use stackPosition if set (e.g., under avatar), otherwise use regular position
+      const basePos = this.stackPosition ?? this.position
+      
       // Deterministic pseudo-random scatter, scaled by hand scale
       const seed = index * 12345.6789
       const randomX = (Math.sin(seed) * 0.5) * 12 * this.scale
@@ -166,8 +170,8 @@ export class Hand extends CardContainer {
       const randomRot = (Math.sin(seed * 2) * 0.5) * 8
       
       return {
-        x: this.position.x + randomX,
-        y: this.position.y + randomY - index * 0.5,
+        x: basePos.x + randomX,
+        y: basePos.y + randomY - index * 0.5,
         rotation: this.rotation + randomRot,
         zIndex: 200 + index,
         scale: this.scale,

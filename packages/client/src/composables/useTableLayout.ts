@@ -3,7 +3,8 @@ import { Hand } from '@/components/cardContainers'
 
 export interface SeatLayout {
   side: 'bottom' | 'left' | 'top' | 'right'
-  handPosition: { x: number; y: number }
+  handPosition: { x: number; y: number }  // Position for fanned cards (inside table)
+  stackPosition: { x: number; y: number }  // Position for stacked cards (under avatar, at table edge)
   rotation: number
   angleToCenter: number
   isUser: boolean
@@ -120,33 +121,43 @@ export function computeTableLayout(
   const seats: SeatLayout[] = seatDefs.map((seat, i) => {
     let handX: number
     let handY: number
+    let stackX: number
+    let stackY: number
 
-    // Position opponent hands at the table edge (under avatar center)
-    // Avatar is positioned at the edge, so hand should be too
     switch (seat.side) {
       case 'left':
-        handX = tableLeft
+        handX = tableLeft + handInset
         handY = tableTop + seat.pos * tableH
+        stackX = tableLeft  // At table edge (under avatar)
+        stackY = handY
         break
       case 'right':
-        handX = tableRight
+        handX = tableRight - handInset
         handY = tableTop + seat.pos * tableH
+        stackX = tableRight  // At table edge (under avatar)
+        stackY = handY
         break
       case 'top':
         handX = tableLeft + seat.pos * tableW
-        handY = tableTop
+        handY = tableTop + handInset
+        stackX = handX
+        stackY = tableTop  // At table edge (under avatar)
         break
       default: // bottom (user) - position below table so cards overlap the bottom edge
         handX = tableX
         handY = tableBottom + 20 // Cards overlap table bottom
+        stackX = handX
+        stackY = handY
     }
 
     const handPos = { x: handX, y: handY }
+    const stackPos = { x: stackX, y: stackY }
     const angleToCenter = Hand.calcAngleToCenter(handPos, tableCenter)
 
     return {
       side: seat.side,
       handPosition: handPos,
+      stackPosition: stackPos,
       rotation: seat.rotation,
       angleToCenter,
       isUser: i === 0,
