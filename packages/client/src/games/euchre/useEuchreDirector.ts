@@ -11,6 +11,7 @@ import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@
 import type { Card, Suit, ServerMessage } from '@67cards/shared'
 import type { EuchreGameAdapter } from './useEuchreGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
+import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import type { EngineCard, CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
@@ -186,6 +187,22 @@ export function useEuchreDirector(
     return (seatIndex + myId) % 4
   }
 
+  // ── Shared card controller ──────────────────────────────────────────────
+
+  const cardController = useCardController(engine, boardRef, {
+    layout: 'normal',
+    playerCount: 4,
+    userSeatIndex: 0,
+    playerIdToSeatIndex,
+    userHandScale: 1.6,
+    opponentHandScale: 0.7,
+    userFanSpacing: 30,
+    opponentFanSpacing: 16,
+    userFanCurve: 0,
+    playMoveMs: CARD_PLAY_MS,
+    ...cardControllerPresets.euchre,
+  })
+
   // ── Layout helpers ──────────────────────────────────────────────────────
 
   function getTableLayout(): TableLayoutResult | null {
@@ -318,42 +335,13 @@ export function useEuchreDirector(
     }
   }
 
-  /** Hide opponent hands - move all cards to user avatar position (bottom center, tiny scale) */
+  /** Hide opponent hands - delegates to shared card controller */
   async function hideOpponentHands() {
-    const tl = getTableLayout()
-    if (!tl || !boardRef.value) return
-
-    const hands = engine.getHands()
-    const promises: Promise<void>[] = []
-
-    // Hide position: bottom center under user avatar
-    const hidePosition = {
-      x: tl.tableBounds.centerX,
-      y: boardRef.value.offsetHeight - 60,
-    }
-    const hideScale = 0.05 // Essentially invisible
-
+    await cardController.hideOpponentHands()
+    // Track that hands are hidden (for local state checks)
     for (let i = 1; i < 4; i++) {
-      const hand = hands[i]
-      if (!hand || hand.cards.length === 0) continue
-
-      hiddenHandOrigins.set(i, hidePosition)
-
-      for (const m of hand.cards) {
-        const cardRef = engine.getCardRef(m.card.id)
-        if (cardRef) {
-          promises.push(cardRef.moveTo({
-            x: hidePosition.x,
-            y: hidePosition.y,
-            rotation: 0,
-            zIndex: 50,
-            scale: hideScale,
-          }, HAND_COLLAPSE_MS))
-        }
-      }
+      hiddenHandOrigins.set(i, { x: 0, y: 0 })
     }
-
-    await Promise.all(promises)
   }
 
   /**
@@ -542,25 +530,10 @@ export function useEuchreDirector(
   // ── Sort user hand ──────────────────────────────────────────────────────
 
   async function sortUserHand(duration: number = AnimationDurations.medium) {
-    const userHand = engine.getHands()[0]
-    if (!userHand || userHand.cards.length === 0) return
-
     const trump = game.trump.value?.suit ?? null
-    const sorted = sortEuchreHand(game.myHand.value, trump)
-    const sortedIds = sorted.map(c => c.id)
-
-    const cardMap = new Map(userHand.cards.map(m => [m.card.id, m]))
-    const reordered = sortedIds
-      .map(id => cardMap.get(id))
-      .filter((m): m is NonNullable<typeof m> => m != null)
-
-    // Append any engine-only cards (shouldn't happen in normal play)
-    for (const m of userHand.cards) {
-      if (!sortedIds.includes(m.card.id)) reordered.push(m)
-    }
-
-    userHand.cards = reordered
-    await userHand.repositionAll(duration)
+    // Cast to any to bridge Euchre Card type and StandardCard
+    const sorter = (cards: Card[]) => sortEuchreHand(cards, trump)
+    await cardController.sortUserHand(sorter as any, duration)
   }
 
   // ── Deck animations ─────────────────────────────────────────────────────
