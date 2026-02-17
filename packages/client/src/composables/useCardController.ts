@@ -256,15 +256,17 @@ export function useCardController(
 
     if (userHand && focusUserHand) {
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
-      const targetY = board.offsetHeight - 85  // Balanced position above avatar
-      const targetScale = config.userHandScale ?? 1.6
+      const cardCount = userHand.cards.length
+      // More cards = position higher to fit the arc, scale down slightly
+      const targetY = board.offsetHeight - 85 - (cardCount > 8 ? (cardCount - 8) * 5 : 0)
+      const baseScale = config.userHandScale ?? 1.6
+      const targetScale = cardCount > 8 ? baseScale * 0.9 : baseScale
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
-      userHand.fanSpacing = config.userFanSpacing ?? Math.min(30, 320 / Math.max(1, userHand.cards.length))
+      userHand.fanSpacing = config.userFanSpacing ?? Math.min(30, 320 / Math.max(1, cardCount))
       // Dynamic curve: fewer cards = more curve, more cards = less curve
       // 5 cards: ~9°, 8 cards: ~5°, 13 cards: ~3°
-      const cardCount = userHand.cards.length
       const dynamicCurve = cardCount > 0 ? Math.max(3, Math.min(10, 45 / cardCount)) : 0
       userHand.fanCurve = config.userFanCurve !== undefined ? config.userFanCurve : dynamicCurve
 
