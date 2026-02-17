@@ -672,14 +672,21 @@ export function useCardController(
   }
 
   function getAvatarBoardPosition(seatIndex: number, layout: TableLayoutResult): { x: number; y: number } {
-    const { tableBounds } = layout
-    switch (seatIndex) {
-      case 1:
-        return { x: tableBounds.left - 40, y: tableBounds.centerY }
-      case 2:
-        return { x: tableBounds.centerX, y: tableBounds.top - 30 }
-      case 3:
-        return { x: tableBounds.right + 40, y: tableBounds.centerY }
+    const { tableBounds, seats } = layout
+    const seat = seats[seatIndex]
+    if (!seat) return layout.tableCenter
+
+    // Match the avatar positioning from CardTable.vue
+    // Avatars are positioned ON the rail edge
+    switch (seat.side) {
+      case 'left':
+        return { x: tableBounds.left, y: seat.handPosition.y }
+      case 'right':
+        return { x: tableBounds.right, y: seat.handPosition.y }
+      case 'top':
+        return { x: seat.handPosition.x, y: tableBounds.top }
+      case 'bottom':
+        return { x: seat.handPosition.x, y: tableBounds.bottom }
       default:
         return layout.tableCenter
     }
