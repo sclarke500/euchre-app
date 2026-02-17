@@ -257,8 +257,8 @@ export function useCardController(
     if (userHand && focusUserHand) {
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
       const cardCount = userHand.cards.length
-      // More cards = position slightly higher to fit the arc
-      const targetY = board.offsetHeight - 65 - (cardCount > 8 ? (cardCount - 8) * 2 : 0)
+      // Consistent position - same for all hand sizes
+      const targetY = board.offsetHeight - 65
       const targetScale = config.userHandScale ?? 1.6
 
       userHand.position = { x: targetX, y: targetY }
