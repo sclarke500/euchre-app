@@ -168,8 +168,11 @@ export class EuchreGame {
       return false
     }
 
-    // Clear turn reminder since player acted
+    // Clear turn reminder and timeout status since player acted
     this.clearTurnReminderTimeout()
+    if (this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
 
     const bid: Bid = {
       playerId: playerIndex,
@@ -207,8 +210,11 @@ export class EuchreGame {
       return false
     }
 
-    // Clear turn reminder since player acted
+    // Clear turn reminder and timeout status since player acted
     this.clearTurnReminderTimeout()
+    if (this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
 
     this.playCardInternal(playerIndex, card)
     return true
@@ -228,8 +234,11 @@ export class EuchreGame {
     const cardIndex = player.hand.findIndex((c) => c.id === cardId)
     if (cardIndex === -1) return false
 
-    // Clear turn reminder since player acted
+    // Clear turn reminder and timeout status since player acted
     this.clearTurnReminderTimeout()
+    if (this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
 
     player.hand.splice(cardIndex, 1)
     this.startPlayingPhase()

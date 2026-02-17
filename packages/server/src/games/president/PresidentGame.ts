@@ -237,8 +237,11 @@ export class PresidentGame {
       return false
     }
 
-    // Clear turn reminder since player acted
+    // Clear turn reminder and timeout status since player acted
     this.clearTurnReminderTimeout()
+    if (this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
 
     this.playCardsInternal(playerIndex, cards)
     return true
@@ -264,8 +267,11 @@ export class PresidentGame {
       return false
     }
 
-    // Clear turn reminder since player acted
+    // Clear turn reminder and timeout status since player acted
     this.clearTurnReminderTimeout()
+    if (this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
 
     this.passInternal(playerIndex)
     return true

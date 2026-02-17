@@ -137,13 +137,21 @@ export class SpadesGame {
 
   handleBid(odusId: string, bid: SpadesBid): boolean {
     if (this.phase !== SpadesPhase.Bidding) return false
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
     this.clearTurnTimer()
+    if (playerIndex !== -1 && this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
     return this.makeBid(odusId, bid)
   }
 
   handlePlayCard(odusId: string, cardId: string): boolean {
     if (this.phase !== SpadesPhase.Playing) return false
+    const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
     this.clearTurnTimer()
+    if (playerIndex !== -1 && this.timedOutPlayer === playerIndex) {
+      this.timedOutPlayer = null
+    }
     return this.playCard(odusId, cardId)
   }
 
