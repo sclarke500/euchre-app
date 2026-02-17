@@ -275,7 +275,7 @@ defineExpose({
     bottom: 0;
     left: 0;
     right: 0;
-    height: 70px;
+    height: 80px;
     background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.85) 100%);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
