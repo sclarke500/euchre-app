@@ -163,14 +163,14 @@ onMounted(() => {
 .bid-wheel {
   position: relative;
   background: rgba(245, 245, 248, 0.95);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 
 .wheel-viewport {
-  width: 56px;
-  height: calc(32px * 5); // Show 5 items
+  width: 54px;
+  height: calc(40px * 5); // Show 5 items
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
@@ -182,16 +182,16 @@ onMounted(() => {
 }
 
 .wheel-spacer {
-  height: calc(32px * 2); // Two item heights for centering
+  height: calc(40px * 2); // Two item heights for centering
   scroll-snap-align: none;
 }
 
 .wheel-item {
-  height: 32px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.35);
   scroll-snap-align: center;
@@ -203,7 +203,7 @@ onMounted(() => {
   }
   
   &.selected {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
     color: #1a1a2e;
   }
@@ -214,7 +214,7 @@ onMounted(() => {
   position: absolute;
   left: 0;
   right: 0;
-  height: 36px;
+  height: 44px;
   pointer-events: none;
   z-index: 2;
   
@@ -245,7 +245,7 @@ onMounted(() => {
   top: 50%;
   left: 4px;
   right: 4px;
-  height: 30px;
+  height: 36px;
   transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.06);
   border-radius: 6px;
