@@ -594,24 +594,23 @@ async function handleStockClick() {
       }
     }
     
-    // Also update existing waste card positions (they shift right-to-left)
-    const allWastePositions = finalPositions.filter(p => 
-      store.waste.some(c => c.id === p.id)
+    // Collect existing waste card positions (they'll shift left as new cards arrive)
+    const existingWastePositions = finalPositions.filter(p => 
+      store.waste.some(c => c.id === p.id) && !drawnCards.some(c => c.id === p.id)
     )
-    for (const pos of allWastePositions) {
-      if (!drawnCards.some(c => c.id === pos.id)) {
-        // Update position of existing waste cards
-        updatePosition(pos.id, { x: pos.x, y: pos.y, z: pos.z })
-      }
-    }
     
-    // Wait a frame then animate new cards to final positions
+    // Wait a frame then animate everything together
     await nextTick()
     await new Promise(r => setTimeout(r, 20))
     
     // Mark drawn cards as animating (elevated z-index)
     for (const card of drawnCards) {
       animatingCardIds.value.add(card.id)
+    }
+    
+    // Shift existing waste cards at the same time as new cards start arriving
+    for (const pos of existingWastePositions) {
+      updatePosition(pos.id, { x: pos.x, y: pos.y, z: pos.z })
     }
     
     // Stagger the animations for new cards
