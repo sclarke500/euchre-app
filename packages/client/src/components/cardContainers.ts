@@ -183,12 +183,18 @@ export class Hand extends CardContainer {
     // User hand z-index 300+ (below avatar at 500), opponents 200+
     const baseZ = this.isUser ? 300 : 200
 
-    // User arc fan: all cards at same position, rotation creates spread via transform-origin
+    // User arc fan: calculate position along an arc
     if (this.isUser && this.fanCurve > 0) {
       const spreadAngle = (index - middleIndex) * this.fanCurve
+      const angleRad = spreadAngle * Math.PI / 180
+      // Arc radius - distance from pivot point to card center
+      const arcRadius = 280
+      // Cards positioned along arc, pivot point is below hand position
+      const arcX = this.position.x + Math.sin(angleRad) * arcRadius
+      const arcY = this.position.y - Math.cos(angleRad) * arcRadius + arcRadius
       return {
-        x: this.position.x,
-        y: this.position.y,
+        x: arcX,
+        y: arcY,
         rotation: spreadAngle,
         zIndex: baseZ + index,
         scale: this.scale,
