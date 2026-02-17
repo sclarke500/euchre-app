@@ -266,8 +266,8 @@ export function useCardController(
       userHand.scale = targetScale
       userHand.fanSpacing = config.userFanSpacing ?? Math.min(30, 320 / Math.max(1, cardCount))
       // Dynamic curve: fewer cards = more curve, more cards = less curve
-      // 5 cards: ~9°, 8 cards: ~5°, 13 cards: ~3°
-      const dynamicCurve = cardCount > 0 ? Math.max(3, Math.min(10, 45 / cardCount)) : 0
+      // 5 cards: ~9°, 8 cards: ~4°, 13 cards: ~2.5° (flatter for big hands)
+      const dynamicCurve = cardCount > 0 ? Math.max(2.5, Math.min(10, 45 / cardCount)) : 0
       userHand.fanCurve = config.userFanCurve !== undefined ? config.userFanCurve : dynamicCurve
 
       for (const managed of userHand.cards) {

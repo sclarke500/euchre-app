@@ -135,9 +135,9 @@ export function computeTableLayout(
         handX = tableLeft + seat.pos * tableW
         handY = tableTop + handInset
         break
-      default: // bottom (user) - position inside table, games move to bottom after dealing
+      default: // bottom (user) - deal position inside table, then animate down when fanning
         handX = tableX
-        handY = boardHeight - 80 // Full card visible above screen bottom
+        handY = tableBottom - 40 // Inside table edge for dealing
     }
 
     const handPos = { x: handX, y: handY }
