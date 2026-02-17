@@ -125,16 +125,23 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 20px 16px;
-  padding-right: max(16px, env(safe-area-inset-right));
-  background-color: rgba(20, 20, 30, 0.4) !important;
+  gap: 12px;
+  padding: 14px 12px;
+  padding-right: max(12px, env(safe-area-inset-right));
+  background: linear-gradient(
+    135deg,
+    rgba(35, 40, 50, 0.85) 0%,
+    rgba(20, 22, 30, 0.9) 100%
+  );
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  border-radius: 20px 0 0 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px 0 0 16px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
   border-right: none;
-  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    -4px 0 30px rgba(0, 0, 0, 0.5),
+    -2px 0 20px rgba(212, 175, 55, 0.15),
+    inset 1px 0 0 rgba(212, 175, 55, 0.2);
 }
 
 // Shiny overlay effect - sits on top
@@ -156,14 +163,14 @@ onMounted(() => {
 .bid-wheel {
   position: relative;
   background: rgba(245, 245, 248, 0.95);
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 
 .wheel-viewport {
-  width: 72px;
-  height: calc(44px * 5); // Show 5 items
+  width: 56px;
+  height: calc(32px * 5); // Show 5 items
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
@@ -175,16 +182,16 @@ onMounted(() => {
 }
 
 .wheel-spacer {
-  height: calc(44px * 2); // Two item heights for centering
+  height: calc(32px * 2); // Two item heights for centering
   scroll-snap-align: none;
 }
 
 .wheel-item {
-  height: 44px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.35);
   scroll-snap-align: center;
@@ -196,7 +203,7 @@ onMounted(() => {
   }
   
   &.selected {
-    font-size: 26px;
+    font-size: 20px;
     font-weight: 700;
     color: #1a1a2e;
   }
@@ -207,7 +214,7 @@ onMounted(() => {
   position: absolute;
   left: 0;
   right: 0;
-  height: 50px;
+  height: 36px;
   pointer-events: none;
   z-index: 2;
   
@@ -238,26 +245,26 @@ onMounted(() => {
   top: 50%;
   left: 4px;
   right: 4px;
-  height: 40px;
+  height: 30px;
   transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.06);
-  border-radius: 8px;
+  border-radius: 6px;
   pointer-events: none;
   z-index: 1;
 }
 
 .bid-button {
-  padding: 12px 24px;
+  padding: 10px 20px;
   background: rgba(42, 138, 106, 0.95);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: #fff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: 0 3px 12px rgba(42, 138, 106, 0.4);
-  min-width: 100px;
+  min-width: 80px;
   
   &:hover {
     background: rgba(52, 158, 126, 1);
