@@ -204,6 +204,8 @@ function computeLayout() {
   const el = boardRef.value
   el.style.setProperty('--table-left', `${(tableBounds.left / w * 100).toFixed(2)}%`)
   el.style.setProperty('--table-right', `${((w - tableBounds.right) / w * 100).toFixed(2)}%`)
+  el.style.setProperty('--table-top', `${(tableBounds.top / h * 100).toFixed(2)}%`)
+  el.style.setProperty('--table-bottom', `${((h - tableBounds.bottom) / h * 100).toFixed(2)}%`)
 
   return result
 }
@@ -269,8 +271,10 @@ defineExpose({
 
 .table-surface {
   position: absolute;
-  top: 15%;
-  bottom: 20%;
+  top: var(--table-top, 15%);
+  bottom: var(--table-bottom, 20%);
+  left: var(--table-left, 20%);
+  right: var(--table-right, 20%);
   border-radius: 40px;
   // No background on main element - felt goes in ::after
   background: none;
