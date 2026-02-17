@@ -448,7 +448,7 @@ export function useCardController(
       x: center.x + o.x,
       y: center.y + o.y,
       rotation: o.rotation,
-      zIndex: 500 + cardIndex,
+      zIndex: 300 + cardIndex, // Below user avatar (500)
       scale: 0.9,
       flipY: 180,
     }
@@ -467,7 +467,7 @@ export function useCardController(
       x: center.x + groupOffsetX + cardSpread,
       y: center.y + groupOffsetY,
       rotation: 180 + groupRot,
-      zIndex: 500 + playIndex * 4 + cardIndex,
+      zIndex: 300 + playIndex * 4 + cardIndex, // Below user avatar (500)
       scale: 0.9,
       flipY: 180,
     }

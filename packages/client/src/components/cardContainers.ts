@@ -165,11 +165,14 @@ export class Hand extends CardContainer {
       const randomY = (Math.cos(seed) * 0.5) * 8 * this.scale
       const randomRot = (Math.sin(seed * 2) * 0.5) * 8
       
+      // User hand z-index 600+ (above avatar at 500), opponents 200+
+      const baseZ = this.isUser ? 600 : 200
+
       return {
         x: this.position.x + randomX,
         y: this.position.y + randomY - index * 0.5,
         rotation: this.rotation + randomRot,
-        zIndex: 200 + index,
+        zIndex: baseZ + index,
         scale: this.scale,
         flipY,
       }
@@ -177,6 +180,8 @@ export class Hand extends CardContainer {
     
     // Fanned mode
     const middleIndex = (cardCount - 1) / 2
+    // User hand z-index 600+ (above avatar at 500), opponents 200+
+    const baseZ = this.isUser ? 600 : 200
 
     if (this.isUser && this.fanCurve > 0) {
       // Display mode: arc fan with rotation, CSS transform-origin creates the arc
@@ -186,7 +191,7 @@ export class Hand extends CardContainer {
         x: this.position.x,
         y: this.position.y,
         rotation: spreadAngle,
-        zIndex: 200 + index,
+        zIndex: baseZ + index,
         scale: this.scale,
         flipY,
       }
@@ -203,7 +208,7 @@ export class Hand extends CardContainer {
         x: this.position.x + offsetX,
         y: this.position.y + offsetY,
         rotation: this.rotation,
-        zIndex: 200 + index,
+        zIndex: baseZ + index,
         scale: this.scale,
         flipY,
       }

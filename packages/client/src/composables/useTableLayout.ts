@@ -92,12 +92,12 @@ export function computeTableLayout(
   const userAreaPct = 0.20
 
   const tableW = boardWidth * (1 - marginLeft - marginRight)
-  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct)
+  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 10 // 10px shorter
   const tableX = boardWidth * marginLeft + tableW / 2
-  const tableY = boardHeight * tableMarginTop + tableH / 2
+  const tableY = boardHeight * tableMarginTop + tableH / 2 - 10 // 10px up
 
   const tableLeft = boardWidth * marginLeft
-  const tableTop = boardHeight * tableMarginTop
+  const tableTop = boardHeight * tableMarginTop - 10 // 10px up
   const tableRight = tableLeft + tableW
   const tableBottom = tableTop + tableH
 
