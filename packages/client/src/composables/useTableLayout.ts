@@ -89,7 +89,7 @@ export function computeTableLayout(
   const marginLeft = marginH
   const marginRight = marginH
   const tableMarginTop = 0.12
-  const userAreaPct = 0.18 // Larger user area - table bottom aligns with top of user cards
+  const userAreaPct = 0.22 // Larger user area - more room below table for cards + avatar
 
   const tableW = boardWidth * (1 - marginLeft - marginRight)
   const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 10
