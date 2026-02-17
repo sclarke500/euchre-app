@@ -60,9 +60,9 @@
       @rules="showRulesModal = true"
     />
 
-    <!-- Spades Broken indicator -->
+    <!-- Spades Broken indicator - positioned under scoreboard -->
     <div v-if="store.spadesBroken" class="spades-broken-indicator">
-      ♠ Broken
+      ♠ Spades Broken
     </div>
 
     <!-- Round Summary Modal -->
@@ -592,17 +592,20 @@ function handlePlayAgain() {
   }
 }
 
+// Positioned under the scoreboard (top-right)
 .spades-broken-indicator {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.7);
+  position: fixed;
+  top: 95px; // Below scoreboard
+  right: max(8px, env(safe-area-inset-right));
+  background: rgba(20, 20, 30, 0.85);
+  border: 1px solid #444;
   color: #3498db;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: bold;
+  backdrop-filter: blur(8px);
+  z-index: 500;
 }
 
 .round-indicator {
