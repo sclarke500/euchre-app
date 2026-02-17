@@ -48,14 +48,11 @@
       </PlayerAvatar>
 
       <!-- Dealer chip - animates between player positions -->
-      <Transition name="dealer-chip-move">
-        <div 
-          v-if="dealerSeat >= 0" 
-          :key="dealerSeat"
-          class="dealer-chip-table"
-          :style="dealerChipStyle"
-        >D</div>
-      </Transition>
+      <div 
+        v-if="dealerSeat >= 0" 
+        class="dealer-chip-table"
+        :style="dealerChipStyle"
+      >D</div>
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
@@ -387,22 +384,11 @@ defineExpose({
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   z-index: 400;
   pointer-events: none;
-}
-
-// Dealer chip move animation
-.dealer-chip-move-enter-active,
-.dealer-chip-move-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.dealer-chip-move-enter-from {
-  opacity: 0;
-  transform: scale(0.5);
-}
-
-.dealer-chip-move-leave-to {
-  opacity: 0;
-  transform: scale(0.5);
+  // Animate position changes
+  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 </style>
