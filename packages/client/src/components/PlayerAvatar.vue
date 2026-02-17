@@ -78,6 +78,23 @@ const positionStyle = computed(() => props.customStyle ?? {})
     gap: 0;
   }
 
+  // User avatar: horizontal layout (icon + name side by side)
+  &.is-user .avatar-border {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &.is-user .name-row {
+    margin-top: 0;
+    margin-left: -4px; // Slight overlap with circle
+  }
+
+  &.is-user .player-name {
+    padding: 4px 14px;
+    font-size: 14px;
+  }
+
   .avatar-circle {
     width: 48px;
     height: 48px;

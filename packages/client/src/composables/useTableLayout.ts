@@ -89,13 +89,13 @@ export function computeTableLayout(
   const marginLeft = marginH
   const marginRight = marginH
   const tableMarginTop = 0.12
-  const userAreaPct = 0.12 // Smaller user area - cards overlap table edge
+  const userAreaPct = 0.06 // Small user area - cards just touch table bottom
 
   const tableW = boardWidth * (1 - marginLeft - marginRight)
-  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 10 // 10px shorter
+  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 10
 
   const tableLeft = boardWidth * marginLeft
-  const tableTop = boardHeight * tableMarginTop - 10 // 10px up
+  const tableTop = boardHeight * tableMarginTop - 10
   const tableRight = tableLeft + tableW
   const tableBottom = tableTop + tableH
 
