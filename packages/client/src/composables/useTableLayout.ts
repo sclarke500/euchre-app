@@ -92,7 +92,7 @@ export function computeTableLayout(
   const userAreaPct = 0.24 // Larger user area - table bottom raised ~15px
 
   const tableW = boardWidth * (1 - marginLeft - marginRight)
-  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 10
+  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 15
 
   const tableLeft = boardWidth * marginLeft
   const tableTop = boardHeight * tableMarginTop - 5
