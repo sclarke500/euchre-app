@@ -166,15 +166,14 @@ function useSpadesMultiplayerAdapter(): SpadesGameAdapter {
     validPlays: computed(() => store.validPlays),
     timedOutPlayer: computed(() => store.timedOutPlayer),
     gameLost: toRef(store, 'gameLost'),
-    // Blind nil not yet supported in multiplayer
-    blindNilDecisionPending: computed(() => false),
-    showBidWheel: computed(() => store.isHumanBidding),
-    userCardsRevealed: computed(() => true),
+    blindNilDecisionPending: computed(() => store.blindNilDecisionPending),
+    showBidWheel: computed(() => store.isHumanBidding && !store.blindNilDecisionPending),
+    userCardsRevealed: computed(() => store.userCardsRevealed),
 
     makeBid: (bid) => store.makeBid(bid),
     playCard: (card) => store.playCard(card),
-    submitBlindNil: () => { /* Not supported in multiplayer yet */ },
-    revealCards: () => { /* Not supported in multiplayer yet */ },
+    submitBlindNil: () => store.acceptBlindNil(),
+    revealCards: () => store.declineBlindNil(),
     requestStateResync: () => store.requestStateResync(),
     bootPlayer: (playerId) => store.bootPlayer(playerId),
 

@@ -4,10 +4,9 @@ import type {
   ServerMessage,
   SpadesClientGameState,
   SpadesClientPlayer,
-  SpadesBidType,
   StandardCard,
 } from '@67cards/shared'
-import { SpadesPhase } from '@67cards/shared'
+import { SpadesPhase, SpadesBidType } from '@67cards/shared'
 import { websocket } from '@/services/websocket'
 import { updateIfChanged } from '@/stores/utils'
 import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from '@/stores/multiplayerDebug'
@@ -21,6 +20,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   const validCards = ref<string[]>([])
   const isMyTurn = ref(false)
   const gameLost = ref(false)
+  const userCardsRevealed = ref(false) // For blind nil - tracks if user has seen their cards this round
 
   const lastStateSeq = ref(0)
 
@@ -56,6 +56,11 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   const isHumanTurn = computed(() => isMyTurn.value)
   const isHumanBidding = computed(() => isMyTurn.value && phase.value === SpadesPhase.Bidding)
   const isHumanPlaying = computed(() => isMyTurn.value && phase.value === SpadesPhase.Playing)
+  
+  // Blind nil: user hasn't revealed cards yet and it's their turn to bid
+  const blindNilDecisionPending = computed(() => {
+    return isHumanBidding.value && !userCardsRevealed.value
+  })
   const validPlays = computed<StandardCard[]>(() => {
     const human = humanPlayer.value
     if (!human?.hand) return []
@@ -101,7 +106,14 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
 
   function applyMessage(message: ServerMessage): void {
     switch (message.type) {
-      case 'spades_game_state':
+      case 'spades_game_state': {
+        // Detect new round - reset blind nil state
+        const prevRound = gameState.value?.roundNumber ?? 0
+        const newRound = message.state.roundNumber ?? 0
+        if (newRound > prevRound || (prevRound > 0 && message.state.phase === SpadesPhase.Bidding && !message.state.bidsComplete)) {
+          userCardsRevealed.value = false
+        }
+        
         gameState.value = message.state
         updateLastStateSeq(lastStateSeq, message.state.stateSeq)
         resyncWatchdog.markStateReceived()
@@ -116,6 +128,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
         }
         logMultiplayerEvent('spades-mp', 'apply_game_state', getDebugSnapshot())
         break
+      }
       case 'spades_your_turn':
         isMyTurn.value = true
         updateIfChanged(validActions, message.validActions)
@@ -152,6 +165,18 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     isMyTurn.value = false
     validActions.value = []
     validCards.value = []
+  }
+
+  // Blind nil: user chose to bid blind nil
+  function acceptBlindNil(): void {
+    if (!blindNilDecisionPending.value) return
+    makeBid({ type: 'blind_nil' as SpadesBidType, count: 0 })
+  }
+
+  // Blind nil: user chose to see their cards (decline blind nil)
+  function declineBlindNil(): void {
+    if (!blindNilDecisionPending.value) return
+    userCardsRevealed.value = true
   }
 
   function playCard(card: StandardCard): void {
@@ -267,9 +292,13 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     validCards,
     validPlays,
     gameLost,
+    blindNilDecisionPending,
+    userCardsRevealed,
     getDebugSnapshot,
 
     makeBid,
+    acceptBlindNil,
+    declineBlindNil,
     playCard,
     bootPlayer,
     requestStateResync,
