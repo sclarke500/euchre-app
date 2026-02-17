@@ -300,13 +300,14 @@ export function useCardController(
           if (topCard) {
             topCard.faceUp = true
             const ref = engine.getCardRef(topCard.card.id)
+            // Note: faceUp=true + flipY=0 shows face-up (no rotation needed)
             ref?.moveTo({ 
               x: center.x, 
               y: center.y - 10, // Slight offset 
               rotation: 0, 
               zIndex: 150, 
-              scale: 1.0,
-              flipY: 180 
+              scale: 0.8,  // Match kitty stack scale
+              flipY: 0 
             }, 300)
             engine.refreshCards()
           }
