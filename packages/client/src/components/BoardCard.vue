@@ -184,8 +184,9 @@ defineExpose({
   cursor: default;
   
   // Fan arc origin - only applied when card has .arc-fan class
+  // Pivot point far below card creates arc spread when rotated
   &.arc-fan {
-    transform-origin: center 180%;
+    transform-origin: center 500%;
   }
 
   &.dimmed {

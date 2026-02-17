@@ -183,21 +183,29 @@ export class Hand extends CardContainer {
     // User hand z-index 300+ (below avatar at 500), opponents 200+
     const baseZ = this.isUser ? 300 : 200
 
-    // Horizontal spread for all hands
+    // User arc fan: all cards at same position, rotation creates spread via transform-origin
+    if (this.isUser && this.fanCurve > 0) {
+      const spreadAngle = (index - middleIndex) * this.fanCurve
+      return {
+        x: this.position.x,
+        y: this.position.y,
+        rotation: spreadAngle,
+        zIndex: baseZ + index,
+        scale: this.scale,
+        flipY,
+      }
+    }
+
+    // Regular horizontal spread for opponents (or user without curve)
     const spreadAmount = (index - middleIndex) * this.fanSpacing * this.scale
     const rotRad = this.rotation * Math.PI / 180
     const offsetX = spreadAmount * Math.cos(rotRad)
     const offsetY = spreadAmount * Math.sin(rotRad)
 
-    // User with fanCurve: add rotation for curved look (hybrid approach)
-    const cardRotation = (this.isUser && this.fanCurve > 0)
-      ? (index - middleIndex) * this.fanCurve
-      : this.rotation
-
     return {
       x: this.position.x + offsetX,
       y: this.position.y + offsetY,
-      rotation: cardRotation,
+      rotation: this.rotation,
       zIndex: baseZ + index,
       scale: this.scale,
       flipY,
