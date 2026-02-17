@@ -12,8 +12,9 @@ import { PresidentPhase, sortHandByRank } from '@67cards/shared'
 import type { StandardCard, PendingExchange, ServerMessage } from '@67cards/shared'
 import type { PresidentGameAdapter } from './usePresidentGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
+import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
-import type { EngineCard, CardPosition } from '@/components/cardContainers'
+import type { CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
 
 // ── Animation timing ─────────────────────────────────────────────────────────
@@ -23,18 +24,11 @@ const DEAL_STAGGER_MS = AnimationDelays.dealStagger
 const CARD_PLAY_MS = AnimationDurations.slow
 const PILE_SWEEP_MS = AnimationDurations.medium
 const PILE_SWEEP_PAUSE_MS = AnimationDurations.slow
-const DECK_EXIT_MS = AnimationDurations.slow
 
 // ── Scale constants ──────────────────────────────────────────────────────────
 
 const DECK_SCALE = 0.8
 const PILE_CARD_SCALE = 1.0
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function cardToEngineCard(card: StandardCard): EngineCard {
-  return { id: card.id, suit: card.suit, rank: card.rank }
-}
 
 // ── Director ─────────────────────────────────────────────────────────────────
 
@@ -60,6 +54,20 @@ export function usePresidentDirector(
 
   // Player status messages keyed by seat index
   const playerStatuses = ref<string[]>([])
+
+  // ── Shared card controller ───────────────────────────────────────────────
+
+  const cardController = useCardController(engine, boardRef, {
+    layout: 'normal',
+    playerCount: () => playerCount.value,
+    userSeatIndex: 0,
+    userHandScale: 1.6,
+    opponentHandScale: 0.5,
+    userFanSpacing: 18,
+    opponentFanSpacing: 10,
+    ...cardControllerPresets.president,
+    playerIdToSeatIndex: (id) => playerIdToSeatIndex(id),
+  })
 
   // ── Computed state for CardTable props ───────────────────────────────────
 
@@ -127,34 +135,16 @@ export function usePresidentDirector(
   // ── Setup ─────────────────────────────────────────────────────────────
 
   function setupTable() {
-    const tl = getTableLayout()
-    if (!tl) return
-
-    engine.reset()
+    // Use shared cardController for table setup
+    cardController.setupTable()
 
     // Initialize statuses array
     playerStatuses.value = new Array(playerCount.value).fill('')
 
-    // Create deck at center
-    engine.createDeck(tl.tableCenter, DECK_SCALE)
-
-    // Create center pile for played cards
-    engine.createPile('center', tl.tableCenter, PILE_CARD_SCALE)
-
-    // Create hands for each seat
-    for (let i = 0; i < tl.seats.length; i++) {
-      const seat = tl.seats[i]!
-      const isUser = seat.isUser
-      engine.createHand(`player-${i}`, seat.handPosition, {
-        faceUp: false,
-        fanDirection: 'horizontal',
-        fanSpacing: isUser ? 18 : 10,
-        rotation: seat.rotation,
-        scale: 1.0,
-        fanCurve: 0,
-        angleToCenter: seat.angleToCenter,
-        isUser,
-      })
+    // Adjust center pile scale for President (cards displayed larger)
+    const centerPile = engine.getPiles().find(p => p.id === 'center')
+    if (centerPile) {
+      centerPile.scale = PILE_CARD_SCALE
     }
   }
 
@@ -164,88 +154,24 @@ export function usePresidentDirector(
     if (!boardRef.value || isAnimating.value) return
     isAnimating.value = true
 
-    const deck = engine.getDeck()
-    if (!deck) { isAnimating.value = false; return }
-
     const players = game.players.value
-    const count = playerCount.value
 
-    // Build deal queue: one card to each player, round-robin
-    const maxCards = Math.max(...players.map(p => p.hand.length))
-    const dealQueue: { seatIdx: number; card: EngineCard }[] = []
-    for (let round = 0; round < maxCards; round++) {
-      for (let seatIdx = 0; seatIdx < count; seatIdx++) {
-        const player = players[seatIndexToPlayerId(seatIdx)]
-        const card = player?.hand[round]
-        if (card) dealQueue.push({ seatIdx, card: cardToEngineCard(card) })
-      }
-    }
+    // Build player views for cardController (map seat index to player data)
+    const playerViews = Array.from({ length: playerCount.value }, (_, seatIdx) => {
+      const player = players[seatIndexToPlayerId(seatIdx)]
+      return { hand: player?.hand ?? [] }
+    })
 
-    // Add to deck in reverse (LIFO — first deal entry goes on top)
-    for (let i = dealQueue.length - 1; i >= 0; i--) {
-      engine.addCardToDeck(dealQueue[i]!.card, false)
-    }
-
-    engine.refreshCards()
-    await nextTick()
-
-    // Snap all cards to deck position
-    for (let i = 0; i < deck.cards.length; i++) {
-      deck.cards[i]?.ref?.setPosition(deck.getCardPosition(i))
-    }
-    await nextTick()
-
-    // Deal each card to its correct hand
-    const hands = engine.getHands()
-    const allFlights: Promise<any>[] = []
-    for (let i = 0; i < dealQueue.length; i++) {
-      const hand = hands[dealQueue[i]!.seatIdx]
-      if (!hand || !deck.cards.length) continue
-      allFlights.push(engine.dealCard(deck, hand, DEAL_FLIGHT_MS))
-      // Stagger every full round of players
-      if ((i + 1) % count === 0) {
-        await sleep(DEAL_STAGGER_MS)
-      }
-    }
-    await Promise.all(allFlights)
-
-    // Stage 1: Move user hand to bottom, enlarge, flip face-up
-    const userHand = hands[0]
-    const userCardCount = players[seatIndexToPlayerId(0)]?.hand.length ?? 13
-    if (userHand && boardRef.value) {
-      const targetX = boardRef.value.offsetWidth / 2
-      const targetY = boardRef.value.offsetHeight - 60  // Raised to show more of the cards
-      // Scale down slightly for larger hands
-      const targetScale = userCardCount > 10 ? 1.5 : 1.7
-
-      userHand.position = { x: targetX, y: targetY }
-      userHand.scale = targetScale
-      userHand.fanSpacing = Math.min(20, 300 / userCardCount)
-
-      for (const managed of userHand.cards) {
-        const cardRef = engine.getCardRef(managed.card.id)
-        if (cardRef) {
-          cardRef.moveTo({
-            ...cardRef.getPosition(),
-            x: targetX, y: targetY, scale: targetScale, flipY: 180,
-          }, AnimationDurations.slow)
-        }
-      }
-      await sleep(AnimationDurations.slow + AnimationBuffers.settle)
-    }
-
-    // Stage 2: Shrink opponents + fan all hands
-    for (let i = 1; i < hands.length; i++) {
-      const h = hands[i]
-      if (h) h.scale = 0.5
-    }
-    await Promise.all(hands.map(h => h.setMode('fanned', AnimationDurations.medium)))
-
-    // Stage 3: Sort user hand
-    await sortUserHand(AnimationDurations.medium)
-
-    // Stage 4: Slide deck offscreen
-    await animateDeckOffscreen()
+    // Use shared cardController for deal animation
+    await cardController.dealFromPlayers(playerViews, {
+      revealUserHand: true,
+      focusUserHand: true,
+      dealDelayMs: DEAL_STAGGER_MS,
+      dealFlightMs: DEAL_FLIGHT_MS,
+      fanDurationMs: AnimationDurations.medium,
+      sortUserHand: sortHandByRank,
+      sortAfterDeal: true,
+    })
 
     engine.refreshCards()
     isAnimating.value = false
@@ -257,25 +183,7 @@ export function usePresidentDirector(
   // ── Sort user hand ────────────────────────────────────────────────────
 
   async function sortUserHand(duration: number = AnimationDurations.medium) {
-    const userHand = engine.getHands()[0]
-    if (!userHand || userHand.cards.length === 0) return
-
-    const humanHand = game.humanPlayer.value?.hand ?? []
-    const sorted = sortHandByRank(humanHand)
-    const sortedIds = sorted.map(c => c.id)
-
-    const cardMap = new Map(userHand.cards.map(m => [m.card.id, m]))
-    const reordered = sortedIds
-      .map(id => cardMap.get(id))
-      .filter((m): m is NonNullable<typeof m> => m != null)
-
-    // Append any engine-only cards not in game state
-    for (const m of userHand.cards) {
-      if (!sortedIds.includes(m.card.id)) reordered.push(m)
-    }
-
-    userHand.cards = reordered
-    await userHand.repositionAll(duration)
+    await cardController.sortUserHand(sortHandByRank, duration)
   }
 
   // ── Card exchange animation ──────────────────────────────────────────
@@ -355,27 +263,6 @@ export function usePresidentDirector(
       if (hands[i]) refanPromises.push(hands[i]!.setMode('fanned', AnimationDurations.medium))
     }
     await Promise.all(refanPromises)
-  }
-
-  // ── Deck offscreen ────────────────────────────────────────────────────
-
-  async function animateDeckOffscreen() {
-    const deck = engine.getDeck()
-    if (!deck || deck.cards.length === 0) return
-    const tl = getTableLayout()
-    if (!tl) return
-
-    const offY = tl.tableBounds.top - 300
-
-    await Promise.all(deck.cards.map(m => {
-      const ref = engine.getCardRef(m.card.id)
-      return ref?.moveTo({
-        x: tl.tableCenter.x, y: offY, rotation: 0, zIndex: 50, scale: 1.0,
-      }, DECK_EXIT_MS)
-    }))
-
-    deck.cards = []
-    engine.refreshCards()
   }
 
   // ── Card play animation ───────────────────────────────────────────────

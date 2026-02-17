@@ -51,7 +51,7 @@ export const cardControllerPresets = {
 
 export interface CardControllerConfig {
   layout?: 'normal' | 'wide'
-  playerCount: number
+  playerCount: number | (() => number)
   userSeatIndex?: number | (() => number)
   userHandScale?: number
   opponentHandScale?: number
@@ -105,6 +105,12 @@ export function useCardController(
   config: CardControllerConfig
 ) {
   const layoutType = config.layout ?? 'normal'
+  const getPlayerCount = () => {
+    if (typeof config.playerCount === 'function') {
+      return config.playerCount()
+    }
+    return config.playerCount
+  }
   const getUserSeatIndex = () => {
     if (typeof config.userSeatIndex === 'function') {
       return config.userSeatIndex()
@@ -126,7 +132,7 @@ export function useCardController(
     const board = boardRef.value
     if (!board) return null
 
-    const layout = computeTableLayout(board.offsetWidth, board.offsetHeight, layoutType, config.playerCount)
+    const layout = computeTableLayout(board.offsetWidth, board.offsetHeight, layoutType, getPlayerCount())
     tableLayout.value = layout
     tableCenter.value = layout.tableCenter
 
@@ -136,7 +142,7 @@ export function useCardController(
     engine.createDeck(deckPos, 0.8)
 
     const baseScale = config.opponentHandScale ?? 0.7
-    for (let i = 0; i < config.playerCount; i++) {
+    for (let i = 0; i < getPlayerCount(); i++) {
       const seat = layout.seats[i]!
       engine.createHand(`hand-${i}`, seat.handPosition, {
         fanSpacing: seat.isUser ? (config.userFanSpacing ?? 30) : (config.opponentFanSpacing ?? 16),
@@ -152,13 +158,13 @@ export function useCardController(
     engine.createPile('center', { x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
 
     if (trickCompleteMode === 'stack') {
-      for (let i = 0; i < config.playerCount; i++) {
+      for (let i = 0; i < getPlayerCount(); i++) {
         engine.createPile(`tricks-won-player-${i}`, layout.tableCenter, 0.5)
       }
     }
 
     tricksWonByPlayer.value = Object.fromEntries(
-      Array.from({ length: config.playerCount }, (_, i) => [i, 0])
+      Array.from({ length: getPlayerCount() }, (_, i) => [i, 0])
     ) as Record<number, number>
 
     engine.refreshCards()
@@ -200,7 +206,7 @@ export function useCardController(
     }
 
     const placeholderNonce = Date.now()
-    const resolvedHands: StandardCard[][] = Array.from({ length: config.playerCount }, (_, seatIdx) => {
+    const resolvedHands: StandardCard[][] = Array.from({ length: getPlayerCount() }, (_, seatIdx) => {
       const player = players[seatIdx]
       const knownHand = player?.hand ?? []
       if (knownHand.length > 0) return knownHand
@@ -217,7 +223,7 @@ export function useCardController(
     const dealQueue: { seatIdx: number; card: StandardCard }[] = []
 
     for (let round = 0; round < maxCards; round++) {
-      for (let seatIdx = 0; seatIdx < config.playerCount; seatIdx++) {
+      for (let seatIdx = 0; seatIdx < getPlayerCount(); seatIdx++) {
         const card = resolvedHands[seatIdx]?.[round]
         if (card) dealQueue.push({ seatIdx, card })
       }
@@ -701,7 +707,7 @@ export function useCardController(
       board.offsetWidth,
       board.offsetHeight,
       config.layout ?? 'normal',
-      config.playerCount
+      getPlayerCount()
     )
 
     const duration = config.opponentCollapseDurationMs ?? 250
@@ -709,7 +715,7 @@ export function useCardController(
     const promises: Promise<void>[] = []
     const hideScale = 0.05 // Essentially invisible
 
-    for (let seatIndex = 0; seatIndex < config.playerCount; seatIndex++) {
+    for (let seatIndex = 0; seatIndex < getPlayerCount(); seatIndex++) {
       const userSeatIndex = getUserSeatIndex()
       if (seatIndex === userSeatIndex) continue
       const hand = hands[seatIndex]
