@@ -160,6 +160,15 @@ export const useKlondikeStore = defineStore('klondike', () => {
     }
   }
 
+  // Select card for drag without triggering auto-play
+  function selectForDrag(source: 'tableau' | 'waste', columnIndex?: number, cardIndex?: number) {
+    if (source === 'tableau' && columnIndex !== undefined && cardIndex !== undefined) {
+      updateState(selectCard(gameState.value, 'tableau', columnIndex, cardIndex), false)
+    } else if (source === 'waste') {
+      updateState(selectCard(gameState.value, 'waste'), false)
+    }
+  }
+
   function handleWasteTap() {
     if (waste.value.length === 0) return
 
@@ -260,6 +269,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     handleEmptyTableauTap,
     handleWasteTap,
     handleFoundationTap,
+    selectForDrag,
     runAutoComplete,
     isCardSelected,
     undo,

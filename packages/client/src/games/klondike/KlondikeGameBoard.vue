@@ -238,22 +238,21 @@ function handleDragEnd() {
   const zone = activeDropZone.value
   
   if (zone?.isValid) {
-    // Execute the move
+    // Execute the move - use selectForDrag to avoid auto-play interference
     if (zone.type === 'tableau') {
       if (dragState.value.sourceType === 'tableau' && dragState.value.sourceColumnIndex !== undefined && dragState.value.sourceCardIndex !== undefined) {
-        // Select the card first, then move
-        store.handleTableauTap(dragState.value.sourceColumnIndex, dragState.value.sourceCardIndex)
+        store.selectForDrag('tableau', dragState.value.sourceColumnIndex, dragState.value.sourceCardIndex)
         store.handleEmptyTableauTap(zone.index)
       } else if (dragState.value.sourceType === 'waste') {
-        store.handleWasteTap()
+        store.selectForDrag('waste')
         store.handleEmptyTableauTap(zone.index)
       }
     } else if (zone.type === 'foundation') {
       if (dragState.value.sourceType === 'tableau' && dragState.value.sourceColumnIndex !== undefined && dragState.value.sourceCardIndex !== undefined) {
-        store.handleTableauTap(dragState.value.sourceColumnIndex, dragState.value.sourceCardIndex)
+        store.selectForDrag('tableau', dragState.value.sourceColumnIndex, dragState.value.sourceCardIndex)
         store.handleFoundationTap(zone.index)
       } else if (dragState.value.sourceType === 'waste') {
-        store.handleWasteTap()
+        store.selectForDrag('waste')
         store.handleFoundationTap(zone.index)
       }
     }
