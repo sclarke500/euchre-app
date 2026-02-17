@@ -419,108 +419,39 @@ export function useEuchreDirector(
     if (!boardRef.value || isAnimating.value) return
     isAnimating.value = true
 
-    const deck = engine.getDeck()
-    if (!deck) { isAnimating.value = false; return }
-
+    // Build player hands for dealing (cast to satisfy StandardCard type)
     const players = game.players.value
-    const cardsPerPlayer = players[0]?.hand.length ?? 5
+    const dealPlayers = [0, 1, 2, 3].map(seatIdx => {
+      const playerId = seatIndexToPlayerId(seatIdx)
+      const player = players[playerId]
+      return {
+        hand: (player?.hand.map(c => cardToEngineCard(c)) ?? []) as any[],
+      }
+    })
 
-    // Kitty: 3 face-down dummies + turn-up (stay in deck after dealing)
-    for (let i = 0; i < 3; i++) {
-      engine.addCardToDeck({ id: `kitty-${i}`, suit: '', rank: '' }, false)
-    }
+    // Build kitty cards (3 placeholders + turn-up)
     const turnUpCard = game.turnUpCard.value
-    if (turnUpCard) {
-      engine.addCardToDeck(cardToEngineCard(turnUpCard), false)
-    }
+    const kittyCards = [
+      { id: 'kitty-0', suit: '', rank: '' },
+      { id: 'kitty-1', suit: '', rank: '' },
+      { id: 'kitty-2', suit: '', rank: '' },
+      ...(turnUpCard ? [cardToEngineCard(turnUpCard)] : []),
+    ] as any[]
 
-    // Player cards in reverse deal order (pop takes from end)
-    for (let round = cardsPerPlayer - 1; round >= 0; round--) {
-      for (let seatIdx = 3; seatIdx >= 0; seatIdx--) {
-        const card = players[seatIndexToPlayerId(seatIdx)]?.hand[round]
-        if (card) engine.addCardToDeck(cardToEngineCard(card), false)
-      }
-    }
+    // Use shared deal with kitty options
+    await cardController.dealFromPlayers(dealPlayers, {
+      dealDelayMs: DEAL_DELAY_MS,
+      dealFlightMs: DEAL_FLIGHT_MS,
+      fanDurationMs: AnimationDurations.medium,
+      dealerSeatIndex: dealerSeat.value,
+      revealUserHand: true,
+      focusUserHand: true,
+      extraDeckCards: kittyCards,
+      keepRemainingCards: true,
+      flipTopCard: true,
+    })
 
-    engine.refreshCards()
-    await nextTick()
-
-    // Snap all cards to deck position
-    for (let i = 0; i < deck.cards.length; i++) {
-      deck.cards[i]?.ref?.setPosition(deck.getCardPosition(i))
-    }
-    await nextTick()
-
-    // Deal round-robin
-    const hands = engine.getHands()
-    for (let round = 0; round < cardsPerPlayer; round++) {
-      for (let seatIdx = 0; seatIdx < 4; seatIdx++) {
-        const hand = hands[seatIdx]
-        if (!hand || !deck.cards.length) continue
-        await engine.dealCard(deck, hand, DEAL_FLIGHT_MS)
-        await sleep(DEAL_DELAY_MS)
-      }
-    }
-    await sleep(DEAL_FLIGHT_MS)
-
-    // Stage 1: Move user hand to bottom, enlarge, flip face-up
-    const userHand = hands[0]
-    if (userHand && boardRef.value) {
-      const tl = getTableLayout()
-      const seatPos = tl?.seats[0]?.handPosition
-      const targetX = seatPos?.x ?? boardRef.value.offsetWidth / 2
-      // Keep the hand centered under the table, but offset down so only the top
-      // ~2/3 of the cards are visible at the bottom of the view.
-      const targetY = boardRef.value.offsetHeight - 20
-      const targetScale = 1.8
-
-      userHand.position = { x: targetX, y: targetY }
-      userHand.scale = targetScale
-      userHand.fanSpacing = 30
-      userHand.fanCurve = 0
-
-      for (const managed of userHand.cards) {
-        const cardRef = engine.getCardRef(managed.card.id)
-        if (cardRef) {
-          cardRef.moveTo({
-            ...cardRef.getPosition(),
-            x: targetX, y: targetY, scale: targetScale, flipY: 180,
-          }, AnimationDurations.slow)
-        }
-      }
-      await sleep(AnimationDurations.slow + AnimationBuffers.settle)
-    }
-
-    // Stage 2: Shrink opponents + fan all hands
-    for (let i = 1; i < hands.length; i++) {
-      const h = hands[i]
-      if (h) h.scale = 0.65
-    }
-    await Promise.all(hands.map(h => h.setMode('fanned', AnimationDurations.medium)))
-
-    // Stage 3: Slide kitty to center, flip turn-up
-    if (deck.cards.length > 0) {
-      const tl = getTableLayout()
-      if (tl) {
-        const center = tl.tableCenter
-        deck.position = { ...center }
-
-        await Promise.all(deck.cards.map(m => {
-          const ref = engine.getCardRef(m.card.id)
-          return ref?.moveTo({ x: center.x, y: center.y, rotation: 0, zIndex: 400, scale: CENTER_CARD_SCALE }, DECK_SLIDE_MS)
-        }))
-
-        const topCard = deck.cards[deck.cards.length - 1]
-        if (topCard) {
-          const ref = engine.getCardRef(topCard.card.id)
-          if (ref) {
-            await ref.moveTo({ ...ref.getPosition(), flipY: 180, scale: TURN_UP_SCALE }, CARD_FLIP_MS)
-          }
-        }
-      }
-    }
-
-    // Stage 4: Sort user hand
+    // Sort user hand
     await sortUserHand(AnimationDurations.medium)
 
     engine.refreshCards()

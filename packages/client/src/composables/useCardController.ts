@@ -77,6 +77,12 @@ export interface DealOptions {
   sortAfterDeal?: boolean
   dealerSeatIndex?: number
   dealerPlayerId?: number
+  /** Extra cards to add to deck before dealing (e.g., kitty placeholders) */
+  extraDeckCards?: StandardCard[]
+  /** Keep remaining deck cards on table after dealing (e.g., kitty) */
+  keepRemainingCards?: boolean
+  /** Flip the top remaining card face-up after dealing (e.g., turn-up card) */
+  flipTopCard?: boolean
 }
 
 export interface DealPlayerView {
@@ -208,6 +214,13 @@ export function useCardController(
       }
     }
 
+    // Add extra cards first (they'll be at bottom of deck, remaining after dealing)
+    const extraCards = options.extraDeckCards ?? []
+    for (let i = extraCards.length - 1; i >= 0; i--) {
+      const card = extraCards[i]!
+      engine.addCardToDeck({ id: card.id, suit: card.suit, rank: card.rank }, false)
+    }
+
     for (let i = dealQueue.length - 1; i >= 0; i--) {
       const queued = dealQueue[i]!
       engine.addCardToDeck({
@@ -266,6 +279,52 @@ export function useCardController(
 
     if (options.sortUserHand && options.sortAfterDeal !== false) {
       await sortUserHand(options.sortUserHand, 300)
+    }
+
+    // Handle remaining deck cards (e.g., kitty in Euchre)
+    if (deck.cards.length > 0) {
+      if (options.keepRemainingCards) {
+        // Move deck to table center
+        const center = tableLayout.value?.tableCenter ?? tableCenter.value
+        deck.position = center
+        for (const managed of deck.cards) {
+          const ref = engine.getCardRef(managed.card.id)
+          ref?.moveTo({ x: center.x, y: center.y, rotation: 0, zIndex: 100, scale: 0.8 }, 300)
+        }
+        await new Promise(r => setTimeout(r, 350))
+
+        // Flip top card face-up if requested
+        if (options.flipTopCard && deck.cards.length > 0) {
+          const topCard = deck.cards[deck.cards.length - 1]
+          if (topCard) {
+            topCard.faceUp = true
+            const ref = engine.getCardRef(topCard.card.id)
+            ref?.moveTo({ 
+              x: center.x, 
+              y: center.y - 10, // Slight offset 
+              rotation: 0, 
+              zIndex: 150, 
+              scale: 1.0,
+              flipY: 180 
+            }, 300)
+            engine.refreshCards()
+          }
+        }
+      } else {
+        // Move deck off-screen
+        const offX = -200
+        const offY = tableCenter.value.y
+        for (const managed of deck.cards) {
+          const ref = engine.getCardRef(managed.card.id)
+          ref?.moveTo({ x: offX, y: offY, rotation: 0, zIndex: 50, scale: 0.5 }, 300)
+        }
+        await new Promise(r => setTimeout(r, 350))
+        // Remove remaining cards from deck
+        while (deck.cards.length > 0) {
+          deck.removeCard(deck.cards[0]!.card.id)
+        }
+        engine.refreshCards()
+      }
     }
   }
 
