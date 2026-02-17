@@ -152,9 +152,10 @@ watch(() => lobbyStore.gameId, (gameId) => {
 })
 
 // Watch for being kicked/disconnected from multiplayer game
+// Only trigger if we don't have an active gameId (normal game start clears table but sets gameId)
 watch(() => lobbyStore.currentTable, (table) => {
-  if (!table && currentView.value === 'multiplayerGame') {
-    // Table was removed while in game - return to lobby
+  if (!table && currentView.value === 'multiplayerGame' && !lobbyStore.gameId) {
+    // Table was removed while in game without a gameId - kicked/disconnected
     currentView.value = 'lobby'
   }
 })
