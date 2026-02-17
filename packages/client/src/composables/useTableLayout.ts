@@ -137,7 +137,7 @@ export function computeTableLayout(
         break
       default: // bottom (user) - position inside table, games move to bottom after dealing
         handX = tableX
-        handY = tableBottom - handInset - 15 // Inside table, raised 15px higher
+        handY = tableBottom - handInset - 30 // Inside table, raised 30px higher
     }
 
     const handPos = { x: handX, y: handY }
