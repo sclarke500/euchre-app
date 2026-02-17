@@ -119,7 +119,7 @@ onMounted(() => {
 .bid-wheel-container {
   position: fixed;
   right: 0;
-  top: 50%;
+  top: 55%;
   transform: translateY(-50%);
   z-index: 600;
   display: flex;

@@ -48,6 +48,9 @@
         <span>Pts</span>
         <span>Bags</span>
       </div>
+      <div v-if="store.spadesBroken" class="spades-broken-row">
+        ♠ Broken
+      </div>
     </div>
 
     <!-- HUD: Menu button -->
@@ -59,11 +62,6 @@
       @resync="store.requestStateResync?.()"
       @rules="showRulesModal = true"
     />
-
-    <!-- Spades Broken indicator - positioned under scoreboard -->
-    <div v-if="store.spadesBroken" class="spades-broken-indicator">
-      ♠ Spades Broken
-    </div>
 
     <!-- Round Summary Modal -->
     <Modal :show="showRoundSummary" aria-label="Round summary" @close="dismissRoundSummary">
@@ -436,32 +434,33 @@ function handlePlayAgain() {
 .round-summary-panel {
   background: rgba(20, 20, 30, 0.95);
   border: 1px solid #555;
-  border-radius: 12px;
-  padding: 20px;
-  min-width: 280px;
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-width: 220px;
   max-width: 90vw;
 }
 
 .round-summary-title {
-  font-size: 1.3rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #fff;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .round-summary-table {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .summary-header {
   display: grid;
-  grid-template-columns: 1fr 60px 60px;
-  gap: 8px;
-  padding: 4px 0;
+  grid-template-columns: 1fr 50px 50px;
+  gap: 6px;
+  padding: 3px 0;
   border-bottom: 1px solid rgba(255,255,255,0.2);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
+  font-size: 11px;
   color: #aaa;
   text-align: center;
   
@@ -472,10 +471,11 @@ function handlePlayAgain() {
 
 .summary-row {
   display: grid;
-  grid-template-columns: 1fr 60px 60px;
-  gap: 8px;
-  padding: 4px 0;
+  grid-template-columns: 1fr 50px 50px;
+  gap: 6px;
+  padding: 2px 0;
   color: #ccc;
+  font-size: 12px;
   text-align: center;
   
   span:first-child {
@@ -592,20 +592,14 @@ function handlePlayAgain() {
   }
 }
 
-// Positioned under the scoreboard (top-right)
-.spades-broken-indicator {
-  position: fixed;
-  top: 95px; // Below scoreboard
-  right: max(8px, env(safe-area-inset-right));
-  background: rgba(20, 20, 30, 0.85);
-  border: 1px solid #444;
+// Spades broken indicator inside scoreboard
+.spades-broken-row {
+  text-align: center;
   color: #3498db;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
-  backdrop-filter: blur(8px);
-  z-index: 500;
+  padding: 3px 6px;
+  border-top: 1px solid #333;
 }
 
 .round-indicator {
