@@ -4,7 +4,7 @@
  * Provides unified card animation methods used across all games.
  * Games should use these methods rather than implementing their own.
  * 
- * Unified methods:
+ * Unified methods (used by all games):
  * - setupTable() - initializes table layout, deck, hands, piles
  * - dealFromPlayers() - deals cards from deck to hands
  *   - extraDeckCards: add extra cards to deck (e.g., kitty)
@@ -16,12 +16,11 @@
  * - completeTrick() - sweeps trick to winner's pile
  * - hideOpponentHands() - collapses opponent hands to avatar positions
  * 
- * Euchre-specific (kept in useEuchreDirector.ts):
- * - setupTable() - creates deck at dealer position, custom piles
- * - animateDeckOffscreen() - moves deck off screen
- * - flipTurnUpFaceDown() - flips turn-up card
+ * Euchre-specific animations (kept in useEuchreDirector.ts):
+ * - animateDeckOffscreen() - moves deck off screen after trump called
+ * - flipTurnUpFaceDown() - flips turn-up card face down
  * - animateTurnUpToDealer() - moves turn-up to dealer's hand
- * - handleDealerDiscard() - discards dealer's card
+ * - handleDealerDiscard() - discards dealer's card after pickup
  */
 
 import { ref, type Ref, nextTick } from 'vue'
