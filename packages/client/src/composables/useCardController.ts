@@ -196,6 +196,7 @@ export function useCardController(
       userHand.faceUp = false
       userHand.flipCards(false)
       userHand.scale = config.opponentHandScale ?? 0.7
+      userHand.resetArcLock() // Reset arc radius lock for new hand
     }
 
     for (let i = 0; i < hands.length; i++) {

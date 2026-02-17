@@ -121,6 +121,7 @@ export class Hand extends CardContainer {
   fanCurve: number    // degrees of rotation at edges (0 = flat, 15 = curved)
   angleToCenter: number  // angle in degrees pointing toward board center (kitty)
   isUser: boolean     // whether this is the human player's hand (affects fan rendering)
+  lockedArcRadius: number | null = null  // locked arc radius once hand is fanned
 
   constructor(
     id: string,
@@ -187,11 +188,14 @@ export class Hand extends CardContainer {
     if (this.isUser && this.fanCurve > 0) {
       const spreadAngle = (index - middleIndex) * this.fanCurve
       const angleRad = spreadAngle * Math.PI / 180
-      // Calculate radius to maintain consistent ~55px spacing between cards
-      // radius = targetSpacing / sin(curveAngle) - keeps spacing constant as hand size changes
-      const targetSpacing = 55
-      const curveRad = this.fanCurve * Math.PI / 180
-      const arcRadius = targetSpacing / Math.sin(curveRad)
+      // Lock arc radius on first fan - keeps spacing constant as cards are played
+      // Calculate based on current card count, then reuse for rest of hand
+      if (this.lockedArcRadius === null) {
+        const targetSpacing = 55
+        const curveRad = this.fanCurve * Math.PI / 180
+        this.lockedArcRadius = targetSpacing / Math.sin(curveRad)
+      }
+      const arcRadius = this.lockedArcRadius
       // Cards positioned along arc, pivot point is below hand position
       const arcX = this.position.x + Math.sin(angleRad) * arcRadius
       const arcY = this.position.y - Math.cos(angleRad) * arcRadius + arcRadius
@@ -236,6 +240,11 @@ export class Hand extends CardContainer {
     for (const managed of this.cards) {
       managed.faceUp = faceUp
     }
+  }
+
+  /** Reset arc radius lock - call when dealing a new hand */
+  resetArcLock() {
+    this.lockedArcRadius = null
   }
 }
 
