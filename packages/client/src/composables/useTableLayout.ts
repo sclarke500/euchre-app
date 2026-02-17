@@ -88,8 +88,8 @@ export function computeTableLayout(
   const marginH = isWide ? 0.10 : 0.20
   const marginLeft = marginH
   const marginRight = marginH
-  const tableMarginTop = 0.15
-  const userAreaPct = 0.20
+  const tableMarginTop = 0.12
+  const userAreaPct = 0.12 // Smaller user area - cards overlap table edge
 
   const tableW = boardWidth * (1 - marginLeft - marginRight)
   const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 10 // 10px shorter
@@ -137,7 +137,7 @@ export function computeTableLayout(
         break
       default: // bottom (user) - position inside table, games move to bottom after dealing
         handX = tableX
-        handY = tableBottom - handInset - 30 // Inside table, raised 30px higher
+        handY = tableBottom + 20 // Cards overlap table edge, tops visible on table
     }
 
     const handPos = { x: handX, y: handY }
