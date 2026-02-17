@@ -141,16 +141,28 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
                      message.state.players?.find((p: any) => p.hand !== undefined)?.id
         const isStillMyTurn = myId !== undefined && message.state.currentPlayer === myId
         
+        // Detect pile transition to empty - validPlays are definitely stale when pile clears
+        const pileWasCleared = gameState.value?.currentPile?.currentRank !== null &&
+                               message.state.currentPile?.currentRank === null
+        
         // Only clear isMyTurn if it's definitely not our turn.
         // We intentionally DON'T clear validActions/validPlays here to prevent
         // UI flashing. If it's still our turn, president_your_turn will follow
         // with the same valid plays. If it's not our turn, isMyTurn=false is
         // sufficient to disable interaction (the UI checks isMyTurn first).
+        //
+        // EXCEPTION: When pile clears, validPlays ARE definitely stale and must be
+        // cleared to avoid showing wrong playable cards (fixes #36).
         if (!isStillMyTurn) {
           updateIfChanged(isMyTurn, false)
           // Note: validActions and validPlays are left as-is to prevent flash.
           // They'll be cleared when president_your_turn sets new values, or
           // they'll be stale but harmless since isMyTurn is false.
+        } else if (pileWasCleared) {
+          // Pile cleared while still our turn - clear stale validPlays to prevent
+          // showing wrong playable cards (e.g., only 2s when pile is now empty)
+          validActions.value = []
+          validPlays.value = []
         }
         
         gameState.value = message.state
@@ -195,6 +207,10 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
       case 'president_pile_cleared':
         pileCleared.value = true
+        // Clear stale validPlays - new ones will arrive with president_your_turn
+        // This prevents showing wrong playable cards during the transition (fixes #36)
+        validActions.value = []
+        validPlays.value = []
         // Clear after a delay
         setTimeout(() => {
           pileCleared.value = false
