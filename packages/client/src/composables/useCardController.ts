@@ -91,6 +91,12 @@ export interface DealPlayerView {
   handSize?: number
 }
 
+function resolvesFaceUpWithBoardCardXor(faceUp: boolean, flipY: number): boolean {
+  const normalizedFlip = ((flipY % 360) + 360) % 360
+  const isFlipped = normalizedFlip > 90 && normalizedFlip < 270
+  return isFlipped ? !faceUp : faceUp
+}
+
 export function useCardController(
   engine: CardTableEngine,
   boardRef: Ref<HTMLElement | null>,
@@ -298,16 +304,23 @@ export function useCardController(
         if (options.flipTopCard && deck.cards.length > 0) {
           const topCard = deck.cards[deck.cards.length - 1]
           if (topCard) {
-            topCard.faceUp = true
+            // Keep logical faceUp false and animate flipY to 180.
+            // BoardCard uses XOR between faceUp and flipY state; this makes
+            // the turn-up card visually face-up with a real flip animation.
+            const turnUpFaceUp = false
+            const turnUpFlipY = 180
+            topCard.faceUp = turnUpFaceUp
             const ref = engine.getCardRef(topCard.card.id)
-            // Note: faceUp=true + flipY=0 shows face-up (no rotation needed)
+            if (import.meta.env.DEV && !resolvesFaceUpWithBoardCardXor(turnUpFaceUp, turnUpFlipY)) {
+              console.warn('[CardController] Invalid turn-up flip config: card will not render face-up')
+            }
             ref?.moveTo({ 
               x: center.x, 
               y: center.y - 10, // Slight offset 
               rotation: 0, 
               zIndex: 150, 
               scale: 0.8,  // Match kitty stack scale
-              flipY: 0 
+              flipY: turnUpFlipY 
             }, 300)
             engine.refreshCards()
           }
