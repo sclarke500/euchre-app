@@ -258,7 +258,7 @@ export function useCardController(
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
       const cardCount = userHand.cards.length
       // Consistent position - same for all hand sizes
-      const targetY = board.offsetHeight - 65
+      const targetY = board.offsetHeight - 80
       const targetScale = config.userHandScale ?? 1.6
 
       userHand.position = { x: targetX, y: targetY }
