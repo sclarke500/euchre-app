@@ -195,7 +195,6 @@ export function useEuchreDirector(
     opponentHandScale: 0.7,
     userFanSpacing: 30,
     opponentFanSpacing: 16,
-    userFanCurve: 4, // Subtle arc fan for user's hand
     playMoveMs: CARD_PLAY_MS,
     ...cardControllerPresets.euchre,
   })

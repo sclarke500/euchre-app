@@ -42,7 +42,6 @@ export function useSpadesDirector(
     opponentHandScale: 0.7,
     userFanSpacing: 30,
     opponentFanSpacing: 16,
-    userFanCurve: 4, // Subtle arc fan for user's hand
     playMoveMs: 350,
     ...cardControllerPresets.spades,
   })

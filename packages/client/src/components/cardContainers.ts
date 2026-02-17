@@ -183,35 +183,24 @@ export class Hand extends CardContainer {
     // User hand z-index 300+ (below avatar at 500), opponents 200+
     const baseZ = this.isUser ? 300 : 200
 
-    if (this.isUser && this.fanCurve > 0) {
-      // Display mode: arc fan with rotation, CSS transform-origin creates the arc
-      const spreadAngle = (index - middleIndex) * this.fanCurve
+    // Horizontal spread for all hands
+    const spreadAmount = (index - middleIndex) * this.fanSpacing * this.scale
+    const rotRad = this.rotation * Math.PI / 180
+    const offsetX = spreadAmount * Math.cos(rotRad)
+    const offsetY = spreadAmount * Math.sin(rotRad)
 
-      return {
-        x: this.position.x,
-        y: this.position.y,
-        rotation: spreadAngle,
-        zIndex: baseZ + index,
-        scale: this.scale,
-        flipY,
-      }
-    } else {
-      // Play mode (user with fanCurve=0) or opponents: straight horizontal spread
-      const spreadAmount = (index - middleIndex) * this.fanSpacing * this.scale
+    // User with fanCurve: add rotation for curved look (hybrid approach)
+    const cardRotation = (this.isUser && this.fanCurve > 0)
+      ? (index - middleIndex) * this.fanCurve
+      : this.rotation
 
-      // Spread along the hand's rotation direction
-      const rotRad = this.rotation * Math.PI / 180
-      const offsetX = spreadAmount * Math.cos(rotRad)
-      const offsetY = spreadAmount * Math.sin(rotRad)
-
-      return {
-        x: this.position.x + offsetX,
-        y: this.position.y + offsetY,
-        rotation: this.rotation,
-        zIndex: baseZ + index,
-        scale: this.scale,
-        flipY,
-      }
+    return {
+      x: this.position.x + offsetX,
+      y: this.position.y + offsetY,
+      rotation: cardRotation,
+      zIndex: baseZ + index,
+      scale: this.scale,
+      flipY,
     }
   }
   
