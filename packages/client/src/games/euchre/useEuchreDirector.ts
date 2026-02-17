@@ -555,10 +555,11 @@ export function useEuchreDirector(
   }
 
   /** Animate card play - delegates to shared card controller */
-  async function animateCardPlay(cardId: string, playerId: number) {
+  async function animateCardPlay(card: { id: string; suit: string; rank: string }, playerId: number) {
     const trickPile = engine.getPiles().find(p => p.id === 'center')
     const cardIndex = trickPile?.cards.length ?? 0
-    await cardController.playCard(cardId, playerId, cardIndex)
+    // Cast to StandardCard - the suit/rank string values match the enum values
+    await cardController.playCard(card as any, playerId, cardIndex)
   }
 
   // ── Trick sweep → won-trick stacks ──────────────────────────────────────
@@ -875,7 +876,7 @@ export function useEuchreDirector(
         console.log(`[CardPlayed] ${names[msg.playerId] ?? 'P' + msg.playerId}: ${cardLabel(msg.card)} (id: ${msg.card.id})`)
         isAnimating.value = true
         try {
-          await animateCardPlay(msg.card.id, msg.playerId)
+          await animateCardPlay(msg.card, msg.playerId)
           lastAnimatedTrickCardCount.value++
         } finally {
           isAnimating.value = false
@@ -1044,7 +1045,7 @@ export function useEuchreDirector(
           const i = lastAnimatedTrickCardCount.value
           const played = game.currentTrick.value.cards[i]
           if (!played) break
-          await animateCardPlay(played.card.id, played.playerId)
+          await animateCardPlay(played.card, played.playerId)
           lastAnimatedTrickCardCount.value = i + 1
         }
       } finally {
