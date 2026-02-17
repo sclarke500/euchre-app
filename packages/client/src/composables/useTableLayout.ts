@@ -137,7 +137,7 @@ export function computeTableLayout(
         break
       default: // bottom (user) - position inside table, games move to bottom after dealing
         handX = tableX
-        handY = tableBottom + 20 // Cards overlap table edge, tops visible on table
+        handY = tableBottom - 40 // Full card height visible, tops overlap table
     }
 
     const handPos = { x: handX, y: handY }

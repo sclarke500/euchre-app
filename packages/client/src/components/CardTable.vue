@@ -268,22 +268,6 @@ defineExpose({
     radial-gradient(ellipse at center 40%, rgba(255,255,255,0.04) 0%, transparent 50%),
     radial-gradient(ellipse at center 40%, var(--surface-bg) 0%, #181820 100%);
 
-  // Bottom edge gradient blur - discourages touching gesture nav zone
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 80px;
-    background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.85) 100%);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, black 100%);
-    pointer-events: none;
-    z-index: 1000;
-  }
 }
 
 .table-surface {
