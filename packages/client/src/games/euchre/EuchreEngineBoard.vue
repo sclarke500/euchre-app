@@ -153,7 +153,7 @@
 
         <!-- Dealer discard -->
         <template v-else-if="game.phase.value === 'dealer_discard' && isUserDealer">
-          <span class="action-label">Discard a card</span>
+          <span class="discard-prompt">Tap a card to discard</span>
         </template>
       </div>
     </Transition>
@@ -808,6 +808,17 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
   font-weight: 600;
+}
+
+.action-panel-container .discard-prompt {
+  color: #ffd700;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  padding: 8px 16px;
+  background: rgba(255, 215, 0, 0.15);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
 // Slide in from right transition
