@@ -253,7 +253,7 @@ defineExpose({
 
 .board {
   width: 100%;
-  height: 100%;
+  height: calc(100% - max(20px, env(safe-area-inset-bottom)));
   position: relative;
   overflow: hidden;
 
@@ -267,6 +267,19 @@ defineExpose({
   background:
     radial-gradient(ellipse at center 40%, rgba(255,255,255,0.04) 0%, transparent 50%),
     radial-gradient(ellipse at center 40%, var(--surface-bg) 0%, #181820 100%);
+
+  // Bottom edge gradient - discourages touching gesture nav zone
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+    pointer-events: none;
+    z-index: 1000;
+  }
 }
 
 .table-surface {
