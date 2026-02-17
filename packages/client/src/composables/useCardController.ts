@@ -292,6 +292,13 @@ export function useCardController(
     const fanDuration = options.fanDurationMs ?? 350
     await Promise.all(hands.map(hand => hand.setMode('fanned', fanDuration)))
 
+    // Enable arc-fan on user hand cards if curve is set
+    if (userHand && (config.userFanCurve ?? 0) > 0) {
+      for (const managed of userHand.cards) {
+        engine.getCardRef(managed.card.id)?.setArcFan(true)
+      }
+    }
+
     if (options.sortUserHand && options.sortAfterDeal !== false) {
       await sortUserHand(options.sortUserHand, 300)
     }

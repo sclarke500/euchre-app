@@ -65,6 +65,7 @@ export function usePresidentDirector(
     opponentHandScale: 0.5,
     userFanSpacing: 18,
     opponentFanSpacing: 10,
+    userFanCurve: 3, // Subtle arc fan (less than Euchre due to more cards)
     ...cardControllerPresets.president,
     playerIdToSeatIndex: (id) => playerIdToSeatIndex(id),
   })
