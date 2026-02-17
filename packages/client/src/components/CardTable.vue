@@ -368,20 +368,46 @@ defineExpose({
   }
 }
 
-// Dealer chip - positioned on table, animates between positions
+// Dealer chip - poker chip style with striped border
 .dealer-chip-table {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  // Striped border using conic-gradient
+  background: 
+    radial-gradient(circle at center, #fff 0%, #fff 60%, transparent 60%),
+    conic-gradient(
+      from 0deg,
+      #c9302c 0deg 20deg,
+      #fff 20deg 40deg,
+      #c9302c 40deg 60deg,
+      #fff 60deg 80deg,
+      #c9302c 80deg 100deg,
+      #fff 100deg 120deg,
+      #c9302c 120deg 140deg,
+      #fff 140deg 160deg,
+      #c9302c 160deg 180deg,
+      #fff 180deg 200deg,
+      #c9302c 200deg 220deg,
+      #fff 220deg 240deg,
+      #c9302c 240deg 260deg,
+      #fff 260deg 280deg,
+      #c9302c 280deg 300deg,
+      #fff 300deg 320deg,
+      #c9302c 320deg 340deg,
+      #fff 340deg 360deg
+    );
   color: #2c3e50;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
   z-index: 400;
   pointer-events: none;
   // Animate position changes
