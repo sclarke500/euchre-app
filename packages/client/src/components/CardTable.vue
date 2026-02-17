@@ -158,7 +158,7 @@ const dealerChipStyle = computed(() => {
   if (seat.isUser) {
     return {
       left: `${tableBounds.centerX}px`,
-      bottom: 'calc(20% - 10px + 44px)', // Align with user avatar name
+      bottom: 'calc(20% + 44px)', // Raised 10px, align with user avatar
       transform: 'translateX(40px)', // Offset to the right of center
     }
   }
