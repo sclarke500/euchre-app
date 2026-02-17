@@ -187,9 +187,11 @@ export class Hand extends CardContainer {
     if (this.isUser && this.fanCurve > 0) {
       const spreadAngle = (index - middleIndex) * this.fanCurve
       const angleRad = spreadAngle * Math.PI / 180
-      // Arc radius scales with card count: tighter for small hands, wider for big
-      // 5 cards: 300, 13 cards: 1450 (wider spread for all)
-      const arcRadius = 150 + cardCount * cardCount * 8
+      // Calculate radius to maintain consistent ~55px spacing between cards
+      // radius = targetSpacing / sin(curveAngle) - keeps spacing constant as hand size changes
+      const targetSpacing = 55
+      const curveRad = this.fanCurve * Math.PI / 180
+      const arcRadius = targetSpacing / Math.sin(curveRad)
       // Cards positioned along arc, pivot point is below hand position
       const arcX = this.position.x + Math.sin(angleRad) * arcRadius
       const arcY = this.position.y - Math.cos(angleRad) * arcRadius + arcRadius
