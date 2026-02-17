@@ -586,17 +586,18 @@ onUnmounted(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
-// User trump badge in avatar slot - matches trump-chip style
+// User trump badge in avatar slot - dark background to match avatar backdrop
 .user-trump-badge {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
-  font-size: 18px;
+  background: linear-gradient(135deg, #3a3a4c 0%, #2a2a3c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 // Suit buttons need specific styling

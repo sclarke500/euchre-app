@@ -78,7 +78,17 @@ const positionStyle = computed(() => props.customStyle ?? {})
     gap: 0;
   }
 
-  // User avatar: horizontal layout (icon + name side by side)
+  // User avatar: horizontal layout with dark backdrop
+  &.is-user .avatar-container {
+    padding: 6px 12px 6px 6px;
+    background: rgba(20, 20, 30, 0.85);
+    border-radius: 30px;
+    backdrop-filter: blur(4px);
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
   &.is-user .avatar-border {
     flex-direction: row;
     align-items: center;
@@ -87,12 +97,17 @@ const positionStyle = computed(() => props.customStyle ?? {})
 
   &.is-user .name-row {
     margin-top: 0;
-    margin-left: -4px; // Slight overlap with circle
+    margin-left: -4px;
   }
 
   &.is-user .player-name {
     padding: 4px 14px;
     font-size: 14px;
+    background: transparent; // Backdrop handles the background now
+  }
+
+  &.is-user .avatar-circle {
+    border-color: rgba(200, 170, 100, 0.5); // Subtle gold tint
   }
 
   .avatar-circle {
