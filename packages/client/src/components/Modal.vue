@@ -240,7 +240,14 @@ onUnmounted(() => {
 }
 
 :deep(.dialog-btn--muted) {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
 }
 
 // Transition styles
