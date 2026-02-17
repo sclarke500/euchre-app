@@ -250,7 +250,7 @@ export function useCardController(
 
     if (userHand && focusUserHand) {
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
-      const targetY = board.offsetHeight - 20
+      const targetY = board.offsetHeight - 60  // Raised to show more of the cards
       const targetScale = config.userHandScale ?? 1.6
 
       userHand.position = { x: targetX, y: targetY }
