@@ -151,6 +151,14 @@ watch(() => lobbyStore.gameId, (gameId) => {
   }
 })
 
+// Watch for being kicked/disconnected from multiplayer game
+watch(() => lobbyStore.currentTable, (table) => {
+  if (!table && currentView.value === 'multiplayerGame') {
+    // Table was removed while in game - return to lobby
+    currentView.value = 'lobby'
+  }
+})
+
 async function installPWA() {
   if (deferredPrompt.value) {
     const prompt = deferredPrompt.value as any
