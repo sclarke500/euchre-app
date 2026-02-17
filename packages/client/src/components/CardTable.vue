@@ -374,32 +374,26 @@ defineExpose({
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  // Striped border using conic-gradient
+  // Striped border using conic-gradient - blue stripes, thicker
   background: 
-    radial-gradient(circle at center, #fff 0%, #fff 60%, transparent 60%),
+    radial-gradient(circle at center, #fff 0%, #fff 55%, transparent 55%),
     conic-gradient(
       from 0deg,
-      #c9302c 0deg 20deg,
-      #fff 20deg 40deg,
-      #c9302c 40deg 60deg,
-      #fff 60deg 80deg,
-      #c9302c 80deg 100deg,
-      #fff 100deg 120deg,
-      #c9302c 120deg 140deg,
-      #fff 140deg 160deg,
-      #c9302c 160deg 180deg,
-      #fff 180deg 200deg,
-      #c9302c 200deg 220deg,
-      #fff 220deg 240deg,
-      #c9302c 240deg 260deg,
-      #fff 260deg 280deg,
-      #c9302c 280deg 300deg,
-      #fff 300deg 320deg,
-      #c9302c 320deg 340deg,
-      #fff 340deg 360deg
+      #2563eb 0deg 30deg,
+      #fff 30deg 60deg,
+      #2563eb 60deg 90deg,
+      #fff 90deg 120deg,
+      #2563eb 120deg 150deg,
+      #fff 150deg 180deg,
+      #2563eb 180deg 210deg,
+      #fff 210deg 240deg,
+      #2563eb 240deg 270deg,
+      #fff 270deg 300deg,
+      #2563eb 300deg 330deg,
+      #fff 330deg 360deg
     );
-  color: #2c3e50;
-  font-size: 12px;
+  color: #1e40af;
+  font-size: 14px;
   font-weight: bold;
   display: flex;
   align-items: center;
