@@ -673,13 +673,20 @@ onUnmounted(() => {
   gap: 12px;
   padding: 16px 14px;
   padding-right: max(14px, env(safe-area-inset-right));
-  background-color: rgba(20, 20, 30, 0.4);
+  background: linear-gradient(
+    135deg,
+    rgba(35, 40, 50, 0.85) 0%,
+    rgba(20, 22, 30, 0.9) 100%
+  );
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 20px 0 0 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.3);
   border-right: none;
-  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    -4px 0 30px rgba(0, 0, 0, 0.5),
+    -2px 0 20px rgba(212, 175, 55, 0.15),
+    inset 1px 0 0 rgba(212, 175, 55, 0.2);
   min-width: 120px;
 }
 
