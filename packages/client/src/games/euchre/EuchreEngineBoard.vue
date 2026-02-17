@@ -113,46 +113,50 @@
       @timeout="handleTurnTimeout"
     />
 
-    <!-- User actions — bottom bar -->
-    <UserActions :active="game.isMyTurn.value && !director.isAnimating.value">
+    <!-- User actions — sliding panel from right -->
+    <Transition name="action-slide">
+      <div v-if="showActionPanel" class="action-panel-container">
+        <div class="shiny-overlay" />
+        
+        <!-- Round 1: Pass or Order Up -->
+        <template v-if="showBidding && game.biddingRound.value === 1">
+          <button class="action-btn primary" @click="handleOrderUp">
+            {{ isUserDealer ? 'Pick Up' : 'Order Up' }}
+          </button>
+          <button class="action-btn" @click="handlePass">Pass</button>
+          <label class="action-checkbox">
+            <input type="checkbox" v-model="goAlone" />
+            Alone
+          </label>
+        </template>
 
-      <!-- Round 1: Pass or Order Up -->
-      <template v-if="showBidding && game.biddingRound.value === 1">
-        <button class="action-btn primary" @click="handleOrderUp">
-          {{ isUserDealer ? 'Pick Up' : 'Order Up' }}
-        </button>
-        <button class="action-btn" @click="handlePass">Pass</button>
-        <label class="action-checkbox">
-          <input type="checkbox" v-model="goAlone" />
-          Alone
-        </label>
-      </template>
+        <!-- Round 2: Pass or Call Suit -->
+        <template v-else-if="showBidding && game.biddingRound.value === 2">
+          <span class="action-label">{{ mustCall ? 'Call' : 'Trump?' }}</span>
+          <div class="suit-buttons">
+            <button
+              v-for="suit in availableSuits"
+              :key="suit.name"
+              class="action-btn suit-btn"
+              :style="{ color: suit.color }"
+              @click="handleCallSuit(suit.name)"
+            >
+              {{ suit.symbol }}
+            </button>
+          </div>
+          <button v-if="!mustCall" class="action-btn" @click="handlePass">Pass</button>
+          <label class="action-checkbox">
+            <input type="checkbox" v-model="goAlone" />
+            Alone
+          </label>
+        </template>
 
-      <!-- Round 2: Pass or Call Suit -->
-      <template v-else-if="showBidding && game.biddingRound.value === 2">
-        <span class="action-label">{{ mustCall ? 'Must call' : 'Call trump' }}</span>
-        <button
-          v-for="suit in availableSuits"
-          :key="suit.name"
-          class="action-btn suit-btn"
-          :style="{ color: suit.color }"
-          @click="handleCallSuit(suit.name)"
-        >
-          {{ suit.symbol }}
-        </button>
-        <button v-if="!mustCall" class="action-btn" @click="handlePass">Pass</button>
-        <span class="action-divider" />
-        <label class="action-checkbox">
-          <input type="checkbox" v-model="goAlone" />
-          Alone
-        </label>
-      </template>
-
-      <!-- Dealer discard -->
-      <template v-else-if="game.phase.value === 'dealer_discard' && isUserDealer">
-        <span class="action-label">Tap a card to discard</span>
-      </template>
-    </UserActions>
+        <!-- Dealer discard -->
+        <template v-else-if="game.phase.value === 'dealer_discard' && isUserDealer">
+          <span class="action-label">Discard a card</span>
+        </template>
+      </div>
+    </Transition>
   </CardTable>
 </template>
 
@@ -163,7 +167,6 @@ import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
-import UserActions from '@/components/UserActions.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useEuchreGameAdapter } from './useEuchreGameAdapter'
 import { useEuchreDirector } from './useEuchreDirector'
@@ -250,6 +253,16 @@ const showBidding = computed(() => {
   if (director.isAnimating.value) return false
   const phase = game.phase.value
   return phase === GamePhase.BiddingRound1 || phase === GamePhase.BiddingRound2
+})
+
+// Show action panel when bidding or dealer discard
+const showActionPanel = computed(() => {
+  if (!game.isMyTurn.value) return false
+  if (director.isAnimating.value) return false
+  const phase = game.phase.value
+  return phase === GamePhase.BiddingRound1 || 
+         phase === GamePhase.BiddingRound2 || 
+         phase === GamePhase.DealerDiscard
 })
 
 const isUserDealer = computed(() => game.dealer.value === game.myPlayerId.value)
@@ -645,5 +658,129 @@ onUnmounted(() => {
   strong {
     color: #fff;
   }
+}
+
+// Sliding action panel from right
+.action-panel-container {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 14px;
+  padding-right: max(14px, env(safe-area-inset-right));
+  background-color: rgba(20, 20, 30, 0.4);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-radius: 20px 0 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: none;
+  box-shadow: -4px 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.action-panel-container .shiny-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px 0 0 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+.action-panel-container .action-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(60, 60, 80, 0.85);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  min-width: 100px;
+
+  &:hover {
+    background: rgba(80, 80, 100, 0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &.primary {
+    background: rgba(42, 138, 106, 0.85);
+    border-color: rgba(42, 138, 106, 0.6);
+
+    &:hover {
+      background: rgba(52, 158, 126, 0.9);
+    }
+  }
+}
+
+.action-panel-container .suit-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.action-panel-container .suit-btn {
+  font-size: 22px !important;
+  padding: 8px 14px !important;
+  min-width: unset;
+  background: rgba(240, 240, 245, 0.95) !important;
+  border-color: #bbb !important;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.98) !important;
+  }
+}
+
+.action-panel-container .action-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+
+  input {
+    accent-color: #2a8a6a;
+  }
+}
+
+.action-panel-container .action-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+// Slide in from right transition
+.action-slide-enter-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.action-slide-leave-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease;
+}
+
+.action-slide-enter-from,
+.action-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-50%) translateX(100%);
 }
 </style>
