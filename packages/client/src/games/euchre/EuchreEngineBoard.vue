@@ -708,8 +708,14 @@ onUnmounted(() => {
 .action-panel-container .action-btn {
   padding: 10px 20px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(60, 60, 80, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.3);
+  border-bottom-color: rgba(0, 0, 0, 0.2);
+  background: linear-gradient(
+    to bottom,
+    rgba(80, 80, 100, 0.9) 0%,
+    rgba(55, 55, 75, 0.9) 100%
+  );
   backdrop-filter: blur(8px);
   color: #fff;
   font-size: 15px;
@@ -717,24 +723,43 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 3px 6px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   width: 100%;
 
   &:hover {
-    background: rgba(80, 80, 100, 0.9);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(
+      to bottom,
+      rgba(90, 90, 110, 0.95) 0%,
+      rgba(65, 65, 85, 0.95) 100%
+    );
+    border-top-color: rgba(255, 255, 255, 0.4);
   }
 
   &:active {
-    transform: scale(0.97);
+    transform: translateY(1px);
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.4),
+      inset 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   &.primary {
-    background: rgba(42, 138, 106, 0.85);
-    border-color: rgba(42, 138, 106, 0.6);
+    background: linear-gradient(
+      to bottom,
+      rgba(52, 158, 126, 0.95) 0%,
+      rgba(36, 120, 92, 0.95) 100%
+    );
+    border-top-color: rgba(100, 200, 160, 0.4);
+    border-bottom-color: rgba(0, 60, 40, 0.3);
 
     &:hover {
-      background: rgba(52, 158, 126, 0.9);
+      background: linear-gradient(
+        to bottom,
+        rgba(62, 178, 140, 0.95) 0%,
+        rgba(42, 138, 106, 0.95) 100%
+      );
     }
   }
 }
@@ -761,6 +786,7 @@ onUnmounted(() => {
 .action-panel-container .action-checkbox {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
