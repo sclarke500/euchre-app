@@ -84,6 +84,8 @@ export interface DealOptions {
   keepRemainingCards?: boolean
   /** Flip the top remaining card face-up after dealing (e.g., turn-up card) */
   flipTopCard?: boolean
+  /** Explicit card ID to flip face-up (used when remaining deck includes placeholders) */
+  flipTopCardId?: string
 }
 
 export interface DealPlayerView {
@@ -294,15 +296,26 @@ export function useCardController(
         // Move deck to table center
         const center = tableLayout.value?.tableCenter ?? tableCenter.value
         deck.position = center
-        for (const managed of deck.cards) {
+        for (let i = 0; i < deck.cards.length; i++) {
+          const managed = deck.cards[i]
+          if (!managed) continue
           const ref = engine.getCardRef(managed.card.id)
-          ref?.moveTo({ x: center.x, y: center.y, rotation: 0, zIndex: 100, scale: 0.8 }, 300)
+          const stackPos = deck.getCardPosition(i)
+          ref?.moveTo({
+            x: stackPos.x,
+            y: stackPos.y,
+            rotation: 0,
+            zIndex: stackPos.zIndex,
+            scale: 0.8,
+          }, 300)
         }
         await new Promise(r => setTimeout(r, 350))
 
         // Flip top card face-up if requested
         if (options.flipTopCard && deck.cards.length > 0) {
-          const topCard = deck.cards[deck.cards.length - 1]
+          const topCard = options.flipTopCardId
+            ? deck.cards.find((managed) => managed.card.id === options.flipTopCardId)
+            : deck.cards[deck.cards.length - 1]
           if (topCard) {
             // Keep logical faceUp false and animate flipY to 180.
             // BoardCard uses XOR between faceUp and flipY state; this makes
@@ -314,9 +327,10 @@ export function useCardController(
             if (import.meta.env.DEV && !resolvesFaceUpWithBoardCardXor(turnUpFaceUp, turnUpFlipY)) {
               console.warn('[CardController] Invalid turn-up flip config: card will not render face-up')
             }
+            const topStackPos = deck.getCardPosition(Math.max(0, deck.cards.length - 1))
             ref?.moveTo({ 
-              x: center.x, 
-              y: center.y - 10, // Slight offset 
+              x: topStackPos.x,
+              y: topStackPos.y,
               rotation: 0, 
               zIndex: 150, 
               scale: 0.8,  // Match kitty stack scale

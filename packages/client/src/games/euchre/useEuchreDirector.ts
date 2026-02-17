@@ -421,6 +421,7 @@ export function useEuchreDirector(
       extraDeckCards: kittyCards,
       keepRemainingCards: true,
       flipTopCard: true,
+      flipTopCardId: turnUpCard?.id,
     })
 
     // Sort user hand
@@ -461,9 +462,10 @@ export function useEuchreDirector(
 
   async function flipTurnUpFaceDown() {
     const deck = engine.getDeck()
-    if (!deck || deck.cards.length === 0) return
+    const turnUpCard = game.turnUpCard.value
+    if (!deck || deck.cards.length === 0 || !turnUpCard) return
 
-    const topCard = deck.cards[deck.cards.length - 1]
+    const topCard = deck.cards.find(m => m.card.id === turnUpCard.id)
     if (!topCard) return
 
     const ref = engine.getCardRef(topCard.card.id)
