@@ -251,7 +251,7 @@ export function useCardController(
     if (userHand && focusUserHand) {
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
       const targetY = board.offsetHeight - 20
-      const targetScale = config.userHandScale ?? 1.8
+      const targetScale = config.userHandScale ?? 1.6
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
@@ -508,7 +508,7 @@ export function useCardController(
         y: seat?.handPosition.y ?? tableCenter.value.y,
         rotation: seat?.rotation ?? 0,
         zIndex: 900,
-        scale: seatIndex === userSeatIndex ? (config.userHandScale ?? 1.8) : (config.opponentHandScale ?? 0.7),
+        scale: seatIndex === userSeatIndex ? (config.userHandScale ?? 1.6) : (config.opponentHandScale ?? 0.7),
         flipY: 0,
       }
 
