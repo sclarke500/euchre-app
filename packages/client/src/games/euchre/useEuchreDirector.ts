@@ -996,7 +996,8 @@ export function useEuchreDirector(
 
           if (isDealerUser) {
             await sortUserHand(AnimationDurations.medium)
-            keepAnimating = true
+            // Don't keep animating - let user see discard prompt
+            // User's discard action (handleDealerDiscard) will continue the flow
           } else {
             const discardedId = findAIDiscardedCard(dealerSeatIdx)
             const dealerHand = engine.getHands()[dealerSeatIdx]
