@@ -669,7 +669,7 @@ onUnmounted(() => {
   z-index: 600;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 12px;
   padding: 16px 14px;
   padding-right: max(14px, env(safe-area-inset-right));
@@ -680,6 +680,7 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-right: none;
   box-shadow: -4px 0 30px rgba(0, 0, 0, 0.4);
+  min-width: 120px;
 }
 
 .action-panel-container .shiny-overlay {
@@ -710,7 +711,7 @@ onUnmounted(() => {
   transition: all 0.15s ease;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  min-width: 100px;
+  width: 100%;
 
   &:hover {
     background: rgba(80, 80, 100, 0.9);
@@ -735,12 +736,13 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  width: 100%;
 }
 
 .action-panel-container .suit-btn {
   font-size: 22px !important;
   padding: 8px 14px !important;
-  min-width: unset;
+  width: 100%;
   background: rgba(240, 240, 245, 0.95) !important;
   border-color: #bbb !important;
 
