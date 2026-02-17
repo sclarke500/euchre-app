@@ -95,7 +95,7 @@ export function computeTableLayout(
   const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 10
 
   const tableLeft = boardWidth * marginLeft
-  const tableTop = boardHeight * tableMarginTop - 10
+  const tableTop = boardHeight * tableMarginTop - 5
   const tableRight = tableLeft + tableW
   const tableBottom = tableTop + tableH
 
