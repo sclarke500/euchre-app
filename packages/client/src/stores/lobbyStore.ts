@@ -80,7 +80,7 @@ export const useLobbyStore = defineStore('lobby', () => {
       case 'table_removed':
         removeTable(message.tableId)
         // If our current table was removed, clear it
-        if (currentTable.value?.id === message.tableId) {
+        if (currentTable.value?.odusId === message.tableId) {
           currentTable.value = null
           currentSeat.value = null
         }
