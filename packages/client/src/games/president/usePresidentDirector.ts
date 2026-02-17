@@ -214,7 +214,7 @@ export function usePresidentDirector(
     const userCardCount = players[seatIndexToPlayerId(0)]?.hand.length ?? 13
     if (userHand && boardRef.value) {
       const targetX = boardRef.value.offsetWidth / 2
-      const targetY = boardRef.value.offsetHeight - 20
+      const targetY = boardRef.value.offsetHeight - 60  // Raised to show more of the cards
       // Scale down slightly for larger hands
       const targetScale = userCardCount > 10 ? 1.5 : 1.7
 
