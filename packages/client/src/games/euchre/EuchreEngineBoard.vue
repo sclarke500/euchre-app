@@ -499,22 +499,22 @@ onUnmounted(() => {
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid #444;
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 0;
   backdrop-filter: blur(8px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-size: 11px;
+  font-size: 13px;
   color: #ccc;
-  width: 100px;
+  width: 120px;
 
   .score-header {
     display: grid;
-    grid-template-columns: 1fr 26px 26px;
+    grid-template-columns: 1fr 31px 31px;
     gap: 0;
-    padding: 2px 6px;
-    font-size: 8px;
+    padding: 2px 7px;
+    font-size: 10px;
     font-weight: 600;
     color: #888;
     text-transform: uppercase;
@@ -533,9 +533,9 @@ onUnmounted(() => {
 
   .score-row {
     display: grid;
-    grid-template-columns: 1fr 26px 26px;
+    grid-template-columns: 1fr 31px 31px;
     gap: 0;
-    padding: 3px 6px;
+    padding: 4px 7px;
     align-items: center;
 
     &:last-of-type {
@@ -545,20 +545,20 @@ onUnmounted(() => {
 
   .score-label {
     font-weight: 600;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .score-value {
     text-align: center;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 14px;
     color: #fff;
   }
 
   .score-tricks {
     text-align: center;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 16px;
     color: #aaa;
   }
 }

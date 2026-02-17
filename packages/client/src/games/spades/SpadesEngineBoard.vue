@@ -369,10 +369,10 @@ function handlePlayAgain() {
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid #444;
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 0;
   backdrop-filter: blur(8px);
-  font-size: 11px;
+  font-size: 13px;
   color: #ccc;
 }
 
@@ -380,48 +380,48 @@ function handlePlayAgain() {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  width: 100px;
+  width: 120px;
   
   .score-row {
     display: grid;
-    grid-template-columns: 28px 1fr 1fr;
+    grid-template-columns: 34px 1fr 1fr;
     gap: 2px;
     align-items: center;
-    padding: 3px 6px;
+    padding: 4px 7px;
   }
   
   .score-label {
     font-weight: 600;
-    font-size: 10px;
+    font-size: 12px;
   }
   
   .score-value {
     font-weight: 700;
-    font-size: 12px;
+    font-size: 14px;
     color: #fff;
     text-align: center;
   }
   
   .score-bags {
-    font-size: 11px;
+    font-size: 13px;
     color: #f39c12;
     text-align: center;
   }
   
   .hand-bags {
-    font-size: 9px;
+    font-size: 11px;
     color: #e74c3c;
     margin-left: 1px;
   }
   
   .score-header {
     display: grid;
-    grid-template-columns: 28px 1fr 1fr;
+    grid-template-columns: 34px 1fr 1fr;
     gap: 2px;
-    padding: 2px 6px;
+    padding: 2px 7px;
     background: rgba(255, 255, 255, 0.05);
     border-top: 1px solid rgba(255,255,255,0.1);
-    font-size: 8px;
+    font-size: 10px;
     color: #888;
     text-align: center;
     
