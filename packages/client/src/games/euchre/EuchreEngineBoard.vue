@@ -257,12 +257,17 @@ const showBidding = computed(() => {
 
 // Show action panel when bidding or dealer discard
 const showActionPanel = computed(() => {
-  if (!game.isMyTurn.value) return false
   if (director.isAnimating.value) return false
   const phase = game.phase.value
-  return phase === GamePhase.BiddingRound1 || 
-         phase === GamePhase.BiddingRound2 || 
-         phase === GamePhase.DealerDiscard
+  
+  // DealerDiscard: show if user is dealer (currentPlayer already moved to next leader)
+  if (phase === GamePhase.DealerDiscard) {
+    return game.dealer.value === game.myPlayerId.value
+  }
+  
+  // Bidding: show if it's user's turn
+  if (!game.isMyTurn.value) return false
+  return phase === GamePhase.BiddingRound1 || phase === GamePhase.BiddingRound2
 })
 
 const isUserDealer = computed(() => game.dealer.value === game.myPlayerId.value)
