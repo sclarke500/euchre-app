@@ -117,9 +117,6 @@ export function useEuchreDirector(
   // Track tricks won per player
   const tricksWonByPlayer = ref<Record<number, number>>({ 0: 0, 1: 0, 2: 0, 3: 0 })
 
-  // Hidden hands — opponent hands collapsed into avatars
-  const hiddenHandOrigins = new Map<number, { x: number; y: number }>()
-
   // Player status messages (bid actions, etc.) keyed by seat index
   const playerStatuses = ref<string[]>(['', '', '', ''])
 
@@ -338,10 +335,6 @@ export function useEuchreDirector(
   /** Hide opponent hands - delegates to shared card controller */
   async function hideOpponentHands() {
     await cardController.hideOpponentHands()
-    // Track that hands are hidden (for local state checks)
-    for (let i = 1; i < 4; i++) {
-      hiddenHandOrigins.set(i, { x: 0, y: 0 })
-    }
   }
 
   /**
@@ -379,38 +372,17 @@ export function useEuchreDirector(
 
   // ── Setup ───────────────────────────────────────────────────────────────
 
-  function setupTable() {
-    const tl = getTableLayout()
-    if (!tl) return
-
-    engine.reset()
+  /** Reset Euchre-specific game state (called at start of each round) */
+  function resetGameState() {
     tricksWonByPlayer.value = { 0: 0, 1: 0, 2: 0, 3: 0 }
-    hiddenHandOrigins.clear()
-    alonePartnerSeat.value = null  // Reset alone state
+    alonePartnerSeat.value = null
+  }
 
+  /** Setup table using shared card controller */
+  function setupTable() {
     const dealerIdx = dealerSeat.value >= 0 ? dealerSeat.value : 0
-    engine.createDeck(getDealerDeckPosition(dealerIdx, tl), CENTER_CARD_SCALE)
-    engine.createPile('center', tl.tableCenter, TRICK_PLAY_SCALE)
-
-    // Create trick-won piles for each player (positioned when tricks are won)
-    for (let i = 0; i < 4; i++) {
-      engine.createPile(`tricks-won-player-${i}`, tl.tableCenter, TRICK_WON_SCALE)
-    }
-
-    for (let i = 0; i < tl.seats.length; i++) {
-      const seat = tl.seats[i]!
-      const isUser = seat.isUser
-      engine.createHand(`player-${i}`, seat.handPosition, {
-        faceUp: false,
-        fanDirection: 'horizontal',
-        fanSpacing: isUser ? 30 : 12,  // ~40% overlap at user hand scale
-        rotation: seat.rotation,
-        scale: 1.0,
-        fanCurve: isUser ? 8 : 0,
-        angleToCenter: seat.angleToCenter,
-        isUser,
-      })
-    }
+    cardController.setupTable(dealerIdx)
+    resetGameState()
   }
 
   // ── Deal animation ──────────────────────────────────────────────────────
