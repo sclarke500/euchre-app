@@ -258,7 +258,21 @@ export function useCardController(
       deck.cards[i]?.ref?.setPosition(deck.getCardPosition(i))
     }
 
-    await engine.dealAll(maxCards, options.dealDelayMs ?? 50, options.dealFlightMs ?? 200)
+    // Deal cards following the exact queue order (handles unequal hand sizes)
+    // This is important for games like President where players can go out
+    const dealDelayMs = options.dealDelayMs ?? 50
+    const dealFlightMs = options.dealFlightMs ?? 200
+    for (const queued of dealQueue) {
+      const targetHand = hands[queued.seatIdx]
+      if (targetHand && deck.cards.length > 0) {
+        await engine.dealCard(deck, targetHand, dealFlightMs)
+        if (dealDelayMs > 0) {
+          await new Promise(r => setTimeout(r, dealDelayMs))
+        }
+      }
+    }
+    // Wait for last flight to complete
+    await new Promise(r => setTimeout(r, dealFlightMs))
 
     if (userHand && focusUserHand) {
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
