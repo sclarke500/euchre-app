@@ -191,7 +191,9 @@ export class Hand extends CardContainer {
       // Lock arc radius on first fan - keeps spacing constant as cards are played
       // Calculate based on current card count, then reuse for rest of hand
       if (this.lockedArcRadius === null) {
-        const targetSpacing = 55
+        // Smaller spacing for flatter fans (less card overlap when nearly parallel)
+        // Curved fans (high angle): more spacing needed, flat fans (low angle): less spacing
+        const targetSpacing = Math.min(55, 25 + this.fanCurve * 4)
         const curveRad = this.fanCurve * Math.PI / 180
         this.lockedArcRadius = targetSpacing / Math.sin(curveRad)
       }

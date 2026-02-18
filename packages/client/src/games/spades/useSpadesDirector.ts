@@ -233,11 +233,11 @@ export function useSpadesDirector(
     }
   )
 
-  // Watch for blind nil decision - reveal cards when user chooses to see them
+  // Watch for blind nil decision - reveal cards when user chooses to see them (or bids blind nil)
   watch(
     () => game.userCardsRevealed.value,
     async (revealed) => {
-      if (revealed && game.phase.value === SpadesPhase.Bidding) {
+      if (revealed) {
         await cardController.revealUserHand(350)
         await cardController.sortUserHand(sortSpadesHand, 300)
       }
