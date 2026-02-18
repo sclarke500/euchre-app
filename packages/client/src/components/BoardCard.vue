@@ -107,51 +107,28 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
     const start = { ...position.value }
     const startTime = performance.now()
     
-    // If flipY is being animated, use JS animation for smooth flip
-    const animateFlip = target.flipY !== undefined && target.flipY !== start.flipY
-    
-    if (animateFlip) {
-      // JS animation for flip (so cos calculation updates each frame)
-      const animate = (now: number) => {
-        const elapsed = now - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        // Ease out cubic
-        const eased = 1 - Math.pow(1 - progress, 3)
-        
-        position.value = {
-          x: start.x + (target.x - start.x) * eased,
-          y: start.y + (target.y - start.y) * eased,
-          rotation: start.rotation + (target.rotation - start.rotation) * eased,
-          zIndex: target.zIndex,
-          scale: (start.scale ?? 1) + ((target.scale ?? 1) - (start.scale ?? 1)) * eased,
-          flipY: (start.flipY ?? 0) + ((target.flipY ?? 0) - (start.flipY ?? 0)) * eased,
-        }
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          resolve()
-        }
-      }
-      requestAnimationFrame(animate)
-    } else {
-      // CSS transition for non-flip animations
-      animationDuration.value = duration
-      isAnimating.value = true
+    const animate = (now: number) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
       
-      requestAnimationFrame(() => {
-        // Preserve flipY if not specified in target
-        position.value = { 
-          ...target,
-          flipY: target.flipY ?? position.value.flipY ?? 0,
-        }
-        
-        setTimeout(() => {
-          isAnimating.value = false
-          resolve()
-        }, duration + 50)
-      })
+      position.value = {
+        x: start.x + (target.x - start.x) * eased,
+        y: start.y + (target.y - start.y) * eased,
+        rotation: start.rotation + (target.rotation - start.rotation) * eased,
+        zIndex: target.zIndex,
+        scale: (start.scale ?? 1) + ((target.scale ?? 1) - (start.scale ?? 1)) * eased,
+        flipY: (start.flipY ?? 0) + ((target.flipY ?? (start.flipY ?? 0)) - (start.flipY ?? 0)) * eased,
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        resolve()
+      }
     }
+    requestAnimationFrame(animate)
   })
 }
 

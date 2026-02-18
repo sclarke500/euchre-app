@@ -10,7 +10,7 @@ import type {
   PendingExchange,
   ServerMessage,
 } from '@67cards/shared'
-import { PresidentPhase as Phase } from '@67cards/shared'
+import { PresidentPhase as Phase, findValidPlays } from '@67cards/shared'
 
 export interface PresidentExchangeInfo {
   youGive: StandardCard[]
@@ -150,28 +150,10 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     return adaptedPlayers.value.find(p => p.id === rawPlayer.id)
   })
 
-  // Convert valid plays from card ID arrays to actual card arrays
-  // Cache to prevent recreating arrays when content hasn't changed
-  let cachedValidPlaysKey = ''
-  let cachedValidPlays: StandardCard[][] = []
-  
+  // Calculate valid plays locally to ensure they are always correct
   const validPlays = computed<StandardCard[][]>(() => {
-    // Create a key from the input AND hand state to detect changes
-    // Include hand IDs in key because we resolve card IDs against the hand
-    const handKey = store.myHand.map(c => c.id).join(',')
-    const playsKey = store.validPlays.map(p => p.join(',')).join('|')
-    const newKey = `${handKey}::${playsKey}`
-    if (newKey === cachedValidPlaysKey) {
-      return cachedValidPlays
-    }
-    
-    // Input changed, rebuild output
-    const hand = store.myHand
-    cachedValidPlays = store.validPlays.map(playIds =>
-      playIds.map(id => hand.find(c => c.id === id)!).filter(Boolean)
-    )
-    cachedValidPlaysKey = newKey
-    return cachedValidPlays
+    if (!store.isMyTurn) return []
+    return findValidPlays(store.myHand, store.currentPile, store.superTwosMode ?? false)
   })
 
   return {
