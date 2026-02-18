@@ -700,7 +700,10 @@ export function useCardController(
     if (!tricks.length) return
 
     const winnerTrickCounts: Record<number, number> = {}
+    // Track cards to position after refresh
+    const cardsToPosition: Array<{ cardId: string; winnerId: number; trickNumber: number; cardIndex: number }> = []
 
+    // First pass: add all cards to piles
     for (const trick of tricks) {
       if (trick.winnerId === null) continue
 
@@ -723,20 +726,26 @@ export function useCardController(
           rank: playedCard.rank,
         }, false)
 
-        const ref = engine.getCardRef(playedCard.id)
-        const targetPos = getPlayerTrickPosition(winnerId, trickNumber, cardIndex)
-        ref?.setPosition(targetPos)
+        cardsToPosition.push({ cardId: playedCard.id, winnerId, trickNumber, cardIndex })
       }
 
       winnerTrickCounts[winnerId] = trickNumber + 1
+    }
+
+    // Refresh to create Vue components
+    engine.refreshCards()
+
+    // Second pass: position all cards now that refs exist
+    for (const { cardId, winnerId, trickNumber, cardIndex } of cardsToPosition) {
+      const ref = engine.getCardRef(cardId)
+      const targetPos = getPlayerTrickPosition(winnerId, trickNumber, cardIndex)
+      ref?.setPosition(targetPos)
     }
 
     tricksWonByPlayer.value = {
       ...tricksWonByPlayer.value,
       ...winnerTrickCounts,
     }
-
-    engine.refreshCards()
   }
 
   function getAvatarBoardPosition(seatIndex: number, layout: TableLayoutResult): { x: number; y: number } {
