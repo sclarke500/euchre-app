@@ -1153,7 +1153,7 @@ export function useEuchreDirector(
         },
       })),
     }))
-    cardController.restoreWonTrickStacks(completedTrickSnapshots)
+    await cardController.restoreWonTrickStacks(completedTrickSnapshots)
 
     // If there are cards in the current trick, animate them quickly to center
     const trickCards = game.currentTrick.value?.cards ?? []

@@ -695,7 +695,7 @@ export function useCardController(
     engine.refreshCards()
   }
 
-  function restoreWonTrickStacks(tricks: CompletedTrickSnapshot[]) {
+  async function restoreWonTrickStacks(tricks: CompletedTrickSnapshot[]) {
     if (trickCompleteMode !== 'stack') return
     if (!tricks.length) return
 
@@ -734,6 +734,9 @@ export function useCardController(
 
     // Refresh to create Vue components
     engine.refreshCards()
+    
+    // Wait for Vue to render the new card components
+    await nextTick()
 
     // Second pass: position all cards now that refs exist
     for (const { cardId, winnerId, trickNumber, cardIndex } of cardsToPosition) {
