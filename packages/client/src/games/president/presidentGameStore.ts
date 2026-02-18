@@ -471,6 +471,78 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     return getRankDisplayName(player.rank)
   }
 
+  // LocalStorage persistence for single-player resume
+  const STORAGE_KEY = '67cards_president_progress'
+
+  function saveToLocalStorage() {
+    if (gameOver.value) {
+      clearSavedGame()
+      return
+    }
+    const state = {
+      players: players.value,
+      phase: phase.value,
+      currentPile: currentPile.value,
+      currentPlayer: currentPlayer.value,
+      consecutivePasses: consecutivePasses.value,
+      finishedPlayers: finishedPlayers.value,
+      roundNumber: roundNumber.value,
+      lastPlayerId: lastPlayerId.value,
+      lastPlayedCards: lastPlayedCards.value,
+      exchangeInfo: exchangeInfo.value,
+      rules: rules.value,
+      savedAt: Date.now(),
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch (e) {
+      console.warn('[PresidentStore] Failed to save game:', e)
+    }
+  }
+
+  function loadFromLocalStorage(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return false
+
+      const state = JSON.parse(saved)
+      players.value = state.players
+      phase.value = state.phase
+      currentPile.value = state.currentPile
+      currentPlayer.value = state.currentPlayer
+      consecutivePasses.value = state.consecutivePasses
+      finishedPlayers.value = state.finishedPlayers
+      roundNumber.value = state.roundNumber
+      lastPlayerId.value = state.lastPlayerId
+      lastPlayedCards.value = state.lastPlayedCards
+      exchangeInfo.value = state.exchangeInfo
+      rules.value = state.rules
+      gameOver.value = false
+
+      return true
+    } catch (e) {
+      console.warn('[PresidentStore] Failed to load saved game:', e)
+      clearSavedGame()
+      return false
+    }
+  }
+
+  function hasSavedGame(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return false
+      const state = JSON.parse(saved)
+      const dayMs = 24 * 60 * 60 * 1000
+      return state.savedAt && (Date.now() - state.savedAt) < dayMs
+    } catch {
+      return false
+    }
+  }
+
+  function clearSavedGame() {
+    localStorage.removeItem(STORAGE_KEY)
+  }
+
   return {
     // State
     players,
@@ -510,5 +582,11 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     setPlayAnimationCallback,
     setPileClearedCallback,
     setExchangeAnimationCallback,
+
+    // LocalStorage persistence
+    saveToLocalStorage,
+    loadFromLocalStorage,
+    hasSavedGame,
+    clearSavedGame,
   }
 })

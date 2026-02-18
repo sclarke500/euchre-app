@@ -253,6 +253,15 @@ export function useSpadesDirector(
     }
   )
 
+  // Exposed start function for board to call after resume prompt
+  function initializeGame() {
+    game.startNewGame()
+  }
+
+  function loadSavedGame() {
+    game.loadFromLocalStorage?.()
+  }
+
   onMounted(async () => {
     await initializeBoard()
 
@@ -267,9 +276,8 @@ export function useSpadesDirector(
 
     if (mode === 'multiplayer') {
       game.initialize?.()
-    } else {
-      game.startNewGame()
     }
+    // For singleplayer, board will call initializeGame() or loadSavedGame() after checking for saved state
   })
 
   onUnmounted(() => {
@@ -289,5 +297,7 @@ export function useSpadesDirector(
     dealerSeat,
     currentTurnSeat,
     dimmedCardIds,
+    initializeGame,
+    loadSavedGame,
   }
 }

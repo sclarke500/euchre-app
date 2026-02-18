@@ -156,6 +156,18 @@
       </div>
     </Modal>
 
+    <!-- Resume game prompt (single-player only) -->
+    <Modal :show="showResumePrompt" :dismiss-on-backdrop="false" aria-label="Resume game">
+      <div class="round-modal dialog-panel">
+        <h3 class="dialog-title">Game In Progress</h3>
+        <div class="panel-message dialog-text">You have an unfinished game. Would you like to continue?</div>
+        <div class="modal-buttons dialog-actions">
+          <button class="modal-btn dialog-btn dialog-btn--muted" @click="handleNewGameFromPrompt">New Game</button>
+          <button class="modal-btn dialog-btn dialog-btn--primary" @click="handleResumeGame">Continue</button>
+        </div>
+      </div>
+    </Modal>
+
   </CardTable>
 </template>
 
@@ -223,6 +235,7 @@ const timerSettings = computed(() => {
 })
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+const showResumePrompt = ref(false)
 
 function handleLeaveClick() {
   if (props.mode === 'multiplayer' && !game.gameOver.value) {
@@ -464,14 +477,31 @@ function buildBugReportPayload() {
 
 // ── Mount ───────────────────────────────────────────────────────────────
 
+// Resume/new game handlers for single-player
+function handleResumeGame() {
+  showResumePrompt.value = false
+  presidentStore?.loadFromLocalStorage()
+}
+
+function handleNewGameFromPrompt() {
+  showResumePrompt.value = false
+  presidentStore?.clearSavedGame()
+  const settingsStore = useSettingsStore()
+  presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
+}
+
 onMounted(async () => {
   // Initialize game - multiplayer connects to server, single-player starts new game
   if (props.mode === 'multiplayer') {
     game.initialize?.()
   } else {
-    const presidentStore = usePresidentGameStore()
-    const settingsStore = useSettingsStore()
-    presidentStore.startNewGame(settingsStore.presidentPlayerCount)
+    // Check for saved game
+    if (presidentStore?.hasSavedGame()) {
+      showResumePrompt.value = true
+    } else {
+      const settingsStore = useSettingsStore()
+      presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
+    }
   }
   await nextTick()
   if (tableRef.value) {
@@ -488,6 +518,10 @@ watch(() => game.gameLost.value, (lost) => {
 })
 
 onUnmounted(() => {
+  // Save single-player game progress on exit
+  if (props.mode === 'singleplayer') {
+    presidentStore?.saveToLocalStorage()
+  }
   director.cleanup?.()
   if (props.mode === 'multiplayer') {
     game.cleanup?.()

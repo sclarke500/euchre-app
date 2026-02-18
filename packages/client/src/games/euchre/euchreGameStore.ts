@@ -546,6 +546,78 @@ export const useEuchreGameStore = defineStore('game', () => {
     startPlayingPhase()
   }
 
+  // LocalStorage persistence for single-player resume
+  const STORAGE_KEY = '67cards_euchre_progress'
+
+  function saveToLocalStorage() {
+    if (gameOver.value) {
+      // Don't save finished games
+      clearSavedGame()
+      return
+    }
+    const state = {
+      players: players.value,
+      currentRound: currentRound.value,
+      scores: scores.value,
+      phase: phase.value,
+      currentDealer: currentDealer.value,
+      biddingStartPlayer: biddingStartPlayer.value,
+      passCount: passCount.value,
+      savedAt: Date.now(),
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch (e) {
+      console.warn('[EuchreStore] Failed to save game:', e)
+    }
+  }
+
+  function loadFromLocalStorage(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return false
+
+      const state = JSON.parse(saved)
+      
+      // Restore state
+      players.value = state.players
+      currentRound.value = state.currentRound
+      scores.value = state.scores
+      phase.value = state.phase
+      currentDealer.value = state.currentDealer
+      biddingStartPlayer.value = state.biddingStartPlayer ?? 0
+      passCount.value = state.passCount ?? 0
+      gameOver.value = false
+      winner.value = null
+
+      // Reset game tracker for hard AI
+      gameTracker.reset()
+
+      return true
+    } catch (e) {
+      console.warn('[EuchreStore] Failed to load saved game:', e)
+      clearSavedGame()
+      return false
+    }
+  }
+
+  function hasSavedGame(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return false
+      const state = JSON.parse(saved)
+      // Only count as saved if it's recent (within 24 hours)
+      const dayMs = 24 * 60 * 60 * 1000
+      return state.savedAt && (Date.now() - state.savedAt) < dayMs
+    } catch {
+      return false
+    }
+  }
+
+  function clearSavedGame() {
+    localStorage.removeItem(STORAGE_KEY)
+  }
+
   return {
     // State
     players,
@@ -573,5 +645,11 @@ export const useEuchreGameStore = defineStore('game', () => {
     setPlayAnimationCallback,
     setTrickCompleteCallback,
     setDealAnimationCallback,
+
+    // LocalStorage persistence
+    saveToLocalStorage,
+    loadFromLocalStorage,
+    hasSavedGame,
+    clearSavedGame,
   }
 })

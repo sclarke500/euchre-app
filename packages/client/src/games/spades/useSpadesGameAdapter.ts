@@ -61,6 +61,12 @@ export interface SpadesGameAdapter {
   getQueueLength?: () => number
   applyMessage?: (message: ServerMessage) => void
 
+  // LocalStorage persistence (SP only)
+  saveToLocalStorage?: () => void
+  loadFromLocalStorage?: () => boolean
+  hasSavedGame?: () => boolean
+  clearSavedGame?: () => void
+
   isMultiplayer: boolean
 }
 
@@ -123,6 +129,12 @@ function useSpadesSinglePlayerAdapter(): SpadesGameAdapter {
     dealAnimationComplete: () => store.dealAnimationComplete(),
     startNewGame: () => store.startNewGame(),
     startNextRound: () => store.startNextRound(),
+
+    // LocalStorage persistence
+    saveToLocalStorage: () => store.saveToLocalStorage(),
+    loadFromLocalStorage: () => store.loadFromLocalStorage(),
+    hasSavedGame: () => store.hasSavedGame(),
+    clearSavedGame: () => store.clearSavedGame(),
 
     isMultiplayer: false,
   }

@@ -218,10 +218,22 @@
       </div>
     </div>
   </Modal>
+
+  <!-- Resume game prompt (single-player only) -->
+  <Modal :show="showResumePrompt" :dismiss-on-backdrop="false" aria-label="Resume game">
+    <div class="game-over-panel dialog-panel">
+      <div class="game-over-title dialog-title">Game In Progress</div>
+      <div class="panel-message dialog-text">You have an unfinished game. Would you like to continue?</div>
+      <div class="game-over-actions dialog-actions">
+        <button class="action-btn dialog-btn dialog-btn--muted" @click="handleNewGame">New Game</button>
+        <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleResumeGame">Continue</button>
+      </div>
+    </div>
+  </Modal>
 </template>
 
 <script setup lang="ts">
-import { computed, proxyRefs, ref } from 'vue'
+import { computed, proxyRefs, ref, onUnmounted } from 'vue'
 import { type SpadesBid } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
@@ -232,6 +244,7 @@ import BlindNilPrompt from './BlindNilPrompt.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useSpadesGameAdapter } from './useSpadesGameAdapter'
 import { useSpadesDirector } from './useSpadesDirector'
+import { useSpadesStore } from './spadesStore'
 import { useSpadesBoardUi } from './useSpadesBoardUi'
 import { useLobbyStore } from '@/stores/lobbyStore'
 
@@ -257,7 +270,11 @@ const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+const showResumePrompt = ref(false)
 const boardRef = ref<HTMLElement | null>(null)
+
+// SP store for save/load (only used in singleplayer mode)
+const spadesStore = props.mode === 'singleplayer' ? useSpadesStore() : null
 
 const {
   cardController,
@@ -267,11 +284,42 @@ const {
   dealerSeat,
   currentTurnSeat,
   dimmedCardIds,
+  initializeGame,
+  loadSavedGame,
 } = useSpadesDirector(adapter, engine, {
   mode: props.mode,
   tableRef,
   boardRef,
   onGameLost: () => emit('leave-game'),
+})
+
+// Check for saved game on mount (SP only)
+if (props.mode === 'singleplayer') {
+  if (spadesStore?.hasSavedGame()) {
+    showResumePrompt.value = true
+  } else {
+    // Start new game immediately
+    initializeGame()
+  }
+}
+
+// Resume/new game handlers
+function handleResumeGame() {
+  showResumePrompt.value = false
+  loadSavedGame()
+}
+
+function handleNewGame() {
+  showResumePrompt.value = false
+  spadesStore?.clearSavedGame()
+  initializeGame()
+}
+
+// Save game on unmount (SP only)
+onUnmounted(() => {
+  if (props.mode === 'singleplayer') {
+    spadesStore?.saveToLocalStorage()
+  }
 })
 
 const {

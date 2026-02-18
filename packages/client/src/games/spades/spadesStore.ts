@@ -330,6 +330,59 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     bidsComplete.value = state.bidsComplete
   }
 
+  // LocalStorage persistence for single-player resume
+  const STORAGE_KEY = '67cards_spades_progress'
+
+  function saveToLocalStorage() {
+    if (gameOver.value) {
+      clearSavedGame()
+      return
+    }
+    const state = {
+      ...gameState.value,
+      userCardsRevealed: userCardsRevealed.value,
+      savedAt: Date.now(),
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch (e) {
+      console.warn('[SpadesStore] Failed to save game:', e)
+    }
+  }
+
+  function loadFromLocalStorage(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return false
+
+      const state = JSON.parse(saved)
+      applyState(state)
+      userCardsRevealed.value = state.userCardsRevealed ?? true
+      tracker.reset()
+      return true
+    } catch (e) {
+      console.warn('[SpadesStore] Failed to load saved game:', e)
+      clearSavedGame()
+      return false
+    }
+  }
+
+  function hasSavedGame(): boolean {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return false
+      const state = JSON.parse(saved)
+      const dayMs = 24 * 60 * 60 * 1000
+      return state.savedAt && (Date.now() - state.savedAt) < dayMs
+    } catch {
+      return false
+    }
+  }
+
+  function clearSavedGame() {
+    localStorage.removeItem(STORAGE_KEY)
+  }
+
   return {
     // State
     players,
@@ -370,5 +423,11 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     setTrickCompleteCallback,
     submitBlindNil,
     revealCards,
+
+    // LocalStorage persistence
+    saveToLocalStorage,
+    loadFromLocalStorage,
+    hasSavedGame,
+    clearSavedGame,
   }
 })

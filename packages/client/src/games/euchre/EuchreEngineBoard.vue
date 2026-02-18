@@ -97,6 +97,18 @@
       </div>
     </Modal>
 
+    <!-- Resume game prompt (single-player only) -->
+    <Modal :show="showResumePrompt" :dismiss-on-backdrop="false" aria-label="Resume game">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Game In Progress</div>
+        <div class="panel-message dialog-text">You have an unfinished game. Would you like to continue?</div>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="handleNewGame">New Game</button>
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleResumeGame">Continue</button>
+        </div>
+      </div>
+    </Modal>
+
     <!-- User info for the user-avatar slot -->
     <template #user-info>
       <span v-if="userTrumpInfo" class="user-trump-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
@@ -448,6 +460,7 @@ function handlePlayAgain() {
 // Leave confirmation for multiplayer
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+const showResumePrompt = ref(false)
 const emit = defineEmits<{
   'leave-game': []
 }>()
@@ -465,12 +478,29 @@ function confirmLeave() {
   emit('leave-game')
 }
 
+// Resume/new game handlers for single-player
+function handleResumeGame() {
+  showResumePrompt.value = false
+  gameStore?.loadFromLocalStorage()
+}
+
+function handleNewGame() {
+  showResumePrompt.value = false
+  gameStore?.clearSavedGame()
+  gameStore?.startNewGame()
+}
+
 onMounted(async () => {
   // Initialize game - multiplayer connects to server, single-player starts new game
   if (props.mode === 'multiplayer') {
     mpStore?.initialize()
   } else {
-    gameStore?.startNewGame()
+    // Check for saved game
+    if (gameStore?.hasSavedGame()) {
+      showResumePrompt.value = true
+    } else {
+      gameStore?.startNewGame()
+    }
   }
   await nextTick()
   if (tableRef.value) {
@@ -487,6 +517,10 @@ watch(() => mpStore?.gameLost, (lost) => {
 })
 
 onUnmounted(() => {
+  // Save single-player game progress on exit
+  if (props.mode === 'singleplayer') {
+    gameStore?.saveToLocalStorage()
+  }
   director.cleanup()
   mpStore?.cleanup()
 })
