@@ -734,6 +734,13 @@ export function useEuchreDirector(
 
   async function handlePhaseTransitionMP(newPhase: GamePhase, oldPhase: GamePhase) {
     if (newPhase === lastAnimatedPhase.value) return
+    
+    // For Dealing phase, don't mark as animated until boardRef is available
+    // This allows the boardRef watcher to retry when the ref becomes available
+    if (newPhase === GamePhase.Dealing && !boardRef.value) {
+      return  // Will be retried by boardRef watcher
+    }
+    
     lastAnimatedPhase.value = newPhase
 
     switch (newPhase) {
