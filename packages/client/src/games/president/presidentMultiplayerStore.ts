@@ -354,9 +354,10 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
       expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
-    // Optimistically clear state - server will send exchange_info after processing.
-    // Note: we keep cardsToGiveCount so error handling can restore the UI if needed.
-    isAwaitingGiveCards.value = false
+    // NOTE: We intentionally do NOT clear isAwaitingGiveCards here.
+    // The server will send president_card_exchange_info on success, which clears it.
+    // If the server rejects (e.g., sync error), the UI stays open for retry.
+    // This fixes the bug where cards "go back to hand" with no way to resubmit.
   }
 
   function bootPlayer(playerId: number): void {
