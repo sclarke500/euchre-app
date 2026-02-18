@@ -92,6 +92,13 @@ When a card is played from the player's hand:
 - Trump calling has two rounds of bidding
 - "Going alone" - partner sits out
 
+### Euchre Singleplayer Restore Flow
+- Restore is transaction-based: `loadFromLocalStorage()` hydrates state only.
+- During restore, store AI progression is paused via `isRestoring` guard in `processAITurn()`.
+- UI runs `director.setRestoreMode(true)` to suppress phase/trump watcher animations while rebuilding visuals.
+- After `director.restoreFromSavedState()`, UI calls `commitRestore()` to resume AI only if the restored turn belongs to AI.
+- On restore failure, use `abortRestore()` and start a fresh game.
+
 ### Player Timeout System
 - Turn reminders sent every 15 seconds
 - After 4 reminders (60 seconds), player marked as timed out

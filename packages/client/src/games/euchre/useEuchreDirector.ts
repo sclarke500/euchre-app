@@ -122,6 +122,7 @@ export function useEuchreDirector(
 
   // Seat index of partner who is sitting out (when someone else goes alone)
   const alonePartnerSeat = ref<number | null>(null)
+  const restoreMode = ref(false)
 
   // MP queue processing state
   let pendingTrickWinnerId: number | null = null
@@ -609,6 +610,7 @@ export function useEuchreDirector(
   // ── Phase handler ───────────────────────────────────────────────────────
 
   async function handlePhase(newPhase: GamePhase, oldPhase: GamePhase | null) {
+    if (restoreMode.value) return
     if (newPhase === lastAnimatedPhase.value) return
     
     // For Dealing phase, don't mark as animated until boardRef is available
@@ -1003,6 +1005,7 @@ export function useEuchreDirector(
 
     // Trump called → order-up flow or round-2 flow
     watch(() => game.trump.value, async (newTrump) => {
+      if (restoreMode.value) return
       if (!newTrump) return
 
       await waitForAnimations()
@@ -1152,6 +1155,10 @@ export function useEuchreDirector(
     engine.refreshCards()
   }
 
+  function setRestoreMode(enabled: boolean) {
+    restoreMode.value = enabled
+  }
+
   return {
     playerNames,
     playerInfo,
@@ -1166,6 +1173,7 @@ export function useEuchreDirector(
     clearPlayerStatuses,
     handleDealerDiscard,
     hideOpponentHands,
+    setRestoreMode,
     restoreFromSavedState,
     cleanup,
   }

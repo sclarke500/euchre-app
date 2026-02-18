@@ -59,6 +59,8 @@ export const useEuchreGameStore = defineStore('game', () => {
   const lastAIBidAction = ref<{ playerId: number; message: string } | null>(null)
   const biddingStartPlayer = ref(0) // Track who started the bidding round
   const passCount = ref(0) // Track passes in current bidding round
+  const isRestoring = ref(false)
+  let shouldResumeAiAfterRestore = false
 
   // Animation callbacks — store awaits these before advancing turns
   // This allows the Director to control animation timing
@@ -116,6 +118,9 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   // Actions
   function startNewGame() {
+    isRestoring.value = false
+    shouldResumeAiAfterRestore = false
+
     // Get random AI names for this game
     const aiNames = getRandomAINames(3)
 
@@ -449,6 +454,7 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   async function processAITurn() {
     if (!currentRound.value) return
+    if (isRestoring.value) return
 
     const current = currentRound.value.currentPlayer
     const player = players.value[current]
@@ -550,6 +556,8 @@ export const useEuchreGameStore = defineStore('game', () => {
   const STORAGE_KEY = '67cards_euchre_progress'
 
   function saveToLocalStorage() {
+    if (isRestoring.value) return
+
     if (gameOver.value) {
       // Don't save finished games
       clearSavedGame()
@@ -578,6 +586,9 @@ export const useEuchreGameStore = defineStore('game', () => {
       if (!saved) return false
 
       const state = JSON.parse(saved)
+
+      isRestoring.value = true
+      shouldResumeAiAfterRestore = false
       
       // Restore state
       players.value = state.players
@@ -593,21 +604,39 @@ export const useEuchreGameStore = defineStore('game', () => {
       // Reset game tracker for hard AI
       gameTracker.reset()
 
-      // Trigger AI turn after a short delay to let visuals set up
-      setTimeout(() => {
-        const current = currentRound.value?.currentPlayer
-        if (current !== undefined && current !== 0) {
-          // It's an AI's turn, trigger processing
-          processAITurn()
-        }
-      }, 100)
+      const current = currentRound.value?.currentPlayer
+      const currentPlayerObj = current !== undefined && current >= 0 ? players.value[current] : null
+      shouldResumeAiAfterRestore = Boolean(
+        currentPlayerObj &&
+        !currentPlayerObj.isHuman &&
+        (phase.value === GamePhase.BiddingRound1 ||
+          phase.value === GamePhase.BiddingRound2 ||
+          phase.value === GamePhase.Playing)
+      )
 
       return true
     } catch (e) {
       console.warn('[EuchreStore] Failed to load saved game:', e)
+      isRestoring.value = false
+      shouldResumeAiAfterRestore = false
       clearSavedGame()
       return false
     }
+  }
+
+  function commitRestore() {
+    const shouldResume = shouldResumeAiAfterRestore
+    isRestoring.value = false
+    shouldResumeAiAfterRestore = false
+
+    if (shouldResume) {
+      processAITurn()
+    }
+  }
+
+  function abortRestore() {
+    isRestoring.value = false
+    shouldResumeAiAfterRestore = false
   }
 
   function hasSavedGame(): boolean {
@@ -641,6 +670,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     tricksTaken,
     gameState,
     lastAIBidAction,
+    isRestoring,
 
     // Actions
     startNewGame,
@@ -658,6 +688,8 @@ export const useEuchreGameStore = defineStore('game', () => {
     // LocalStorage persistence
     saveToLocalStorage,
     loadFromLocalStorage,
+    commitRestore,
+    abortRestore,
     hasSavedGame,
     clearSavedGame,
   }

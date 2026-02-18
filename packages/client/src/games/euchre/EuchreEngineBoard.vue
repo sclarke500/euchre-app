@@ -490,17 +490,32 @@ function confirmLeave() {
 async function handleResumeGame() {
   showResumePrompt.value = false
   isRestoring.value = true
-  
-  // Load the saved state
-  gameStore?.loadFromLocalStorage()
-  
-  // Wait for next tick then set up visuals using normal animation (but fast)
-  await nextTick()
-  await director.restoreFromSavedState()
-  
-  // Brief delay for smooth transition
-  await new Promise(r => setTimeout(r, 100))
-  isRestoring.value = false
+
+  director.setRestoreMode(true)
+
+  try {
+    const loaded = gameStore?.loadFromLocalStorage() ?? false
+    if (!loaded) {
+      gameStore?.abortRestore()
+      gameStore?.startNewGame()
+      return
+    }
+
+    // Wait for next tick then restore visuals from hydrated state
+    await nextTick()
+    await director.restoreFromSavedState()
+
+    // Commit restore and resume AI turn engine (if needed)
+    gameStore?.commitRestore()
+  } catch (error) {
+    console.warn('[EuchreBoard] Failed to restore saved game:', error)
+    gameStore?.abortRestore()
+    gameStore?.clearSavedGame()
+    gameStore?.startNewGame()
+  } finally {
+    director.setRestoreMode(false)
+    isRestoring.value = false
+  }
 }
 
 function handleNewGame() {
