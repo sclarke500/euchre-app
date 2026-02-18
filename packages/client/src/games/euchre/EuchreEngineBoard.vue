@@ -109,6 +109,13 @@
       </div>
     </Modal>
 
+    <!-- Loading overlay for game restore -->
+    <Transition name="fade">
+      <div v-if="isRestoring" class="restore-overlay">
+        <div class="restore-message">Resuming game...</div>
+      </div>
+    </Transition>
+
     <!-- User info for the user-avatar slot -->
     <template #user-info>
       <span v-if="userTrumpInfo" class="user-trump-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
@@ -461,6 +468,7 @@ function handlePlayAgain() {
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
 const showResumePrompt = ref(false)
+const isRestoring = ref(false)
 const emit = defineEmits<{
   'leave-game': []
 }>()
@@ -481,10 +489,18 @@ function confirmLeave() {
 // Resume/new game handlers for single-player
 async function handleResumeGame() {
   showResumePrompt.value = false
+  isRestoring.value = true
+  
+  // Load the saved state
   gameStore?.loadFromLocalStorage()
-  // Wait for next tick then restore visuals
+  
+  // Wait for next tick then set up visuals using normal animation (but fast)
   await nextTick()
   await director.restoreFromSavedState()
+  
+  // Brief delay for smooth transition
+  await new Promise(r => setTimeout(r, 100))
+  isRestoring.value = false
 }
 
 function handleNewGame() {
@@ -886,5 +902,32 @@ onUnmounted(() => {
 .action-slide-leave-to {
   opacity: 0;
   transform: translateY(-50%) translateX(100%);
+}
+
+// Restore overlay
+.restore-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 25, 20, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.restore-message {
+  color: #88aa99;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
