@@ -507,6 +507,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       lastPlayerId: lastPlayerId.value,
       lastPlayedCards: lastPlayedCards.value,
       exchangeInfo: exchangeInfo.value,
+      awaitingGiveBack: awaitingGiveBack.value,
       rules: rules.value,
       savedAt: Date.now(),
     }
@@ -542,12 +543,24 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
       // Determine if AI should resume after visual restore
       const currentPlayerObj = players.value[currentPlayer.value]
-      shouldResumeAiAfterRestore = Boolean(
-        currentPlayerObj &&
-        !currentPlayerObj.isHuman &&
-        currentPlayerObj.finishOrder === null &&
-        phase.value === PresidentPhase.Playing
-      )
+      const awaitingPlayer = awaitingGiveBack.value !== null 
+        ? players.value.find(p => p.id === awaitingGiveBack.value)
+        : null
+
+      if (phase.value === PresidentPhase.Playing) {
+        // Playing phase: resume if AI's turn
+        shouldResumeAiAfterRestore = Boolean(
+          currentPlayerObj &&
+          !currentPlayerObj.isHuman &&
+          currentPlayerObj.finishOrder === null
+        )
+      } else if (phase.value === PresidentPhase.PresidentGiving) {
+        // Exchange phase: resume if AI needs to give cards
+        shouldResumeAiAfterRestore = Boolean(
+          awaitingPlayer &&
+          !awaitingPlayer.isHuman
+        )
+      }
 
       return true
     } catch (e) {
@@ -565,7 +578,13 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     shouldResumeAiAfterRestore = false
 
     if (shouldResume) {
-      processAITurn()
+      if (phase.value === PresidentPhase.PresidentGiving) {
+        // AI needs to give cards in exchange phase
+        processAIGiveBack()
+      } else {
+        // Normal AI turn during playing phase
+        processAITurn()
+      }
     }
   }
 
