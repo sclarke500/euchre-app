@@ -147,6 +147,13 @@ function isPartnerCurrentlyWinning(trick: SpadesTrick, playerId: number): boolea
   return trickWinnerId(trick) === partnerId(playerId)
 }
 
+function isOpponentCurrentlyWinning(trick: SpadesTrick, playerId: number): boolean {
+  const winnerId = trickWinnerId(trick)
+  if (winnerId === null) return false
+  // Opponent = not me and not partner
+  return winnerId !== playerId && winnerId !== partnerId(playerId)
+}
+
 /** Cards in legalPlays that beat the current trick winner */
 function getWinners(legalPlays: StandardCard[], trick: SpadesTrick): StandardCard[] {
   const winVal = trickWinningValue(trick)
@@ -461,7 +468,7 @@ export function chooseSpadesCardHard(
   // FOLLOWING
   return followCardHard(
     legalPlays, trick, hand, player.id, tracker,
-    needMoreTricks, shouldAvoidBags, partnerBidNil, trickNumber, endgameStrategy
+    needMoreTricks, shouldAvoidBags, partnerBidNil, opponentNilBidder, trickNumber, endgameStrategy
   )
 }
 
@@ -599,11 +606,33 @@ function followCardHard(
   needTricks: boolean,
   avoidBags: boolean,
   partnerBidNil: boolean,
+  opponentNilBidder: SpadesPlayer | undefined,
   trickNumber: number,
   endgameStrategy: 'aggressive' | 'conservative' | 'normal',
 ): StandardCard {
   const seat = seatPosition(trick) // 1=2nd, 2=3rd, 3=4th
   const partnerWinning = isPartnerCurrentlyWinning(trick, playerId)
+
+  // --- OPPONENT BID NIL: Let them take tricks! ---
+  if (opponentNilBidder) {
+    // Check if the nil bidder is currently winning
+    const nilBidderWinning = trick.cards.length > 0 && 
+      trick.cards.some(tc => tc.playerId === opponentNilBidder.id) &&
+      isOpponentCurrentlyWinning(trick, playerId)
+    
+    if (nilBidderWinning) {
+      // Opponent nil is winning — dump lowest, let them take it!
+      return getLowest(legalPlays, trick.leadingSuit)
+    }
+    
+    // If nil bidder hasn't played yet and we're not last, consider playing low
+    // to leave the trick for them to take
+    const nilBidderHasPlayed = trick.cards.some(tc => tc.playerId === opponentNilBidder.id)
+    if (!nilBidderHasPlayed && seat < 3) {
+      // Play low - might force nil bidder to win
+      return getLowest(legalPlays, trick.leadingSuit)
+    }
+  }
 
   // Endgame adjustments
   if (endgameStrategy === 'aggressive' && needTricks) {
