@@ -262,6 +262,76 @@ export function useSpadesDirector(
     game.loadFromLocalStorage?.()
   }
 
+  /**
+   * Restore visual state from saved game.
+   * Uses fast animation to properly set up card state.
+   */
+  async function restoreFromSavedState() {
+    if (!boardRef.value) return
+
+    // Set up table containers
+    cardController.setupTable(dealerSeat.value)
+
+    // Build player hands for dealing (by seat index)
+    const gamePlayers = game.players.value
+    const dealPlayers = [0, 1, 2, 3].map(seatIdx => {
+      const playerId = seatIndexToPlayerId(seatIdx)
+      const player = gamePlayers[playerId]
+      return {
+        hand: (player?.hand ?? []) as any[],
+      }
+    })
+
+    // Use fast deal animation to set up cards properly
+    await cardController.dealFromPlayers(dealPlayers, {
+      dealDelayMs: 5,      // Very fast stagger
+      dealFlightMs: 50,    // Quick flight
+      fanDurationMs: 50,   // Quick fan
+      dealerSeatIndex: dealerSeat.value,
+      revealUserHand: true,
+      focusUserHand: true,
+      extraDeckCards: [],
+      keepRemainingCards: false,
+    })
+
+    // Sort and position user hand
+    await cardController.sortUserHand((cards) => {
+      // Sort by suit then rank for Spades
+      return [...cards].sort((a, b) => {
+        if (a.suit !== b.suit) return a.suit.localeCompare(b.suit)
+        return a.rank.localeCompare(b.rank)
+      })
+    }, 50)
+
+    // Hide opponent hands
+    await cardController.hideOpponentHands()
+
+    // Restore won-trick stacks from completed tricks
+    const completedTricks = game.completedTricks?.value ?? []
+    const completedTrickSnapshots = completedTricks.map((trick) => ({
+      winnerId: trick.winnerId,
+      cards: trick.cards.map((played) => ({
+        card: {
+          id: played.card.id,
+          suit: played.card.suit,
+          rank: played.card.rank,
+        },
+      })),
+    }))
+    await cardController.restoreWonTrickStacks(completedTrickSnapshots)
+
+    // If there are cards in the current trick, animate them quickly to center
+    const trickCards = game.currentTrick.value?.cards ?? []
+    for (let i = 0; i < trickCards.length; i++) {
+      const tc = trickCards[i]
+      if (tc) {
+        await cardController.playCard(tc.card, tc.playerId, i)
+      }
+    }
+
+    engine.refreshCards()
+  }
+
   onMounted(async () => {
     await initializeBoard()
 
@@ -299,5 +369,6 @@ export function useSpadesDirector(
     dimmedCardIds,
     initializeGame,
     loadSavedGame,
+    restoreFromSavedState,
   }
 }

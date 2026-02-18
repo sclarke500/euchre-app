@@ -230,10 +230,17 @@
       </div>
     </div>
   </Modal>
+
+  <!-- Loading overlay for game restore -->
+  <Transition name="fade">
+    <div v-if="isRestoringGame" class="restore-overlay">
+      <div class="restore-message">Resuming game...</div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
-import { computed, proxyRefs, ref, onUnmounted } from 'vue'
+import { computed, proxyRefs, ref, onUnmounted, nextTick } from 'vue'
 import { type SpadesBid } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
@@ -286,12 +293,15 @@ const {
   dimmedCardIds,
   initializeGame,
   loadSavedGame,
+  restoreFromSavedState,
 } = useSpadesDirector(adapter, engine, {
   mode: props.mode,
   tableRef,
   boardRef,
   onGameLost: () => emit('leave-game'),
 })
+
+const isRestoringGame = ref(false)
 
 // Check for saved game on mount (SP only)
 if (props.mode === 'singleplayer') {
@@ -304,9 +314,23 @@ if (props.mode === 'singleplayer') {
 }
 
 // Resume/new game handlers
-function handleResumeGame() {
+async function handleResumeGame() {
   showResumePrompt.value = false
+  isRestoringGame.value = true
+  
+  // Load the saved state (sets isRestoring in store)
   loadSavedGame()
+  
+  // Wait for next tick then restore visuals
+  await nextTick()
+  await restoreFromSavedState()
+  
+  // Brief delay for smooth transition
+  await new Promise(r => setTimeout(r, 100))
+  isRestoringGame.value = false
+  
+  // Commit restore (triggers AI if needed)
+  spadesStore?.commitRestore()
 }
 
 function handleNewGame() {
@@ -728,5 +752,32 @@ function handlePlayAgain() {
   strong {
     color: #fff;
   }
+}
+
+// Restore overlay
+.restore-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 25, 20, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.restore-message {
+  color: #88aa99;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

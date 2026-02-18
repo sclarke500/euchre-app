@@ -47,6 +47,10 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   let playAnimationCallback: ((play: { card: StandardCard; playerId: number }) => Promise<void>) | null = null
   let trickCompleteCallback: ((winnerId: number) => Promise<void>) | null = null
 
+  // Restore transaction state
+  const isRestoring = ref(false)
+  let shouldResumeAiAfterRestore = false
+
   // Computed
   const gameState = computed<SpadesGameState>(() => ({
     gameType: 'spades',
@@ -275,6 +279,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   }
 
   function processAITurn() {
+    // Don't process AI turns during restore
+    if (isRestoring.value) return
+
     const playerId = currentPlayer.value
     const player = players.value[playerId]
     if (!player) return
@@ -334,6 +341,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   const STORAGE_KEY = '67cards_spades_progress'
 
   function saveToLocalStorage() {
+    // Don't save during restore transaction
+    if (isRestoring.value) return
+
     if (gameOver.value) {
       clearSavedGame()
       return
@@ -356,15 +366,45 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       if (!saved) return false
 
       const state = JSON.parse(saved)
+      
+      isRestoring.value = true
+      shouldResumeAiAfterRestore = false
+
       applyState(state)
       userCardsRevealed.value = state.userCardsRevealed ?? true
       tracker.reset()
+
+      // Determine if AI should resume after visual restore
+      const currentPlayerObj = players.value[currentPlayer.value]
+      shouldResumeAiAfterRestore = Boolean(
+        currentPlayerObj &&
+        !currentPlayerObj.isHuman &&
+        (phase.value === SpadesPhase.Bidding || phase.value === SpadesPhase.Playing)
+      )
+
       return true
     } catch (e) {
       console.warn('[SpadesStore] Failed to load saved game:', e)
+      isRestoring.value = false
+      shouldResumeAiAfterRestore = false
       clearSavedGame()
       return false
     }
+  }
+
+  function commitRestore() {
+    const shouldResume = shouldResumeAiAfterRestore
+    isRestoring.value = false
+    shouldResumeAiAfterRestore = false
+
+    if (shouldResume) {
+      processAITurn()
+    }
+  }
+
+  function abortRestore() {
+    isRestoring.value = false
+    shouldResumeAiAfterRestore = false
   }
 
   function hasSavedGame(): boolean {
@@ -429,5 +469,8 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     loadFromLocalStorage,
     hasSavedGame,
     clearSavedGame,
+    isRestoring,
+    commitRestore,
+    abortRestore,
   }
 })
