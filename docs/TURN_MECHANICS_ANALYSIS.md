@@ -1,287 +1,405 @@
-# Turn Mechanics Analysis
+# Turn Mechanics Architecture Analysis
 
-## Overview
+## Executive Summary
 
-This document analyzes how turn state is managed across all games in both singleplayer (SP) and multiplayer (MP) modes, with focus on:
-1. How `isMyTurn` / `isHumanTurn` is determined
-2. How `validCards` / `validPlays` is set and cleared
-3. When and how turns transition
-4. Flash/flicker issues and their causes
+This document evaluates the turn mechanics architecture across all games (Euchre, Spades, President) in both singleplayer (SP) and multiplayer (MP) modes. The goal is to assess efficiency, elegance, and opportunities for unification.
 
 ---
 
-## Current State by Game
+## Architecture Overview
 
-### Euchre
+### The Stack
 
-#### Singleplayer
-- **Turn determination**: `isHumanTurn` computed from `gameState.currentPlayer === 0`
-- **Valid cards**: Computed locally from hand + trick state using `getLegalPlays()`
-- **Turn transition**: Synchronous - game state updates, computed reacts
-- **Flash risk**: LOW - pure computed, no async gaps
-
-#### Multiplayer
-- **Turn determination**: `isMyTurn` ref, set by messages
-- **Valid cards**: `validCards` ref, filled from server OR locally
-- **Turn transition**: 
-  1. User action → immediately set `isMyTurn = false`, clear `validCards`
-  2. Server sends `game_state` 
-  3. Server sends `your_turn` → set `isMyTurn = true`, update `validCards`
-- **Flash risk**: HIGH
-  - Gap between user action clearing state and next `your_turn` arriving
-  - `game_state` doesn't restore `isMyTurn` (intentionally, to prevent flash)
-  - Local fallback fills `validCards` when empty, but only in `game_state` handler
-
-**Euchre MP Turn Flow:**
 ```
-User plays card
-  → isMyTurn = false
-  → validCards = []
-  → [FLASH WINDOW - cards not highlighted]
-  
-Server sends game_state
-  → If our turn detected: validCards filled locally (if empty)
-  → isMyTurn stays false (to prevent premature interaction)
-  
-Server sends your_turn
-  → isMyTurn = true
-  → validCards = server value (overwrites local)
+┌─────────────────────────────────────────────────────────────┐
+│                         UI Layer                            │
+│  (GameBoard.vue - renders cards, handles clicks)            │
+├─────────────────────────────────────────────────────────────┤
+│                       Director Layer                        │
+│  (useXxxDirector.ts - animations, UI state, seat mapping)   │
+├─────────────────────────────────────────────────────────────┤
+│                       Adapter Layer                         │
+│  (useXxxGameAdapter.ts - unifies SP/MP interface)           │
+├─────────────────────────────────────────────────────────────┤
+│                        Store Layer                          │
+│  SP: xxxGameStore.ts    │    MP: xxxMultiplayerStore.ts     │
+│  (local game logic)     │    (server sync + local cache)    │
+├─────────────────────────────────────────────────────────────┤
+│                       Shared Layer                          │
+│  (@67cards/shared - game rules, types, AI logic)            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
----
+### Turn State Components
 
-### Spades
-
-#### Singleplayer
-- **Turn determination**: `isHumanTurn` computed from `gameState.currentPlayer === 0`
-- **Valid plays**: Computed locally using `getLegalPlays()`
-- **Turn transition**: Synchronous
-- **Flash risk**: LOW
-
-#### Multiplayer
-- **Turn determination**: `isMyTurn` ref, set by messages
-- **Valid plays**: NOW computed locally (as of 2026-02-17 fix)
-  ```ts
-  validPlays = computed(() => {
-    if (!isMyTurn.value || phase.value !== SpadesPhase.Playing) return []
-    return Spades.getLegalPlays(human.hand, trick, spadesBroken)
-  })
-  ```
-- **Turn transition**:
-  1. User action → `isMyTurn = false`, clear `validCards`
-  2. Server sends `game_state` → may clear `isMyTurn` if not our turn
-  3. Server sends `your_turn` → `isMyTurn = true`, update `validCards`
-- **Flash risk**: MEDIUM
-  - `validPlays` is now computed from `isMyTurn`, so it updates instantly
-  - But `validCards` ref still cleared on action (legacy, possibly unused)
+| Component | Description | Location |
+|-----------|-------------|----------|
+| `currentPlayer` | Whose turn it is (player ID) | Store |
+| `isHumanTurn` / `isMyTurn` | Is it the human's turn? | Store (computed or ref) |
+| `validCards` / `validPlays` | What can be played | Store (computed or ref) |
+| `currentTurnSeat` | Visual seat for turn indicator | Director |
+| `phase` | Game phase (bidding, playing, etc.) | Store |
 
 ---
 
-### President
+## Singleplayer Architecture
 
-#### Singleplayer
-- **Turn determination**: `isHumanTurn` computed from `gameState.currentPlayer === humanPlayerId`
-- **Valid plays**: Computed locally using `findValidPlays()`
-- **Turn transition**: Synchronous
-- **Flash risk**: LOW
+### Pattern
+All SP stores follow a similar pattern:
 
-#### Multiplayer
-- **Turn determination**: `isMyTurn` ref, set by messages
-- **Valid plays**: NOW computed locally (as of 2026-02-17 fix)
-  ```ts
-  validPlays = computed(() => {
-    if (!store.isMyTurn) return []
-    return findValidPlays(store.myHand, store.currentPile, store.superTwosMode)
-  })
-  ```
-- **Turn transition**:
-  1. User action → `isMyTurn = false` (validPlays NOT cleared since 2026-02-17)
-  2. Server sends `game_state` → conditional `isMyTurn` update
-  3. Server sends `your_turn` → `isMyTurn = true`, update `validPlays` ref
-- **Flash risk**: LOW (after fix)
-  - `validPlays` computed from local calculation
-  - Only `isMyTurn` changes, not the valid cards list
+```typescript
+// State
+const currentPlayer = ref(0)
+const phase = ref(Phase.Setup)
 
----
+// Computed turn state
+const isHumanTurn = computed(() => {
+  const human = players.value.find(p => p.isHuman)
+  return human && currentPlayer.value === human.id
+})
 
-## The Flash Problem
-
-### Root Cause
-In MP, the pattern is:
-1. **Optimistic clear**: User action immediately clears turn state
-2. **Network delay**: Wait for server response
-3. **Server restore**: `your_turn` message restores turn state
-
-During step 2, UI shows cards as non-playable (flash).
-
-### Why It Exists
-The optimistic clear prevents:
-- Double-submissions (user clicks again while waiting)
-- Stale highlights if turn passes to another player
-
-### Current Mitigations
-
-| Game | Mitigation |
-|------|------------|
-| President | Local `validPlays` computed, don't clear on action |
-| Spades | Local `validPlays` computed |
-| Euchre | Local fallback in `game_state` handler, but still clears first |
-
----
-
-## Inconsistencies Found
-
-### 1. Euchre still clears validCards on action
-```ts
-// euchreMultiplayerStore.ts
-isMyTurn.value = false
-validCards.value = []  // ← CAUSES FLASH
-```
-
-### 2. Euchre uses validCards ref, others use computed
-- **Euchre**: `validCards` is a ref, filled from server or local fallback
-- **Spades/President**: `validPlays` is computed from local calculation
-
-### 3. Euchre has hybrid approach
-Euchre tries to fill `validCards` locally in `game_state` handler:
-```ts
-if (validCards.value.length === 0) {
-  validCards.value = getLegalPlays(myHand, trick, trump).map(c => c.id)
-}
-```
-But it already cleared `validCards` on action, so there's still a flash window.
-
-### 4. Different naming
-- Euchre/Spades: `validCards` (card IDs)
-- President: `validPlays` (arrays of card IDs for multi-card plays)
-- Adapter layer normalizes to `validCards` or `validPlays` per game
-
----
-
-## Proposed Unification
-
-### Option A: Full Local Calculation (Recommended)
-
-All games compute valid plays locally, never rely on server `your_turn.validCards`:
-
-```ts
-// Unified pattern for all MP stores
+// Computed valid plays
 const validPlays = computed(() => {
-  if (!isMyTurn.value) return []
-  if (phase.value !== PlayingPhase) return []
-  return calculateLocalValidPlays(hand, gameState)
+  if (!isHumanTurn.value) return []
+  return calculateLegalPlays(hand, gameState)
 })
 ```
 
-**Changes needed:**
-- Euchre MP: Switch from `validCards` ref to computed
-- Remove all `validCards.value = []` clears on user action
-- Server `your_turn.validCards` becomes optional (for validation/logging only)
+### Turn Flow (SP)
 
-**Benefits:**
-- Zero flash - computed updates synchronously
-- Simpler code - no ref management
-- Consistent pattern across all games
+```
+1. Human plays card
+   → playCard(cardId) called
+   → Game state updated synchronously
+   → currentPlayer advances
+   → isHumanTurn recomputes (false)
+   → validPlays recomputes (empty)
 
-### Option B: Delayed Clear with Debounce
+2. AI turn runs
+   → setTimeout or requestAnimationFrame
+   → AI selects card
+   → Game state updated
+   → currentPlayer advances
+   → Repeat until human's turn
 
-Keep server as source of truth, but delay clearing:
-```ts
+3. Human's turn again
+   → isHumanTurn recomputes (true)
+   → validPlays recomputes (with legal cards)
+```
+
+### SP Complexity Assessment
+
+| Game | Store Lines | Turn Logic Complexity |
+|------|-------------|----------------------|
+| Euchre | ~550 | HIGH - bidding rounds, going alone, dealer discard |
+| Spades | ~360 | MEDIUM - bidding, blind nil reveal |
+| President | ~500 | MEDIUM - multi-card plays, passing, pile clear |
+
+**Key Observation:** SP is straightforward because everything is synchronous. Turn state is pure computed properties derived from `currentPlayer`.
+
+---
+
+## Multiplayer Architecture
+
+### Pattern
+MP stores are more complex due to network asynchrony:
+
+```typescript
+// State from server
+const gameState = ref<GameState | null>(null)
+const isMyTurn = ref(false)  // Set by server messages
+const validCards = ref<string[]>([])  // Now computed locally (as of 2026-02-17)
+
+// Message handling
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'game_state':
+      gameState.value = msg.state
+      // May update isMyTurn based on currentPlayer
+      break
+    case 'your_turn':
+      isMyTurn.value = true
+      validActions.value = msg.validActions
+      break
+  }
+}
+
+// User action
 function playCard(cardId) {
-  sendToServer(cardId)
-  // Don't clear immediately - wait for server response
-  // If server confirms turn passed, then clear
+  websocket.send({ type: 'play_card', cardId })
+  isMyTurn.value = false  // Optimistic
 }
 ```
 
-**Problems:**
-- More complex
-- Risk of stale state if server is slow
-- Double-click possible if not handled
+### Turn Flow (MP)
 
-### Option C: Optimistic State Machine
+```
+1. Human plays card
+   → playCard(cardId) called
+   → WebSocket message sent to server
+   → isMyTurn = false (optimistic)
+   → [NETWORK DELAY]
 
-Track turn state as a state machine:
-```ts
-type TurnState = 
-  | { status: 'waiting' }
-  | { status: 'myTurn', validCards: string[] }
-  | { status: 'actionPending', cardPlayed: string }
-  | { status: 'otherTurn' }
+2. Server processes
+   → Validates play
+   → Updates game state
+   → Determines next player
+   → Broadcasts messages
+
+3. Client receives
+   → game_state message (new state)
+   → your_turn message (if human's turn again)
+   → isMyTurn = true
+   → validCards computed from new state
 ```
 
-**Problems:**
-- More complex
-- Overkill for this use case
+### MP Message Types
+
+| Game | Key Messages |
+|------|--------------|
+| Euchre | `game_state`, `your_turn`, `bid_made`, `card_played`, `trick_complete` |
+| Spades | `spades_game_state`, `spades_your_turn`, `spades_bid_made`, `spades_card_played` |
+| President | `president_game_state`, `president_your_turn`, `president_play_made`, `president_pile_cleared` |
+
+### MP Complexity Assessment
+
+| Game | Store Lines | Turn Logic Complexity | Queue Processing |
+|------|-------------|----------------------|------------------|
+| Euchre | ~600 | HIGH | Yes (for animations) |
+| Spades | ~320 | MEDIUM | Yes |
+| President | ~450 | MEDIUM | Yes |
 
 ---
 
-## Recommended Fix for Euchre
+## Current Inconsistencies
 
-Apply the same pattern as President/Spades:
+### 1. Naming Conventions
 
-```ts
-// euchreMultiplayerStore.ts
+| Concept | Euchre | Spades | President |
+|---------|--------|--------|-----------|
+| Turn flag | `isMyTurn` | `isMyTurn` | `isMyTurn` |
+| Human turn (SP) | N/A (no adapter) | `isHumanTurn` | `isHumanTurn` |
+| Valid cards | `validCards` (IDs) | `validPlays` (Cards) | `validPlays` (Card[][]) |
+| Turn actions | `validActions` | `validActions` | `validActions` |
 
-// Change validCards from ref to computed
-const validCards = computed<string[]>(() => {
-  if (!isMyTurn.value) return []
-  
-  const phase = gameState.value?.phase
-  if (phase === 'playing') {
-    return getLegalPlays(myHand.value, currentTrick.value, trumpSuit).map(c => c.id)
-  }
-  if (phase === 'bidding_round_1' || phase === 'bidding_round_2') {
-    // During bidding, all cards are "valid" (for display, bid buttons handle actual bids)
-    return (myHand.value ?? []).map(c => c.id)
-  }
-  return []
+### 2. Adapter Usage
+
+| Game | Has Adapter | SP/MP Unified |
+|------|-------------|---------------|
+| Euchre | ✅ Yes | ✅ Yes |
+| Spades | ✅ Yes | ✅ Yes |
+| President | ✅ Yes | ✅ Yes |
+
+**Good:** All games now have adapters that unify SP/MP interface.
+
+### 3. Valid Cards Calculation
+
+| Game | SP | MP (after 2026-02-17 fix) |
+|------|----|----|
+| Euchre | Computed locally | Computed locally |
+| Spades | Computed locally | Computed locally |
+| President | Computed locally | Computed locally |
+
+**Good:** All games now use local computation for valid plays.
+
+---
+
+## Server Message Patterns
+
+### The Two-Message Pattern
+
+All MP games use a two-message pattern for turn transitions:
+
+1. **`game_state`** - Full game state update
+2. **`your_turn`** - Turn notification with valid actions
+
+**Why two messages?**
+- `game_state` is broadcast to all players
+- `your_turn` is sent only to the active player (contains player-specific info)
+
+**Problem:** Creates a race condition window where UI might flash.
+
+**Current Solution:** Calculate valid plays locally, ignore server `validCards`.
+
+### Alternative: Single Message Pattern
+
+Could combine into one message per player:
+```json
+{
+  "type": "game_update",
+  "state": { ... },
+  "isYourTurn": true,
+  "validActions": ["play_card"],
+  "validCards": ["hearts-A", "hearts-K"]
+}
+```
+
+**Pros:** Atomic update, no flash window
+**Cons:** Larger messages, more server logic, breaks existing pattern
+
+**Recommendation:** Keep current pattern with local valid calculation.
+
+---
+
+## Turn Indicator Architecture
+
+### Current Implementation
+
+Each Director computes `currentTurnSeat`:
+
+```typescript
+// useEuchreDirector.ts
+const currentTurnSeat = computed(() => {
+  const cp = game.currentPlayer.value
+  return cp >= 0 ? playerIdToSeatIndex(cp) : -1
 })
 
-// Remove all instances of:
-// - validCards.value = []
-// - updateIfChanged(validCards, message.validCards ?? [])
+// useSpadesDirector.ts
+const currentTurnSeat = computed(() => {
+  if (!game.isHumanTurn.value && game.currentPlayer.value === -1) return -1
+  return playerIdToSeatIndex(game.currentPlayer.value)
+})
+
+// usePresidentDirector.ts
+const currentTurnSeat = computed(() => {
+  const cp = game.currentPlayer.value
+  return cp >= 0 ? playerIdToSeatIndex(cp) : -1
+})
 ```
 
----
+**Observation:** Euchre and President are identical. Spades has extra guard.
 
-## Action Plan
+### Seat Mapping
 
-### Phase 1: Euchre Local ValidCards (Priority)
-1. Change `validCards` from ref to computed
-2. Remove all manual clears/sets
-3. Test bidding + playing phases
+All games use the same pattern:
+```typescript
+function playerIdToSeatIndex(playerId: number): number {
+  const myId = game.humanPlayer.value?.id ?? 0
+  const count = playerCount.value
+  return (playerId - myId + count) % count
+}
+```
 
-### Phase 2: Audit Turn Transitions
-1. Review all `isMyTurn = false` calls
-2. Ensure they only happen when appropriate
-3. Consider keeping `isMyTurn = true` until server confirms turn passed
-
-### Phase 3: Unify Naming (Optional)
-- Standardize on `validPlays` everywhere
-- Or `validCards` for single-card games, `validPlays` for multi-card
+User is always seat 0, opponents are 1, 2, 3 (clockwise).
 
 ---
 
-## Testing Checklist
+## Opportunities for Unification
 
-After changes, verify no flash in:
-- [ ] Euchre MP: User plays card during trick
-- [ ] Euchre MP: User bids during bidding round
-- [ ] Euchre MP: Dealer discards after picking up
-- [ ] Spades MP: User plays card
-- [ ] Spades MP: User makes bid
-- [ ] President MP: User plays single/multi card
-- [ ] President MP: User passes
+### 1. Shared Turn State Composable
+
+Could extract common turn logic:
+
+```typescript
+// useMultiplayerTurnState.ts
+export function useMultiplayerTurnState(options: {
+  gameState: Ref<GameState | null>
+  myPlayerId: ComputedRef<number>
+  calculateValidPlays: (state: GameState) => string[]
+}) {
+  const isMyTurn = ref(false)
+  const validPlays = computed(() => {
+    if (!isMyTurn.value || !options.gameState.value) return []
+    return options.calculateValidPlays(options.gameState.value)
+  })
+  
+  function handleYourTurn() { isMyTurn.value = true }
+  function handleAction() { isMyTurn.value = false }
+  
+  return { isMyTurn, validPlays, handleYourTurn, handleAction }
+}
+```
+
+**Benefit:** Consistent behavior, less code duplication
+**Effort:** Medium - requires refactoring all MP stores
+
+### 2. Unified Message Queue
+
+All MP games use `createMultiplayerQueueController`. This is already unified. ✅
+
+### 3. Unified Director Turn Indicator
+
+Could share `currentTurnSeat` computation:
+
+```typescript
+// In useCardController or new shared composable
+function useCurrentTurnSeat(game: GameAdapter, playerIdToSeat: (id: number) => number) {
+  return computed(() => {
+    const cp = game.currentPlayer.value
+    return cp >= 0 ? playerIdToSeat(cp) : -1
+  })
+}
+```
+
+**Benefit:** DRY
+**Effort:** Low
 
 ---
 
-## Summary
+## Efficiency Analysis
 
-| Game | SP Turn | MP Turn | ValidCards Source | Flash Risk |
-|------|---------|---------|-------------------|------------|
-| Euchre | computed | ref | ref (server + local fallback) | HIGH |
-| Spades | computed | ref | computed (local) | LOW |
-| President | computed | ref | computed (local) | LOW |
+### Turn Transition Performance
 
-**Euchre needs the same fix as Spades/President**: switch `validCards` from ref to computed local calculation.
+| Step | SP | MP |
+|------|----|----|
+| State update | Sync (instant) | Async (network) |
+| Turn determination | Computed (instant) | Ref + Message |
+| Valid plays | Computed (instant) | Computed (instant) |
+| UI update | Reactive (instant) | Reactive (instant) |
+
+**Bottleneck:** Network latency in MP (unavoidable)
+
+### Reactivity Efficiency
+
+All turn state uses Vue's reactivity:
+- `ref` for mutable state
+- `computed` for derived state
+- Updates trigger minimal re-renders
+
+**Assessment:** Efficient. No unnecessary computations.
+
+---
+
+## Recommendations
+
+### High Priority
+
+1. **✅ DONE: Local valid plays calculation** - All games now compute locally
+
+2. **Consider: Consolidate turn state into adapter**
+   - Adapter already provides `isHumanTurn` / `validPlays`
+   - Could move more turn logic there for consistency
+
+### Medium Priority
+
+3. **Standardize naming**
+   - Pick one: `validCards` vs `validPlays`
+   - Currently mixed based on game mechanics (single vs multi-card)
+
+4. **Extract shared turn composable**
+   - Reduce code duplication in MP stores
+   - Ensure consistent behavior
+
+### Low Priority
+
+5. **Unify Director currentTurnSeat**
+   - Minor DRY improvement
+   - Low impact
+
+6. **Document message flow**
+   - Create sequence diagrams for MP turn flow
+   - Helps onboarding
+
+---
+
+## Conclusion
+
+The turn mechanics are **generally well-designed**:
+- Clear separation between SP (synchronous) and MP (async)
+- Adapters successfully unify the interface
+- Local valid plays calculation eliminates flash issues
+- Queue-based message processing handles animation sequencing
+
+**Main area for improvement:** Reduce code duplication in MP stores by extracting a shared turn state composable.
+
+**Flash issue in SP:** If flash is occurring in SP, it's not a turn mechanics issue — it's likely a Vue reactivity or rendering issue (CSS transitions, watch timing, etc.). Would need specific reproduction steps to diagnose.
