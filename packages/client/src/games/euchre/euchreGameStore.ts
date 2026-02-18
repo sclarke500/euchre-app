@@ -235,10 +235,14 @@ export const useEuchreGameStore = defineStore('game', () => {
         if (!isPlayerSittingOut(currentDealer.value, alonePlayer)) {
           const needsHumanDiscard = handleDealerPickup()
           if (needsHumanDiscard) {
-            // Wait for human dealer to discard before starting play
+            // Human dealer needs to discard - set their turn
+            currentRound.value.currentPlayer = currentRound.value.dealer
             phase.value = GamePhase.DealerDiscard
             return
           }
+          // AI dealer discarded automatically - nobody's turn during animation
+          // (startPlayingPhase will set correct player after animation)
+          currentRound.value.currentPlayer = -1
         }
       }
 

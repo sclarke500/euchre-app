@@ -161,10 +161,10 @@ export function useEuchreDirector(
   })
 
   const currentTurnSeat = computed(() => {
-    // During DealerDiscard, the dealer is the one who must act,
-    // even though currentPlayer already points to whoever leads next
+    // During DealerDiscard, only show turn indicator if human is dealer
+    // (AI dealer swaps happen automatically - nobody's turn during that animation)
     if (game.phase.value === GamePhase.DealerDiscard) {
-      return dealerSeat.value
+      return dealerSeat.value === 0 ? 0 : -1
     }
     const cp = game.currentPlayer.value
     return cp >= 0 ? playerIdToSeatIndex(cp) : -1
