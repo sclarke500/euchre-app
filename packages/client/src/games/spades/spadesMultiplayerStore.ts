@@ -6,7 +6,7 @@ import type {
   SpadesClientPlayer,
   StandardCard,
 } from '@67cards/shared'
-import { SpadesPhase, SpadesBidType } from '@67cards/shared'
+import { SpadesPhase, SpadesBidType, Spades } from '@67cards/shared'
 import { websocket } from '@/services/websocket'
 import { updateIfChanged } from '@/stores/utils'
 import { buildMultiplayerDebugSnapshot, logMultiplayerEvent } from '@/stores/multiplayerDebug'
@@ -61,11 +61,14 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   const blindNilDecisionPending = computed(() => {
     return isHumanBidding.value && !userCardsRevealed.value
   })
+  // Calculate valid plays locally to avoid flash from server round-trip
   const validPlays = computed<StandardCard[]>(() => {
+    if (!isMyTurn.value || phase.value !== SpadesPhase.Playing) return []
     const human = humanPlayer.value
     if (!human?.hand) return []
-    const legal = new Set(validCards.value)
-    return human.hand.filter(c => legal.has(c.id))
+    const trick = currentTrick.value
+    const spadesBroken = gameState.value?.spadesBroken ?? false
+    return Spades.getLegalPlays(human.hand, trick, spadesBroken)
   })
 
   function getDebugSnapshot() {
