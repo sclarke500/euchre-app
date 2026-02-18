@@ -37,6 +37,7 @@ export interface EuchreGameAdapter {
   currentPlayer: ComputedRef<number>
   scores: ComputedRef<TeamScore[]>
   currentTrick: ComputedRef<Trick>
+  completedTricks: ComputedRef<Trick[]>
   trump: ComputedRef<EuchreTrumpInfo | null>
   turnUpCard: ComputedRef<Card | null>
   biddingRound: ComputedRef<1 | 2 | null>
@@ -158,6 +159,7 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
   const isHumanTurn = computed(() => store.currentPlayer === 0)
 
   const currentTrick = computed(() => store.currentTrick ?? createEmptyTrick())
+  const completedTricks = computed(() => store.currentRound?.tricks ?? [])
 
   // Compute valid cards based on the current trick and trump
   const validPlays = computed(() => {
@@ -176,6 +178,7 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
     currentPlayer: computed(() => store.currentPlayer),
     scores: computed(() => store.scores),
     currentTrick,
+    completedTricks,
     trump,
     turnUpCard,
     biddingRound,
@@ -266,6 +269,7 @@ function createMultiplayerAdapter(): EuchreGameAdapter {
   })
 
   const currentTrick = computed(() => store.currentTrick ?? createEmptyTrick())
+  const completedTricks = computed<Trick[]>(() => [])
 
   // For multiplayer, get winnerId from the stored value (set when trick_complete message arrives)
   const lastTrickWinnerId = computed<number | null>(() => {
@@ -278,6 +282,7 @@ function createMultiplayerAdapter(): EuchreGameAdapter {
     currentPlayer: computed(() => store.currentPlayer),
     scores: computed(() => store.scores),
     currentTrick,
+    completedTricks,
     trump,
     turnUpCard: computed(() => store.turnUpCard),
     biddingRound: computed(() => store.biddingRound),

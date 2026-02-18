@@ -11,7 +11,7 @@ import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@
 import type { Card, Suit, ServerMessage } from '@67cards/shared'
 import type { EuchreGameAdapter } from './useEuchreGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
-import { useCardController, cardControllerPresets } from '@/composables/useCardController'
+import { useCardController, cardControllerPresets, type CompletedTrickSnapshot } from '@/composables/useCardController'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import type { EngineCard, CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
@@ -1141,6 +1141,19 @@ export function useEuchreDirector(
     
     // Hide opponent hands
     await hideOpponentHands()
+
+    // Restore won-trick stacks from completed tricks
+    const completedTrickSnapshots: CompletedTrickSnapshot[] = game.completedTricks.value.map((trick) => ({
+      winnerId: trick.winnerId,
+      cards: trick.cards.map((played) => ({
+        card: {
+          id: played.card.id,
+          suit: played.card.suit,
+          rank: played.card.rank,
+        },
+      })),
+    }))
+    cardController.restoreWonTrickStacks(completedTrickSnapshots)
 
     // If there are cards in the current trick, animate them quickly to center
     const trickCards = game.currentTrick.value?.cards ?? []

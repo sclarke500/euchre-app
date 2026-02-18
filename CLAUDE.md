@@ -98,6 +98,7 @@ When a card is played from the player's hand:
 - UI runs `director.setRestoreMode(true)` to suppress phase/trump watcher animations while rebuilding visuals.
 - After `director.restoreFromSavedState()`, UI calls `commitRestore()` to resume AI only if the restored turn belongs to AI.
 - On restore failure, use `abortRestore()` and start a fresh game.
+- Won-trick pile visuals are restored from completed tricks via shared `cardController.restoreWonTrickStacks()`.
 
 ### Player Timeout System
 - Turn reminders sent every 15 seconds
@@ -176,6 +177,8 @@ interface ManagedCard {
 Hand options: `rotation`, `scale`, `fanSpacing`, `fanCurve` (arc effect for user's hand)
 
 **PlayArea**: Center area for played cards (not yet fully implemented).
+
+**Restore helper**: `useCardController` includes `restoreWonTrickStacks(tricks)` for rebuilding decorative won-trick piles from persisted completed tricks. This is reusable across trick-taking games (e.g., Euchre/Spades).
 
 ### Table Layout
 - `.table-surface` with CSS for felt texture and wood border

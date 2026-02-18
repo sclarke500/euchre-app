@@ -93,6 +93,11 @@ export interface DealPlayerView {
   handSize?: number
 }
 
+export interface CompletedTrickSnapshot {
+  winnerId: number | null
+  cards: Array<{ card: { id: string; suit: string; rank: string } }>
+}
+
 function resolvesFaceUpWithBoardCardXor(faceUp: boolean, flipY: number): boolean {
   const normalizedFlip = ((flipY % 360) + 360) % 360
   const isFlipped = normalizedFlip > 90 && normalizedFlip < 270
@@ -690,6 +695,50 @@ export function useCardController(
     engine.refreshCards()
   }
 
+  function restoreWonTrickStacks(tricks: CompletedTrickSnapshot[]) {
+    if (trickCompleteMode !== 'stack') return
+    if (!tricks.length) return
+
+    const winnerTrickCounts: Record<number, number> = {}
+
+    for (const trick of tricks) {
+      if (trick.winnerId === null) continue
+
+      const winnerId = trick.winnerId
+      const winnerSeat = playerIdToSeatIndex(winnerId)
+      const targetPile = engine.getPiles().find(p => p.id === `tricks-won-player-${winnerSeat}`)
+      if (!targetPile) continue
+
+      const trickNumber = winnerTrickCounts[winnerId] ?? 0
+      const trickCards = trick.cards ?? []
+
+      for (let cardIndex = 0; cardIndex < trickCards.length; cardIndex++) {
+        const played = trickCards[cardIndex]
+        const playedCard = played?.card
+        if (!playedCard) continue
+
+        targetPile.addCard({
+          id: playedCard.id,
+          suit: playedCard.suit,
+          rank: playedCard.rank,
+        }, false)
+
+        const ref = engine.getCardRef(playedCard.id)
+        const targetPos = getPlayerTrickPosition(winnerId, trickNumber, cardIndex)
+        ref?.setPosition(targetPos)
+      }
+
+      winnerTrickCounts[winnerId] = trickNumber + 1
+    }
+
+    tricksWonByPlayer.value = {
+      ...tricksWonByPlayer.value,
+      ...winnerTrickCounts,
+    }
+
+    engine.refreshCards()
+  }
+
   function getAvatarBoardPosition(seatIndex: number, layout: TableLayoutResult): { x: number; y: number } {
     const { tableBounds, seats } = layout
     const seat = seats[seatIndex]
@@ -850,6 +899,7 @@ export function useCardController(
     sortUserHand,
     playCard,
     completeTrick,
+    restoreWonTrickStacks,
     hideOpponentHands,
   }
 }
