@@ -265,7 +265,15 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
         break
 
       case 'error':
-        console.error('[MP] Server error:', message.message)
+        console.error('[PresidentMP] Server error:', message.message, message.code)
+        // Show error to user if it's about invalid card selection
+        if (message.message?.includes('Invalid card selection')) {
+          console.warn('[PresidentMP] Card give rejected - restoring awaiting state')
+          // Re-enable give cards state so user can try again
+          if (cardsToGiveCount.value > 0) {
+            isAwaitingGiveCards.value = true
+          }
+        }
         logMultiplayerEvent('president-mp', 'apply_error', getDebugSnapshot(), {
           code: message.code ?? null,
           message: message.message,
@@ -324,8 +332,21 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   }
 
   function giveCards(cardIds: string[]): void {
-    if (!isAwaitingGiveCards.value) return
-    if (cardIds.length !== cardsToGiveCount.value) return
+    console.log('[PresidentMP] giveCards called:', {
+      cardIds,
+      isAwaitingGiveCards: isAwaitingGiveCards.value,
+      cardsToGiveCount: cardsToGiveCount.value,
+      phase: phase.value,
+    })
+    
+    if (!isAwaitingGiveCards.value) {
+      console.warn('[PresidentMP] giveCards rejected: not awaiting')
+      return
+    }
+    if (cardIds.length !== cardsToGiveCount.value) {
+      console.warn('[PresidentMP] giveCards rejected: wrong count', cardIds.length, '!=', cardsToGiveCount.value)
+      return
+    }
 
     websocket.send({
       type: 'president_give_cards',
@@ -333,7 +354,8 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
       expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
-    // Clear state - server will send exchange_info after processing
+    // Optimistically clear state - server will send exchange_info after processing.
+    // Note: we keep cardsToGiveCount so error handling can restore the UI if needed.
     isAwaitingGiveCards.value = false
   }
 
