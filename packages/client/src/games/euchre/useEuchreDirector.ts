@@ -642,9 +642,8 @@ export function useEuchreDirector(
         if (trickCards.length > 0 && trickWinner !== null) {
           logTrickResult(trickCards, trickWinner, game.players.value.map(p => p.name))
         }
-        await sleep(TRICK_PAUSE_MS)
-        const winnerId = game.lastTrickWinnerId.value
-        if (winnerId !== null) await animateTrickSweep(winnerId)
+        // Note: Trick sweep animation is now handled by trickCompleteCallback
+        // (registered in SP mode). Don't animate here to avoid double-sweep race.
         lastAnimatedTrickCardCount.value = 0
         break
       }
