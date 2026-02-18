@@ -103,7 +103,7 @@
     </Modal>
 
     <!-- Game over modal -->
-    <Modal :show="game.gameOver.value" @close="$emit('leave-game')">
+    <Modal :show="game.gameOver.value" :dismiss-on-backdrop="false" @close="$emit('leave-game')">
       <div class="round-modal dialog-panel">
         <h2 class="dialog-title">Game Over!</h2>
         <div class="rankings">
@@ -116,7 +116,14 @@
             <span class="name">{{ game.players.value[playerId]?.name }}</span>
           </div>
         </div>
-        <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="$emit('leave-game')">Back to Menu</button>
+        <div v-if="mode === 'singleplayer' || isHost" class="modal-buttons dialog-actions">
+          <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="handlePlayAgain">Play Again</button>
+          <button class="modal-btn dialog-btn dialog-btn--muted" @click="$emit('leave-game')">Exit</button>
+        </div>
+        <div v-else class="modal-buttons dialog-actions">
+          <p class="panel-message dialog-text">Waiting for host to start new game...</p>
+          <button class="modal-btn dialog-btn dialog-btn--muted" @click="$emit('leave-game')">Leave</button>
+        </div>
       </div>
     </Modal>
 
@@ -166,6 +173,7 @@ import { usePresidentDirector } from './usePresidentDirector'
 import { usePresidentGameStore } from './presidentGameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { websocket } from '@/services/websocket'
+import { useLobbyStore } from '@/stores/lobbyStore'
 
 const props = withDefaults(defineProps<{
   mode?: 'singleplayer' | 'multiplayer'
@@ -176,6 +184,13 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'leave-game': []
 }>()
+
+// Multiplayer lobby integration
+const lobbyStore = props.mode === 'multiplayer' ? useLobbyStore() : null
+const isHost = computed(() => lobbyStore?.isHost ?? false)
+
+// Singleplayer store for startNewGame
+const presidentStore = props.mode === 'singleplayer' ? usePresidentGameStore() : null
 
 const tableRef = ref<InstanceType<typeof CardTable> | null>(null)
 const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
@@ -398,6 +413,14 @@ function handleTurnTimeout() {
   if (props.mode === 'multiplayer') {
     console.warn('[TurnTimer] Timeout reached — leaving game')
     emit('leave-game')
+  }
+}
+
+function handlePlayAgain() {
+  if (props.mode === 'multiplayer') {
+    lobbyStore?.restartGame()
+  } else {
+    presidentStore?.startNewGame()
   }
 }
 

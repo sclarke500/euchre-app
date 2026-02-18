@@ -62,8 +62,8 @@
           <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Exit</button>
         </div>
         <div v-else class="game-over-actions dialog-actions">
-          <div class="panel-message dialog-text">Waiting for host...</div>
-          <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Exit</button>
+          <div class="panel-message dialog-text">Waiting for host to start new game...</div>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Leave</button>
         </div>
       </div>
     </Modal>

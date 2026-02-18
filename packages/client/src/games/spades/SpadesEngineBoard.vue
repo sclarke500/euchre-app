@@ -141,9 +141,13 @@
         <div class="game-over-scores dialog-text">
           <span>Us {{ scores[0]?.score ?? 0 }} - {{ scores[1]?.score ?? 0 }} Them</span>
         </div>
-        <div class="game-over-actions dialog-actions">
+        <div v-if="mode === 'singleplayer' || isHost" class="game-over-actions dialog-actions">
           <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handlePlayAgain">Play Again</button>
           <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Exit</button>
+        </div>
+        <div v-else class="game-over-actions dialog-actions">
+          <div class="panel-message dialog-text">Waiting for host to start new game...</div>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Leave</button>
         </div>
       </div>
     </Modal>
@@ -229,6 +233,7 @@ import { useCardTable } from '@/composables/useCardTable'
 import { useSpadesGameAdapter } from './useSpadesGameAdapter'
 import { useSpadesDirector } from './useSpadesDirector'
 import { useSpadesBoardUi } from './useSpadesBoardUi'
+import { useLobbyStore } from '@/stores/lobbyStore'
 
 const props = withDefaults(defineProps<{
   mode?: 'singleplayer' | 'multiplayer'
@@ -239,6 +244,10 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'leave-game': []
 }>()
+
+// Multiplayer lobby integration
+const lobbyStore = props.mode === 'multiplayer' ? useLobbyStore() : null
+const isHost = computed(() => lobbyStore?.isHost ?? false)
 
 const adapter = useSpadesGameAdapter(props.mode)
 const store = proxyRefs(adapter)
@@ -355,7 +364,11 @@ function buildBugReportPayload() {
 
 // Play again
 function handlePlayAgain() {
-  store.startNewGame()
+  if (props.mode === 'multiplayer') {
+    lobbyStore?.restartGame()
+  } else {
+    store.startNewGame()
+  }
 }
 
 </script>
