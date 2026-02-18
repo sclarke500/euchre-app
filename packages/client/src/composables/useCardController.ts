@@ -711,6 +711,86 @@ export function useCardController(
     }
   }
 
+  /**
+   * Restore hands from saved state - instantly places cards without animation.
+   * Used when resuming a saved single-player game.
+   * 
+   * @param playersBySeat - Array of player hands indexed by SEAT INDEX (0 = user seat)
+   */
+  function restoreHands(
+    playersBySeat: Array<{ hand: StandardCard[] }>,
+    options: { userSeatFaceUp?: boolean; sortUserHand?: (cards: StandardCard[]) => StandardCard[] } = {}
+  ) {
+    const hands = engine.getHands()
+    const board = boardRef.value
+    if (!board || hands.length === 0) return
+
+    const layout = tableLayout.value ?? computeTableLayout(
+      board.offsetWidth,
+      board.offsetHeight,
+      config.layout ?? 'normal',
+      getPlayerCount()
+    )
+    const userSeatIndex = getUserSeatIndex()
+    const hideScale = 0.05
+
+    for (let seatIndex = 0; seatIndex < getPlayerCount(); seatIndex++) {
+      const hand = hands[seatIndex]
+      if (!hand) continue
+
+      const player = playersBySeat[seatIndex]
+      if (!player) continue
+
+      let cardsToAdd = [...player.hand]
+      const isUser = seatIndex === userSeatIndex
+
+      // Sort user's hand if sorter provided
+      if (isUser && options.sortUserHand) {
+        cardsToAdd = options.sortUserHand(cardsToAdd)
+      }
+
+      // Set hand properties
+      hand.faceUp = isUser && (options.userSeatFaceUp ?? true)
+      hand.mode = isUser ? 'fanned' : 'looseStack'
+      hand.scale = isUser ? (config.userHandScale ?? 1.0) : (config.opponentHandScale ?? 0.7)
+      hand.resetArcLock()
+
+      // Add cards to hand (hand.addCard adds to container, engine tracks via allCards computed)
+      for (const card of cardsToAdd) {
+        hand.addCard(card, hand.faceUp)
+      }
+
+      // Refresh so card refs are created
+      engine.refreshCards()
+
+      // Position cards instantly (no animation)
+      if (isUser) {
+        // User: fanned at bottom, face up
+        for (let i = 0; i < hand.cards.length; i++) {
+          const pos = hand.getCardPosition(i)
+          const ref = engine.getCardRef(hand.cards[i]!.card.id)
+          ref?.setPosition(pos)
+        }
+      } else {
+        // Opponent: collapsed at avatar position
+        const avatarPos = getAvatarBoardPosition(seatIndex, layout)
+        hiddenSeatIndices.add(seatIndex)
+        for (const managed of hand.cards) {
+          const ref = engine.getCardRef(managed.card.id)
+          ref?.setPosition({
+            x: avatarPos.x,
+            y: avatarPos.y,
+            rotation: 0,
+            zIndex: 50,
+            scale: hideScale,
+          })
+        }
+      }
+    }
+
+    engine.refreshCards()
+  }
+
   async function hideOpponentHands() {
     const board = boardRef.value
     if (!board) return
@@ -760,6 +840,7 @@ export function useCardController(
     tableLayout,
     setupTable,
     dealFromPlayers,
+    restoreHands,
     revealUserHand,
     sortUserHand,
     playCard,

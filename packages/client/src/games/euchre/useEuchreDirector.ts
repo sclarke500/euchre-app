@@ -1105,44 +1105,69 @@ export function useEuchreDirector(
    * Restore visual state from saved game (no animation).
    * Called when resuming a saved single-player game.
    */
-  async function restoreFromSavedState() {
+  function restoreFromSavedState() {
     if (!boardRef.value) return
 
     // Set up table containers
     setupTable()
 
-    // Build player hands from current game state
-    const players = game.players.value
-    const dealPlayers = [0, 1, 2, 3].map(seatIdx => {
+    // Get trump for sorting
+    const trump = game.trump.value?.suit ?? null
+    const sorter = (cards: Card[]) => sortEuchreHand(cards, trump)
+
+    // Build player hands BY SEAT INDEX (seat 0 = user, seat 1 = left, etc.)
+    const gamePlayers = game.players.value
+    const playersBySeat = [0, 1, 2, 3].map(seatIdx => {
       const playerId = seatIndexToPlayerId(seatIdx)
-      const player = players[playerId]
+      const player = gamePlayers[playerId]
       return {
         hand: (player?.hand.map(c => cardToEngineCard(c)) ?? []) as any[],
       }
     })
 
-    // Deal instantly (very fast animation to set up cards)
-    await cardController.dealFromPlayers(dealPlayers, {
-      dealDelayMs: 0,
-      dealFlightMs: 1, // Nearly instant
-      fanDurationMs: 1,
-      dealerSeatIndex: dealerSeat.value,
-      revealUserHand: true,
-      focusUserHand: true,
-      extraDeckCards: [],
-      keepRemainingCards: false,
+    // Restore hands instantly (no animation)
+    cardController.restoreHands(playersBySeat, {
+      userSeatFaceUp: true,
+      sortUserHand: sorter as any,
     })
 
-    // Position hands properly
-    await hideOpponentHands()
-    await sortUserHand(1)
-
-    // If there are cards in the current trick, replay them to the center pile
+    // If there are cards in the current trick, place them in center pile
     const trickCards = game.currentTrick.value?.cards ?? []
-    for (let i = 0; i < trickCards.length; i++) {
-      const tc = trickCards[i]
-      if (tc) {
-        await cardController.playCard(tc.card as any, tc.playerId, i)
+    if (trickCards.length > 0) {
+      const pile = engine.getPiles().find(p => p.id === 'center')
+      const centerPos = pile?.position ?? cardController.tableCenter.value
+      
+      if (pile && centerPos) {
+        for (let i = 0; i < trickCards.length; i++) {
+          const tc = trickCards[i]
+          if (tc) {
+            const card = cardToEngineCard(tc.card)
+            // Add card to pile (pile tracks it, engine will see it via allCards)
+            pile.addCard(card as any, true)
+            
+            // Refresh to create card refs
+            engine.refreshCards()
+            
+            // Position in a simple cross pattern around center
+            const seatIndex = playerIdToSeatIndex(tc.playerId)
+            const offsets = [
+              { x: 0, y: 40 },   // seat 0 (bottom/user)
+              { x: -50, y: 0 },  // seat 1 (left)
+              { x: 0, y: -40 },  // seat 2 (top)
+              { x: 50, y: 0 },   // seat 3 (right)
+            ]
+            const offset = offsets[seatIndex] ?? { x: 0, y: 0 }
+            
+            const ref = engine.getCardRef(card.id)
+            ref?.setPosition({
+              x: centerPos.x + offset.x,
+              y: centerPos.y + offset.y,
+              rotation: 0,
+              zIndex: 300 + i,
+              scale: 1.0,
+            })
+          }
+        }
       }
     }
 
