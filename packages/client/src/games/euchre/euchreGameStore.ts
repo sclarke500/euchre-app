@@ -496,7 +496,10 @@ export const useEuchreGameStore = defineStore('game', () => {
             partnerWinning
           )
         }
-        playCard(card, player.id)
+        // Add small delay for AI card play to prevent rapid turn indicator changes
+        setTimeout(() => {
+          playCard(card, player.id)
+        }, 150)
       }
     }, 800)
   }

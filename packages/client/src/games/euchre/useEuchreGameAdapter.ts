@@ -51,8 +51,8 @@ export interface EuchreGameAdapter {
   myPlayerId: ComputedRef<number>
   myHand: ComputedRef<Card[]>
   myTeamId: ComputedRef<number>
-  isMyTurn: ComputedRef<boolean>
-  validCards: ComputedRef<string[]>
+  isHumanTurn: ComputedRef<boolean>
+  validPlays: ComputedRef<string[]>
 
   // UI state
   lastBidAction: ComputedRef<{ playerId: number; message: string } | null>
@@ -150,13 +150,13 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
   const myHand = computed(() => store.players[0]?.hand ?? [])
   const myTeamId = computed(() => 0) // Human is always team 0 in single-player
 
-  const isMyTurn = computed(() => store.currentPlayer === 0)
+  const isHumanTurn = computed(() => store.currentPlayer === 0)
 
   const currentTrick = computed(() => store.currentTrick ?? createEmptyTrick())
 
   // Compute valid cards based on the current trick and trump
-  const validCards = computed(() => {
-    if (!isMyTurn.value) return []
+  const validPlays = computed(() => {
+    if (!isHumanTurn.value) return []
     const trumpSuit = trump.value?.suit
     if (!trumpSuit) return myHand.value.map(c => c.id) // No trump yet, all cards valid
     const legalCards = getLegalPlays(myHand.value, currentTrick.value, trumpSuit)
@@ -183,8 +183,8 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
     myPlayerId,
     myHand,
     myTeamId,
-    isMyTurn,
-    validCards,
+    isHumanTurn,
+    validPlays,
     lastBidAction,
     isMultiplayer: false,
 
@@ -280,8 +280,8 @@ function createMultiplayerAdapter(): EuchreGameAdapter {
     myPlayerId: computed(() => store.myPlayerId),
     myHand: computed(() => store.myHand),
     myTeamId: computed(() => store.myTeamId),
-    isMyTurn: computed(() => store.isMyTurn),
-    validCards: computed(() => store.validCards),
+    isHumanTurn: computed(() => store.isMyTurn),
+    validPlays: computed(() => store.validCards),
     lastBidAction: computed(() => store.lastBidAction),
     isMultiplayer: true,
 

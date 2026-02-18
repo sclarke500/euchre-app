@@ -2,7 +2,8 @@
  * Shared utilities for store reactivity management
  */
 
-import type { Ref } from 'vue'
+import type { Ref, ComputedRef } from 'vue'
+import { ref, computed } from 'vue'
 
 /**
  * Only update a ref if the value actually changed.
@@ -77,4 +78,59 @@ export function updateIfChanged<T>(
 
   // Fallback for other types - always update
   target.value = incoming
+}
+
+/**
+ * Shared turn state management for multiplayer games.
+ * Provides consistent turn state handling across different games.
+ */
+export function useMultiplayerTurnState<GameStateType>(
+  options: {
+    gameState: Ref<GameStateType | null>
+    myPlayerId: ComputedRef<number>
+    calculateValidPlays: (state: GameStateType) => string[]
+    calculateValidActions?: (state: GameStateType) => string[]
+  }
+) {
+  const isMyTurn = ref(false)
+  const validActions = ref<string[]>([])
+  const validPlays = computed(() => {
+    if (!isMyTurn.value || !options.gameState.value) return []
+    return options.calculateValidPlays(options.gameState.value)
+  })
+
+  function handleYourTurn(validActionsData?: string[]) {
+    updateIfChanged(isMyTurn, true)
+    if (validActionsData) {
+      updateIfChanged(validActions, validActionsData)
+    }
+  }
+
+  function handleActionTaken() {
+    updateIfChanged(isMyTurn, false)
+    updateIfChanged(validActions, [])
+  }
+
+  function handleGameStateUpdate() {
+    // Clear turn state if not our turn
+    if (options.gameState.value && !isOurTurn(options.gameState.value)) {
+      updateIfChanged(isMyTurn, false)
+      updateIfChanged(validActions, [])
+    }
+  }
+
+  function isOurTurn(state: GameStateType): boolean {
+    // This should be implemented by the specific game
+    // For now, assume currentPlayer is a property
+    return (state as any).currentPlayer === options.myPlayerId.value
+  }
+
+  return {
+    isMyTurn,
+    validActions,
+    validPlays,
+    handleYourTurn,
+    handleActionTaken,
+    handleGameStateUpdate,
+  }
 }

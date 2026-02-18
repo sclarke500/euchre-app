@@ -170,7 +170,7 @@ export function useEuchreDirector(
     return cp >= 0 ? playerIdToSeatIndex(cp) : -1
   })
 
-  const validCardIds = computed(() => new Set(game.validCards.value))
+  const validCardIds = computed(() => new Set(game.validPlays.value))
 
   // ── Seat ↔ player mapping ───────────────────────────────────────────────
 
