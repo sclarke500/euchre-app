@@ -132,7 +132,8 @@
 
         <!-- Round 2: Pass or Call Suit -->
         <template v-else-if="showBidding && game.biddingRound.value === 2">
-          <span class="action-label">{{ mustCall ? 'Call' : 'Trump?' }}</span>
+          <span v-if="mustCall" class="stick-dealer-label">Stick the Dealer!</span>
+          <span class="action-label">{{ mustCall ? 'Pick trump' : 'Trump?' }}</span>
           <div class="suit-buttons">
             <button
               v-for="suit in availableSuits"
@@ -819,6 +820,20 @@ onUnmounted(() => {
   background: rgba(255, 215, 0, 0.15);
   border-radius: 8px;
   border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.action-panel-container .stick-dealer-label {
+  color: #ff6b6b;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  padding: 6px 14px;
+  background: rgba(255, 107, 107, 0.15);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  margin-bottom: 4px;
 }
 
 // Slide in from right transition
