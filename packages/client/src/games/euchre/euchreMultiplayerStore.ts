@@ -24,7 +24,6 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
   // State from server
   const gameState = ref<ClientGameState | null>(null)
   const validActions = ref<string[]>([])
-  const validCards = ref<string[]>([])
   const isMyTurn = ref(false)
 
   // Local UI state
@@ -134,6 +133,39 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
   const myHand = computed(() => myPlayer.value?.hand ?? [])
   const myTeamId = computed(() => myPlayer.value?.teamId ?? 0)
 
+  // Calculate valid cards locally to avoid flash from server round-trip
+  const validCards = computed<string[]>(() => {
+    if (!isMyTurn.value) return []
+    
+    const p = phase.value
+    const hand = myHand.value
+    if (!hand || hand.length === 0) return []
+    
+    // During playing phase, use legal play rules
+    if (p === GamePhase.Playing) {
+      const trumpSuit = trump.value
+      const trick = currentTrick.value
+      if (trumpSuit && trick) {
+        return getLegalPlays(hand, trick, trumpSuit).map(c => c.id)
+      }
+      // No trick started yet - all cards valid
+      return hand.map(c => c.id)
+    }
+    
+    // During bidding phases, all cards are "valid" for display
+    // (actual bid validation happens via validActions)
+    if (p === GamePhase.BiddingRound1 || p === GamePhase.BiddingRound2) {
+      return hand.map(c => c.id)
+    }
+    
+    // During dealer discard, all cards valid
+    if (p === GamePhase.DealerDiscard) {
+      return hand.map(c => c.id)
+    }
+    
+    return []
+  })
+
   function getDebugSnapshot() {
     return buildMultiplayerDebugSnapshot({
       store: 'euchre-mp',
@@ -226,29 +258,14 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
               }
             }
 
-            if (validCards.value.length === 0) {
-              if (phaseNow === GamePhase.DealerDiscard) {
-                validCards.value = (myHand.value ?? []).map(c => c.id)
-              } else if (phaseNow === GamePhase.Playing) {
-                const trumpSuit = message.state.trump
-                const trick = message.state.currentTrick
-                if (trumpSuit && trick && myHand.value) {
-                  try {
-                    validCards.value = getLegalPlays(myHand.value, trick, trumpSuit).map(c => c.id)
-                  } catch {
-                    // If anything is inconsistent, allow clicks and let server validate.
-                    validCards.value = []
-                  }
-                }
-              }
-            }
+            // validCards is now computed locally - no need to set
           }
         } else {
           // Not our turn — clear any stale turn state (guards against stale
           // your_turn / turn_reminder messages from reconnection or race conditions)
           isMyTurn.value = false
           validActions.value = []
-          validCards.value = []
+          // validCards is computed from isMyTurn - will be empty when false
         }
         logMultiplayerEvent('euchre-mp', 'apply_game_state', getDebugSnapshot())
         break
@@ -262,10 +279,9 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
         }
         updateIfChanged(isMyTurn, true)
         updateIfChanged(validActions, message.validActions)
-        updateIfChanged(validCards, message.validCards ?? [])
+        // validCards is now computed locally - server value ignored
         logMultiplayerEvent('euchre-mp', 'apply_your_turn', getDebugSnapshot(), {
           validActions: message.validActions,
-          validCardsCount: message.validCards?.length ?? 0,
         })
         break
 
@@ -347,21 +363,7 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
               }
             }
 
-            if (validCards.value.length === 0) {
-              if (state.phase === GamePhase.DealerDiscard) {
-                validCards.value = (myHand.value ?? []).map(c => c.id)
-              } else if (state.phase === GamePhase.Playing) {
-                const trumpSuit = state.trump
-                const trick = state.currentTrick
-                if (trumpSuit && trick && myHand.value) {
-                  try {
-                    validCards.value = getLegalPlays(myHand.value, trick, trumpSuit).map(c => c.id)
-                  } catch {
-                    validCards.value = []
-                  }
-                }
-              }
-            }
+            // validCards is now computed locally - no need to set
           }
         }
         break
@@ -462,13 +464,14 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
       expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
+    // Only clear isMyTurn - validCards is computed and will update automatically
     isMyTurn.value = false
     validActions.value = []
-    validCards.value = []
   }
 
   function playCard(cardId: string): void {
     if (!isMyTurn.value) return
+    // Validate card is legal (computed validCards handles this)
     if (validCards.value.length > 0 && !validCards.value.includes(cardId)) return
 
     if (!websocket.isConnected) {
@@ -484,9 +487,9 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
       expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
+    // Only clear isMyTurn - validCards is computed and will update automatically
     isMyTurn.value = false
     validActions.value = []
-    validCards.value = []
   }
 
   function discardCard(cardId: string): void {
@@ -504,9 +507,9 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
       expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
+    // Only clear isMyTurn - validCards is computed and will update automatically
     isMyTurn.value = false
     validActions.value = []
-    validCards.value = []
   }
 
   function bootPlayer(playerId: number): void {
@@ -545,7 +548,7 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
     gameState.value = null
     isMyTurn.value = false
     validActions.value = []
-    validCards.value = []
+    // validCards is computed from isMyTurn and gameState - will be empty after reset
     lastStateSeq.value = 0
     gameLost.value = false
     logMultiplayerEvent('euchre-mp', 'cleanup', getDebugSnapshot())
