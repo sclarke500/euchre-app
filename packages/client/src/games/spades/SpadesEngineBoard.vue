@@ -306,7 +306,11 @@ function handleCardClick(cardId: string) {
 
 // Leave game
 function handleLeaveClick() {
-  showLeaveConfirm.value = true
+  if (props.mode === 'multiplayer' && !store.gameOver) {
+    showLeaveConfirm.value = true
+  } else {
+    emit('leave-game')
+  }
 }
 
 function confirmLeave() {

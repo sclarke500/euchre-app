@@ -29,7 +29,7 @@
       game-type="president"
       :build-payload="buildBugReportPayload"
       :show-resync="mode === 'multiplayer'"
-      @leave="showLeaveConfirm = true"
+      @leave="handleLeaveClick"
       @resync="game.requestResync?.()"
       @rules="showRulesModal = true"
     />
@@ -223,6 +223,14 @@ const timerSettings = computed(() => {
 })
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+
+function handleLeaveClick() {
+  if (props.mode === 'multiplayer' && !game.gameOver.value) {
+    showLeaveConfirm.value = true
+  } else {
+    emit('leave-game')
+  }
+}
 
 // Count human players (non-AI)
 const humanCount = computed(() => 
