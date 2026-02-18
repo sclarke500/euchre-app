@@ -760,8 +760,8 @@ export function usePresidentDirector(
     // Sort and position user hand
     await sortUserHand(50)
 
-    // Hide opponent hands
-    await cardController.hideOpponentHands()
+    // President shows opponent hands fanned face-down on the table (unlike Euchre/Spades)
+    // dealFromPlayers already positions them correctly, no need to hide
 
     // If there are plays in the current pile, show them
     const pilePlays = game.currentPile.value.plays

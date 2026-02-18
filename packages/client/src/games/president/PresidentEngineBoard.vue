@@ -158,12 +158,12 @@
 
     <!-- Resume game prompt (single-player only) -->
     <Modal :show="showResumePrompt" :dismiss-on-backdrop="false" aria-label="Resume game">
-      <div class="round-modal dialog-panel">
-        <h3 class="dialog-title">Game In Progress</h3>
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Game In Progress</div>
         <div class="panel-message dialog-text">You have an unfinished game. Would you like to continue?</div>
-        <div class="modal-buttons dialog-actions">
-          <button class="modal-btn dialog-btn dialog-btn--muted" @click="handleNewGameFromPrompt">New Game</button>
-          <button class="modal-btn dialog-btn dialog-btn--primary" @click="handleResumeGame">Continue</button>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="handleNewGameFromPrompt">New Game</button>
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleResumeGame">Continue</button>
         </div>
       </div>
     </Modal>
