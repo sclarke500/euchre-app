@@ -1101,6 +1101,54 @@ export function useEuchreDirector(
     playerStatuses.value = ['', '', '', '']
   }
 
+  /**
+   * Restore visual state from saved game (no animation).
+   * Called when resuming a saved single-player game.
+   */
+  async function restoreFromSavedState() {
+    if (!boardRef.value) return
+
+    // Set up table containers
+    setupTable()
+
+    // Build player hands from current game state
+    const players = game.players.value
+    const dealPlayers = [0, 1, 2, 3].map(seatIdx => {
+      const playerId = seatIndexToPlayerId(seatIdx)
+      const player = players[playerId]
+      return {
+        hand: (player?.hand.map(c => cardToEngineCard(c)) ?? []) as any[],
+      }
+    })
+
+    // Deal instantly (very fast animation to set up cards)
+    await cardController.dealFromPlayers(dealPlayers, {
+      dealDelayMs: 0,
+      dealFlightMs: 1, // Nearly instant
+      fanDurationMs: 1,
+      dealerSeatIndex: dealerSeat.value,
+      revealUserHand: true,
+      focusUserHand: true,
+      extraDeckCards: [],
+      keepRemainingCards: false,
+    })
+
+    // Position hands properly
+    await hideOpponentHands()
+    await sortUserHand(1)
+
+    // If there are cards in the current trick, replay them to the center pile
+    const trickCards = game.currentTrick.value?.cards ?? []
+    for (let i = 0; i < trickCards.length; i++) {
+      const tc = trickCards[i]
+      if (tc) {
+        await cardController.playCard(tc.card as any, tc.playerId, i)
+      }
+    }
+
+    engine.refreshCards()
+  }
+
   return {
     playerNames,
     playerInfo,
@@ -1115,6 +1163,7 @@ export function useEuchreDirector(
     clearPlayerStatuses,
     handleDealerDiscard,
     hideOpponentHands,
+    restoreFromSavedState,
     cleanup,
   }
 }

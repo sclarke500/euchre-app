@@ -479,9 +479,12 @@ function confirmLeave() {
 }
 
 // Resume/new game handlers for single-player
-function handleResumeGame() {
+async function handleResumeGame() {
   showResumePrompt.value = false
   gameStore?.loadFromLocalStorage()
+  // Wait for next tick then restore visuals
+  await nextTick()
+  await director.restoreFromSavedState()
 }
 
 function handleNewGame() {

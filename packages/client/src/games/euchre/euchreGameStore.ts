@@ -593,6 +593,15 @@ export const useEuchreGameStore = defineStore('game', () => {
       // Reset game tracker for hard AI
       gameTracker.reset()
 
+      // Trigger AI turn after a short delay to let visuals set up
+      setTimeout(() => {
+        const current = currentRound.value?.currentPlayer
+        if (current !== undefined && current !== 0) {
+          // It's an AI's turn, trigger processing
+          processAITurn()
+        }
+      }, 100)
+
       return true
     } catch (e) {
       console.warn('[EuchreStore] Failed to load saved game:', e)
