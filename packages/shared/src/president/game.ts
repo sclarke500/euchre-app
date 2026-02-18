@@ -254,20 +254,30 @@ export function processPass(
     // In single round, once we've gone around (everyone passed or played once),
     // the pile clears and last player to play leads
     if (newConsecutivePasses >= activePlayers.length - 1 && state.lastPlayerId !== null) {
+      // If last player finished, find next active player after them
+      const lastPlayer = state.players[state.lastPlayerId]
+      const newLeader = lastPlayer?.finishOrder !== null
+        ? getNextActivePlayer(state, state.lastPlayerId)
+        : state.lastPlayerId
       return {
         ...state,
         currentPile: createEmptyPile(),
-        currentPlayer: state.lastPlayerId,
+        currentPlayer: newLeader,
         consecutivePasses: 0,
       }
     }
   } else {
     // Multi-loop mode (default): keep going until everyone passes consecutively
     if (newConsecutivePasses >= activePlayers.length - 1 && state.lastPlayerId !== null) {
+      // If last player finished, find next active player after them
+      const lastPlayer = state.players[state.lastPlayerId]
+      const newLeader = lastPlayer?.finishOrder !== null
+        ? getNextActivePlayer(state, state.lastPlayerId)
+        : state.lastPlayerId
       return {
         ...state,
         currentPile: createEmptyPile(),
-        currentPlayer: state.lastPlayerId,
+        currentPlayer: newLeader,
         consecutivePasses: 0,
       }
     }
