@@ -190,6 +190,18 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
         president.hand = [...president.hand, ...scumCards]
 
         deps.pendingExchangeReceivedCards.set(president.seatIndex, scumCards)
+        
+        // Notify Scum immediately that their cards were taken
+        // (they'll get the full exchange info later when President gives cards back)
+        if (scum.isHuman && scum.odusId) {
+          deps.events.onCardExchangeInfo(
+            scum.odusId,
+            scumCards,           // youGive - cards taken from Scum
+            [],                  // youReceive - not yet, waiting for President
+            president.name,
+            'Scum'
+          )
+        }
       }
 
       if (vp && viceScum) {
@@ -200,6 +212,17 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
         vp.hand = [...vp.hand, ...viceScumCards]
 
         deps.pendingExchangeReceivedCards.set(vp.seatIndex, viceScumCards)
+        
+        // Notify ViceScum immediately that their card was taken
+        if (viceScum.isHuman && viceScum.odusId) {
+          deps.events.onCardExchangeInfo(
+            viceScum.odusId,
+            viceScumCards,       // youGive - card taken from ViceScum
+            [],                  // youReceive - not yet, waiting for VP
+            vp.name,
+            'Citizen'
+          )
+        }
       }
 
       deps.broadcastState()
