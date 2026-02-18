@@ -152,6 +152,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     exchangeAnimationCallback = cb
   }
 
+  // Restore transaction state
+  const isRestoring = ref(false)
+  let shouldResumeAiAfterRestore = false
+
   // Actions
   function startNewGame(numPlayers: number = 4) {
     // Get random AI names
@@ -433,6 +437,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
 
   function processAITurn() {
+    // Don't process AI turns during restore
+    if (isRestoring.value) return
+
     const player = players.value[currentPlayer.value]
     if (!player) return
 
@@ -475,6 +482,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const STORAGE_KEY = '67cards_president_progress'
 
   function saveToLocalStorage() {
+    // Don't save during restore transaction
+    if (isRestoring.value) return
+
     if (gameOver.value) {
       clearSavedGame()
       return
@@ -506,6 +516,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       if (!saved) return false
 
       const state = JSON.parse(saved)
+
+      isRestoring.value = true
+      shouldResumeAiAfterRestore = false
+
       players.value = state.players
       phase.value = state.phase
       currentPile.value = state.currentPile
@@ -519,12 +533,38 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       rules.value = state.rules
       gameOver.value = false
 
+      // Determine if AI should resume after visual restore
+      const currentPlayerObj = players.value[currentPlayer.value]
+      shouldResumeAiAfterRestore = Boolean(
+        currentPlayerObj &&
+        !currentPlayerObj.isHuman &&
+        currentPlayerObj.finishOrder === null &&
+        phase.value === PresidentPhase.Playing
+      )
+
       return true
     } catch (e) {
       console.warn('[PresidentStore] Failed to load saved game:', e)
+      isRestoring.value = false
+      shouldResumeAiAfterRestore = false
       clearSavedGame()
       return false
     }
+  }
+
+  function commitRestore() {
+    const shouldResume = shouldResumeAiAfterRestore
+    isRestoring.value = false
+    shouldResumeAiAfterRestore = false
+
+    if (shouldResume) {
+      processAITurn()
+    }
+  }
+
+  function abortRestore() {
+    isRestoring.value = false
+    shouldResumeAiAfterRestore = false
   }
 
   function hasSavedGame(): boolean {
@@ -588,5 +628,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     loadFromLocalStorage,
     hasSavedGame,
     clearSavedGame,
+    isRestoring,
+    commitRestore,
+    abortRestore,
   }
 })

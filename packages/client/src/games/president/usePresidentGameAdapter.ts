@@ -71,6 +71,9 @@ export interface PresidentGameAdapter {
   loadFromLocalStorage?: () => boolean
   hasSavedGame?: () => boolean
   clearSavedGame?: () => void
+  isRestoring?: ComputedRef<boolean>
+  commitRestore?: () => void
+  abortRestore?: () => void
 }
 
 export function usePresidentGameAdapter(mode: 'singleplayer' | 'multiplayer'): PresidentGameAdapter {
@@ -122,6 +125,9 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     loadFromLocalStorage: () => store.loadFromLocalStorage(),
     hasSavedGame: () => store.hasSavedGame(),
     clearSavedGame: () => store.clearSavedGame(),
+    isRestoring: computed(() => store.isRestoring),
+    commitRestore: () => store.commitRestore(),
+    abortRestore: () => store.abortRestore(),
   }
 }
 

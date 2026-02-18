@@ -168,6 +168,13 @@
       </div>
     </Modal>
 
+    <!-- Loading overlay for game restore -->
+    <Transition name="fade">
+      <div v-if="isRestoringGame" class="restore-overlay">
+        <div class="restore-message">Resuming game...</div>
+      </div>
+    </Transition>
+
   </CardTable>
 </template>
 
@@ -477,10 +484,27 @@ function buildBugReportPayload() {
 
 // ── Mount ───────────────────────────────────────────────────────────────
 
+// Restore state tracking
+const isRestoringGame = ref(false)
+
 // Resume/new game handlers for single-player
-function handleResumeGame() {
+async function handleResumeGame() {
   showResumePrompt.value = false
+  isRestoringGame.value = true
+
+  // Load the saved state (sets isRestoring in store)
   presidentStore?.loadFromLocalStorage()
+
+  // Wait for next tick then restore visuals
+  await nextTick()
+  await director.restoreFromSavedState()
+
+  // Brief delay for smooth transition
+  await new Promise(r => setTimeout(r, 100))
+  isRestoringGame.value = false
+
+  // Commit restore (triggers AI if needed)
+  presidentStore?.commitRestore()
 }
 
 function handleNewGameFromPrompt() {
@@ -676,5 +700,32 @@ onUnmounted(() => {
   strong {
     color: #fff;
   }
+}
+
+// Restore overlay
+.restore-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 25, 20, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.restore-message {
+  color: #88aa99;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
