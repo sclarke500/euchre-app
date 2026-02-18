@@ -485,23 +485,24 @@ function leadCardHard(
   const nonSpades = legalPlays.filter(c => c.suit !== Suit.Spades)
   const spades = legalPlays.filter(c => c.suit !== Suit.Spades ? false : true)
 
-  // --- Covering partner's nil: lead suits partner is void in ---
+  // --- Covering partner's nil: lead HIGH to win tricks and protect partner ---
   if (partnerBidNil) {
     const pid = partnerId(playerId)
+    // First priority: lead suits where partner is void (they can safely dump)
     for (const suit of [Suit.Hearts, Suit.Diamonds, Suit.Clubs]) {
       if (tracker.isPlayerVoid(pid, suit)) {
         const suitCards = legalPlays.filter(c => c.suit === suit)
         if (suitCards.length > 0) {
-          // Lead high in this suit — we want to win it and let partner dump
           return getHighest(suitCards, null)
         }
       }
     }
-    // Lead from strongest suit to maintain control
-    const strong = nonSpades.filter(c =>
-      c.rank === FullRank.Ace || c.rank === FullRank.King
-    )
-    if (strong.length > 0) return strong[0]!
+    // Second priority: lead highest non-spade to win tricks and let partner duck
+    if (nonSpades.length > 0) {
+      return getHighest(nonSpades, null)
+    }
+    // Last resort: lead highest spade
+    return getHighest(legalPlays, null)
   }
 
   // --- Attacking opponent's nil: lead their short/dangerous suits ---
