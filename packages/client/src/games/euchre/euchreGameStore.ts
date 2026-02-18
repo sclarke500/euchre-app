@@ -60,6 +60,24 @@ export const useEuchreGameStore = defineStore('game', () => {
   const biddingStartPlayer = ref(0) // Track who started the bidding round
   const passCount = ref(0) // Track passes in current bidding round
 
+  // Animation callbacks — store awaits these before advancing turns
+  // This allows the Director to control animation timing
+  let playAnimationCallback: ((data: { card: Card; playerId: number }) => Promise<void>) | null = null
+  let trickCompleteCallback: ((winnerId: number) => Promise<void>) | null = null
+  let dealAnimationCallback: (() => Promise<void>) | null = null
+
+  function setPlayAnimationCallback(cb: typeof playAnimationCallback) {
+    playAnimationCallback = cb
+  }
+
+  function setTrickCompleteCallback(cb: typeof trickCompleteCallback) {
+    trickCompleteCallback = cb
+  }
+
+  function setDealAnimationCallback(cb: typeof dealAnimationCallback) {
+    dealAnimationCallback = cb
+  }
+
   // Computed
   const gameState = computed<GameState>(() => ({
     players: players.value,
@@ -299,7 +317,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     processAITurn()
   }
 
-  function playCard(card: Card, playerId: number) {
+  async function playCard(card: Card, playerId: number) {
     if (!currentRound.value || !currentRound.value.trump) return
 
     // Remove card from player's hand
@@ -319,9 +337,14 @@ export const useEuchreGameStore = defineStore('game', () => {
       currentRound.value.trump.suit
     )
 
+    // Wait for card play animation to complete
+    if (playAnimationCallback) {
+      await playAnimationCallback({ card, playerId })
+    }
+
     // Check if trick is complete
     if (isTrickComplete(currentRound.value.currentTrick, currentRound.value.goingAlone)) {
-      completeTrickAndContinue()
+      await completeTrickAndContinue()
     } else {
       // Next player's turn - advance by 1 from current player
       currentRound.value.currentPlayer = (currentRound.value.currentPlayer + 1) % 4
@@ -335,7 +358,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     }
   }
 
-  function completeTrickAndContinue() {
+  async function completeTrickAndContinue() {
     if (!currentRound.value || !currentRound.value.trump) return
 
     // Complete the trick
@@ -349,28 +372,29 @@ export const useEuchreGameStore = defineStore('game', () => {
 
     phase.value = GamePhase.TrickComplete
 
+    // Wait for trick complete animation (sweep to winner)
+    if (trickCompleteCallback && completedTrick.winnerId !== null) {
+      await trickCompleteCallback(completedTrick.winnerId)
+    }
+
     // Check if round is complete (5 tricks)
     if (currentRound.value.tricks.length === 5) {
       console.log('All 5 tricks complete, ending round')
-      setTimeout(() => {
-        completeRound()
-      }, 1500)
+      completeRound()
     } else {
       // Start next trick
       console.log(`Starting trick ${currentRound.value.tricks.length + 1}...`)
-      setTimeout(() => {
-        if (!currentRound.value || completedTrick.winnerId === null) {
-          console.log('Early return - currentRound or winnerId is null')
-          return
-        }
+      if (!currentRound.value || completedTrick.winnerId === null) {
+        console.log('Early return - currentRound or winnerId is null')
+        return
+      }
 
-        currentRound.value.currentTrick = createTrick()
-        currentRound.value.currentPlayer = completedTrick.winnerId
-        phase.value = GamePhase.Playing
-        console.log(`Trick ${currentRound.value.tricks.length + 1} started. Current player: ${completedTrick.winnerId}`)
+      currentRound.value.currentTrick = createTrick()
+      currentRound.value.currentPlayer = completedTrick.winnerId
+      phase.value = GamePhase.Playing
+      console.log(`Trick ${currentRound.value.tricks.length + 1} started. Current player: ${completedTrick.winnerId}`)
 
-        processAITurn()
-      }, 1500)
+      processAITurn()
     }
   }
 
@@ -416,7 +440,10 @@ export const useEuchreGameStore = defineStore('game', () => {
     return ''
   }
 
-  function processAITurn() {
+  // Helper for async delays
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+  async function processAITurn() {
     if (!currentRound.value) return
 
     const current = currentRound.value.currentPlayer
@@ -429,79 +456,70 @@ export const useEuchreGameStore = defineStore('game', () => {
       return
     }
 
-    // AI turn - add delay for realism
-    setTimeout(() => {
-      if (!currentRound.value) return
+    // Brief "thinking" delay for realism
+    await sleep(600)
+    if (!currentRound.value) return
 
-      if (phase.value === GamePhase.BiddingRound1) {
-        if (!currentRound.value.turnUpCard) return
-        const bid = makeAIBidRound1(player, currentRound.value.turnUpCard, currentRound.value.dealer)
-        const isDealer = player.id === currentRound.value.dealer
-        const message = getBidMessage(bid, isDealer)
+    if (phase.value === GamePhase.BiddingRound1) {
+      if (!currentRound.value.turnUpCard) return
+      const bid = makeAIBidRound1(player, currentRound.value.turnUpCard, currentRound.value.dealer)
+      const isDealer = player.id === currentRound.value.dealer
+      const message = getBidMessage(bid, isDealer)
 
-        // Show AI decision
-        lastAIBidAction.value = { playerId: player.id, message }
+      // Show AI decision briefly
+      lastAIBidAction.value = { playerId: player.id, message }
+      await sleep(800)
+      lastAIBidAction.value = null
+      makeBid(bid)
+    } else if (phase.value === GamePhase.BiddingRound2) {
+      if (!currentRound.value.turnUpCard) return
+      const bid = makeAIBidRound2(
+        player,
+        currentRound.value.turnUpCard.suit,
+        currentRound.value.dealer,
+        settingsStore.isStickTheDealer()
+      )
+      const isDealer = player.id === currentRound.value.dealer
+      const message = getBidMessage(bid, isDealer)
 
-        // Execute bid after brief display
-        setTimeout(() => {
-          lastAIBidAction.value = null
-          makeBid(bid)
-        }, 1000)
-      } else if (phase.value === GamePhase.BiddingRound2) {
-        if (!currentRound.value.turnUpCard) return
-        const bid = makeAIBidRound2(
-          player,
-          currentRound.value.turnUpCard.suit,
-          currentRound.value.dealer,
-          settingsStore.isStickTheDealer()
+      // Show AI decision briefly
+      lastAIBidAction.value = { playerId: player.id, message }
+      await sleep(800)
+      lastAIBidAction.value = null
+      makeBid(bid)
+    } else if (phase.value === GamePhase.Playing && currentRound.value.trump) {
+      let card: Card
+      if (settingsStore.isHardAI()) {
+        // Hard AI with card tracking
+        const partnerWinning = isPartnerWinningHard(
+          currentRound.value.currentTrick,
+          player.id,
+          currentRound.value.trump.suit
         )
-        const isDealer = player.id === currentRound.value.dealer
-        const message = getBidMessage(bid, isDealer)
-
-        // Show AI decision
-        lastAIBidAction.value = { playerId: player.id, message }
-
-        // Execute bid after brief display
-        setTimeout(() => {
-          lastAIBidAction.value = null
-          makeBid(bid)
-        }, 1000)
-      } else if (phase.value === GamePhase.Playing && currentRound.value.trump) {
-        let card: Card
-        if (settingsStore.isHardAI()) {
-          // Hard AI with card tracking
-          const partnerWinning = isPartnerWinningHard(
-            currentRound.value.currentTrick,
-            player.id,
-            currentRound.value.trump.suit
-          )
-          card = chooseCardToPlayHard(
-            player,
-            currentRound.value.currentTrick,
-            currentRound.value.trump.suit,
-            partnerWinning,
-            gameTracker
-          )
-        } else {
-          // Easy AI (basic strategy)
-          const partnerWinning = isPartnerWinning(
-            currentRound.value.currentTrick,
-            player.id,
-            currentRound.value.trump.suit
-          )
-          card = chooseCardToPlay(
-            player,
-            currentRound.value.currentTrick,
-            currentRound.value.trump.suit,
-            partnerWinning
-          )
-        }
-        // Add small delay for AI card play to prevent rapid turn indicator changes
-        setTimeout(() => {
-          playCard(card, player.id)
-        }, 150)
+        card = chooseCardToPlayHard(
+          player,
+          currentRound.value.currentTrick,
+          currentRound.value.trump.suit,
+          partnerWinning,
+          gameTracker
+        )
+      } else {
+        // Easy AI (basic strategy)
+        const partnerWinning = isPartnerWinning(
+          currentRound.value.currentTrick,
+          player.id,
+          currentRound.value.trump.suit
+        )
+        card = chooseCardToPlay(
+          player,
+          currentRound.value.currentTrick,
+          currentRound.value.trump.suit,
+          partnerWinning
+        )
       }
-    }, 800)
+      // playCard is now async and waits for animation callback
+      await playCard(card, player.id)
+    }
   }
 
   function nextTrick() {
@@ -546,5 +564,10 @@ export const useEuchreGameStore = defineStore('game', () => {
     playCard,
     nextTrick,
     dealerDiscard,
+
+    // Animation callbacks (for Director coordination)
+    setPlayAnimationCallback,
+    setTrickCompleteCallback,
+    setDealAnimationCallback,
   }
 })

@@ -964,7 +964,29 @@ export function useEuchreDirector(
       }
     })
   } else {
-    // ── Singleplayer: watcher-based reactivity ──
+    // ── Singleplayer: callback-based animation ──
+    // Store awaits these callbacks before advancing turns, ensuring
+    // animations complete before the next player acts.
+
+    game.setPlayAnimationCallback?.(async ({ card, playerId }) => {
+      await waitForAnimations()
+      isAnimating.value = true
+      try {
+        await animateCardPlay(card, playerId)
+      } finally {
+        isAnimating.value = false
+      }
+    })
+
+    game.setTrickCompleteCallback?.(async (winnerId) => {
+      await waitForAnimations()
+      isAnimating.value = true
+      try {
+        await animateTrickSweep(winnerId)
+      } finally {
+        isAnimating.value = false
+      }
+    })
 
     watch(() => game.phase.value, (newPhase, oldPhase) => {
       handlePhase(newPhase, oldPhase)
@@ -1035,30 +1057,13 @@ export function useEuchreDirector(
       }
     })
 
-    // Trick cards played
-    let trickAnimLock = false
+    // Note: Card play animations are now handled via setPlayAnimationCallback
+    // The store awaits the callback before advancing turns, so we don't need
+    // to watch trick card count changes here.
 
-    watch(() => game.currentTrick.value.cards.length, async (newCount) => {
-      if (newCount === 0) { lastAnimatedTrickCardCount.value = 0; return }
-      if (newCount <= lastAnimatedTrickCardCount.value) return
-      if (trickAnimLock) return
-
-      trickAnimLock = true
-      await waitForAnimations()
-      isAnimating.value = true
-
-      try {
-        while (lastAnimatedTrickCardCount.value < game.currentTrick.value.cards.length) {
-          const i = lastAnimatedTrickCardCount.value
-          const played = game.currentTrick.value.cards[i]
-          if (!played) break
-          await animateCardPlay(played.card, played.playerId)
-          lastAnimatedTrickCardCount.value = i + 1
-        }
-      } finally {
-        isAnimating.value = false
-        trickAnimLock = false
-      }
+    // Reset trick card count when trick clears (for any legacy tracking)
+    watch(() => game.currentTrick.value.cards.length, (newCount) => {
+      if (newCount === 0) { lastAnimatedTrickCardCount.value = 0 }
     })
 
     // Bid actions → avatar status labels
