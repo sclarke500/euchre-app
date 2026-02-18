@@ -766,10 +766,15 @@ export function useCardController(
       // Position cards instantly (no animation)
       if (isUser) {
         // User: fanned at bottom, face up
+        // Ensure all cards are marked face up
+        hand.flipCards(true)
         for (let i = 0; i < hand.cards.length; i++) {
           const pos = hand.getCardPosition(i)
           const ref = engine.getCardRef(hand.cards[i]!.card.id)
-          ref?.setPosition(pos)
+          if (ref) {
+            // Explicitly include flipY to ensure face up
+            ref.setPosition({ ...pos, flipY: 180 })
+          }
         }
       } else {
         // Opponent: collapsed at avatar position
