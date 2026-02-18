@@ -158,8 +158,8 @@
         <div class="game-over-title dialog-title">Leave Game?</div>
         <div class="panel-message dialog-text">You'll forfeit the current game.</div>
         <div class="game-over-actions dialog-actions">
-          <button class="action-btn dialog-btn dialog-btn--muted" @click="confirmLeave">Leave</button>
-          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showLeaveConfirm = false">Stay</button>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="showLeaveConfirm = false">Cancel</button>
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="confirmLeave">Leave</button>
         </div>
       </div>
     </Modal>
