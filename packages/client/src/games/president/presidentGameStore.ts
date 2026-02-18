@@ -489,6 +489,13 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       clearSavedGame()
       return
     }
+
+    // Don't save if human player has already gone out (nothing to resume)
+    const human = players.value.find(p => p.isHuman)
+    if (human && human.finishOrder !== null) {
+      clearSavedGame()
+      return
+    }
     const state = {
       players: players.value,
       phase: phase.value,
