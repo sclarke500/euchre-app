@@ -37,6 +37,7 @@ export const useLobbyStore = defineStore('lobby', () => {
 
   const gameId = ref<string | null>(null)
   const wasHostWhenGameStarted = ref(false)
+  const gameTypeWhenStarted = ref<GameType>('euchre')
 
   // Game type selection (for creating tables)
   const selectedGameType = ref<GameType>('euchre')
@@ -57,8 +58,11 @@ export const useLobbyStore = defineStore('lobby', () => {
 
   const hasNickname = computed(() => nickname.value.trim().length > 0)
 
-  // Get game type from current table
-  const currentGameType = computed<GameType>(() => currentTable.value?.gameType ?? 'euchre')
+  // Get game type - use preserved value during a game, otherwise from current table
+  const currentGameType = computed<GameType>(() => {
+    if (gameId.value) return gameTypeWhenStarted.value
+    return currentTable.value?.gameType ?? 'euchre'
+  })
 
   // Message handler
   function handleMessage(message: ServerMessage): void {
@@ -115,8 +119,9 @@ export const useLobbyStore = defineStore('lobby', () => {
         break
 
       case 'game_started':
-        // Preserve host status before currentTable is cleared
+        // Preserve host status and game type before currentTable is cleared
         wasHostWhenGameStarted.value = currentTable.value?.hostId === odusId.value
+        gameTypeWhenStarted.value = currentTable.value?.gameType ?? 'euchre'
         gameId.value = message.gameId
         break
 
@@ -287,6 +292,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     currentTable.value = null
     currentSeat.value = null
     wasHostWhenGameStarted.value = false
+    gameTypeWhenStarted.value = 'euchre'
   }
 
   function restartGame(): void {
