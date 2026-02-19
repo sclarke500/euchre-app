@@ -173,6 +173,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   // Blind nil: user chose to bid blind nil
   function acceptBlindNil(): void {
     if (!blindNilDecisionPending.value) return
+    userCardsRevealed.value = true // Reveal cards after bidding blind nil
     makeBid({ type: 'blind_nil' as SpadesBidType, count: 0 })
   }
 
