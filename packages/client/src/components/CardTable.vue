@@ -258,15 +258,18 @@ defineExpose({
   overflow: hidden;
 
   // Table palette — change these to retheme
-  --felt: #24735a;
-  --felt-dark: #1a5440;
-  --rail: #4a3728;
-  --rail-accent: #5c4533;
-  --surface-bg: #23232e;
+  // Lighter felt with more "overhead light" feel
+  --felt: #2e8b68;           // Brighter, less saturated green
+  --felt-light: #3a9d78;     // Center highlight
+  --felt-dark: #236b50;      // Edge shadow (not as dark)
+  --rail: #5a4430;           // Slightly lighter wood
+  --rail-accent: #6b5540;
+  --surface-bg: #282832;     // Room slightly lifted
 
   background:
-    radial-gradient(ellipse at center 40%, rgba(255,255,255,0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at center 40%, var(--surface-bg) 0%, #181820 100%);
+    // Subtle vignette draws eye to center
+    radial-gradient(ellipse at center 45%, transparent 40%, rgba(0,0,0,0.3) 100%),
+    radial-gradient(ellipse at center 40%, var(--surface-bg) 0%, #1c1c24 100%);
 
 }
 
@@ -287,19 +290,19 @@ defineExpose({
     position: absolute;
     inset: 0;
     border-radius: 40px;
-    // Wood grain - subtle top-to-bottom shading for depth
+    // Wood grain - warmer, slightly lighter
     background: linear-gradient(
       180deg,
-      #6b5035 0%,
-      #5c4430 30%,
-      #4f3a2a 70%,
-      #4a3525 100%
+      #7a5f40 0%,
+      #6b5038 30%,
+      #5c4430 70%,
+      #52392a 100%
     );
     // Glossy highlight on top, shadow on bottom
     box-shadow:
-      inset 0 2px 4px rgba(255, 255, 255, 0.25),
-      inset 0 -3px 6px rgba(0, 0, 0, 0.5),
-      0 4px 20px rgba(0, 0, 0, 0.5);
+      inset 0 2px 4px rgba(255, 255, 255, 0.3),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.4),
+      0 4px 20px rgba(0, 0, 0, 0.4);
   }
   
   // Green felt - inset from rail
@@ -308,12 +311,18 @@ defineExpose({
     position: absolute;
     inset: 12px;
     border-radius: 28px;
-    background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-dark) 70%);
-    // Inner shadow - felt recessed below rail
+    // Three-stop gradient: bright center → mid → dark edges
+    background: radial-gradient(
+      ellipse at center 45%,
+      var(--felt-light) 0%,
+      var(--felt) 40%,
+      var(--felt-dark) 100%
+    );
+    // Softer inner shadow - less harsh
     box-shadow:
-      inset 0 4px 12px rgba(0, 0, 0, 0.5),
-      inset 0 0 40px rgba(0, 0, 0, 0.3),
-      inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+      inset 0 3px 10px rgba(0, 0, 0, 0.35),
+      inset 0 0 30px rgba(0, 0, 0, 0.2),
+      inset 0 -2px 6px rgba(0, 0, 0, 0.15);
   }
 
   // Watermark with game name
