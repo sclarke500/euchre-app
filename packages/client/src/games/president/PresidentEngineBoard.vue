@@ -56,7 +56,10 @@
 
       <!-- Give-back phase -->
       <template v-if="game.isHumanGivingCards.value">
-        <span class="action-hint">Select {{ game.cardsToGiveCount.value }} card{{ game.cardsToGiveCount.value > 1 ? 's' : '' }} to give</span>
+        <span class="action-hint">
+          You received {{ game.exchangeInfo.value?.youReceive?.length ?? 0 }} card{{ (game.exchangeInfo.value?.youReceive?.length ?? 0) !== 1 ? 's' : '' }} (highlighted).
+          Select {{ game.cardsToGiveCount.value }} to give back.
+        </span>
         <button
           class="action-btn primary"
           :disabled="selectedCardIds.size !== game.cardsToGiveCount.value"
@@ -251,9 +254,11 @@ let highlightTimer: ReturnType<typeof setTimeout> | null = null
 
 // Auto-acknowledge exchange and highlight received cards (no modal)
 watch(() => game.exchangeInfo.value, (info) => {
-  if (!info || game.isHumanGivingCards.value) return
+  if (!info) return
 
   // Highlight received cards in hand for 3 seconds
+  // This applies both during give-back phase (so President sees what they got)
+  // and after exchange completes (so Scum sees what they got from President)
   if (info.youReceive?.length) {
     const receivedIds = info.youReceive.map(c => c.id)
     highlightedCardIds.value = new Set(receivedIds)
@@ -263,7 +268,11 @@ watch(() => game.exchangeInfo.value, (info) => {
     }, 3000)
   }
 
-  game.acknowledgeExchange()
+  // Only auto-acknowledge when not in give-back phase
+  // (give-back phase uses synthetic exchangeInfo for highlighting only)
+  if (!game.isHumanGivingCards.value) {
+    game.acknowledgeExchange()
+  }
 })
 
 // ── Seat mapping (duplicated from director for template use) ────────────
