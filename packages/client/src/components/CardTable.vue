@@ -263,36 +263,24 @@ defineExpose({
   --felt-dark: #15483a;      // Edge shadow
   --surface-bg: #151518;
 
-  // Floor effect - dramatic lounge (more visible)
+  // Floor effect - visible lounge with bokeh lights
   background:
-    // Strong warm spotlight cone from above
-    radial-gradient(ellipse 65% 55% at center 40%, rgba(255, 220, 150, 0.12) 0%, rgba(255, 200, 100, 0.04) 40%, transparent 65%),
+    // Bokeh light 1 - top left warm
+    radial-gradient(circle at 8% 15%, rgba(255, 180, 100, 0.15) 0%, transparent 8%),
+    // Bokeh light 2 - top right cool
+    radial-gradient(circle at 92% 12%, rgba(150, 180, 255, 0.12) 0%, transparent 7%),
+    // Bokeh light 3 - bottom left
+    radial-gradient(circle at 5% 85%, rgba(255, 200, 150, 0.1) 0%, transparent 6%),
+    // Bokeh light 4 - bottom right
+    radial-gradient(circle at 95% 88%, rgba(180, 160, 220, 0.1) 0%, transparent 7%),
+    // Table spotlight
+    radial-gradient(ellipse 65% 55% at center 42%, rgba(255, 240, 200, 0.08) 0%, transparent 60%),
     // Table shadow
     radial-gradient(ellipse 55% 45% at center 44%, rgba(0, 0, 0, 0.5) 0%, transparent 80%),
-    // Heavy vignette - really dark corners
-    radial-gradient(ellipse 90% 90% at center, transparent 25%, rgba(0, 0, 0, 0.7) 100%),
-    // Art deco accent lines - subtle geometric pattern
-    repeating-linear-gradient(
-      -45deg,
-      transparent 0px,
-      transparent 60px,
-      rgba(180, 150, 100, 0.03) 60px,
-      rgba(180, 150, 100, 0.03) 61px
-    ),
-    repeating-linear-gradient(
-      45deg,
-      transparent 0px,
-      transparent 60px,
-      rgba(180, 150, 100, 0.03) 60px,
-      rgba(180, 150, 100, 0.03) 61px
-    ),
-    // Rich burgundy-brown base
-    linear-gradient(180deg, 
-      #1f1418 0%,      // Dark burgundy hint
-      #1a1014 40%,     // Deep
-      #150d10 70%,     // Darker
-      #100a0c 100%     // Near black, warm
-    );
+    // Vignette
+    radial-gradient(ellipse 100% 100% at center, transparent 35%, rgba(0, 0, 0, 0.6) 100%),
+    // Base - dark with slight blue tint
+    linear-gradient(180deg, #1a1a24 0%, #141420 50%, #0f0f18 100%);
 
 }
 
