@@ -644,13 +644,13 @@ onUnmounted(() => {
   color: #ccc;
 }
 
-// Exchange status - subtle indicator at top
+// Exchange status - subtle indicator in center of table
 .exchange-status {
-  position: fixed;
-  top: 12px;
+  position: absolute;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 400;
+  transform: translate(-50%, -50%);
+  z-index: 100;
   background: rgba(30, 30, 45, 0.8);
   border: 1px solid #666;
   border-radius: 16px;
@@ -661,6 +661,7 @@ onUnmounted(() => {
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: subtle-pulse 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes subtle-pulse {

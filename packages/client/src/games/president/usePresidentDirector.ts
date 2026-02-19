@@ -188,7 +188,7 @@ export function usePresidentDirector(
 
   // ── Card exchange animation ──────────────────────────────────────────
 
-  const EXCHANGE_MS = AnimationDurations.slow
+  const EXCHANGE_MS = AnimationDurations.pause  // Slower for exchange cards
 
   async function animateExchange(exchanges: PendingExchange[]) {
     const hands = engine.getHands()
