@@ -951,9 +951,16 @@ export function useCardController(
       userHand.removeCard(managed.card.id)
     }
 
-    // Add new cards to engine
+    // Add new cards to engine (they start at origin with no ref)
     for (const card of toAdd) {
       userHand.addCard(card, true) // face up
+    }
+
+    // Wait for Vue to render new BoardCard components
+    if (toAdd.length > 0) {
+      await nextTick()
+      // Give BoardCard refs time to register
+      await new Promise(resolve => setTimeout(resolve, 50))
     }
 
     // Sort and re-fan
@@ -970,7 +977,10 @@ export function useCardController(
     const duration = 300
     const moves = userHand.cards.map((managed, index) => {
       const ref = engine.getCardRef(managed.card.id)
-      if (!ref) return null
+      if (!ref) {
+        console.warn('[CardController] syncUserHandWithState: no ref for', managed.card.id)
+        return null
+      }
       const target = userHand.getCardPosition(index)
       return ref.moveTo({
         x: target.x,
