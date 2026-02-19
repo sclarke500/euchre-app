@@ -594,15 +594,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
 
   function hasSavedGame(): boolean {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (!saved) return false
-      const state = JSON.parse(saved)
-      const dayMs = 24 * 60 * 60 * 1000
-      return state.savedAt && (Date.now() - state.savedAt) < dayMs
-    } catch {
-      return false
-    }
+    // Save/resume disabled - always start fresh
+    return false
   }
 
   function clearSavedGame() {
