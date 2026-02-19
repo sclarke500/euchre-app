@@ -83,15 +83,16 @@ const positionStyle = computed(() => props.customStyle ?? {})
     position: relative; // For absolute positioning of info-tags
   }
 
-  // User avatar: horizontal layout with dark backdrop
+  // User avatar: horizontal layout with warm wood-tinted backdrop
   &.is-user .avatar-container {
     padding: 6px 12px 6px 6px;
-    background: rgba(20, 20, 30, 0.85);
+    background: rgba(50, 40, 35, 0.92);
     border-radius: 30px;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
     box-shadow: 
-      0 2px 8px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 3px 12px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   }
 
   &.is-user .avatar-border {
@@ -120,7 +121,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
   }
 
   &.is-user .avatar-circle {
-    border-color: rgba(200, 170, 100, 0.5); // Subtle gold tint
+    border-color: rgba(180, 150, 120, 0.6); // Warm wood accent
   }
 
   .avatar-circle {
