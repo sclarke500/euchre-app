@@ -344,7 +344,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     if (state.phase === PresidentPhase.CardExchange) {
       setTimeout(() => handleGivingPhase(), 500)
     } else if (state.phase === PresidentPhase.Playing) {
-      setTimeout(() => processAITurn(), 500)
+      // Longer pause after exchange completes so user can see their new cards
+      setTimeout(() => processAITurn(), 1500)
     }
   }
   
@@ -441,7 +442,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     if (phase.value === PresidentPhase.CardExchange) {
       setTimeout(() => handleGivingPhase(), 500)
     } else if (phase.value === PresidentPhase.Playing) {
-      setTimeout(() => processAITurn(), 500)
+      // Longer pause after exchange completes
+      setTimeout(() => processAITurn(), 1500)
     }
   }
 
