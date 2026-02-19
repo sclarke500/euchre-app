@@ -527,9 +527,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       gameOver.value = true
       phase.value = PresidentPhase.GameOver
     } else {
-      // Start next round after delay
+      // Start next round after delay (startRound handles roundNumber increment via shared)
       timer.schedule('next-round', 3000, () => {
-        roundNumber.value++
         startRound()
       })
     }
