@@ -345,7 +345,13 @@ const gameTitle = computed(() => {
   align-items: center;
   justify-content: center;
   padding: $spacing-xl;
-  background: linear-gradient(135deg, rgba($brand-green, 0.4) 0%, rgba($brand-green-dark, 0.2) 100%);
+  background: 
+    // Subtle warm glow top-left
+    radial-gradient(circle at 20% 20%, rgba(255, 220, 150, 0.08) 0%, transparent 40%),
+    // Cool accent bottom-right
+    radial-gradient(circle at 80% 90%, rgba(100, 180, 255, 0.06) 0%, transparent 35%),
+    // Green gradient base
+    linear-gradient(160deg, rgba($brand-green, 0.5) 0%, rgba($brand-green-dark, 0.3) 100%);
   gap: $spacing-lg;
 
   @media (max-height: 500px) {
@@ -412,6 +418,13 @@ const gameTitle = computed(() => {
   align-items: center;
   justify-content: center;
   padding: $spacing-lg;
+  background:
+    // Soft spotlight on content area
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(255, 255, 255, 0.03) 0%, transparent 60%),
+    // Subtle bokeh accent top-right
+    radial-gradient(circle at 85% 10%, rgba(150, 200, 255, 0.07) 0%, transparent 20%),
+    // Warm accent bottom
+    radial-gradient(circle at 30% 95%, rgba(255, 180, 100, 0.05) 0%, transparent 25%);
 
   @media (max-height: 500px) {
     padding: $spacing-sm;
