@@ -292,16 +292,9 @@ export function useSpadesDirector(
       focusUserHand: true,
       extraDeckCards: [],
       keepRemainingCards: false,
+      sortUserHand: sortSpadesHand,
+      sortAfterDeal: true,
     })
-
-    // Sort and position user hand
-    await cardController.sortUserHand((cards) => {
-      // Sort by suit then rank for Spades
-      return [...cards].sort((a, b) => {
-        if (a.suit !== b.suit) return a.suit.localeCompare(b.suit)
-        return a.rank.localeCompare(b.rank)
-      })
-    }, 50)
 
     // Hide opponent hands
     await cardController.hideOpponentHands()
