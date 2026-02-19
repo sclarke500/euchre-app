@@ -1,7 +1,31 @@
-// Colors
+// === BRAND ===
+$brand-green: #1e6045;
+$brand-green-light: #247552;
+$brand-green-dark: #15483a;
+
+// === SURFACES (dark to light) ===
+$surface-900: #141418;  // Deepest background
+$surface-850: #191920;  // Mid carpet
+$surface-800: #1e1e24;  // Light carpet, base panels
+$surface-700: #282830;  // Elevated panels
+$surface-600: #35383f;  // Hover states
+$surface-500: #45485a;  // Borders, dividers
+
+// === SEMANTIC ===
+$success: #287850;
+$danger: #a03838;
+$warning: #b8860b;
+$info: #2563eb;
+
+// === TEXT ===
+$text-primary: #ffffff;
+$text-secondary: rgba(255, 255, 255, 0.7);
+$text-muted: rgba(255, 255, 255, 0.4);
+
+// === LEGACY (deprecated - use tokens above) ===
 $primary-color: #2c3e50;
-$secondary-color: #42b983;
-$background-color: #1a1a1a;
+$secondary-color: $brand-green;  // was #42b983
+$background-color: $surface-800;
 $card-background: #fff;
 
 // Spacing
