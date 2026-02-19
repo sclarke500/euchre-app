@@ -1,7 +1,7 @@
 // Re-export all types and game logic
 
 // Utilities
-export { createGameTimer, type GameTimer } from './utils/timer.js'
+export { createGameTimer, type GameTimer, GameTimings } from './utils/timer.js'
 
 // Multiplayer protocol and table/lobby types
 export * from './multiplayer/index.js'

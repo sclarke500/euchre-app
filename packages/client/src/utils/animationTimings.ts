@@ -1,3 +1,5 @@
+import { GameTimings } from '@67cards/shared'
+
 // Base durations - abstract timing values
 export const AnimationDurations = {
   fast: 220,
@@ -37,10 +39,10 @@ export const CardTimings = {
   // President-specific
   exchange: AnimationDurations.pause,      // 900 - card exchange animation
   
-  // AI/phase delays (singleplayer)
-  aiThink: 1500,                           // AI "thinking" delay
+  // AI/phase delays (uses shared GameTimings for server/client parity)
+  aiThink: GameTimings.aiThinkMs,          // AI "thinking" delay
   phaseTransition: 500,                    // between SP phases
-  roundEnd: 1000,                          // pause at end of round
+  roundEnd: GameTimings.roundPauseMs,      // pause at end of round
   
   // Klondike-specific
   autoCompleteStep: 150,                   // delay between auto-complete moves

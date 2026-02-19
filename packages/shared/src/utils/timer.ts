@@ -1,4 +1,15 @@
 /**
+ * Fairness-related timings (used by both server and client)
+ * These affect gameplay pacing, not just visuals.
+ */
+export const GameTimings = {
+  /** AI "thinking" delay before playing */
+  aiThinkMs: 1000,
+  /** Pause between rounds/phases */
+  roundPauseMs: 1500,
+} as const
+
+/**
  * Cancellable game timer
  * 
  * Platform-agnostic timer utility for scheduling delayed actions that:

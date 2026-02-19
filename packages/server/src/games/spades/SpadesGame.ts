@@ -7,6 +7,7 @@ import {
   SpadesPhase,
   Spades,
   getRandomAINames,
+  GameTimings,
 } from '@67cards/shared'
 import type { SpadesClientGameState } from '@67cards/shared'
 import type { SpadesGameEvents, SpadesGamePlayer } from './types.js'
@@ -242,7 +243,7 @@ export class SpadesGame {
       this.phase = SpadesPhase.Bidding
       this.broadcastState()
       this.scheduleAITurn()
-    }, 1500)
+    }, GameTimings.roundPauseMs)
   }
 
   makeBid(odusId: string, bid: SpadesBid): boolean {
@@ -322,7 +323,7 @@ export class SpadesGame {
 
       // Check if round complete
       if (this.completedTricks.length === 13) {
-        setTimeout(() => this.completeRound(), 1500)
+        setTimeout(() => this.completeRound(), GameTimings.roundPauseMs)
       } else {
         // Continue playing
         setTimeout(() => {
@@ -331,7 +332,7 @@ export class SpadesGame {
           this.phase = SpadesPhase.Playing
           this.broadcastState()
           this.scheduleAITurn()
-        }, 1500)
+        }, GameTimings.roundPauseMs)
       }
     } else {
       this.currentPlayer = (this.currentPlayer + 1) % 4
@@ -408,7 +409,7 @@ export class SpadesGame {
       } else if (this.phase === SpadesPhase.Playing) {
         this.processAIPlay()
       }
-    }, 800)
+    }, GameTimings.aiThinkMs)
   }
 
   private processAIBid(): void {
@@ -501,7 +502,7 @@ export class SpadesGame {
       this.phase = SpadesPhase.TrickComplete
 
       if (this.completedTricks.length === 13) {
-        setTimeout(() => this.completeRound(), 1500)
+        setTimeout(() => this.completeRound(), GameTimings.roundPauseMs)
       } else {
         setTimeout(() => {
           this.currentTrick = Spades.createSpadesTrick()
@@ -509,7 +510,7 @@ export class SpadesGame {
           this.phase = SpadesPhase.Playing
           this.broadcastState()
           this.scheduleAITurn()
-        }, 1500)
+        }, GameTimings.roundPauseMs)
       }
     } else {
       this.currentPlayer = (this.currentPlayer + 1) % 4
