@@ -311,9 +311,11 @@ const dimmedCardIds = computed(() => {
     return ids
   }
 
-  // In multiplayer, if validPlays is empty, don't dim anything yet
-  // (wait for server to send valid plays)
-  if (props.mode === 'multiplayer' && game.validPlays.value.length === 0) {
+  // If no valid plays, dim ALL cards to indicate user must pass
+  if (game.validPlays.value.length === 0) {
+    for (const card of human.hand) {
+      ids.add(card.id)
+    }
     return ids
   }
 

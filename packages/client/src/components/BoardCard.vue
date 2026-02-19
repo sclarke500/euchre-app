@@ -168,6 +168,7 @@ defineExpose({
 
   &.dimmed {
     filter: brightness(0.5) saturate(0.4);
+    transition: filter 0.7s ease;
   }
 
   &.selected {

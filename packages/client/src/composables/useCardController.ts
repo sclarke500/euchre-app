@@ -951,9 +951,9 @@ export function useCardController(
       userHand.removeCard(managed.card.id)
     }
 
-    // Add new cards to engine (they start at origin with no ref)
+    // Add new cards to engine (faceUp=false so flipY:180 shows face via XOR logic)
     for (const card of toAdd) {
-      userHand.addCard(card, true) // face up
+      userHand.addCard(card, false)
     }
 
     // Trigger Vue to re-render the card list
