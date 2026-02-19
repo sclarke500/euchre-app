@@ -339,15 +339,35 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
       phase: phase.value,
     })
     
-    if (!isAwaitingGiveCards.value) {
-      console.warn('[PresidentMP] giveCards rejected: not awaiting')
+    // Primary check: are we in the give-cards phase?
+    // Use phase as the primary gate since isAwaitingGiveCards can be cleared
+    // by a race condition (e.g., president_card_exchange_info arriving just before click)
+    const inGivingPhase = phase.value === PresidentPhase.PresidentGiving
+    
+    if (!isAwaitingGiveCards.value && !inGivingPhase) {
+      console.warn('[PresidentMP] giveCards rejected: not awaiting and not in PresidentGiving phase')
       return
     }
-    if (cardIds.length !== cardsToGiveCount.value) {
-      console.warn('[PresidentMP] giveCards rejected: wrong count', cardIds.length, '!=', cardsToGiveCount.value)
+    
+    // Validate card count - use stored cardsToGiveCount if available, else infer from rank
+    // President gives 2, VP gives 1
+    const myRank = myPlayer.value?.rank
+    const expectedCount = cardsToGiveCount.value > 0 
+      ? cardsToGiveCount.value 
+      : (myRank === 1 ? 2 : myRank === 2 ? 1 : 0)
+    
+    if (expectedCount === 0) {
+      console.warn('[PresidentMP] giveCards rejected: cannot determine expected card count')
+      return
+    }
+    
+    if (cardIds.length !== expectedCount) {
+      console.warn('[PresidentMP] giveCards rejected: wrong count', cardIds.length, '!=', expectedCount)
       return
     }
 
+    console.log('[PresidentMP] giveCards: sending president_give_cards', { cardIds, expectedCount })
+    
     websocket.send({
       type: 'president_give_cards',
       cardIds,
