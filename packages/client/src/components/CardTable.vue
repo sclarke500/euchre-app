@@ -263,28 +263,35 @@ defineExpose({
   --felt-dark: #15483a;      // Edge shadow
   --surface-bg: #151518;
 
-  // Floor effect - moody speakeasy
+  // Floor effect - dramatic lounge (more visible)
   background:
-    // Focused spotlight on table - dramatic pool of light
-    radial-gradient(ellipse 60% 50% at center 42%, rgba(255, 245, 230, 0.07) 0%, rgba(255, 230, 200, 0.02) 50%, transparent 70%),
-    // Deep shadow around table
-    radial-gradient(ellipse 50% 42% at center 44%, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%),
-    // Moody deep vignette - darker, more dramatic
-    radial-gradient(ellipse 100% 100% at center, transparent 30%, rgba(5, 5, 15, 0.6) 100%),
-    // Subtle texture - aged wall feel
+    // Strong warm spotlight cone from above
+    radial-gradient(ellipse 65% 55% at center 40%, rgba(255, 220, 150, 0.12) 0%, rgba(255, 200, 100, 0.04) 40%, transparent 65%),
+    // Table shadow
+    radial-gradient(ellipse 55% 45% at center 44%, rgba(0, 0, 0, 0.5) 0%, transparent 80%),
+    // Heavy vignette - really dark corners
+    radial-gradient(ellipse 90% 90% at center, transparent 25%, rgba(0, 0, 0, 0.7) 100%),
+    // Art deco accent lines - subtle geometric pattern
     repeating-linear-gradient(
-      180deg,
+      -45deg,
       transparent 0px,
-      transparent 3px,
-      rgba(0, 0, 0, 0.02) 3px,
-      rgba(0, 0, 0, 0.02) 6px
+      transparent 60px,
+      rgba(180, 150, 100, 0.03) 60px,
+      rgba(180, 150, 100, 0.03) 61px
     ),
-    // Deep atmospheric base - hints of deep blue in the shadows
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 60px,
+      rgba(180, 150, 100, 0.03) 60px,
+      rgba(180, 150, 100, 0.03) 61px
+    ),
+    // Rich burgundy-brown base
     linear-gradient(180deg, 
-      #16141a 0%,      // Dark with cool hint
-      #121015 30%,     // Deep purple-black
-      #0e0c12 60%,     // Deepest
-      #0a090d 100%     // Near black with cool undertone
+      #1f1418 0%,      // Dark burgundy hint
+      #1a1014 40%,     // Deep
+      #150d10 70%,     // Darker
+      #100a0c 100%     // Near black, warm
     );
 
 }
