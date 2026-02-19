@@ -143,9 +143,8 @@ export function useSpadesBoardUi(adapter: SpadesGameAdapter, mode: 'singleplayer
         showRoundSummary.value = true
       }
 
-      if (mode === 'multiplayer' && newPhase !== SpadesPhase.RoundComplete) {
-        showRoundSummary.value = false
-      }
+      // In MP, don't auto-dismiss — let user click Continue.
+      // The deal happens behind the modal so game isn't delayed.
 
       if (newPhase === SpadesPhase.Bidding) {
         selectedBid.value = 3
