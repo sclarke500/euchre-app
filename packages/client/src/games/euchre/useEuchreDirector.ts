@@ -12,6 +12,7 @@ import type { Card, Suit, ServerMessage } from '@67cards/shared'
 import type { EuchreGameAdapter } from './useEuchreGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
+import { CardScales } from '@/composables/useCardSizing'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import type { EngineCard, CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
@@ -191,8 +192,8 @@ export function useEuchreDirector(
     playerCount: 4,
     userSeatIndex: 0,
     playerIdToSeatIndex,
-    userHandScale: 1.6,
-    opponentHandScale: 0.7,
+    userHandScale: CardScales.userHand,
+    opponentHandScale: CardScales.opponentHand,
     userFanSpacing: 30,
     opponentFanSpacing: 16,
     playMoveMs: CARD_PLAY_MS,

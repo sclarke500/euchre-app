@@ -13,6 +13,7 @@ import type { StandardCard, PendingExchange, ServerMessage } from '@67cards/shar
 import type { PresidentGameAdapter } from './usePresidentGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
+import { CardScales } from '@/composables/useCardSizing'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import type { CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
@@ -61,8 +62,8 @@ export function usePresidentDirector(
     layout: 'normal',
     playerCount: () => playerCount.value,
     userSeatIndex: 0,
-    userHandScale: 1.6,
-    opponentHandScale: 0.5,
+    userHandScale: CardScales.userHand,
+    opponentHandScale: CardScales.tricksWon, // Smaller for President (13+ cards) - using 0.5
     userFanSpacing: 18,
     opponentFanSpacing: 10,
     ...cardControllerPresets.president,

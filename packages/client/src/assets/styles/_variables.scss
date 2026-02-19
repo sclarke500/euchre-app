@@ -49,9 +49,12 @@ $breakpoint-md: 768px;
 $breakpoint-lg: 992px;
 $breakpoint-xl: 1200px;
 
-// Card dimensions - 10% larger for better visibility
+// Card dimensions - base size, scales with viewport via useCardSizing
+// These are fallback values; actual size set via CSS custom properties
 $card-width: 83px;
 $card-height: 116px;
+// CSS custom properties (set by useCardSizing based on viewport):
+// --card-base-width, --card-base-height
 
 // Card overlap for fanned hands (negative margin-left)
 $card-overlap-hand: -25px;        // Player hands (Euchre, President)

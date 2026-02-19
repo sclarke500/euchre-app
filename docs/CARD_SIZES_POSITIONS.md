@@ -1,26 +1,45 @@
 # Card Sizes & Positions
 
-Reference for unifying card dimensions and positions across games (excluding Klondike).
+Reference for unified card dimensions and positions across games (excluding Klondike).
 
 ---
 
-## Current State
+## Centralized Sizing (useCardSizing.ts)
 
-### Base Card Size (CSS Variables)
-```scss
-// packages/client/src/assets/styles/_variables.scss
-$card-width: 83px;
-$card-height: 116px;
-// Aspect ratio: 1.4 (standard playing card)
+All card scales are now centralized in `composables/useCardSizing.ts`.
+
+### CardScales (unified multipliers)
+```ts
+export const CardScales = {
+  userHand: 1.5,        // Player's hand - largest for readability
+  opponentHand: 0.65,   // Opponent hands - smaller to fit on table
+  playArea: 0.85,       // Cards played to center
+  deck: 0.8,            // Deal stack
+  tricksWon: 0.5,       // Won trick piles - small stacks
+  sweep: 0.6,           // Cards being swept off table
+  mini: 0.3,            // Very small (exchange animations)
+  hidden: 0.05,         // Collapsed at avatar (essentially invisible)
+}
 ```
 
-### Scale by Context
+### Viewport-Responsive Base Size
+```ts
+// Base card width at different viewport breakpoints
+const VIEWPORT_BREAKPOINTS = [
+  { minWidth: 1920, baseWidth: 95 },   // Large desktop / TV
+  { minWidth: 1440, baseWidth: 88 },   // Desktop
+  { minWidth: 1024, baseWidth: 83 },   // iPad landscape / small desktop
+  { minWidth: 768, baseWidth: 78 },    // iPad portrait
+  { minWidth: 0, baseWidth: 70 },      // Mobile
+]
+```
 
-| Game | User Hand | Opponent Hand | Play Area | Notes |
-|------|-----------|---------------|-----------|-------|
-| **Euchre** | 1.6 | 0.7 | 0.8 | Standard trick-taking |
-| **Spades** | 1.6 | 0.7 | 0.8 | Same as Euchre |
-| **President** | 1.6 | 0.5 | 0.9 | Smaller opponents (more cards), larger play area |
+### Per-Game Overrides
+| Game | User Hand | Opponent Hand | Notes |
+|------|-----------|---------------|-------|
+| **Euchre** | CardScales.userHand | CardScales.opponentHand | Standard |
+| **Spades** | CardScales.userHand | CardScales.opponentHand | Standard |
+| **President** | CardScales.userHand | CardScales.tricksWon (0.5) | Smaller opponents (13+ cards) |
 
 ### Effective Pixel Sizes
 

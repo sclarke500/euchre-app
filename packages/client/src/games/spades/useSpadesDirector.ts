@@ -1,6 +1,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
 import { SpadesPhase, type SpadesBid, type StandardCard } from '@67cards/shared'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
+import { CardScales } from '@/composables/useCardSizing'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import type { SpadesGameAdapter } from './useSpadesGameAdapter'
 import { CardTimings } from '@/utils/animationTimings'
@@ -39,8 +40,8 @@ export function useSpadesDirector(
     playerCount: 4,
     userSeatIndex: 0,
     playerIdToSeatIndex,
-    userHandScale: 1.6,
-    opponentHandScale: 0.7,
+    userHandScale: CardScales.userHand,
+    opponentHandScale: CardScales.opponentHand,
     userFanSpacing: 30,
     opponentFanSpacing: 16,
     playMoveMs: CardTimings.move,

@@ -31,6 +31,7 @@ import { Suit } from '@67cards/shared'
 import { FullRank } from '@67cards/shared'
 import type { CardPosition } from '@/components/cardContainers'
 import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
+import { CardScales } from './useCardSizing'
 
 export type PlayAreaMode = 'trick' | 'overlay'
 export type TrickCompleteMode = 'stack' | 'sweep'
@@ -145,9 +146,9 @@ export function useCardController(
     const deckPos = dealerSeatIndex !== undefined
       ? getDealerDeckPosition(dealerSeatIndex, layout)
       : { x: tableCenter.value.x, y: tableCenter.value.y }
-    engine.createDeck(deckPos, 0.8)
+    engine.createDeck(deckPos, CardScales.deck)
 
-    const baseScale = config.opponentHandScale ?? 0.7
+    const baseScale = config.opponentHandScale ?? CardScales.opponentHand
     for (let i = 0; i < getPlayerCount(); i++) {
       const seat = layout.seats[i]!
       engine.createHand(`hand-${i}`, seat.handPosition, {
@@ -161,11 +162,11 @@ export function useCardController(
       })
     }
 
-    engine.createPile('center', { x: tableCenter.value.x, y: tableCenter.value.y }, 0.8)
+    engine.createPile('center', { x: tableCenter.value.x, y: tableCenter.value.y }, CardScales.playArea)
 
     if (trickCompleteMode === 'stack') {
       for (let i = 0; i < getPlayerCount(); i++) {
-        engine.createPile(`tricks-won-player-${i}`, layout.tableCenter, 0.5)
+        engine.createPile(`tricks-won-player-${i}`, layout.tableCenter, CardScales.tricksWon)
       }
     }
 
@@ -201,7 +202,7 @@ export function useCardController(
     if (userHand) {
       userHand.faceUp = false
       userHand.flipCards(false)
-      userHand.scale = config.opponentHandScale ?? 0.7
+      userHand.scale = config.opponentHandScale ?? CardScales.opponentHand
       userHand.resetArcLock() // Reset arc radius lock for new hand
     }
 
@@ -280,7 +281,7 @@ export function useCardController(
       const cardCount = userHand.cards.length
       // Consistent position - same for all hand sizes
       const targetY = board.offsetHeight - 80
-      const targetScale = config.userHandScale ?? 1.6
+      const targetScale = config.userHandScale ?? CardScales.userHand
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
@@ -307,7 +308,7 @@ export function useCardController(
 
     for (const hand of hands) {
       if (hand.id !== `hand-${userSeatIndex}`) {
-        hand.scale = config.opponentHandScale ?? 0.7
+        hand.scale = config.opponentHandScale ?? CardScales.opponentHand
       }
     }
 
@@ -345,7 +346,7 @@ export function useCardController(
             y: stackPos.y,
             rotation: 0,
             zIndex: stackPos.zIndex,
-            scale: 0.8,
+            scale: CardScales.deck,
           }, CardTimings.move)
         }
         await new Promise(r => setTimeout(r, CardTimings.move))
@@ -372,7 +373,7 @@ export function useCardController(
               y: topStackPos.y,
               rotation: 0, 
               zIndex: 150, 
-              scale: 0.8,  // Match kitty stack scale
+              scale: CardScales.deck,
               flipY: turnUpFlipY 
             }, CardTimings.flip)
             engine.refreshCards()
@@ -384,7 +385,7 @@ export function useCardController(
         const offY = tableCenter.value.y
         for (const managed of deck.cards) {
           const ref = engine.getCardRef(managed.card.id)
-          ref?.moveTo({ x: offX, y: offY, rotation: 0, zIndex: 50, scale: 0.5 }, CardTimings.move)
+          ref?.moveTo({ x: offX, y: offY, rotation: 0, zIndex: 50, scale: CardScales.tricksWon }, CardTimings.move)
         }
         await new Promise(r => setTimeout(r, CardTimings.move))
         // Remove remaining cards from deck
@@ -500,7 +501,7 @@ export function useCardController(
           y: avatarPos.y,
           rotation: 0,
           zIndex: 100,
-          scale: 0.05,
+          scale: CardScales.hidden,
           flipY: 0,
         })
       }
@@ -538,7 +539,7 @@ export function useCardController(
       y: center.y + o.y,
       rotation: o.rotation,
       zIndex: 300 + cardIndex, // Below user avatar (500)
-      scale: 0.9,
+      scale: CardScales.playArea,
       flipY: 180,
     }
   }
@@ -557,7 +558,7 @@ export function useCardController(
       y: center.y + groupOffsetY,
       rotation: 180 + groupRot,
       zIndex: 300 + playIndex * 4 + cardIndex, // Below user avatar (500)
-      scale: 0.9,
+      scale: CardScales.playArea,
       flipY: 180,
     }
   }
@@ -597,7 +598,7 @@ export function useCardController(
         y: seat?.handPosition.y ?? tableCenter.value.y,
         rotation: seat?.rotation ?? 0,
         zIndex: 900,
-        scale: seatIndex === userSeatIndex ? (config.userHandScale ?? 1.6) : (config.opponentHandScale ?? 0.7),
+        scale: seatIndex === userSeatIndex ? (config.userHandScale ?? CardScales.userHand) : (config.opponentHandScale ?? CardScales.opponentHand),
         flipY: 0,
       }
 
@@ -659,7 +660,7 @@ export function useCardController(
         y: tableCenter.value.y,
         rotation: 0,
         zIndex: 50 + trickNumber * 4 + cardIndex,
-        scale: 0.5,
+        scale: CardScales.tricksWon,
         flipY: 0,
       }
     }
@@ -703,7 +704,7 @@ export function useCardController(
       y: y - cardIndex * 0.6,
       rotation,
       zIndex: 50 + trickNumber * 4 + cardIndex,
-      scale: 0.5,
+      scale: CardScales.tricksWon,
       flipY: 0,
     }
   }
@@ -730,7 +731,7 @@ export function useCardController(
           y: offY,
           rotation: 20,
           zIndex: 100 + i,
-          scale: 0.6,
+          scale: CardScales.sweep,
         }, sweepDuration)
       })
       await Promise.all(moves)
@@ -878,7 +879,7 @@ export function useCardController(
       // Set hand properties
       hand.faceUp = isUser && (options.userSeatFaceUp ?? true)
       hand.mode = isUser ? 'fanned' : 'looseStack'
-      hand.scale = isUser ? (config.userHandScale ?? 1.0) : (config.opponentHandScale ?? 0.7)
+      hand.scale = isUser ? (config.userHandScale ?? CardScales.userHand) : (config.opponentHandScale ?? CardScales.opponentHand)
       hand.resetArcLock()
 
       // Add cards to hand (hand.addCard adds to container, engine tracks via allCards computed)
@@ -1021,7 +1022,7 @@ export function useCardController(
           y: targetPos.y,
           rotation: 0,
           zIndex: 600,
-          scale: 0.3,
+          scale: CardScales.mini,
           flipY: 0, // flip to back as it leaves
         }, durationMs)
       })
