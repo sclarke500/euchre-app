@@ -263,20 +263,22 @@ defineExpose({
   --felt-dark: #1e5c48;      // Edge shadow
   --surface-bg: #1e1e26;
 
-  // Floor effect - wood floor with overhead lighting
+  // Floor effect - gray carpet with overhead lamp lighting
   background:
-    // Soft light pool from overhead lamp
-    radial-gradient(ellipse 80% 70% at center 42%, rgba(60, 50, 40, 0.25) 0%, transparent 50%),
-    // Subtle wood plank lines (horizontal)
+    // Table shadow - dark oval under the table
+    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 80%, transparent 100%),
+    // Light pool from overhead lamp - warm glow
+    radial-gradient(ellipse 70% 55% at center 40%, rgba(255, 245, 220, 0.08) 0%, transparent 60%),
+    // Carpet texture - subtle noise effect
     repeating-linear-gradient(
-      180deg,
+      45deg,
       transparent 0px,
-      transparent 60px,
-      rgba(0, 0, 0, 0.15) 60px,
-      rgba(0, 0, 0, 0.15) 61px
+      transparent 2px,
+      rgba(255, 255, 255, 0.01) 2px,
+      rgba(255, 255, 255, 0.01) 4px
     ),
-    // Base floor - warm dark wood
-    linear-gradient(180deg, #252018 0%, #1a1610 40%, #12100c 100%);
+    // Base carpet - neutral gray with slight warmth
+    linear-gradient(180deg, #2a2a2e 0%, #232328 50%, #1c1c20 100%);
 
 }
 
