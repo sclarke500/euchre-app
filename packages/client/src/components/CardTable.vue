@@ -263,28 +263,28 @@ defineExpose({
   --felt-dark: #15483a;      // Edge shadow
   --surface-bg: #151518;
 
-  // Floor effect - upscale members club
+  // Floor effect - moody speakeasy
   background:
-    // Warm overhead lamp glow - amber tint pooling on table area
-    radial-gradient(ellipse 70% 55% at center 42%, rgba(255, 200, 120, 0.06) 0%, rgba(255, 180, 100, 0.02) 40%, transparent 70%),
-    // Table shadow beneath
-    radial-gradient(ellipse 55% 45% at center 44%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%),
-    // Subtle warm vignette at edges
-    radial-gradient(ellipse 120% 120% at center, transparent 40%, rgba(20, 10, 5, 0.4) 100%),
-    // Hint of wall paneling - very subtle vertical rhythm
+    // Focused spotlight on table - dramatic pool of light
+    radial-gradient(ellipse 60% 50% at center 42%, rgba(255, 245, 230, 0.07) 0%, rgba(255, 230, 200, 0.02) 50%, transparent 70%),
+    // Deep shadow around table
+    radial-gradient(ellipse 50% 42% at center 44%, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%),
+    // Moody deep vignette - darker, more dramatic
+    radial-gradient(ellipse 100% 100% at center, transparent 30%, rgba(5, 5, 15, 0.6) 100%),
+    // Subtle texture - aged wall feel
     repeating-linear-gradient(
-      90deg,
+      180deg,
       transparent 0px,
-      transparent 80px,
-      rgba(60, 40, 30, 0.03) 80px,
-      rgba(60, 40, 30, 0.03) 82px
+      transparent 3px,
+      rgba(0, 0, 0, 0.02) 3px,
+      rgba(0, 0, 0, 0.02) 6px
     ),
-    // Rich dark floor with warm undertone
+    // Deep atmospheric base - hints of deep blue in the shadows
     linear-gradient(180deg, 
-      #1c1a1f 0%,      // Slightly warm dark at top
-      #18161a 40%,     // Deep middle
-      #1a1518 70%,     // Touch of warmth
-      #141214 100%     // Near black at bottom
+      #16141a 0%,      // Dark with cool hint
+      #121015 30%,     // Deep purple-black
+      #0e0c12 60%,     // Deepest
+      #0a090d 100%     // Near black with cool undertone
     );
 
 }
