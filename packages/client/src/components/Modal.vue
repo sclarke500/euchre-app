@@ -168,6 +168,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/frosted-glass' as *;
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -202,22 +204,24 @@ onUnmounted(() => {
 }
 
 :deep(.dialog-panel) {
-  background: rgba(245, 245, 245, 0.9);
-  backdrop-filter: blur(8px);
-  padding: $spacing-md;
-  border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  @include frosted-panel;
+  padding: $spacing-lg;
+  border-radius: 16px;
   text-align: center;
+  color: $text-primary;
 }
 
 :deep(.dialog-title) {
   margin-bottom: $spacing-sm;
   font-weight: 700;
+  font-size: 1.25rem;
+  color: $text-primary;
 }
 
 :deep(.dialog-text) {
   margin-bottom: $spacing-md;
-  opacity: 0.85;
+  color: $text-secondary;
+  line-height: 1.5;
 }
 
 :deep(.dialog-actions) {
@@ -228,25 +232,43 @@ onUnmounted(() => {
 }
 
 :deep(.dialog-btn) {
-  padding: $spacing-sm $spacing-md;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
+  @include frosted-btn;
 }
 
 :deep(.dialog-btn--primary) {
-  background: $secondary-color;
-  color: #fff;
-}
-
-:deep(.dialog-btn--muted) {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(
+    180deg,
+    rgba(40, 115, 80, 0.95) 0%,
+    rgba(28, 85, 58, 0.98) 100%
+  );
+  border-color: rgba(70, 160, 110, 0.25);
   color: #fff;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: linear-gradient(
+      180deg,
+      rgba(48, 130, 90, 0.95) 0%,
+      rgba(35, 100, 68, 0.98) 100%
+    );
+  }
+}
+
+:deep(.dialog-btn--muted) {
+  background: linear-gradient(
+    180deg,
+    rgba(55, 58, 68, 0.95) 0%,
+    rgba(35, 38, 48, 0.98) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: $text-secondary;
+  
+  &:hover {
+    background: linear-gradient(
+      180deg,
+      rgba(65, 68, 78, 0.95) 0%,
+      rgba(45, 48, 58, 0.98) 100%
+    );
+    color: $text-primary;
   }
 }
 
