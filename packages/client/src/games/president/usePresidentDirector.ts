@@ -610,12 +610,17 @@ export function usePresidentDirector(
         mpPilePlayCount = msg.state.currentPile?.plays?.length ?? 0
         // During exchange phases, sync user hand with server state
         // (cards may be added/removed by exchange)
-        const exchangePhases = [PresidentPhase.CardExchange, PresidentPhase.CardExchange]
-        if (exchangePhases.includes(newPhase as PresidentPhase) || 
-            exchangePhases.includes(oldPhase as PresidentPhase)) {
+        const wasInExchange = oldPhase === PresidentPhase.CardExchange
+        const isInExchange = newPhase === PresidentPhase.CardExchange
+        if (wasInExchange || isInExchange) {
           const myHand = game.humanPlayer.value?.hand
           if (myHand && myHand.length > 0) {
-            await cardController.syncUserHandWithState(myHand, sortHandByRank)
+            // Use slower animation for exchange (EXCHANGE_MS = 900ms)
+            await cardController.syncUserHandWithState(myHand, sortHandByRank, undefined, EXCHANGE_MS)
+            // Add pause after exchange animation so user can see their new cards
+            if (wasInExchange && newPhase === PresidentPhase.Playing) {
+              await sleep(1200)
+            }
           }
         }
         break

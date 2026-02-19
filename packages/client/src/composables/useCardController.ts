@@ -920,11 +920,13 @@ export function useCardController(
    * Used in MP when server updates hand (e.g., card exchange).
    * Removes cards no longer in hand, adds new cards, sorts and fans.
    * @param recipientSeat - seat index to animate removed cards toward (defaults to table center)
+   * @param durationMs - animation duration for card movements (default 350ms)
    */
   async function syncUserHandWithState(
     newCards: StandardCard[],
     sorter?: (cards: StandardCard[]) => StandardCard[],
-    recipientSeat?: number
+    recipientSeat?: number,
+    durationMs: number = 350
   ) {
     const userSeatIndex = getUserSeatIndex()
     const userHand = engine.getHands()[userSeatIndex]
@@ -970,7 +972,7 @@ export function useCardController(
           zIndex: 600,
           scale: 0.3,
           flipY: 0, // flip to back as it leaves
-        }, 350)
+        }, durationMs)
       })
       await Promise.all(removeAnims.filter(Boolean))
     }
@@ -1004,7 +1006,6 @@ export function useCardController(
     }
 
     // Animate remaining/new cards to their positions
-    const duration = 300
     const moves = userHand.cards.map((managed, index) => {
       const ref = engine.getCardRef(managed.card.id)
       if (!ref) {
@@ -1019,7 +1020,7 @@ export function useCardController(
         zIndex: target.zIndex,
         scale: target.scale,
         flipY: 180, // face up
-      }, duration)
+      }, durationMs)
     })
 
     await Promise.all(moves.filter(Boolean))
