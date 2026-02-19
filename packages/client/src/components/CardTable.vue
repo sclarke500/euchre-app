@@ -263,22 +263,29 @@ defineExpose({
   --felt-dark: #15483a;      // Edge shadow
   --surface-bg: #151518;
 
-  // Floor effect - dark luxe carpet
+  // Floor effect - upscale members club
   background:
-    // Table shadow - soft dark area under table
-    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.25) 70%, transparent 100%),
-    // Subtle light pool from overhead lamp
-    radial-gradient(ellipse 75% 60% at center 40%, rgba(255, 250, 240, 0.03) 0%, transparent 55%),
-    // Carpet texture
+    // Warm overhead lamp glow - amber tint pooling on table area
+    radial-gradient(ellipse 70% 55% at center 42%, rgba(255, 200, 120, 0.06) 0%, rgba(255, 180, 100, 0.02) 40%, transparent 70%),
+    // Table shadow beneath
+    radial-gradient(ellipse 55% 45% at center 44%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%),
+    // Subtle warm vignette at edges
+    radial-gradient(ellipse 120% 120% at center, transparent 40%, rgba(20, 10, 5, 0.4) 100%),
+    // Hint of wall paneling - very subtle vertical rhythm
     repeating-linear-gradient(
-      45deg,
+      90deg,
       transparent 0px,
-      transparent 2px,
-      rgba(0, 0, 0, 0.05) 2px,
-      rgba(0, 0, 0, 0.05) 4px
+      transparent 80px,
+      rgba(60, 40, 30, 0.03) 80px,
+      rgba(60, 40, 30, 0.03) 82px
     ),
-    // Base carpet - rich dark charcoal
-    linear-gradient(180deg, #1e1e24 0%, #191920 50%, #141418 100%);
+    // Rich dark floor with warm undertone
+    linear-gradient(180deg, 
+      #1c1a1f 0%,      // Slightly warm dark at top
+      #18161a 40%,     // Deep middle
+      #1a1518 70%,     // Touch of warmth
+      #141214 100%     // Near black at bottom
+    );
 
 }
 
