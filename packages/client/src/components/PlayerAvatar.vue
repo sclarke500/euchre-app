@@ -13,14 +13,13 @@
     <div class="avatar-container">
       <div class="avatar-border">
         <div class="avatar-circle">{{ initial }}</div>
-        <div class="name-row">
+        <div class="name-column">
+          <!-- Info tags - above name for user, top-right for opponents -->
+          <div class="info-tags">
+            <slot />
+          </div>
           <div class="player-name">{{ props.name }}</div>
         </div>
-      </div>
-      
-      <!-- Info tags - top right of avatar circle -->
-      <div class="info-tags">
-        <slot />
       </div>
       
       <!-- Turn indicator glow -->
@@ -76,6 +75,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
     flex-direction: column;
     align-items: center;
     gap: 0;
+    position: relative; // For absolute positioning of info-tags
   }
 
   // User avatar: horizontal layout with dark backdrop
@@ -95,15 +95,23 @@ const positionStyle = computed(() => props.customStyle ?? {})
     gap: 8px;
   }
 
-  &.is-user .name-row {
+  &.is-user .name-column {
     margin-top: 0;
     margin-left: -4px;
+    align-items: flex-start;
   }
 
   &.is-user .player-name {
     padding: 4px 14px;
     font-size: 14px;
     background: transparent; // Backdrop handles the background now
+  }
+  
+  // For user, info-tags appear above name inside the pill
+  &.is-user .info-tags {
+    position: static;
+    margin-bottom: 2px;
+    padding-left: 14px;
   }
 
   &.is-user .avatar-circle {
@@ -128,11 +136,12 @@ const positionStyle = computed(() => props.customStyle ?? {})
     transition: border-color var(--anim-slow, 0.3s) ease, box-shadow var(--anim-slow, 0.3s) ease;
   }
 
-  .name-row {
+  .name-column {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
     margin-top: -8px;
+    position: relative;
   }
 
   .player-name {
@@ -170,27 +179,22 @@ const positionStyle = computed(() => props.customStyle ?? {})
   }
 
   // Info tags - positioned at top-right of avatar circle (opponents)
+  // Empty by default - hidden until populated
   .info-tags {
-    position: absolute;
-    top: -8px;
-    right: -10px;
     display: flex;
     gap: 4px;
     z-index: 5;
+    
+    &:empty {
+      display: none;
+    }
   }
-
-  // For user avatar, position info tags as pill above the container
-  &.is-user .info-tags {
+  
+  // For opponents, position absolutely at top-right of avatar
+  &:not(.is-user) .info-tags {
     position: absolute;
-    top: -24px;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    background: rgba(40, 40, 55, 0.95);
-    padding: 4px 10px;
-    border-radius: 12px;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    top: -8px;
+    right: -10px;
   }
 
   .avatar-glow {
