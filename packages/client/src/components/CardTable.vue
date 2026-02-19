@@ -265,20 +265,24 @@ defineExpose({
 
   // Floor effect - visible lounge with bokeh lights
   background:
-    // Bokeh light 1 - top left warm
-    radial-gradient(circle at 8% 15%, rgba(255, 180, 100, 0.15) 0%, transparent 8%),
-    // Bokeh light 2 - top right cool
-    radial-gradient(circle at 92% 12%, rgba(150, 180, 255, 0.12) 0%, transparent 7%),
-    // Bokeh light 3 - bottom left
-    radial-gradient(circle at 5% 85%, rgba(255, 200, 150, 0.1) 0%, transparent 6%),
-    // Bokeh light 4 - bottom right
-    radial-gradient(circle at 95% 88%, rgba(180, 160, 220, 0.1) 0%, transparent 7%),
+    // Bokeh light 1 - top left warm (brighter, bigger)
+    radial-gradient(circle at 8% 15%, rgba(255, 170, 80, 0.28) 0%, rgba(255, 180, 100, 0.1) 6%, transparent 12%),
+    // Bokeh light 2 - top right cool (brighter, bigger)
+    radial-gradient(circle at 92% 12%, rgba(130, 170, 255, 0.25) 0%, rgba(150, 180, 255, 0.08) 5%, transparent 11%),
+    // Bokeh light 3 - bottom left (brighter, bigger)
+    radial-gradient(circle at 5% 85%, rgba(255, 190, 120, 0.25) 0%, rgba(255, 200, 150, 0.08) 5%, transparent 10%),
+    // Bokeh light 4 - bottom right (brighter, bigger)
+    radial-gradient(circle at 95% 88%, rgba(170, 150, 230, 0.22) 0%, rgba(180, 160, 220, 0.07) 5%, transparent 11%),
+    // Extra accent - mid left
+    radial-gradient(circle at 3% 50%, rgba(255, 200, 130, 0.18) 0%, transparent 8%),
+    // Extra accent - mid right  
+    radial-gradient(circle at 97% 55%, rgba(160, 180, 255, 0.15) 0%, transparent 7%),
     // Table spotlight
-    radial-gradient(ellipse 65% 55% at center 42%, rgba(255, 240, 200, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 65% 55% at center 42%, rgba(255, 240, 200, 0.1) 0%, transparent 60%),
     // Table shadow
     radial-gradient(ellipse 55% 45% at center 44%, rgba(0, 0, 0, 0.5) 0%, transparent 80%),
     // Vignette
-    radial-gradient(ellipse 100% 100% at center, transparent 35%, rgba(0, 0, 0, 0.6) 100%),
+    radial-gradient(ellipse 100% 100% at center, transparent 35%, rgba(0, 0, 0, 0.55) 100%),
     // Base - dark with slight blue tint
     linear-gradient(180deg, #1a1a24 0%, #141420 50%, #0f0f18 100%);
 
