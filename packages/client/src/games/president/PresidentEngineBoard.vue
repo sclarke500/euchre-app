@@ -542,10 +542,6 @@ watch(() => game.gameLost.value, (lost) => {
 })
 
 onUnmounted(() => {
-  // Save single-player game progress on exit
-  if (props.mode === 'singleplayer') {
-    presidentStore?.saveToLocalStorage()
-  }
   director.cleanup?.()
   if (props.mode === 'multiplayer') {
     game.cleanup?.()

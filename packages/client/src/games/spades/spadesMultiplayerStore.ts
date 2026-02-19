@@ -110,10 +110,10 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   function applyMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'spades_game_state': {
-        // Detect new round - reset blind nil state
+        // Detect new round - reset blind nil state ONLY when round number increases
         const prevRound = gameState.value?.roundNumber ?? 0
         const newRound = message.state.roundNumber ?? 0
-        if (newRound > prevRound || (prevRound > 0 && message.state.phase === SpadesPhase.Bidding && !message.state.bidsComplete)) {
+        if (newRound > prevRound) {
           userCardsRevealed.value = false
         }
         
