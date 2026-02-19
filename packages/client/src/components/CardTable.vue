@@ -142,49 +142,52 @@ const avatarStyles = computed(() => {
 })
 
 /**
- * Dealer chip position - positioned near the dealer's avatar
+ * Dealer chip position - top-left of each player's avatar, in board coordinates.
+ * Uses absolute left/top so the chip visibly animates across the table when dealer changes.
  */
 const dealerChipStyle = computed(() => {
   const layout = lastLayoutResult.value
   const board = boardRef.value
-  if (!layout || !board || props.dealerSeat < 0) return {}
+  if (!layout || !board || props.dealerSeat < 0) return { display: 'none' }
   
   const seat = seatData.value[props.dealerSeat]
-  if (!seat) return {}
+  if (!seat) return { display: 'none' }
   
   const { tableBounds } = layout
+  const chipOffset = { x: -20, y: -20 } // Top-left of avatar center
   
-  // For user (seat 0), position at bottom center
+  // Get avatar center point in board coordinates
+  let avatarX: number
+  let avatarY: number
+  
   if (seat.isUser) {
-    return {
-      left: `${tableBounds.centerX}px`,
-      bottom: 'calc(20% + 44px)', // Raised 10px, align with user avatar
-      transform: 'translateX(40px)', // Offset to the right of center
+    // User avatar is at bottom center of board
+    avatarX = tableBounds.centerX
+    avatarY = board.offsetHeight - 35 // ~35px from bottom (avatar bottom: 10px + half height)
+  } else {
+    // Opponent avatars positioned on rail
+    switch (seat.side) {
+      case 'left':
+        avatarX = tableBounds.left
+        avatarY = seat.handPosition.y
+        break
+      case 'right':
+        avatarX = tableBounds.right
+        avatarY = seat.handPosition.y
+        break
+      case 'top':
+        avatarX = seat.handPosition.x
+        avatarY = tableBounds.top
+        break
+      default:
+        avatarX = tableBounds.centerX
+        avatarY = tableBounds.bottom
     }
   }
   
-  // For opponents, position near their avatar
-  const avatarPos = avatarStyles.value[props.dealerSeat]
-  const chipOffset = seat.side === 'right' ? -30 : 30 // Left of avatar if on right side
-  
-  switch (seat.side) {
-    case 'left':
-      return { 
-        left: `${tableBounds.left + chipOffset}px`, 
-        top: `${seat.handPosition.y + 20}px`,
-      }
-    case 'right':
-      return { 
-        left: `${tableBounds.right + chipOffset}px`, 
-        top: `${seat.handPosition.y + 20}px`,
-      }
-    case 'top':
-      return { 
-        left: `${seat.handPosition.x + 30}px`, 
-        top: `${tableBounds.top + 20}px`,
-      }
-    default:
-      return {}
+  return {
+    left: `${avatarX + chipOffset.x}px`,
+    top: `${avatarY + chipOffset.y}px`,
   }
 })
 
