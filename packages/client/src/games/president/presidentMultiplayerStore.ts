@@ -141,6 +141,20 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
                      message.state.players?.find((p: any) => p.hand !== undefined)?.id
         const isStillMyTurn = myId !== undefined && message.state.currentPlayer === myId
         
+        // Debug: log hand changes during exchange
+        const myPlayer = message.state.players?.find((p: any) => p.hand !== undefined)
+        if (myPlayer?.hand) {
+          const prevHand = gameState.value?.players?.find(p => p.hand !== undefined)?.hand
+          if (prevHand && prevHand.length !== myPlayer.hand.length) {
+            console.log('[PresidentMP] Hand size changed:', {
+              before: prevHand.length,
+              after: myPlayer.hand.length,
+              phase: message.state.phase,
+              handIds: myPlayer.hand.map((c: any) => c.id),
+            })
+          }
+        }
+        
         // Detect pile transition to empty - validPlays are definitely stale when pile clears
         const pileWasCleared = gameState.value?.currentPile?.currentRank !== null &&
                                message.state.currentPile?.currentRank === null

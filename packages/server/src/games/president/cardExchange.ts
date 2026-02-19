@@ -86,8 +86,17 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
 
     if (recipient) {
       const cardIds = new Set(cards.map((card) => card.id))
+      const handBefore = player.hand.length
       player.hand = player.hand.filter((card) => !cardIds.has(card.id))
       recipient.hand = [...recipient.hand, ...cards]
+      console.log('[CardExchange] completeGiveBack: cards transferred', {
+        giverName: player.name,
+        recipientName: recipient.name,
+        cardsGiven: cards.map(c => c.id),
+        giverHandBefore: handBefore,
+        giverHandAfter: player.hand.length,
+        recipientHandAfter: recipient.hand.length,
+      })
 
       const receivedCards = deps.pendingExchangeReceivedCards.get(playerSeatIndex) ?? []
       const roleNames: Record<number, string> = {
