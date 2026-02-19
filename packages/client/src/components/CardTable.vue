@@ -363,10 +363,6 @@ defineExpose({
   background: none;
   border: none;
   
-  // 3D perspective - "looking down at table" effect
-  transform: perspective(800px) rotateX(20deg);
-  transform-origin: center 80%; // Pivot point near bottom
-  
   // Wood rail - sits behind the felt
   &::before {
     content: '';
