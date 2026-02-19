@@ -24,6 +24,7 @@ import {
   choosePresidentPlay,
   choosePresidentPlayHard,
   chooseCardsToGiveBack,
+  chooseCardsToGive,
   getRankDisplayName,
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
@@ -127,6 +128,18 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     if (human.rank === PlayerRank.VicePresident) return 1
     return 0
   })
+
+  // SP exchange state for Scum/ViceScum (unified with MP flow)
+  const isInExchange = ref(false)
+  const exchangeCanSelect = ref(false)
+  const exchangePreSelectedIds = ref<string[]>([])
+
+  // Scum gives 2, ViceScum gives 1
+  function getScumCardsToGive(player: PresidentPlayer): number {
+    if (player.rank === PlayerRank.Scum) return 2
+    if (player.rank === 3) return 1 // ViceScum (rank 3 with cardsToGive > 0)
+    return 0
+  }
 
   // Deal animation callback — director signals when dealing visuals are done
   let dealCompleteResolve: (() => void) | null = null
@@ -240,8 +253,29 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
   
   function handleGivingPhase() {
-    // Determine who needs to give cards first (President, then VP)
-    // The shared startNewRound now returns awaitingGiveBack=null, so we determine locally
+    const human = humanPlayer.value
+    if (!human) {
+      // No human player - AI handles everything
+      initializeAIExchange()
+      return
+    }
+
+    const humanRank = human.rank
+    
+    // Check if human is Scum or ViceScum (they need to confirm their pre-selected cards)
+    if (humanRank === PlayerRank.Scum || (humanRank === 3 && human.cardsToGive > 0)) {
+      // Human is Scum/ViceScum - show them their best cards and wait for confirmation
+      const cardsToGive = getScumCardsToGive(human)
+      const bestCards = chooseCardsToGive(human, cardsToGive)
+      
+      isInExchange.value = true
+      exchangeCanSelect.value = false  // Can't change selection
+      exchangePreSelectedIds.value = bestCards.map(c => c.id)
+      waitingForExchangeAck.value = false
+      return
+    }
+    
+    // Human is President or VP - determine who gives first
     if (awaitingGiveBack.value === null) {
       const president = players.value.find(p => p.rank === PlayerRank.President)
       if (president) {
@@ -249,19 +283,31 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       }
     }
 
-    const human = humanPlayer.value
     const givingPlayer = players.value.find(p => p.id === awaitingGiveBack.value)
 
-    if (human && givingPlayer && givingPlayer.id === human.id) {
+    if (givingPlayer && givingPlayer.id === human.id) {
       // Human is President or VP - needs to select cards to give
+      isInExchange.value = true
+      exchangeCanSelect.value = true
+      exchangePreSelectedIds.value = []
       waitingForExchangeAck.value = false
     } else if (givingPlayer) {
       // AI is President/VP - let them give cards automatically
       processAIGiveBack()
     } else {
-      // No one to give - shouldn't happen but handle gracefully
       console.warn('[PresidentStore] handleGivingPhase: no giving player found')
     }
+  }
+  
+  function initializeAIExchange() {
+    // All AI - start President's exchange
+    if (awaitingGiveBack.value === null) {
+      const president = players.value.find(p => p.rank === PlayerRank.President)
+      if (president) {
+        awaitingGiveBack.value = president.id
+      }
+    }
+    processAIGiveBack()
   }
   
   async function processAIGiveBack() {
@@ -328,6 +374,30 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       waitingForExchangeAck.value = true
       // Don't continue until human acknowledges
     }
+  }
+  
+  // Human Scum/ViceScum confirms their exchange (pre-selected cards)
+  async function confirmScumExchange() {
+    const human = humanPlayer.value
+    if (!human) return
+    
+    const humanRank = human.rank
+    if (humanRank !== PlayerRank.Scum && humanRank !== 3) return // Only Scum/ViceScum
+    
+    // Clear the exchange UI state
+    isInExchange.value = false
+    exchangeCanSelect.value = false
+    exchangePreSelectedIds.value = []
+    
+    // Now let AI President/VP do their exchange
+    // Set up awaitingGiveBack for President first
+    const president = players.value.find(p => p.rank === PlayerRank.President)
+    if (president) {
+      awaitingGiveBack.value = president.id
+    }
+    
+    // Process AI exchanges
+    await processAIGiveBack()
   }
   
   // Helper to apply state from shared functions
@@ -515,6 +585,11 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     canHumanPlay,
     isHumanGivingCards,
     cardsToGiveCount,
+    
+    // Exchange state (unified with MP)
+    isInExchange,
+    exchangeCanSelect,
+    exchangePreSelectedIds,
 
     // Actions
     startNewGame,
@@ -522,6 +597,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     playCards,
     pass,
     giveCardsBack,
+    confirmScumExchange,
     getPlayerRankDisplay,
     acknowledgeExchange,
     dealAnimationComplete,

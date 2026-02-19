@@ -97,11 +97,11 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     exchangeInfo: computed(() => store.exchangeInfo),
     isHumanGivingCards: computed(() => store.isHumanGivingCards ?? false),
     cardsToGiveCount: computed(() => store.cardsToGiveCount ?? 0),
-    // MP exchange properties - not used in SP, provide defaults
-    isInExchange: computed(() => false),
-    exchangeCanSelect: computed(() => false),
-    exchangeCardsNeeded: computed(() => 0),
-    exchangePreSelectedIds: computed(() => []),
+    // Exchange properties (unified with MP)
+    isInExchange: computed(() => store.isInExchange ?? false),
+    exchangeCanSelect: computed(() => store.exchangeCanSelect ?? false),
+    exchangeCardsNeeded: computed(() => store.cardsToGiveCount ?? 0),
+    exchangePreSelectedIds: computed(() => store.exchangePreSelectedIds ?? []),
     lastPlayedCards: computed(() => store.lastPlayedCards),
     roundNumber: computed(() => store.roundNumber),
     gameOver: computed(() => store.gameOver),
@@ -114,7 +114,14 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     pass: () => store.pass(),
     acknowledgeExchange: () => store.acknowledgeExchange(),
     giveCardsBack: (cards: StandardCard[]) => store.giveCardsBack(cards),
-    confirmExchange: () => {}, // No-op for SP (uses giveCardsBack instead)
+    confirmExchange: (cards: StandardCard[]) => {
+      // For SP: President/VP use giveCardsBack, Scum/ViceScum use confirmScumExchange
+      if (store.exchangeCanSelect) {
+        store.giveCardsBack(cards)
+      } else {
+        store.confirmScumExchange()
+      }
+    },
     getPlayerRankDisplay: (playerId: number) => store.getPlayerRankDisplay(playerId),
     dealAnimationComplete: () => store.dealAnimationComplete(),
     setPlayAnimationCallback: (cb) => store.setPlayAnimationCallback(cb),
