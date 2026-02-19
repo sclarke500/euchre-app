@@ -672,7 +672,7 @@ onUnmounted(() => {
   }
 }
 
-// Sliding action panel from right
+// Sliding action panel from right - frosted glass
 .action-panel-container {
   position: fixed;
   right: 0;
@@ -685,49 +685,27 @@ onUnmounted(() => {
   gap: 12px;
   padding: 16px 14px;
   padding-right: max(14px, env(safe-area-inset-right));
-  background: linear-gradient(
-    135deg,
-    rgba(35, 40, 50, 0.85) 0%,
-    rgba(20, 22, 30, 0.9) 100%
-  );
+  background: rgba(60, 60, 70, 0.65);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 20px 0 0 20px;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-right: none;
   box-shadow: 
-    -4px 0 30px rgba(0, 0, 0, 0.5),
-    -2px 0 20px rgba(212, 175, 55, 0.15),
-    inset 1px 0 0 rgba(212, 175, 55, 0.2);
+    -4px 0 24px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.1);
   min-width: 120px;
 }
 
 .action-panel-container .shiny-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: 20px 0 0 20px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    rgba(255, 255, 255, 0.15) 25%,
-    rgba(255, 255, 255, 0.05) 50%,
-    transparent 70%
-  );
-  pointer-events: none;
-  z-index: 10;
+  display: none; // Not needed for frosted glass look
 }
 
 .action-panel-container .action-btn {
   padding: 10px 20px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-top-color: rgba(255, 255, 255, 0.3);
-  border-bottom-color: rgba(0, 0, 0, 0.2);
-  background: linear-gradient(
-    to bottom,
-    rgba(80, 80, 100, 0.9) 0%,
-    rgba(55, 55, 75, 0.9) 100%
-  );
+  background: rgba(70, 70, 80, 0.7);
   backdrop-filter: blur(8px);
   color: #fff;
   font-size: 15px;
