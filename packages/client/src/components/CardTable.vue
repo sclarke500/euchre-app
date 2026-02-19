@@ -154,7 +154,7 @@ const dealerChipStyle = computed(() => {
   if (!seat) return { display: 'none' }
   
   const { tableBounds } = layout
-  const chipOffset = { x: -20, y: -20 } // Top-left of avatar center
+  const chipOffset = { x: -38, y: -38 } // Chip center at avatar's top-left corner
   
   // Get avatar center point in board coordinates
   let avatarX: number
