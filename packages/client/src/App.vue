@@ -353,7 +353,7 @@ function backToMenu() {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
 }
 
 // Portrait orientation overlay - controlled via v-if="showLandscapeBlocker"
@@ -364,7 +364,7 @@ function backToMenu() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
   z-index: 9999;
   align-items: center;
   justify-content: center;
@@ -425,7 +425,7 @@ function backToMenu() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
   color: $text-primary;
   gap: $spacing-md;
 

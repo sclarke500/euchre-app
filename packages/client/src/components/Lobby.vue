@@ -201,7 +201,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
   color: white;
 }
 

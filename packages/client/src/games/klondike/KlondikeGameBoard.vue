@@ -892,7 +892,7 @@ function doNewGame() {
 .klondike-board {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
