@@ -59,8 +59,6 @@ export const useEuchreGameStore = defineStore('game', () => {
   const lastAIBidAction = ref<{ playerId: number; message: string } | null>(null)
   const biddingStartPlayer = ref(0) // Track who started the bidding round
   const passCount = ref(0) // Track passes in current bidding round
-  const isRestoring = ref(false)
-  let shouldResumeAiAfterRestore = false
 
   // Animation callbacks — store awaits these before advancing turns
   // This allows the Director to control animation timing
@@ -118,9 +116,6 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   // Actions
   function startNewGame() {
-    isRestoring.value = false
-    shouldResumeAiAfterRestore = false
-
     // Get random AI names for this game
     const aiNames = getRandomAINames(3)
 
@@ -454,7 +449,6 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   async function processAITurn() {
     if (!currentRound.value) return
-    if (isRestoring.value) return
 
     const current = currentRound.value.currentPlayer
     const player = players.value[current]
@@ -552,102 +546,6 @@ export const useEuchreGameStore = defineStore('game', () => {
     startPlayingPhase()
   }
 
-  // LocalStorage persistence for single-player resume
-  const STORAGE_KEY = '67cards_euchre_progress'
-
-  function saveToLocalStorage() {
-    if (isRestoring.value) return
-
-    if (gameOver.value) {
-      // Don't save finished games
-      clearSavedGame()
-      return
-    }
-    const state = {
-      players: players.value,
-      currentRound: currentRound.value,
-      scores: scores.value,
-      phase: phase.value,
-      currentDealer: currentDealer.value,
-      biddingStartPlayer: biddingStartPlayer.value,
-      passCount: passCount.value,
-      savedAt: Date.now(),
-    }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch (e) {
-      console.warn('[EuchreStore] Failed to save game:', e)
-    }
-  }
-
-  function loadFromLocalStorage(): boolean {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (!saved) return false
-
-      const state = JSON.parse(saved)
-
-      isRestoring.value = true
-      shouldResumeAiAfterRestore = false
-      
-      // Restore state
-      players.value = state.players
-      currentRound.value = state.currentRound
-      scores.value = state.scores
-      phase.value = state.phase
-      currentDealer.value = state.currentDealer
-      biddingStartPlayer.value = state.biddingStartPlayer ?? 0
-      passCount.value = state.passCount ?? 0
-      gameOver.value = false
-      winner.value = null
-
-      // Reset game tracker for hard AI
-      gameTracker.reset()
-
-      const current = currentRound.value?.currentPlayer
-      const currentPlayerObj = current !== undefined && current >= 0 ? players.value[current] : null
-      shouldResumeAiAfterRestore = Boolean(
-        currentPlayerObj &&
-        !currentPlayerObj.isHuman &&
-        (phase.value === GamePhase.BiddingRound1 ||
-          phase.value === GamePhase.BiddingRound2 ||
-          phase.value === GamePhase.Playing)
-      )
-
-      return true
-    } catch (e) {
-      console.warn('[EuchreStore] Failed to load saved game:', e)
-      isRestoring.value = false
-      shouldResumeAiAfterRestore = false
-      clearSavedGame()
-      return false
-    }
-  }
-
-  function commitRestore() {
-    const shouldResume = shouldResumeAiAfterRestore
-    isRestoring.value = false
-    shouldResumeAiAfterRestore = false
-
-    if (shouldResume) {
-      processAITurn()
-    }
-  }
-
-  function abortRestore() {
-    isRestoring.value = false
-    shouldResumeAiAfterRestore = false
-  }
-
-  function hasSavedGame(): boolean {
-    // Save/resume disabled - always start fresh
-    return false
-  }
-
-  function clearSavedGame() {
-    localStorage.removeItem(STORAGE_KEY)
-  }
-
   return {
     // State
     players,
@@ -662,7 +560,6 @@ export const useEuchreGameStore = defineStore('game', () => {
     tricksTaken,
     gameState,
     lastAIBidAction,
-    isRestoring,
 
     // Actions
     startNewGame,
@@ -676,13 +573,5 @@ export const useEuchreGameStore = defineStore('game', () => {
     setPlayAnimationCallback,
     setTrickCompleteCallback,
     setDealAnimationCallback,
-
-    // LocalStorage persistence
-    saveToLocalStorage,
-    loadFromLocalStorage,
-    commitRestore,
-    abortRestore,
-    hasSavedGame,
-    clearSavedGame,
   }
 })

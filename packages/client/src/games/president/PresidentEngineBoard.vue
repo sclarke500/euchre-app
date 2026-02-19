@@ -156,25 +156,6 @@
       </div>
     </Modal>
 
-    <!-- Resume game prompt (single-player only) -->
-    <Modal :show="showResumePrompt" :dismiss-on-backdrop="false" aria-label="Resume game">
-      <div class="game-over-panel dialog-panel">
-        <div class="game-over-title dialog-title">Game In Progress</div>
-        <div class="panel-message dialog-text">You have an unfinished game. Would you like to continue?</div>
-        <div class="game-over-actions dialog-actions">
-          <button class="action-btn dialog-btn dialog-btn--muted" @click="handleNewGameFromPrompt">New Game</button>
-          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleResumeGame">Continue</button>
-        </div>
-      </div>
-    </Modal>
-
-    <!-- Loading overlay for game restore -->
-    <Transition name="fade">
-      <div v-if="isRestoringGame" class="restore-overlay">
-        <div class="restore-message">Resuming game...</div>
-      </div>
-    </Transition>
-
   </CardTable>
 </template>
 
@@ -242,7 +223,6 @@ const timerSettings = computed(() => {
 })
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
-const showResumePrompt = ref(false)
 
 function handleLeaveClick() {
   if (props.mode === 'multiplayer' && !game.gameOver.value) {
@@ -484,48 +464,13 @@ function buildBugReportPayload() {
 
 // ── Mount ───────────────────────────────────────────────────────────────
 
-// Restore state tracking
-const isRestoringGame = ref(false)
-
-// Resume/new game handlers for single-player
-async function handleResumeGame() {
-  showResumePrompt.value = false
-  isRestoringGame.value = true
-
-  // Load the saved state (sets isRestoring in store)
-  presidentStore?.loadFromLocalStorage()
-
-  // Wait for next tick then restore visuals
-  await nextTick()
-  await director.restoreFromSavedState()
-
-  // Brief delay for smooth transition
-  await new Promise(r => setTimeout(r, 100))
-  isRestoringGame.value = false
-
-  // Commit restore (triggers AI if needed)
-  presidentStore?.commitRestore()
-}
-
-function handleNewGameFromPrompt() {
-  showResumePrompt.value = false
-  presidentStore?.clearSavedGame()
-  const settingsStore = useSettingsStore()
-  presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
-}
-
 onMounted(async () => {
   // Initialize game - multiplayer connects to server, single-player starts new game
   if (props.mode === 'multiplayer') {
     game.initialize?.()
   } else {
-    // Check for saved game
-    if (presidentStore?.hasSavedGame()) {
-      showResumePrompt.value = true
-    } else {
-      const settingsStore = useSettingsStore()
-      presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
-    }
+    const settingsStore = useSettingsStore()
+    presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
   }
   await nextTick()
   if (tableRef.value) {

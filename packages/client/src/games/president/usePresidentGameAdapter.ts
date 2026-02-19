@@ -65,15 +65,6 @@ export interface PresidentGameAdapter {
   dequeueMessage?: () => ServerMessage | null
   getQueueLength?: () => number
   applyMessage?: (message: ServerMessage) => void
-
-  // LocalStorage persistence (SP only)
-  saveToLocalStorage?: () => void
-  loadFromLocalStorage?: () => boolean
-  hasSavedGame?: () => boolean
-  clearSavedGame?: () => void
-  isRestoring?: ComputedRef<boolean>
-  commitRestore?: () => void
-  abortRestore?: () => void
 }
 
 export function usePresidentGameAdapter(mode: 'singleplayer' | 'multiplayer'): PresidentGameAdapter {
@@ -119,15 +110,6 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
 
     // Single-player specific
     isMultiplayer: false,
-
-    // LocalStorage persistence
-    saveToLocalStorage: () => store.saveToLocalStorage(),
-    loadFromLocalStorage: () => store.loadFromLocalStorage(),
-    hasSavedGame: () => store.hasSavedGame(),
-    clearSavedGame: () => store.clearSavedGame(),
-    isRestoring: computed(() => store.isRestoring),
-    commitRestore: () => store.commitRestore(),
-    abortRestore: () => store.abortRestore(),
   }
 }
 

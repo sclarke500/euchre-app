@@ -726,82 +726,6 @@ export function usePresidentDirector(
     playerStatuses.value = new Array(playerCount.value).fill('')
   }
 
-  // ── Restore from saved state ──────────────────────────────────────────
-
-  async function restoreFromSavedState() {
-    const tl = getTableLayout()
-    if (!tl) return
-
-    // Set up table containers
-    cardController.setupTable(0) // dealer doesn't matter for President
-
-    // Build player hands for dealing (by seat index)
-    const gamePlayers = game.players.value
-    const dealPlayers = [0, 1, 2, 3].map(seatIdx => {
-      const playerId = seatIndexToPlayerId(seatIdx)
-      const player = gamePlayers.find(p => p.id === playerId)
-      return {
-        hand: (player?.hand ?? []) as StandardCard[],
-      }
-    })
-
-    // Use fast deal animation to set up cards properly
-    await cardController.dealFromPlayers(dealPlayers, {
-      dealDelayMs: 5,      // Very fast stagger
-      dealFlightMs: 50,    // Quick flight
-      fanDurationMs: 50,   // Quick fan
-      dealerSeatIndex: 0,
-      revealUserHand: true,
-      focusUserHand: true,
-      extraDeckCards: [],
-      keepRemainingCards: false,
-      sortUserHand: sortHandByRank,
-      sortAfterDeal: true,
-    })
-
-    // President shows opponent hands fanned face-down on the table (unlike Euchre/Spades)
-    // dealFromPlayers already positions them correctly, no need to hide
-
-    // If there are plays in the current pile, show them
-    const pilePlays = game.currentPile.value.plays
-    if (pilePlays.length > 0) {
-      const centerPile = engine.getPiles().find(p => p.id === 'center')
-      if (centerPile) {
-        // Add all cards from all plays to the center pile
-        const allPileCards: StandardCard[] = []
-        for (const play of pilePlays) {
-          for (const card of play.cards) {
-            allPileCards.push(card)
-            centerPile.addCard({
-              id: card.id,
-              suit: card.suit,
-              rank: card.rank,
-            }, false)
-          }
-        }
-        engine.refreshCards()
-        await nextTick()
-
-        // Position pile cards stacked in center
-        allPileCards.forEach((card, i) => {
-          const ref = engine.getCardRef(card.id)
-          if (ref) {
-            ref.setPosition({
-              x: tl.tableCenter.x + i * 2,
-              y: tl.tableCenter.y + i * 2,
-              scale: 0.8,
-              rotation: 0,
-              flipY: 180,
-              zIndex: i + 100,
-            })
-          }
-        })
-      }
-    }
-
-    engine.refreshCards()
-  }
-
   // ── Cleanup ──────────────────────────────────────────────────────────
 
   function cleanup() {
@@ -823,6 +747,5 @@ export function usePresidentDirector(
     currentTurnSeat,
     isAnimating,
     cleanup,
-    restoreFromSavedState,
   }
 }

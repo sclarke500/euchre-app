@@ -219,28 +219,10 @@
     </div>
   </Modal>
 
-  <!-- Resume game prompt (single-player only) -->
-  <Modal :show="showResumePrompt" :dismiss-on-backdrop="false" aria-label="Resume game">
-    <div class="game-over-panel dialog-panel">
-      <div class="game-over-title dialog-title">Game In Progress</div>
-      <div class="panel-message dialog-text">You have an unfinished game. Would you like to continue?</div>
-      <div class="game-over-actions dialog-actions">
-        <button class="action-btn dialog-btn dialog-btn--muted" @click="handleNewGame">New Game</button>
-        <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleResumeGame">Continue</button>
-      </div>
-    </div>
-  </Modal>
-
-  <!-- Loading overlay for game restore -->
-  <Transition name="fade">
-    <div v-if="isRestoringGame" class="restore-overlay">
-      <div class="restore-message">Resuming game...</div>
-    </div>
-  </Transition>
 </template>
 
 <script setup lang="ts">
-import { computed, proxyRefs, ref, onUnmounted, nextTick } from 'vue'
+import { computed, proxyRefs, ref } from 'vue'
 import { type SpadesBid } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
@@ -251,7 +233,6 @@ import BlindNilPrompt from './BlindNilPrompt.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useSpadesGameAdapter } from './useSpadesGameAdapter'
 import { useSpadesDirector } from './useSpadesDirector'
-import { useSpadesStore } from './spadesStore'
 import { useSpadesBoardUi } from './useSpadesBoardUi'
 import { useLobbyStore } from '@/stores/lobbyStore'
 
@@ -277,11 +258,7 @@ const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
-const showResumePrompt = ref(false)
 const boardRef = ref<HTMLElement | null>(null)
-
-// SP store for save/load (only used in singleplayer mode)
-const spadesStore = props.mode === 'singleplayer' ? useSpadesStore() : null
 
 const {
   cardController,
@@ -292,8 +269,6 @@ const {
   currentTurnSeat,
   dimmedCardIds,
   initializeGame,
-  loadSavedGame,
-  restoreFromSavedState,
 } = useSpadesDirector(adapter, engine, {
   mode: props.mode,
   tableRef,
@@ -301,50 +276,9 @@ const {
   onGameLost: () => emit('leave-game'),
 })
 
-const isRestoringGame = ref(false)
-
-// Check for saved game on mount (SP only)
 if (props.mode === 'singleplayer') {
-  if (spadesStore?.hasSavedGame()) {
-    showResumePrompt.value = true
-  } else {
-    // Start new game immediately
-    initializeGame()
-  }
-}
-
-// Resume/new game handlers
-async function handleResumeGame() {
-  showResumePrompt.value = false
-  isRestoringGame.value = true
-  
-  // Load the saved state (sets isRestoring in store)
-  loadSavedGame()
-  
-  // Wait for next tick then restore visuals
-  await nextTick()
-  await restoreFromSavedState()
-  
-  // Brief delay for smooth transition
-  await new Promise(r => setTimeout(r, 100))
-  isRestoringGame.value = false
-  
-  // Commit restore (triggers AI if needed)
-  spadesStore?.commitRestore()
-}
-
-function handleNewGame() {
-  showResumePrompt.value = false
-  spadesStore?.clearSavedGame()
   initializeGame()
 }
-
-// Save game on unmount (SP only)
-onUnmounted(() => {
-  if (props.mode === 'singleplayer') {
-    spadesStore?.saveToLocalStorage()
-  }
-})
 
 const {
   showRoundSummary,

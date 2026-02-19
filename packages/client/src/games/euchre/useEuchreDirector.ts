@@ -11,7 +11,7 @@ import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@
 import type { Card, Suit, ServerMessage } from '@67cards/shared'
 import type { EuchreGameAdapter } from './useEuchreGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
-import { useCardController, cardControllerPresets, type CompletedTrickSnapshot } from '@/composables/useCardController'
+import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import type { EngineCard, CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
@@ -122,7 +122,6 @@ export function useEuchreDirector(
 
   // Seat index of partner who is sitting out (when someone else goes alone)
   const alonePartnerSeat = ref<number | null>(null)
-  const restoreMode = ref(false)
 
   // MP queue processing state
   let pendingTrickWinnerId: number | null = null
@@ -610,7 +609,6 @@ export function useEuchreDirector(
   // ── Phase handler ───────────────────────────────────────────────────────
 
   async function handlePhase(newPhase: GamePhase, oldPhase: GamePhase | null) {
-    if (restoreMode.value) return
     if (newPhase === lastAnimatedPhase.value) return
     
     // For Dealing phase, don't mark as animated until boardRef is available
@@ -1005,7 +1003,6 @@ export function useEuchreDirector(
 
     // Trump called → order-up flow or round-2 flow
     watch(() => game.trump.value, async (newTrump) => {
-      if (restoreMode.value) return
       if (!newTrump) return
 
       await waitForAnimations()
@@ -1104,74 +1101,6 @@ export function useEuchreDirector(
     playerStatuses.value = ['', '', '', '']
   }
 
-  /**
-   * Restore visual state from saved game.
-   * Uses fast animation to properly set up card state.
-   */
-  async function restoreFromSavedState() {
-    if (!boardRef.value) return
-
-    // Set up table containers
-    setupTable()
-
-    // Build player hands for dealing (by seat index)
-    const gamePlayers = game.players.value
-    const dealPlayers = [0, 1, 2, 3].map(seatIdx => {
-      const playerId = seatIndexToPlayerId(seatIdx)
-      const player = gamePlayers[playerId]
-      return {
-        hand: (player?.hand.map(c => cardToEngineCard(c)) ?? []) as any[],
-      }
-    })
-
-    // Use fast deal animation to set up cards properly
-    await cardController.dealFromPlayers(dealPlayers, {
-      dealDelayMs: 5,      // Very fast stagger
-      dealFlightMs: 50,    // Quick flight
-      fanDurationMs: 50,   // Quick fan
-      dealerSeatIndex: dealerSeat.value,
-      revealUserHand: true,
-      focusUserHand: true,
-      extraDeckCards: [],
-      keepRemainingCards: false,
-    })
-
-    // Sort and position user hand
-    await sortUserHand(50)
-    
-    // Hide opponent hands
-    await hideOpponentHands()
-
-    // Restore won-trick stacks from completed tricks
-    const completedTrickSnapshots: CompletedTrickSnapshot[] = game.completedTricks.value.map((trick) => ({
-      winnerId: trick.winnerId,
-      cards: trick.cards.map((played) => ({
-        card: {
-          id: played.card.id,
-          suit: played.card.suit,
-          rank: played.card.rank,
-        },
-      })),
-    }))
-    await cardController.restoreWonTrickStacks(completedTrickSnapshots)
-
-    // If there are cards in the current trick, animate them quickly to center
-    const trickCards = game.currentTrick.value?.cards ?? []
-    for (let i = 0; i < trickCards.length; i++) {
-      const tc = trickCards[i]
-      if (tc) {
-        // Use the normal playCard which handles positioning correctly
-        await cardController.playCard(tc.card as any, tc.playerId, i)
-      }
-    }
-
-    engine.refreshCards()
-  }
-
-  function setRestoreMode(enabled: boolean) {
-    restoreMode.value = enabled
-  }
-
   return {
     playerNames,
     playerInfo,
@@ -1186,8 +1115,6 @@ export function useEuchreDirector(
     clearPlayerStatuses,
     handleDealerDiscard,
     hideOpponentHands,
-    setRestoreMode,
-    restoreFromSavedState,
     cleanup,
   }
 }

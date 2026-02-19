@@ -152,10 +152,6 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     exchangeAnimationCallback = cb
   }
 
-  // Restore transaction state
-  const isRestoring = ref(false)
-  let shouldResumeAiAfterRestore = false
-
   // Actions
   function startNewGame(numPlayers: number = 4) {
     // Get random AI names
@@ -437,9 +433,6 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
 
   function processAITurn() {
-    // Don't process AI turns during restore
-    if (isRestoring.value) return
-
     const player = players.value[currentPlayer.value]
     if (!player) return
 
@@ -476,130 +469,6 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const player = players.value[playerId]
     if (!player || player.rank === null) return ''
     return getRankDisplayName(player.rank)
-  }
-
-  // LocalStorage persistence for single-player resume
-  const STORAGE_KEY = '67cards_president_progress'
-
-  function saveToLocalStorage() {
-    // Don't save during restore transaction
-    if (isRestoring.value) return
-
-    if (gameOver.value) {
-      clearSavedGame()
-      return
-    }
-
-    // Don't save if human player has already gone out (nothing to resume)
-    const human = players.value.find(p => p.isHuman)
-    if (human && human.finishOrder !== null) {
-      clearSavedGame()
-      return
-    }
-    const state = {
-      players: players.value,
-      phase: phase.value,
-      currentPile: currentPile.value,
-      currentPlayer: currentPlayer.value,
-      consecutivePasses: consecutivePasses.value,
-      finishedPlayers: finishedPlayers.value,
-      roundNumber: roundNumber.value,
-      lastPlayerId: lastPlayerId.value,
-      lastPlayedCards: lastPlayedCards.value,
-      exchangeInfo: exchangeInfo.value,
-      awaitingGiveBack: awaitingGiveBack.value,
-      rules: rules.value,
-      savedAt: Date.now(),
-    }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch (e) {
-      console.warn('[PresidentStore] Failed to save game:', e)
-    }
-  }
-
-  function loadFromLocalStorage(): boolean {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (!saved) return false
-
-      const state = JSON.parse(saved)
-
-      isRestoring.value = true
-      shouldResumeAiAfterRestore = false
-
-      players.value = state.players
-      phase.value = state.phase
-      currentPile.value = state.currentPile
-      currentPlayer.value = state.currentPlayer
-      consecutivePasses.value = state.consecutivePasses
-      finishedPlayers.value = state.finishedPlayers
-      roundNumber.value = state.roundNumber
-      lastPlayerId.value = state.lastPlayerId
-      lastPlayedCards.value = state.lastPlayedCards
-      exchangeInfo.value = state.exchangeInfo
-      rules.value = state.rules
-      gameOver.value = false
-
-      // Determine if AI should resume after visual restore
-      const currentPlayerObj = players.value[currentPlayer.value]
-      const awaitingPlayer = awaitingGiveBack.value !== null 
-        ? players.value.find(p => p.id === awaitingGiveBack.value)
-        : null
-
-      if (phase.value === PresidentPhase.Playing) {
-        // Playing phase: resume if AI's turn
-        shouldResumeAiAfterRestore = Boolean(
-          currentPlayerObj &&
-          !currentPlayerObj.isHuman &&
-          currentPlayerObj.finishOrder === null
-        )
-      } else if (phase.value === PresidentPhase.PresidentGiving) {
-        // Exchange phase: resume if AI needs to give cards
-        shouldResumeAiAfterRestore = Boolean(
-          awaitingPlayer &&
-          !awaitingPlayer.isHuman
-        )
-      }
-
-      return true
-    } catch (e) {
-      console.warn('[PresidentStore] Failed to load saved game:', e)
-      isRestoring.value = false
-      shouldResumeAiAfterRestore = false
-      clearSavedGame()
-      return false
-    }
-  }
-
-  function commitRestore() {
-    const shouldResume = shouldResumeAiAfterRestore
-    isRestoring.value = false
-    shouldResumeAiAfterRestore = false
-
-    if (shouldResume) {
-      if (phase.value === PresidentPhase.PresidentGiving) {
-        // AI needs to give cards in exchange phase
-        processAIGiveBack()
-      } else {
-        // Normal AI turn during playing phase
-        processAITurn()
-      }
-    }
-  }
-
-  function abortRestore() {
-    isRestoring.value = false
-    shouldResumeAiAfterRestore = false
-  }
-
-  function hasSavedGame(): boolean {
-    // Save/resume disabled - always start fresh
-    return false
-  }
-
-  function clearSavedGame() {
-    localStorage.removeItem(STORAGE_KEY)
   }
 
   return {
@@ -641,14 +510,5 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     setPlayAnimationCallback,
     setPileClearedCallback,
     setExchangeAnimationCallback,
-
-    // LocalStorage persistence
-    saveToLocalStorage,
-    loadFromLocalStorage,
-    hasSavedGame,
-    clearSavedGame,
-    isRestoring,
-    commitRestore,
-    abortRestore,
   }
 })
