@@ -183,7 +183,7 @@ defineExpose({
   }
 
   &:not(.selected):not(.highlighted) {
-    transition: margin-top var(--anim-fast) ease;
+    transition: margin-top var(--anim-fast) ease, filter 0.7s ease;
   }
 }
 

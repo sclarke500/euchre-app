@@ -919,10 +919,12 @@ export function useCardController(
    * Sync the user's visual hand with the server state.
    * Used in MP when server updates hand (e.g., card exchange).
    * Removes cards no longer in hand, adds new cards, sorts and fans.
+   * @param recipientSeat - seat index to animate removed cards toward (defaults to table center)
    */
   async function syncUserHandWithState(
     newCards: StandardCard[],
-    sorter?: (cards: StandardCard[]) => StandardCard[]
+    sorter?: (cards: StandardCard[]) => StandardCard[],
+    recipientSeat?: number
   ) {
     const userSeatIndex = getUserSeatIndex()
     const userHand = engine.getHands()[userSeatIndex]
@@ -946,7 +948,34 @@ export function useCardController(
       adding: toAdd.map(c => c.id),
     })
 
-    // Remove old cards from engine
+    // Animate cards being removed toward recipient before removing
+    if (toRemove.length > 0) {
+      const layout = tableLayout.value
+      let targetPos: { x: number; y: number }
+      if (recipientSeat !== undefined && layout) {
+        // Animate toward recipient's avatar position
+        targetPos = getAvatarBoardPosition(recipientSeat, layout)
+      } else {
+        // Fallback: animate toward table center
+        targetPos = layout?.tableCenter ?? tableCenter.value
+      }
+
+      const removeAnims = toRemove.map(managed => {
+        const ref = engine.getCardRef(managed.card.id)
+        if (!ref) return null
+        return ref.moveTo({
+          x: targetPos.x,
+          y: targetPos.y,
+          rotation: 0,
+          zIndex: 600,
+          scale: 0.3,
+          flipY: 0, // flip to back as it leaves
+        }, 350)
+      })
+      await Promise.all(removeAnims.filter(Boolean))
+    }
+
+    // Remove cards from engine
     for (const managed of toRemove) {
       userHand.removeCard(managed.card.id)
     }
@@ -974,7 +1003,7 @@ export function useCardController(
         .filter((m): m is NonNullable<typeof m> => m != null)
     }
 
-    // Animate to new positions
+    // Animate remaining/new cards to their positions
     const duration = 300
     const moves = userHand.cards.map((managed, index) => {
       const ref = engine.getCardRef(managed.card.id)
