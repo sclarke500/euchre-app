@@ -7,19 +7,15 @@
     :avatar-opacities="avatarOpacities"
     :engine="engine"
     :dealer-seat="dealerSeat"
+    :trump-caller-seat="trumpCallerSeat"
+    :trump-symbol="trumpSymbol"
+    :trump-color="trumpColor"
     :current-turn-seat="currentTurnSeat"
     :dimmed-card-ids="dimmedCardIds"
     layout="normal"
     game-name="EUCHRE"
     @card-click="handleCardClick"
   >
-    <!-- Player info tags via named slots -->
-    <template v-for="(info, i) in director.playerInfo.value" :key="i" #[`player-info-${i}`]>
-      <div v-if="info.trumpSymbol" class="info-chip trump-chip" :style="{ color: info.trumpColor }">
-        {{ info.trumpSymbol }}
-      </div>
-    </template>
-
     <!-- Scoreboard -->
     <div class="scoreboard">
       <div class="score-row">
@@ -98,11 +94,6 @@
         </div>
       </div>
     </Modal>
-
-    <!-- User info for the user-avatar slot -->
-    <template #user-info>
-      <div v-if="userTrumpInfo" class="info-chip trump-chip" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</div>
-    </template>
 
     <!-- Turn timer (left side, self-contained with panel and animation) -->
     <TurnTimer
@@ -202,6 +193,23 @@ const director = useEuchreDirector(game, engine, { boardRef })
 
 const dealerSeat = computed(() => director.dealerSeat.value)
 const currentTurnSeat = computed(() => director.currentTurnSeat.value)
+
+// Trump caller info - find which seat called trump
+const trumpCallerSeat = computed(() => {
+  const info = director.playerInfo.value
+  return info.findIndex(p => p.trumpSymbol)
+})
+const trumpSymbol = computed(() => {
+  const seat = trumpCallerSeat.value
+  if (seat < 0) return ''
+  return director.playerInfo.value[seat]?.trumpSymbol ?? ''
+})
+const trumpColor = computed(() => {
+  const seat = trumpCallerSeat.value
+  if (seat < 0) return ''
+  return director.playerInfo.value[seat]?.trumpColor ?? ''
+})
+
 const goAlone = ref(false)
 
 // Avatar opacities - make partner semi-transparent when someone else goes alone
@@ -233,12 +241,6 @@ const timerSettings = computed(() => {
 const humanCount = computed(() => 
   game.players.value.filter(p => p.isHuman).length
 )
-
-const userTrumpInfo = computed(() => {
-  const playerTrumpInfo = director.playerInfo.value[0]
-  if (!playerTrumpInfo?.trumpSymbol) return null
-  return { symbol: playerTrumpInfo.trumpSymbol, color: playerTrumpInfo.trumpColor }
-})
 
 // Map display row (0="Us", 1="Them") to actual team ID based on user's team
 const myTeam = computed(() => game.myTeamId.value)
