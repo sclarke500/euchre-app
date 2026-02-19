@@ -755,10 +755,9 @@ export function usePresidentDirector(
       focusUserHand: true,
       extraDeckCards: [],
       keepRemainingCards: false,
+      sortUserHand: sortHandByRank,
+      sortAfterDeal: true,
     })
-
-    // Sort and position user hand
-    await sortUserHand(50)
 
     // President shows opponent hands fanned face-down on the table (unlike Euchre/Spades)
     // dealFromPlayers already positions them correctly, no need to hide
