@@ -32,6 +32,8 @@
       @leave="handleLeaveClick"
       @resync="game.requestResync?.()"
       @rules="showRulesModal = true"
+      @bug-report-open="timerPaused = true"
+      @bug-report-close="timerPaused = false"
     />
 
     <!-- Round counter (top-right) -->
@@ -42,6 +44,7 @@
       v-if="mode === 'multiplayer'"
       ref="turnTimerRef"
       :active="game.isHumanTurn.value && !director.isAnimating.value"
+      :paused="timerPaused"
       :grace-period-ms="timerSettings.gracePeriodMs"
       :countdown-ms="timerSettings.countdownMs"
       :show-reset-button="humanCount < 3"
@@ -223,6 +226,7 @@ const timerSettings = computed(() => {
 })
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+const timerPaused = ref(false)
 
 function handleLeaveClick() {
   if (props.mode === 'multiplayer' && !game.gameOver.value) {
@@ -407,10 +411,40 @@ function passTurn() {
 }
 
 function confirmGiveBack() {
-  if (selectedCardIds.value.size !== game.cardsToGiveCount.value) return
+  const selectedCount = selectedCardIds.value.size
+  const expectedCount = game.cardsToGiveCount.value
+  
+  console.log('[President] confirmGiveBack:', {
+    selectedCount,
+    expectedCount,
+    selectedIds: [...selectedCardIds.value],
+    isHumanGivingCards: game.isHumanGivingCards.value,
+  })
+  
+  if (selectedCount !== expectedCount) {
+    console.warn('[President] confirmGiveBack: count mismatch', selectedCount, '!=', expectedCount)
+    return
+  }
+  
   const human = game.humanPlayer.value
-  if (!human) return
+  if (!human) {
+    console.warn('[President] confirmGiveBack: no human player')
+    return
+  }
+  
   const cards = human.hand.filter(c => selectedCardIds.value.has(c.id))
+  
+  // Defensive check: make sure we found all selected cards
+  if (cards.length !== selectedCount) {
+    console.error('[President] confirmGiveBack: cards not found in hand!', {
+      found: cards.length,
+      expected: selectedCount,
+      selectedIds: [...selectedCardIds.value],
+      handIds: human.hand.map(c => c.id),
+    })
+    // Still try to submit what we have - the store will validate
+  }
+  
   game.giveCardsBack(cards)
   selectedCardIds.value = new Set()
 }

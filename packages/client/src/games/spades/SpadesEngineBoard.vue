@@ -61,6 +61,8 @@
       @leave="handleLeaveClick"
       @resync="store.requestStateResync?.()"
       @rules="showRulesModal = true"
+      @bug-report-open="timerPaused = true"
+      @bug-report-close="timerPaused = false"
     />
 
     <!-- Round Summary Modal -->
@@ -181,6 +183,7 @@
       v-if="mode === 'multiplayer'"
       ref="turnTimerRef"
       :active="store.isHumanTurn || store.showBidWheel"
+      :paused="timerPaused"
       :grace-period-ms="timerSettings.gracePeriodMs"
       :countdown-ms="timerSettings.countdownMs"
       :show-reset-button="humanCount < 3"
@@ -258,6 +261,7 @@ const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+const timerPaused = ref(false)
 const boardRef = ref<HTMLElement | null>(null)
 
 const {

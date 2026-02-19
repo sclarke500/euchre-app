@@ -47,6 +47,8 @@
       @leave="handleLeaveClick"
       @resync="handleResync"
       @rules="showRulesModal = true"
+      @bug-report-open="timerPaused = true"
+      @bug-report-close="timerPaused = false"
     />
 
     <!-- Game Over overlay -->
@@ -107,6 +109,7 @@
       v-if="mode === 'multiplayer'"
       ref="turnTimerRef"
       :active="game.isHumanTurn.value && !director.isAnimating.value"
+      :paused="timerPaused"
       :grace-period-ms="timerSettings.gracePeriodMs"
       :countdown-ms="timerSettings.countdownMs"
       :show-reset-button="humanCount < 3"
@@ -448,6 +451,7 @@ function handlePlayAgain() {
 // Leave confirmation for multiplayer
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+const timerPaused = ref(false)
 const emit = defineEmits<{
   'leave-game': []
 }>()

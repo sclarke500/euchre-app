@@ -48,7 +48,7 @@
       :game-type="gameType"
       :build-payload="buildPayload"
       :show-resync="showResync"
-      @close="showBugReport = false"
+      @close="closeBugReport"
       @resync="$emit('resync')"
     />
   </div>
@@ -68,6 +68,8 @@ const emit = defineEmits<{
   leave: []
   resync: []
   rules: []
+  'bug-report-open': []
+  'bug-report-close': []
 }>()
 
 const menuOpen = ref(false)
@@ -81,6 +83,12 @@ function handleLeave() {
 function handleBugReport() {
   menuOpen.value = false
   showBugReport.value = true
+  emit('bug-report-open')
+}
+
+function closeBugReport() {
+  showBugReport.value = false
+  emit('bug-report-close')
 }
 
 function handleRules() {

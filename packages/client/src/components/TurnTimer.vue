@@ -23,12 +23,14 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 
 const props = withDefaults(defineProps<{
   active: boolean  // True when it's the user's turn
+  paused?: boolean // Pause the countdown (e.g., when bug report modal is open)
   gracePeriodMs?: number  // Time before timer appears (default 30s)
   countdownMs?: number    // Time to count down (default 30s)
   yellowAtMs?: number     // Turn yellow at this remaining time (default 15s)
   redAtMs?: number        // Turn red at this remaining time (default 5s)
   showResetButton?: boolean // Show reset button (default true)
 }>(), {
+  paused: false,
   gracePeriodMs: 30000,
   countdownMs: 30000,
   yellowAtMs: 15000,
@@ -50,6 +52,7 @@ let shouldEmitTimeout = true // Guard against race conditions
 let graceTimer: ReturnType<typeof setTimeout> | null = null
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 let startTime = 0
+let pausedAt = 0 // Track when we paused to resume correctly
 
 // Progress as 0-1 (1 = full, 0 = empty)
 const progress = computed(() => remainingMs.value / props.countdownMs)
@@ -193,6 +196,40 @@ watch(() => props.active, (isActive) => {
     remainingMs.value = props.countdownMs
   }
 }, { immediate: true })
+
+// Watch paused prop to freeze/resume countdown
+watch(() => props.paused, (isPaused) => {
+  if (isPaused) {
+    // Freeze: store current remaining time and stop interval
+    pausedAt = remainingMs.value
+    if (countdownInterval) {
+      clearInterval(countdownInterval)
+      countdownInterval = null
+    }
+    if (graceTimer) {
+      clearTimeout(graceTimer)
+      graceTimer = null
+    }
+  } else if (props.active && pausedAt > 0) {
+    // Resume: restart countdown from where we left off
+    if (visible.value) {
+      // Was in countdown phase - resume countdown
+      startTime = Date.now() - (props.countdownMs - pausedAt)
+      countdownInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime
+        remainingMs.value = Math.max(0, props.countdownMs - elapsed)
+        if (remainingMs.value <= 0 && shouldEmitTimeout) {
+          cleanup()
+          emit('timeout')
+        }
+      }, 50)
+    } else {
+      // Was in grace period - just restart grace
+      startGracePeriod()
+    }
+    pausedAt = 0
+  }
+})
 
 onUnmounted(() => {
   cleanup()
