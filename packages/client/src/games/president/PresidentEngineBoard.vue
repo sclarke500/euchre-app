@@ -702,6 +702,30 @@ onUnmounted(() => {
   }
 }
 
+// Game over / resume modal panel (unified with Spades/Euchre)
+.game-over-panel {
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid #555;
+  border-radius: 12px;
+  padding: 20px 28px;
+  text-align: center;
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+}
+
+.game-over-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.game-over-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
 // Restore overlay
 .restore-overlay {
   position: fixed;
