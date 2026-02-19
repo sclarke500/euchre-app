@@ -83,16 +83,16 @@ const positionStyle = computed(() => props.customStyle ?? {})
     position: relative; // For absolute positioning of info-tags
   }
 
-  // User avatar: horizontal layout with warm wood-tinted backdrop
+  // User avatar: frosted glass look
   &.is-user .avatar-container {
     padding: 6px 12px 6px 6px;
-    background: rgba(50, 40, 35, 0.92);
+    background: rgba(60, 60, 70, 0.65);
     border-radius: 30px;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 
-      0 3px 12px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   &.is-user .avatar-border {
@@ -121,7 +121,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
   }
 
   &.is-user .avatar-circle {
-    border-color: rgba(180, 150, 120, 0.6); // Warm wood accent
+    border-color: rgba(255, 255, 255, 0.25); // Frosted glass accent
   }
 
   .avatar-circle {
