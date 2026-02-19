@@ -24,16 +24,57 @@ $card-height: 116px;
 
 ### Effective Pixel Sizes
 
-| Scale | Width | Height |
-|-------|-------|--------|
+| Scale | Width | Height | Used For |
+|-------|-------|--------|----------|
 | 1.6 | 133px | 186px | User hand |
 | 1.0 | 83px | 116px | Base |
 | 0.9 | 75px | 104px | Play area (President) |
-| 0.8 | 66px | 93px | Play area (Euchre/Spades) |
-| 0.7 | 58px | 81px | Opponent hands |
-| 0.5 | 42px | 58px | President opponent hands |
-| 0.3 | 25px | 35px | Tricks won pile |
+| 0.8 | 66px | 93px | Play area (Euchre/Spades), **Deck** |
+| 0.7 | 58px | 81px | Opponent hands (Euchre/Spades) |
+| 0.6 | 50px | 70px | Sweep animation |
+| 0.5 | 42px | 58px | President opponent hands, **Tricks won piles** |
+| 0.3 | 25px | 35px | (unused currently) |
 | 0.05 | 4px | 6px | Hidden (collapsed at avatar) |
+
+---
+
+## Deck (Deal Stack)
+
+**Scale:** 0.8
+
+**Position:** Offset 280px from table edge on dealer's side
+```ts
+// getDealerDeckPosition() in useCardController.ts
+const off = 280
+switch (seat.side) {
+  case 'bottom': { x: centerX, y: bottom + off }
+  case 'left':   { x: left - off, y: centerY }
+  case 'top':    { x: centerX, y: top - off }
+  case 'right':  { x: right + off, y: centerY }
+}
+```
+
+---
+
+## Tricks Won Piles
+
+**Scale:** 0.5
+
+**Position:** Near each player's table edge, stacked with offset
+```ts
+// getPlayerTrickPosition() in useCardController.ts
+const inset = 20   // Distance from table edge
+const gap = 12     // Horizontal gap between tricks
+
+// Seat 0 (user/bottom): x = centerX - 60 - trickNumber * gap, y = bottom - inset
+// Seat 1 (left): x = left + inset, y = centerY - 40 - trickNumber * gap
+// Seat 2 (top): x = centerX + 60 + trickNumber * gap, y = top + inset
+// Seat 3 (right): x = right - inset, y = centerY + 40 + trickNumber * gap
+
+// Cards within a trick stack: y offset by -0.6px per card
+```
+
+**Rotation:** 0° for top/bottom, 90° for left/right
 
 ---
 
