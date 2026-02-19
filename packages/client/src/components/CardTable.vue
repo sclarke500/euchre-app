@@ -263,22 +263,22 @@ defineExpose({
   --felt-dark: #1e5c48;      // Edge shadow
   --surface-bg: #1e1e26;
 
-  // Floor effect - gray carpet with overhead lamp lighting
+  // Floor effect - lighter gray carpet, dark pill will pop
   background:
-    // Table shadow - dark oval under the table
-    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 80%, transparent 100%),
-    // Light pool from overhead lamp - warm glow
-    radial-gradient(ellipse 70% 55% at center 40%, rgba(255, 245, 220, 0.08) 0%, transparent 60%),
-    // Carpet texture - subtle noise effect
+    // Table shadow - soft dark area under table
+    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.15) 70%, transparent 100%),
+    // Light pool from overhead lamp
+    radial-gradient(ellipse 75% 60% at center 40%, rgba(255, 250, 240, 0.06) 0%, transparent 55%),
+    // Carpet texture
     repeating-linear-gradient(
       45deg,
       transparent 0px,
       transparent 2px,
-      rgba(255, 255, 255, 0.01) 2px,
-      rgba(255, 255, 255, 0.01) 4px
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
     ),
-    // Base carpet - neutral gray with slight warmth
-    linear-gradient(180deg, #2a2a2e 0%, #232328 50%, #1c1c20 100%);
+    // Base carpet - lighter warm gray
+    linear-gradient(180deg, #3d3d42 0%, #353538 50%, #2d2d32 100%);
 
 }
 
