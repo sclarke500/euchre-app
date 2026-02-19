@@ -14,6 +14,7 @@ import {
   SpadesTracker,
   chooseSpadesCardHard,
   chooseSpadesBidHard,
+  createGameTimer,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { CardTimings } from '@/utils/animationTimings'
@@ -21,6 +22,7 @@ import { CardTimings } from '@/utils/animationTimings'
 export const useSpadesStore = defineStore('spadesGame', () => {
   const settingsStore = useSettingsStore()
   const tracker = new SpadesTracker()
+  const timer = createGameTimer()
 
   // State
   const players = ref<SpadesPlayer[]>([])
@@ -127,6 +129,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   }
 
   function dealAnimationComplete() {
+    timer.cancel('deal-fallback')  // Cancel fallback since animation completed
     if (dealCompleteResolve) {
       const resolve = dealCompleteResolve
       dealCompleteResolve = null
@@ -136,6 +139,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
   // Actions
   function startNewGame() {
+    // Cancel any pending timers from previous game
+    timer.cancelAll()
+    
     const aiNames = getRandomAINames(3)
     const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
     const playerNames = [playerName, ...aiNames]
@@ -166,12 +172,12 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     dealCompleteResolve = advancePhase
     // Fallback: if no deal animation callback arrives, advance anyway.
     // Use a longer window so deal + reveal animations can finish.
-    setTimeout(() => {
+    timer.schedule('deal-fallback', 6000, () => {
       if (dealCompleteResolve === advancePhase) {
         dealCompleteResolve = null
         advancePhase()
       }
-    }, 6000)
+    })
   }
 
   function startNextRound() {
@@ -285,8 +291,8 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
     const hard = settingsStore.isHardAI()
 
-    // AI turn - schedule with delay
-    setTimeout(async () => {
+    // AI turn - schedule with delay (cancellable via timer)
+    timer.schedule('ai-turn', CardTimings.aiThink, async () => {
       // Guard: verify it's still this player's turn (state may have changed)
       if (currentPlayer.value !== playerId) {
         console.warn('[Spades] AI turn skipped - no longer this player\'s turn')
@@ -313,7 +319,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
           : Spades.chooseSpadesCard(currentPlayerObj, gameState.value)
         await executePlayCard(playerId, card)
       }
-    }, CardTimings.aiThink)
+    })
   }
 
   function applyState(state: SpadesGameState) {
@@ -371,5 +377,10 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     setTrickCompleteCallback,
     submitBlindNil,
     revealCards,
+    
+    // Timer control (for cleanup/pause)
+    cancelTimers: () => timer.cancelAll(),
+    pauseTimers: () => timer.pauseAll(),
+    resumeTimers: () => timer.resumeAll(),
   }
 })
