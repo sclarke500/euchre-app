@@ -345,7 +345,7 @@ const gameTitle = computed(() => {
   align-items: center;
   justify-content: center;
   padding: $spacing-xl;
-  background: rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba($brand-green, 0.4) 0%, rgba($brand-green-dark, 0.2) 100%);
   gap: $spacing-lg;
 
   @media (max-height: 500px) {
