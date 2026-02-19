@@ -956,11 +956,12 @@ export function useCardController(
       userHand.addCard(card, true) // face up
     }
 
-    // Wait for Vue to render new BoardCard components
-    if (toAdd.length > 0) {
+    // Trigger Vue to re-render the card list
+    if (toAdd.length > 0 || toRemove.length > 0) {
+      engine.refreshCards()
+      // Wait for Vue to render new BoardCard components and register refs
       await nextTick()
-      // Give BoardCard refs time to register
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await nextTick() // Double nextTick to ensure refs are registered
     }
 
     // Sort and re-fan
