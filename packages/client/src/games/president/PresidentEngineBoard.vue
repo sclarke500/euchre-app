@@ -249,13 +249,10 @@ const playerCount = computed(() => game.players.value.length || 4) // Default to
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
 const userRankBadge = computed(() => getRankBadge(game.humanPlayer.value?.id ?? 0))
 
-// Exchange phase status message
+// Exchange phase status message - always visible during exchange
 const exchangeStatus = computed(() => {
   if (game.phase.value === PresidentPhase.CardExchange) {
-    if (game.isInExchange.value) {
-      return null // User is participating, show action panel instead
-    }
-    return 'Card Exchange in Progress...'
+    return 'Card Exchange'
   }
   return null
 })
@@ -647,23 +644,28 @@ onUnmounted(() => {
   color: #ccc;
 }
 
-// Exchange status - center of table
+// Exchange status - subtle indicator at top
 .exchange-status {
   position: fixed;
-  top: 50%;
+  top: 12px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   z-index: 400;
-  background: rgba(30, 30, 45, 0.95);
-  border: 2px solid #555;
-  border-radius: 12px;
-  padding: 16px 32px;
-  backdrop-filter: blur(12px);
-  font-size: 16px;
-  font-weight: 600;
-  color: #eee;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background: rgba(30, 30, 45, 0.8);
+  border: 1px solid #666;
+  border-radius: 16px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 
 .fade-enter-active,
