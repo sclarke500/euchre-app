@@ -608,6 +608,16 @@ export function usePresidentDirector(
         syncVisualPileWithServer(msg.state.currentPile)
         // Sync pile play count from game state
         mpPilePlayCount = msg.state.currentPile?.plays?.length ?? 0
+        // During exchange phases, sync user hand with server state
+        // (cards may be added/removed by exchange)
+        if (newPhase === PresidentPhase.CardExchange || 
+            newPhase === PresidentPhase.PresidentGiving ||
+            oldPhase === PresidentPhase.PresidentGiving) {
+          const myHand = game.humanPlayer.value?.hand
+          if (myHand && myHand.length > 0) {
+            await cardController.syncUserHandWithState(myHand, sortHandByRank)
+          }
+        }
         break
       }
 

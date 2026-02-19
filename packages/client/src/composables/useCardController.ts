@@ -915,6 +915,76 @@ export function useCardController(
     await Promise.all(promises)
   }
 
+  /**
+   * Sync the user's visual hand with the server state.
+   * Used in MP when server updates hand (e.g., card exchange).
+   * Removes cards no longer in hand, adds new cards, sorts and fans.
+   */
+  async function syncUserHandWithState(
+    newCards: StandardCard[],
+    sorter?: (cards: StandardCard[]) => StandardCard[]
+  ) {
+    const userSeatIndex = getUserSeatIndex()
+    const userHand = engine.getHands()[userSeatIndex]
+    if (!userHand) {
+      console.warn('[CardController] syncUserHandWithState: no user hand')
+      return
+    }
+
+    const currentIds = new Set(userHand.cards.map(m => m.card.id))
+    const newIds = new Set(newCards.map(c => c.id))
+
+    // Find cards to remove (in engine but not in new state)
+    const toRemove = userHand.cards.filter(m => !newIds.has(m.card.id))
+    // Find cards to add (in new state but not in engine)
+    const toAdd = newCards.filter(c => !currentIds.has(c.id))
+
+    console.log('[CardController] syncUserHandWithState:', {
+      currentCount: currentIds.size,
+      newCount: newIds.size,
+      removing: toRemove.map(m => m.card.id),
+      adding: toAdd.map(c => c.id),
+    })
+
+    // Remove old cards from engine
+    for (const managed of toRemove) {
+      userHand.removeCard(managed.card.id)
+    }
+
+    // Add new cards to engine
+    for (const card of toAdd) {
+      userHand.addCard(card, true) // face up
+    }
+
+    // Sort and re-fan
+    if (sorter) {
+      const sorted = sorter(userHand.cards.map(m => m.card as StandardCard))
+      const sortedIds = sorted.map(card => card.id)
+      const cardMap = new Map(userHand.cards.map(m => [m.card.id, m]))
+      userHand.cards = sortedIds
+        .map(id => cardMap.get(id))
+        .filter((m): m is NonNullable<typeof m> => m != null)
+    }
+
+    // Animate to new positions
+    const duration = 300
+    const moves = userHand.cards.map((managed, index) => {
+      const ref = engine.getCardRef(managed.card.id)
+      if (!ref) return null
+      const target = userHand.getCardPosition(index)
+      return ref.moveTo({
+        x: target.x,
+        y: target.y,
+        rotation: target.rotation,
+        zIndex: target.zIndex,
+        scale: target.scale,
+        flipY: 180, // face up
+      }, duration)
+    })
+
+    await Promise.all(moves.filter(Boolean))
+  }
+
   return {
     tableCenter,
     tableLayout,
@@ -923,6 +993,7 @@ export function useCardController(
     restoreHands,
     revealUserHand,
     sortUserHand,
+    syncUserHandWithState,
     playCard,
     completeTrick,
     restoreWonTrickStacks,
