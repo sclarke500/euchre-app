@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { Spades, SpadesBidType, SpadesPhase, type SpadesBid } from '@67cards/shared'
 import type { SpadesGameAdapter } from './useSpadesGameAdapter'
+import { CardTimings } from '@/utils/animationTimings'
 
 export interface SpadesRoundSummary {
   usBid: number
@@ -104,7 +105,7 @@ export function useSpadesBoardUi(adapter: SpadesGameAdapter, mode: 'singleplayer
     () => adapter.phase.value,
     async (newPhase) => {
       if (newPhase === SpadesPhase.RoundComplete) {
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        await new Promise((resolve) => setTimeout(resolve, CardTimings.roundEnd))
 
         const usScore = Spades.calculateRoundScore(
           adapter.players.value,

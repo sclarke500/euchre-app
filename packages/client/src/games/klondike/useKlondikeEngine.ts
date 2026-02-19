@@ -6,6 +6,7 @@
 import { ref, computed, shallowRef, type Ref, type ComputedRef, type ShallowRef } from 'vue'
 import type { KlondikeCard } from '@67cards/shared'
 import { Suit } from '@67cards/shared'
+import { CardTimings } from '@/utils/animationTimings'
 
 export interface CardPosition {
   x: number
@@ -44,7 +45,7 @@ export interface KlondikeEngineConfig {
 }
 
 export function useKlondikeEngine(config: KlondikeEngineConfig = {}) {
-  const animationDuration = config.animationDuration ?? 250
+  const animationDuration = config.animationDuration ?? CardTimings.collapse
 
   // All cards in the game
   const cards = shallowRef<ManagedKlondikeCard[]>([])

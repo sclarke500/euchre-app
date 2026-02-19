@@ -16,6 +16,7 @@ import {
   chooseSpadesBidHard,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { CardTimings } from '@/utils/animationTimings'
 
 export const useSpadesStore = defineStore('spadesGame', () => {
   const settingsStore = useSettingsStore()
@@ -242,14 +243,14 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
       if (lastTrick && trickCompleteCallback) {
         // Brief pause to let user see the completed trick before sweep
-        await new Promise(r => setTimeout(r, 600))
+        await new Promise(r => setTimeout(r, CardTimings.sweep))
         await trickCompleteCallback(lastTrick.winnerId ?? 0)
       }
 
       // Check if round complete
       if (state.completedTricks.length === 13) {
         // Wait for trick-complete animation to settle before showing modal
-        await new Promise(r => setTimeout(r, 1000))
+        await new Promise(r => setTimeout(r, CardTimings.roundEnd))
 
         // Round is complete - apply final scoring
         const scoredState = Spades.completeRound(gameState.value)
@@ -265,7 +266,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       }
 
       // Continue to next trick
-      await new Promise(r => setTimeout(r, 500))
+      await new Promise(r => setTimeout(r, CardTimings.phaseTransition))
       const continueState = Spades.continuePlay(gameState.value)
       applyState(continueState)
       processAITurn()
@@ -312,7 +313,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
           : Spades.chooseSpadesCard(currentPlayerObj, gameState.value)
         await executePlayCard(playerId, card)
       }
-    }, 800)
+    }, CardTimings.aiThink)
   }
 
   function applyState(state: SpadesGameState) {

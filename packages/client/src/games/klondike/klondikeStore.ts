@@ -17,6 +17,7 @@ import {
   autoCompleteStep,
   hasAvailableMoves,
 } from '@67cards/shared'
+import { CardTimings } from '@/utils/animationTimings'
 
 export const useKlondikeStore = defineStore('klondike', () => {
   // State
@@ -211,7 +212,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
       if (newState) {
         updateState(newState)
         if (!newState.isWon) {
-          setTimeout(step, 150)
+          setTimeout(step, CardTimings.autoCompleteStep)
         } else {
           isAutoCompleting.value = false
         }

@@ -10,6 +10,7 @@ import {
   type EngineCard,
   type CardPosition,
 } from '@/components/cardContainers'
+import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
 
 export interface CardTableEngine {
   // Reactive state (for template binding)
@@ -172,7 +173,7 @@ export function useCardTable(): CardTableEngine {
     return deck.value.addCard(card, faceUp)
   }
 
-  async function dealCard(from: Deck, to: Hand, flightMs: number = 400): Promise<ManagedCard | null> {
+  async function dealCard(from: Deck, to: Hand, flightMs: number = CardTimings.deal): Promise<ManagedCard | null> {
     const managed = from.dealTo(to)
     if (!managed) return null
 
@@ -195,7 +196,7 @@ export function useCardTable(): CardTableEngine {
     from: CardContainer,
     to: CardContainer,
     targetPos?: CardPosition,
-    duration: number = 350
+    duration: number = CardTimings.move
   ): Promise<void> {
     console.log(`[CardTable] moveCard: ${cardId} from ${from.id} to ${to.id}`)
     const managed = from.removeCard(cardId)
@@ -226,7 +227,7 @@ export function useCardTable(): CardTableEngine {
     refreshCards()
   }
 
-  async function flipCard(cardId: string, faceUp: boolean, duration: number = 400): Promise<void> {
+  async function flipCard(cardId: string, faceUp: boolean, duration: number = CardTimings.flip): Promise<void> {
     const cardRef = cardRefs.get(cardId)
     if (!cardRef) return
 
@@ -238,7 +239,7 @@ export function useCardTable(): CardTableEngine {
   }
 
   // Bulk operations
-  async function dealAll(cardsPerHand: number, delayMs: number = 80, flightMs: number = 400): Promise<void> {
+  async function dealAll(cardsPerHand: number, delayMs: number = AnimationDelays.dealStagger, flightMs: number = CardTimings.deal): Promise<void> {
     if (!deck.value) return
 
     for (let round = 0; round < cardsPerHand; round++) {

@@ -30,6 +30,7 @@ import type { StandardCard } from '@67cards/shared'
 import { Suit } from '@67cards/shared'
 import { FullRank } from '@67cards/shared'
 import type { CardPosition } from '@/components/cardContainers'
+import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
 
 export type PlayAreaMode = 'trick' | 'overlay'
 export type TrickCompleteMode = 'stack' | 'sweep'
@@ -298,10 +299,10 @@ export function useCardController(
             y: targetY,
             scale: targetScale,
             flipY: revealUserHand ? 180 : 0,
-          }, 350)
+          }, CardTimings.move)
         }
       }
-      await new Promise(r => setTimeout(r, 400))
+      await new Promise(r => setTimeout(r, CardTimings.move))
     }
 
     for (const hand of hands) {
@@ -314,7 +315,7 @@ export function useCardController(
     await new Promise<void>(resolve => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     })
-    const fanDuration = options.fanDurationMs ?? 350
+    const fanDuration = options.fanDurationMs ?? CardTimings.fan
     await Promise.all(hands.map(hand => hand.setMode('fanned', fanDuration)))
 
     // Enable arc-fan on user hand cards if curve is set
@@ -325,7 +326,7 @@ export function useCardController(
     }
 
     if (options.sortUserHand && options.sortAfterDeal !== false) {
-      await sortUserHand(options.sortUserHand, 300)
+      await sortUserHand(options.sortUserHand, CardTimings.sort)
     }
 
     // Handle remaining deck cards (e.g., kitty in Euchre)
@@ -345,9 +346,9 @@ export function useCardController(
             rotation: 0,
             zIndex: stackPos.zIndex,
             scale: 0.8,
-          }, 300)
+          }, CardTimings.move)
         }
-        await new Promise(r => setTimeout(r, 350))
+        await new Promise(r => setTimeout(r, CardTimings.move))
 
         // Flip top card face-up if requested
         if (options.flipTopCard && deck.cards.length > 0) {
@@ -373,7 +374,7 @@ export function useCardController(
               zIndex: 150, 
               scale: 0.8,  // Match kitty stack scale
               flipY: turnUpFlipY 
-            }, 300)
+            }, CardTimings.flip)
             engine.refreshCards()
           }
         }
@@ -383,9 +384,9 @@ export function useCardController(
         const offY = tableCenter.value.y
         for (const managed of deck.cards) {
           const ref = engine.getCardRef(managed.card.id)
-          ref?.moveTo({ x: offX, y: offY, rotation: 0, zIndex: 50, scale: 0.5 }, 300)
+          ref?.moveTo({ x: offX, y: offY, rotation: 0, zIndex: 50, scale: 0.5 }, CardTimings.move)
         }
-        await new Promise(r => setTimeout(r, 350))
+        await new Promise(r => setTimeout(r, CardTimings.move))
         // Remove remaining cards from deck
         while (deck.cards.length > 0) {
           deck.removeCard(deck.cards[0]!.card.id)
@@ -415,7 +416,7 @@ export function useCardController(
     }
   }
 
-  async function sortUserHand(sorter: (cards: StandardCard[]) => StandardCard[], duration: number = 300) {
+  async function sortUserHand(sorter: (cards: StandardCard[]) => StandardCard[], duration: number = CardTimings.sort) {
     const userSeatIndex = getUserSeatIndex()
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
@@ -444,7 +445,7 @@ export function useCardController(
     await Promise.all(moves)
   }
 
-  async function revealUserHand(duration: number = 350) {
+  async function revealUserHand(duration: number = CardTimings.reveal) {
     const userSeatIndex = getUserSeatIndex()
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
@@ -468,6 +469,56 @@ export function useCardController(
     })
 
     await Promise.all(moves)
+  }
+
+  async function revealBlindNilHand(playerId: number, cards: StandardCard[], duration: number = CardTimings.reveal) {
+    const seatIndex = playerIdToSeatIndex(playerId)
+    const hand = engine.getHands()[seatIndex]
+    if (!hand) return
+
+    // Remove hidden marker
+    hiddenSeatIndices.delete(seatIndex)
+
+    // Update hand cards with real cards
+    hand.cards = []
+    for (const card of cards) {
+      hand.addCard(card, false)
+    }
+    engine.refreshCards()
+    await nextTick()
+
+    // Animate from avatar position to fanned
+    const layout = tableLayout.value
+    const avatarPos = layout ? getAvatarBoardPosition(seatIndex, layout) : tableCenter.value
+
+    // Position all cards at avatar first
+    for (const managed of hand.cards) {
+      const ref = engine.getCardRef(managed.card.id)
+      if (ref) {
+        ref.setPosition({
+          x: avatarPos.x,
+          y: avatarPos.y,
+          rotation: 0,
+          zIndex: 100,
+          scale: 0.05,
+          flipY: 0,
+        })
+      }
+    }
+    await nextTick()
+
+    // Animate to fanned position with flip
+    await hand.setMode('fanned', duration)
+    const moves = hand.cards.map((managed, index) => {
+      const ref = engine.getCardRef(managed.card.id)
+      if (!ref) return null
+      const target = hand.getCardPosition(index)
+      return ref.moveTo({
+        ...target,
+        flipY: 180,
+      }, duration)
+    })
+    await Promise.all(moves.filter(Boolean))
   }
 
   function getTrickCardPosition(playerId: number, cardIndex: number): CardPosition {
@@ -534,7 +585,7 @@ export function useCardController(
       ? getOverlayCardPosition(cardIndex, 0, 1)
       : getTrickCardPosition(playerId, cardIndex)
 
-    const moveDuration = config.playMoveMs ?? 300
+    const moveDuration = config.playMoveMs ?? CardTimings.move
     const hasCardInHand = !!fromHand?.cards.some((managed) => managed.card.id === card.id)
 
     if (fromHand && hasCardInHand) {
@@ -661,7 +712,7 @@ export function useCardController(
     const pile = engine.getPiles().find(p => p.id === 'center')
     if (!pile || pile.cards.length === 0) return
 
-    const moveDuration = config.playMoveMs ?? 300
+    const moveDuration = config.playMoveMs ?? CardTimings.move
 
     if (trickCompleteMode === 'sweep') {
       const board = boardRef.value
@@ -883,7 +934,7 @@ export function useCardController(
       getPlayerCount()
     )
 
-    const duration = config.opponentCollapseDurationMs ?? 250
+    const duration = config.opponentCollapseDurationMs ?? CardTimings.collapse
     const hands = engine.getHands()
     const promises: Promise<void>[] = []
     const hideScale = 0.05 // Essentially invisible
@@ -920,13 +971,13 @@ export function useCardController(
    * Used in MP when server updates hand (e.g., card exchange).
    * Removes cards no longer in hand, adds new cards, sorts and fans.
    * @param recipientSeat - seat index to animate removed cards toward (defaults to table center)
-   * @param durationMs - animation duration for card movements (default 350ms)
+   * @param durationMs - animation duration for card movements (default CardTimings.move)
    */
   async function syncUserHandWithState(
     newCards: StandardCard[],
     sorter?: (cards: StandardCard[]) => StandardCard[],
     recipientSeat?: number,
-    durationMs: number = 350
+    durationMs: number = CardTimings.move
   ) {
     const userSeatIndex = getUserSeatIndex()
     const userHand = engine.getHands()[userSeatIndex]

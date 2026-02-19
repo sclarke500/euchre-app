@@ -3,6 +3,7 @@ import { SpadesPhase, type SpadesBid, type StandardCard } from '@67cards/shared'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import type { SpadesGameAdapter } from './useSpadesGameAdapter'
+import { CardTimings } from '@/utils/animationTimings'
 
 export interface SpadesDirectorOptions {
   mode: 'singleplayer' | 'multiplayer'
@@ -42,7 +43,7 @@ export function useSpadesDirector(
     opponentHandScale: 0.7,
     userFanSpacing: 30,
     opponentFanSpacing: 16,
-    playMoveMs: 350,
+    playMoveMs: CardTimings.move,
     ...cardControllerPresets.spades,
   })
 

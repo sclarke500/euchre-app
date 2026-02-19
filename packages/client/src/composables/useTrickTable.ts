@@ -2,6 +2,7 @@ import { ref, type Ref, nextTick } from 'vue'
 import { computeTableLayout } from './useTableLayout'
 import type { CardTableEngine } from './useCardTable'
 import type { StandardCard } from '@67cards/shared'
+import { CardTimings } from '@/utils/animationTimings'
 
 export interface TrickTableConfig {
   layout?: 'normal' | 'wide'
@@ -133,10 +134,10 @@ export function useTrickTable(
             y: targetY,
             scale: targetScale,
             flipY: revealUserHand ? 180 : 0,
-          }, 350)
+          }, CardTimings.move)
         }
       }
-      await new Promise(r => setTimeout(r, 400))
+      await new Promise(r => setTimeout(r, CardTimings.move))
     }
 
     for (const hand of hands) {
@@ -145,14 +146,14 @@ export function useTrickTable(
       }
     }
 
-    await Promise.all(hands.map(hand => hand.setMode('fanned', 250)))
+    await Promise.all(hands.map(hand => hand.setMode('fanned', CardTimings.fan)))
 
     if (options.sortUserHand && options.sortAfterDeal !== false) {
-      await sortUserHand(options.sortUserHand, 300)
+      await sortUserHand(options.sortUserHand, CardTimings.sort)
     }
   }
 
-  async function sortUserHand(sorter: (cards: StandardCard[]) => StandardCard[], duration: number = 300) {
+  async function sortUserHand(sorter: (cards: StandardCard[]) => StandardCard[], duration: number = CardTimings.sort) {
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
 
@@ -174,7 +175,7 @@ export function useTrickTable(
     await Promise.all(moves)
   }
 
-  async function revealUserHandInternal(duration: number = 350) {
+  async function revealUserHandInternal(duration: number = CardTimings.reveal) {
     const userHand = engine.getHands()[userSeatIndex]
     if (!userHand) return
 
@@ -188,7 +189,7 @@ export function useTrickTable(
     await Promise.all(moves)
   }
 
-  async function revealUserHand(duration: number = 350) {
+  async function revealUserHand(duration: number = CardTimings.reveal) {
     await revealUserHandInternal(duration)
   }
 

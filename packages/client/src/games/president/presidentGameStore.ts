@@ -29,6 +29,7 @@ import {
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
 } from '@67cards/shared'
+import { CardTimings } from '@/utils/animationTimings'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 export const usePresidentGameStore = defineStore('presidentGame', () => {
@@ -342,10 +343,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // No human involvement — continue
     if (state.phase === PresidentPhase.CardExchange) {
-      setTimeout(() => handleGivingPhase(), 500)
+      setTimeout(() => handleGivingPhase(), CardTimings.phaseTransition)
     } else if (state.phase === PresidentPhase.Playing) {
       // Longer pause after exchange completes so user can see their new cards
-      setTimeout(() => processAITurn(), 1500)
+      setTimeout(() => processAITurn(), CardTimings.aiThink)
     }
   }
   
@@ -440,10 +441,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // Continue with the giving phase (VP exchange) or start playing
     if (phase.value === PresidentPhase.CardExchange) {
-      setTimeout(() => handleGivingPhase(), 500)
+      setTimeout(() => handleGivingPhase(), CardTimings.phaseTransition)
     } else if (phase.value === PresidentPhase.Playing) {
       // Longer pause after exchange completes
-      setTimeout(() => processAITurn(), 1500)
+      setTimeout(() => processAITurn(), CardTimings.aiThink)
     }
   }
 
@@ -477,7 +478,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     // Check if joker was played - auto-clear pile since nothing can beat it
     const playedJoker = cards.some(c => c.rank === 'Joker')
     if (playedJoker && rules.value.superTwosMode) {
-      await new Promise(r => setTimeout(r, 800))
+      await new Promise(r => setTimeout(r, CardTimings.roundEnd))
       currentPile.value = createEmptyPile()
       currentPlayer.value = playingPlayer // Joker player leads again
       consecutivePasses.value = 0
@@ -559,7 +560,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       } else {
         playCards(play)
       }
-    }, 800)
+    }, CardTimings.aiThink)
   }
 
   function getPlayerRankDisplay(playerId: number): string {
