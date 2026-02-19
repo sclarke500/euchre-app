@@ -59,12 +59,38 @@
     />
 
     <!-- User actions — bottom bar -->
-    <UserActions :active="game.isHumanTurn.value || game.isHumanGivingCards.value" :class="{ 'normal-table': playerCount <= 5 }">
+    <UserActions :active="game.isHumanTurn.value || game.isInExchange.value || game.isHumanGivingCards.value" :class="{ 'normal-table': playerCount <= 5 }">
 
-      <!-- Give-back phase -->
-      <template v-if="game.isHumanGivingCards.value">
+      <!-- Exchange phase: President/VP selecting cards -->
+      <template v-if="game.isInExchange.value && game.exchangeCanSelect.value">
         <span class="action-hint">
-          You received {{ game.exchangeInfo.value?.youReceive?.length ?? 0 }} card{{ (game.exchangeInfo.value?.youReceive?.length ?? 0) !== 1 ? 's' : '' }} (highlighted).
+          Select {{ game.exchangeCardsNeeded.value }} card{{ game.exchangeCardsNeeded.value !== 1 ? 's' : '' }} to exchange.
+        </span>
+        <button
+          class="action-btn primary"
+          :disabled="selectedCardIds.size !== game.exchangeCardsNeeded.value"
+          @click="confirmExchange"
+        >
+          Exchange{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size}/${game.exchangeCardsNeeded.value})` : '' }}
+        </button>
+      </template>
+
+      <!-- Exchange phase: Scum/ViceScum with pre-selected cards -->
+      <template v-else-if="game.isInExchange.value && !game.exchangeCanSelect.value">
+        <span class="action-hint">
+          Your {{ game.exchangePreSelectedIds.value.length }} best card{{ game.exchangePreSelectedIds.value.length !== 1 ? 's' : '' }} will be exchanged.
+        </span>
+        <button
+          class="action-btn primary"
+          @click="confirmExchange"
+        >
+          Exchange
+        </button>
+      </template>
+
+      <!-- SP Give-back phase (backwards compat) -->
+      <template v-else-if="game.isHumanGivingCards.value">
+        <span class="action-hint">
           Select {{ game.cardsToGiveCount.value }} to give back.
         </span>
         <button
@@ -293,6 +319,14 @@ watch(() => game.exchangeInfo.value, (info) => {
   }
 })
 
+// Pre-select cards for Scum/ViceScum during exchange phase
+watch(() => game.exchangePreSelectedIds.value, (preSelectedIds) => {
+  if (preSelectedIds && preSelectedIds.length > 0) {
+    // Scum/ViceScum: show their best cards as selected (locked)
+    selectedCardIds.value = new Set(preSelectedIds)
+  }
+}, { immediate: true })
+
 // ── Seat mapping (duplicated from director for template use) ────────────
 
 function playerIdToSeatIndex(playerId: number): number {
@@ -319,13 +353,13 @@ function getRankBadge(playerId: number): string | null {
 
 const dimmedCardIds = computed(() => {
   const ids = new Set<string>()
-  if (!game.isHumanTurn.value && !game.isHumanGivingCards.value) return ids
+  if (!game.isHumanTurn.value && !game.isInExchange.value && !game.isHumanGivingCards.value) return ids
 
   const human = game.humanPlayer.value
   if (!human) return ids
 
-  if (game.isHumanGivingCards.value) {
-    // During give-back, all cards are selectable — no dimming
+  if (game.isInExchange.value || game.isHumanGivingCards.value) {
+    // During exchange/give-back, all cards are selectable — no dimming
     return ids
   }
 
@@ -360,7 +394,17 @@ function handleCardClick(cardId: string) {
   const human = game.humanPlayer.value
   if (!human) return
 
-  // Give-back phase: toggle selection for giving cards
+  // Exchange phase (MP): President/VP can select, Scum/ViceScum cannot
+  if (game.isInExchange.value) {
+    if (game.exchangeCanSelect.value) {
+      // President/VP: can toggle selection
+      toggleSelection(cardId, game.exchangeCardsNeeded.value)
+    }
+    // Scum/ViceScum: cards are pre-selected, ignore clicks
+    return
+  }
+
+  // Give-back phase (SP): toggle selection for giving cards
   if (game.isHumanGivingCards.value) {
     toggleSelection(cardId, game.cardsToGiveCount.value)
     return
@@ -476,6 +520,34 @@ function confirmGiveBack() {
   }
   
   game.giveCardsBack(cards)
+  selectedCardIds.value = new Set()
+}
+
+function confirmExchange() {
+  const human = game.humanPlayer.value
+  if (!human) {
+    console.warn('[President] confirmExchange: no human player')
+    return
+  }
+
+  let cards: typeof human.hand
+  
+  if (game.exchangeCanSelect.value) {
+    // President/VP: use selected cards
+    cards = human.hand.filter(c => selectedCardIds.value.has(c.id))
+    console.log('[President] confirmExchange (selector):', {
+      selectedCount: cards.length,
+      expectedCount: game.exchangeCardsNeeded.value,
+    })
+  } else {
+    // Scum/ViceScum: use pre-selected cards (may be empty array — server has them)
+    cards = human.hand.filter(c => game.exchangePreSelectedIds.value.includes(c.id))
+    console.log('[President] confirmExchange (pre-selected):', {
+      cardCount: cards.length,
+    })
+  }
+  
+  game.confirmExchange(cards)
   selectedCardIds.value = new Set()
 }
 
