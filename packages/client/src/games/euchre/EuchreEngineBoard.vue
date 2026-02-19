@@ -38,6 +38,7 @@
     <!-- HUD: Menu button -->
     <GameHUD
       game-type="euchre"
+      :mode="mode"
       :build-payload="buildBugReportPayload"
       :show-resync="mode === 'multiplayer'"
       @leave="handleLeaveClick"

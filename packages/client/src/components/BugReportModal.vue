@@ -1,28 +1,36 @@
 <template>
   <Modal :show="show" @close="$emit('close')">
-    <div class="bug-modal">
-      <div class="bug-title">Bug Report</div>
-      <div class="bug-subtitle">Describe what happened and we'll capture a snapshot.</div>
+    <div class="dialog-panel bug-modal">
+      <h2 class="dialog-title">🐛 Bug Report</h2>
+      <p class="dialog-text">Describe what went wrong. We'll capture a game snapshot automatically.</p>
 
       <textarea
         v-model="description"
         class="bug-textarea"
         rows="4"
-        placeholder="What happened? What did you expect?"
+        placeholder="What happened? What did you expect to happen?"
       />
 
-      <div class="bug-actions">
-        <button class="action-btn primary" :disabled="sending" @click="handleSend">
-          {{ sending ? 'Sending...' : 'Send Report' }}
-        </button>
-        <button class="action-btn" @click="handleCopy">Copy</button>
-        <button class="action-btn" @click="handleDownload">Download</button>
-        <button v-if="showResync" class="action-btn" @click="$emit('resync')">Resync</button>
-        <button class="action-btn" @click="$emit('close')">Close</button>
+      <div class="bug-info">
+        <span class="info-item">{{ gameType }}</span>
+        <span class="info-item">{{ mode === 'multiplayer' ? 'Multiplayer' : 'Single Player' }}</span>
       </div>
 
-      <div v-if="status" class="bug-status" :class="{ success: status.includes('Sent') || status.includes('Copied') }">
-        {{ status }}
+      <div class="dialog-actions bug-actions">
+        <button class="dialog-btn dialog-btn--primary" :disabled="sending" @click="handleSend">
+          {{ sending ? 'Sending...' : 'Send Report' }}
+        </button>
+        <button class="dialog-btn dialog-btn--muted" @click="$emit('close')">Cancel</button>
+      </div>
+
+      <div class="bug-secondary-actions">
+        <button class="link-btn" @click="handleCopy">Copy to clipboard</button>
+        <span class="divider">•</span>
+        <button class="link-btn" @click="handleDownload">Download JSON</button>
+        <template v-if="showResync">
+          <span class="divider">•</span>
+          <button class="link-btn" @click="$emit('resync')">Resync game</button>
+        </template>
       </div>
     </div>
   </Modal>
@@ -32,10 +40,12 @@
 import { ref, watch } from 'vue'
 import Modal from './Modal.vue'
 import { sendBugReport } from '@/services/autoBugReport'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps<{
   show: boolean
   gameType: string
+  mode?: 'singleplayer' | 'multiplayer'
   buildPayload: () => Record<string, unknown>
   showResync?: boolean
 }>()
@@ -45,14 +55,14 @@ const emit = defineEmits<{
   resync: []
 }>()
 
+const toast = useToast()
 const description = ref('')
-const status = ref('')
 const sending = ref(false)
 
 // Reset state when modal opens
 watch(() => props.show, (isOpen) => {
   if (isOpen) {
-    status.value = ''
+    description.value = ''
   }
 })
 
@@ -60,16 +70,17 @@ function getFullPayload() {
   return {
     ...props.buildPayload(),
     gameType: props.gameType,
+    mode: props.mode ?? 'singleplayer',
     description: description.value.trim(),
     timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent,
+    screenSize: `${window.innerWidth}x${window.innerHeight}`,
   }
 }
 
 async function handleSend() {
   if (sending.value) return
   sending.value = true
-  status.value = 'Sending...'
   
   try {
     const payload = getFullPayload()
@@ -78,14 +89,11 @@ async function handleSend() {
       reportType: 'user',
       userDescription: description.value.trim() || 'No description provided',
     })
-    status.value = 'Sent! Thanks for the report.'
-    setTimeout(() => {
-      status.value = ''
-      emit('close')
-    }, 2000)
+    emit('close')
+    toast.show('Thanks! Bug report sent.', 'success')
   } catch (err) {
     console.error('Failed to send report:', err)
-    status.value = 'Send failed. Try copying instead.'
+    toast.show('Send failed. Try copying instead.', 'error')
   } finally {
     sending.value = false
   }
@@ -95,11 +103,10 @@ async function handleCopy() {
   try {
     const payload = getFullPayload()
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
-    status.value = 'Copied to clipboard!'
-    setTimeout(() => { status.value = '' }, 1500)
+    toast.show('Copied to clipboard!', 'success')
   } catch (err) {
     console.error('Failed to copy:', err)
-    status.value = 'Copy failed (see console).'
+    toast.show('Copy failed', 'error')
   }
 }
 
@@ -114,37 +121,23 @@ function handleDownload() {
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
-  status.value = 'Downloaded!'
-  setTimeout(() => { status.value = '' }, 1500)
+  toast.show('Downloaded!', 'success')
 }
 </script>
 
 <style scoped lang="scss">
 .bug-modal {
-  min-width: 280px;
-  max-width: 90vw;
-}
-
-.bug-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: #fff;
-}
-
-.bug-subtitle {
-  color: #aaa;
-  font-size: 0.875rem;
-  margin-bottom: 12px;
+  min-width: 320px;
+  max-width: 400px;
 }
 
 .bug-textarea {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid $surface-500;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   color: #fff;
   resize: vertical;
@@ -153,52 +146,55 @@ function handleDownload() {
   font-size: 0.9rem;
   
   &::placeholder {
-    color: $surface-500;
+    color: rgba(255, 255, 255, 0.4);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+}
+
+.bug-info {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  
+  .info-item {
+    text-transform: capitalize;
   }
 }
 
 .bug-actions {
+  margin-bottom: 12px;
+}
+
+.bug-secondary-actions {
   display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.bug-status {
-  margin-top: 10px;
-  font-size: 0.875rem;
-  color: #aaa;
-  
-  &.success {
-    color: #4CAF50;
-  }
-}
-
-.action-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
+.link-btn {
+  background: none;
   border: none;
-  font-size: 0.9rem;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  padding: 4px;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
   }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  &.primary {
-    background: linear-gradient(135deg, #d4a84b 0%, #b8942f 100%);
-    color: #1a1a1a;
-    
-    &:hover {
-      background: linear-gradient(135deg, #e0b555 0%, #c9a340 100%);
-    }
-  }
+}
+
+.divider {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 0.6rem;
 }
 </style>

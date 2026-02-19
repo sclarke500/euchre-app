@@ -46,6 +46,7 @@
     <BugReportModal
       :show="showBugReport"
       :game-type="gameType"
+      :mode="mode"
       :build-payload="buildPayload"
       :show-resync="showResync"
       @close="closeBugReport"
@@ -60,6 +61,7 @@ import BugReportModal from './BugReportModal.vue'
 
 defineProps<{
   gameType: string
+  mode?: 'singleplayer' | 'multiplayer'
   buildPayload: () => Record<string, unknown>
   showResync?: boolean
 }>()

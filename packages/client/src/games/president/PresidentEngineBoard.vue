@@ -27,6 +27,7 @@
     <!-- HUD: Menu button -->
     <GameHUD
       game-type="president"
+      :mode="mode"
       :build-payload="buildBugReportPayload"
       :show-resync="mode === 'multiplayer'"
       @leave="handleLeaveClick"
