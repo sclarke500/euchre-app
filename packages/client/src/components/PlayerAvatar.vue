@@ -69,6 +69,11 @@ const positionStyle = computed(() => props.customStyle ?? {})
   .avatar-container {
     position: relative;
   }
+  
+  // Opponents need relative on name-column for info-tags positioning
+  &:not(.is-user) .name-column {
+    position: relative;
+  }
 
   .avatar-border {
     display: flex;
@@ -141,7 +146,6 @@ const positionStyle = computed(() => props.customStyle ?? {})
     flex-direction: column;
     align-items: center;
     margin-top: -8px;
-    position: relative;
   }
 
   .player-name {
@@ -178,8 +182,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
     }
   }
 
-  // Info tags - positioned at top-right of avatar circle (opponents)
-  // Empty by default - hidden until populated
+  // Info tags - for user, flows above name inside pill
   .info-tags {
     display: flex;
     gap: 4px;
@@ -190,11 +193,11 @@ const positionStyle = computed(() => props.customStyle ?? {})
     }
   }
   
-  // For opponents, position absolutely at top-right of avatar
-  &:not(.is-user) .info-tags {
+  // For opponents, position absolutely at top-right of avatar circle
+  &:not(.is-user) .name-column .info-tags {
     position: absolute;
-    top: -8px;
-    right: -10px;
+    top: -32px;  // Above avatar circle
+    right: -34px; // Right side of avatar
   }
 
   .avatar-glow {

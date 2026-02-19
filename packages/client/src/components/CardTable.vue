@@ -263,12 +263,20 @@ defineExpose({
   --felt-dark: #1e5c48;      // Edge shadow
   --surface-bg: #1e1e26;
 
-  // Floor effect - darker wood/carpet feel with overhead light pool
+  // Floor effect - wood floor with overhead lighting
   background:
-    // Light pool from above (as if lamp over table)
-    radial-gradient(ellipse 70% 60% at center 45%, rgba(40, 36, 30, 0.4) 0%, transparent 60%),
-    // Base floor - dark warm wood tone
-    linear-gradient(180deg, #1a1814 0%, #141210 50%, #0e0c0a 100%);
+    // Soft light pool from overhead lamp
+    radial-gradient(ellipse 80% 70% at center 42%, rgba(60, 50, 40, 0.25) 0%, transparent 50%),
+    // Subtle wood plank lines (horizontal)
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 60px,
+      rgba(0, 0, 0, 0.15) 60px,
+      rgba(0, 0, 0, 0.15) 61px
+    ),
+    // Base floor - warm dark wood
+    linear-gradient(180deg, #252018 0%, #1a1610 40%, #12100c 100%);
 
 }
 
