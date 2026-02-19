@@ -258,27 +258,27 @@ defineExpose({
   overflow: hidden;
 
   // Table palette — change these to retheme
-  --felt: #2a8965;           // Richer green
-  --felt-light: #359d75;     // Center highlight  
-  --felt-dark: #1f6650;      // Edge shadow
-  --surface-bg: #252530;
+  --felt: #1e6045;           // Deep casino green
+  --felt-light: #247552;     // Center highlight  
+  --felt-dark: #15483a;      // Edge shadow
+  --surface-bg: #151518;
 
-  // Floor effect - lighter, airier carpet
+  // Floor effect - dark luxe carpet
   background:
     // Table shadow - soft dark area under table
-    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.12) 70%, transparent 100%),
-    // Light pool from overhead lamp - brighter
-    radial-gradient(ellipse 80% 65% at center 40%, rgba(255, 252, 245, 0.08) 0%, transparent 55%),
-    // Subtle texture
+    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.25) 70%, transparent 100%),
+    // Subtle light pool from overhead lamp
+    radial-gradient(ellipse 75% 60% at center 40%, rgba(255, 250, 240, 0.03) 0%, transparent 55%),
+    // Carpet texture
     repeating-linear-gradient(
       45deg,
       transparent 0px,
       transparent 2px,
-      rgba(0, 0, 0, 0.02) 2px,
-      rgba(0, 0, 0, 0.02) 4px
+      rgba(0, 0, 0, 0.05) 2px,
+      rgba(0, 0, 0, 0.05) 4px
     ),
-    // Base carpet - lighter slate gray
-    linear-gradient(180deg, #3a3a45 0%, #333340 50%, #2d2d38 100%);
+    // Base carpet - rich dark charcoal
+    linear-gradient(180deg, #1e1e24 0%, #191920 50%, #141418 100%);
 
 }
 
