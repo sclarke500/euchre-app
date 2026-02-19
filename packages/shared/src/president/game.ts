@@ -348,10 +348,10 @@ export function startNewRound(state: PresidentGameState): PresidentGameState {
   const hasRanks = state.players.some(p => p.rank !== null)
 
   if (hasRanks) {
-    // Start card selection phase - President/VP will select cards to give
+    // Start card exchange phase - all players confirm simultaneously
     return {
       ...dealtState,
-      phase: PresidentPhase.CardSelecting,
+      phase: PresidentPhase.CardExchange,
       roundNumber: state.roundNumber + 1,
       awaitingGiveBack: null,
     }
@@ -387,14 +387,14 @@ export function findStartingPlayer(state: PresidentGameState): number {
 /**
  * Process President/VP giving cards to Scum/Vice-Scum (bidirectional exchange).
  * When President gives selected cards to Scum, Scum simultaneously gives their
- * highest cards to President. Called during CardSelecting phase (SP only).
+ * highest cards to President. Called during CardExchange phase (SP only).
  */
 export function processGiveBackCards(
   state: PresidentGameState,
   fromPlayerId: number,
   cards: StandardCard[]
 ): PresidentGameState {
-  if (state.phase !== PresidentPhase.CardSelecting) return state
+  if (state.phase !== PresidentPhase.CardExchange) return state
   if (state.awaitingGiveBack !== fromPlayerId) return state
 
   const fromPlayer = state.players[fromPlayerId]

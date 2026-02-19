@@ -180,8 +180,8 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       routeGameCommand(() => gameActions.handlePresidentPlayCards(socket, c, cardIds)),
     presidentPass: (socket, c) =>
       routeGameCommand(() => gameActions.handlePresidentPass(socket, c)),
-    presidentGiveCards: (socket, c, cardIds) =>
-      routeGameCommand(() => gameActions.handlePresidentGiveCards(socket, c, cardIds)),
+    presidentConfirmExchange: (socket, c, cardIds) =>
+      routeGameCommand(() => gameActions.handlePresidentConfirmExchange(socket, c, cardIds)),
     spadesMakeBid: (socket, c, bidType, count) =>
       routeGameCommand(() => gameActions.handleSpadesMakeBid(socket, c, bidType, count)),
     bootPlayer: (socket, c, playerId) =>

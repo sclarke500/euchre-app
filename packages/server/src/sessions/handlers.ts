@@ -160,22 +160,10 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             finalRankings,
           })
         },
-        onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => {
+        onExchangePrompt: (playerId: string, info: { canSelect: boolean; cardsNeeded: number; preSelectedCardIds: string[]; recipientName: string }) => {
           sendToPlayer(playerId, {
-            type: 'president_card_exchange_info',
-            youGive,
-            youReceive,
-            otherPlayerName,
-            yourRole,
-          })
-        },
-        onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string, recipientName?: string) => {
-          sendToPlayer(playerId, {
-            type: 'president_awaiting_give_cards',
-            cardsToGive,
-            receivedCards,
-            yourRole,
-            recipientName,
+            type: 'president_exchange_prompt',
+            ...info,
           })
         },
         onExchangeComplete: (playerId: string, youGave: StandardCard[], youReceived: StandardCard[]) => {
@@ -193,7 +181,6 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
           })
         },
         onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => {
-          // Use the same message type for reminders
           sendToPlayer(playerId, {
             type: 'president_your_turn',
             validActions,
@@ -615,22 +602,10 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             finalRankings,
           })
         },
-        onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => {
+        onExchangePrompt: (playerId: string, info: { canSelect: boolean; cardsNeeded: number; preSelectedCardIds: string[]; recipientName: string }) => {
           sendToPlayer(playerId, {
-            type: 'president_card_exchange_info',
-            youGive,
-            youReceive,
-            otherPlayerName,
-            yourRole,
-          })
-        },
-        onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string, recipientName?: string) => {
-          sendToPlayer(playerId, {
-            type: 'president_awaiting_give_cards',
-            cardsToGive,
-            receivedCards,
-            yourRole,
-            recipientName,
+            type: 'president_exchange_prompt',
+            ...info,
           })
         },
         onExchangeComplete: (playerId: string, youGave: StandardCard[], youReceived: StandardCard[]) => {

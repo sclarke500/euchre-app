@@ -225,14 +225,11 @@ const userRankBadge = computed(() => getRankBadge(game.humanPlayer.value?.id ?? 
 
 // Exchange phase status message
 const exchangeStatus = computed(() => {
-  if (game.phase.value === PresidentPhase.CardSelecting) {
-    if (game.isHumanGivingCards.value) {
-      return null // User is selecting, show action panel instead
+  if (game.phase.value === PresidentPhase.CardExchange) {
+    if (game.isInExchange.value) {
+      return null // User is participating, show action panel instead
     }
     return 'Card Exchange in Progress...'
-  }
-  if (game.phase.value === PresidentPhase.CardDistributing) {
-    return 'Swapping Cards...'
   }
   return null
 })

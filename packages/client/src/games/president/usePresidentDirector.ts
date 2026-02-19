@@ -480,7 +480,7 @@ export function usePresidentDirector(
         await animateDeal()
         break
 
-      case PresidentPhase.CardSelecting:
+      case PresidentPhase.CardExchange:
         // Exchange phase — hands are equal from deal, no changes needed yet
         break
 
@@ -519,7 +519,7 @@ export function usePresidentDirector(
         mpPilePlayCount = 0
         break
 
-      case PresidentPhase.CardSelecting:
+      case PresidentPhase.CardExchange:
         // Exchange phase — no extra animation needed yet
         break
 
@@ -610,7 +610,7 @@ export function usePresidentDirector(
         mpPilePlayCount = msg.state.currentPile?.plays?.length ?? 0
         // During exchange phases, sync user hand with server state
         // (cards may be added/removed by exchange)
-        const exchangePhases = [PresidentPhase.CardSelecting, PresidentPhase.CardDistributing]
+        const exchangePhases = [PresidentPhase.CardExchange, PresidentPhase.CardExchange]
         if (exchangePhases.includes(newPhase as PresidentPhase) || 
             exchangePhases.includes(oldPhase as PresidentPhase)) {
           const myHand = game.humanPlayer.value?.hand

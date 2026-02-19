@@ -30,8 +30,14 @@ export interface PresidentGameAdapter {
   humanPlayer: ComputedRef<PresidentPlayer | undefined>
   superTwosMode: ComputedRef<boolean>  // Convenience accessor for rules.superTwosMode
   exchangeInfo: ComputedRef<PresidentExchangeInfo | null>
-  isHumanGivingCards: ComputedRef<boolean>  // True when human President/VP needs to select cards
-  cardsToGiveCount: ComputedRef<number>     // Number of cards human needs to give back
+  // SP: human President/VP selecting cards
+  isHumanGivingCards: ComputedRef<boolean>  // True when human President/VP needs to select cards (SP)
+  cardsToGiveCount: ComputedRef<number>     // Number of cards human needs to give back (SP)
+  // MP: unified exchange flow (all 4 players confirm together)
+  isInExchange: ComputedRef<boolean>             // True when player is participating in exchange
+  exchangeCanSelect: ComputedRef<boolean>        // True = needs to pick cards (Pres/VP), false = pre-selected (Scum/ViceScum)
+  exchangeCardsNeeded: ComputedRef<number>       // Cards to select (0 for Scum/ViceScum)
+  exchangePreSelectedIds: ComputedRef<string[]>  // Pre-selected cards for Scum/ViceScum
   lastPlayedCards: ComputedRef<StandardCard[] | null>
   roundNumber: ComputedRef<number>
   gameOver: ComputedRef<boolean>
@@ -43,7 +49,8 @@ export interface PresidentGameAdapter {
   playCards: (cards: StandardCard[]) => void
   pass: () => void
   acknowledgeExchange: () => void
-  giveCardsBack: (cards: StandardCard[]) => void  // President/VP selecting cards to give
+  giveCardsBack: (cards: StandardCard[]) => void  // President/VP selecting cards to give (SP)
+  confirmExchange: (cards: StandardCard[]) => void  // Confirm exchange (MP - all roles)
   getPlayerRankDisplay: (playerId: number) => string
   dealAnimationComplete: () => void  // Signal store that deal animation is done
   bootPlayer?: (playerId: number) => void
@@ -90,6 +97,11 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     exchangeInfo: computed(() => store.exchangeInfo),
     isHumanGivingCards: computed(() => store.isHumanGivingCards ?? false),
     cardsToGiveCount: computed(() => store.cardsToGiveCount ?? 0),
+    // MP exchange properties - not used in SP, provide defaults
+    isInExchange: computed(() => false),
+    exchangeCanSelect: computed(() => false),
+    exchangeCardsNeeded: computed(() => 0),
+    exchangePreSelectedIds: computed(() => []),
     lastPlayedCards: computed(() => store.lastPlayedCards),
     roundNumber: computed(() => store.roundNumber),
     gameOver: computed(() => store.gameOver),
@@ -102,6 +114,7 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     pass: () => store.pass(),
     acknowledgeExchange: () => store.acknowledgeExchange(),
     giveCardsBack: (cards: StandardCard[]) => store.giveCardsBack(cards),
+    confirmExchange: () => {}, // No-op for SP (uses giveCardsBack instead)
     getPlayerRankDisplay: (playerId: number) => store.getPlayerRankDisplay(playerId),
     dealAnimationComplete: () => store.dealAnimationComplete(),
     setPlayAnimationCallback: (cb) => store.setPlayAnimationCallback(cb),
@@ -166,20 +179,15 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     validPlays,
     humanPlayer,
     superTwosMode: computed(() => store.superTwosMode ?? false),
-    exchangeInfo: computed(() => {
-      // For multiplayer, also expose the received cards from give-back phase
-      if (store.isAwaitingGiveCards) {
-        return {
-          youGive: [], // Will be filled after selection
-          youReceive: store.receivedCardsForGiveBack ?? [],
-          otherPlayerName: '',
-          yourRole: store.giveBackRole ?? '',
-        }
-      }
-      return store.exchangeInfo
-    }),
-    isHumanGivingCards: computed(() => store.isAwaitingGiveCards ?? false),
-    cardsToGiveCount: computed(() => store.cardsToGiveCount ?? 0),
+    exchangeInfo: computed(() => store.exchangeInfo),
+    // SP exchange properties - provide compatible values from MP state
+    isHumanGivingCards: computed(() => store.isInExchange && store.exchangeCanSelect),
+    cardsToGiveCount: computed(() => store.exchangeCardsNeeded ?? 0),
+    // MP exchange properties
+    isInExchange: computed(() => store.isInExchange ?? false),
+    exchangeCanSelect: computed(() => store.exchangeCanSelect ?? false),
+    exchangeCardsNeeded: computed(() => store.exchangeCardsNeeded ?? 0),
+    exchangePreSelectedIds: computed(() => store.exchangePreSelectedIds ?? []),
     lastPlayedCards: computed(() => store.lastPlayMade?.cards ?? null),
     roundNumber: computed(() => store.roundNumber),
     gameOver: computed(() => store.gameOver),
@@ -195,8 +203,13 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     pass: () => store.pass(),
     acknowledgeExchange: () => store.acknowledgeExchange(),
     giveCardsBack: (cards: StandardCard[]) => {
+      // In MP, giveCardsBack maps to confirmExchange
       const cardIds = cards.map(c => c.id)
-      store.giveCards(cardIds)
+      store.confirmExchange(cardIds)
+    },
+    confirmExchange: (cards: StandardCard[]) => {
+      const cardIds = cards.map(c => c.id)
+      store.confirmExchange(cardIds)
     },
     getPlayerRankDisplay: (playerId: number) => {
       const player = store.players.find(p => p.id === playerId)

@@ -26,7 +26,7 @@ export interface MessageHandlers {
   requestState: (ws: WebSocket, client: ConnectedClient) => void
   presidentPlayCards: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
   presidentPass: (ws: WebSocket, client: ConnectedClient) => void
-  presidentGiveCards: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
+  presidentConfirmExchange: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
   spadesMakeBid: (ws: WebSocket, client: ConnectedClient, bidType: 'normal' | 'nil' | 'blind_nil', count: number) => void
   bootPlayer: (ws: WebSocket, client: ConnectedClient, playerId: number) => void
   bugReport: (ws: WebSocket, client: ConnectedClient, payload: string) => void
@@ -79,8 +79,8 @@ export function routeClientMessage(
     case 'president_pass':
       handlers.presidentPass(ws, client)
       break
-    case 'president_give_cards':
-      handlers.presidentGiveCards(ws, client, message.cardIds)
+    case 'president_confirm_exchange':
+      handlers.presidentConfirmExchange(ws, client, message.cardIds)
       break
     case 'spades_make_bid':
       handlers.spadesMakeBid(ws, client, message.bidType, message.count)

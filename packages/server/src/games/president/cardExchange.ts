@@ -20,7 +20,16 @@ interface PresidentCardExchangeDeps {
   setCurrentPlayer: (seatIndex: number) => void
   broadcastState: () => void
   processCurrentTurn: () => void
-  events: Pick<PresidentGameEvents, 'onAwaitingGiveCards' | 'onCardExchangeInfo' | 'onExchangeComplete'>
+  events: Pick<PresidentGameEvents, 'onExchangePrompt' | 'onExchangeComplete'>
+}
+
+interface PlayerExchangeInfo {
+  seatIndex: number
+  canSelect: boolean          // true = needs to pick cards (President/VP), false = pre-selected (Scum/ViceScum)
+  cardsNeeded: number         // How many cards to give (0 for Scum/ViceScum since pre-selected)
+  preSelectedCards: StandardCard[]  // For Scum/ViceScum: their best cards. For Pres/VP: empty
+  recipientSeat: number       // Who they're exchanging with
+  confirmed: boolean          // Has player clicked Exchange?
 }
 
 function toPresidentPlayer(player: PresidentGamePlayer): PresidentPlayer {
@@ -37,126 +46,173 @@ function toPresidentPlayer(player: PresidentGamePlayer): PresidentPlayer {
 }
 
 export function createPresidentCardExchangeController(deps: PresidentCardExchangeDeps) {
-  // Staged exchanges waiting to be executed
+  // Players participating in exchange and their info
+  const exchangeParticipants = new Map<number, PlayerExchangeInfo>()
+  // Staged exchanges waiting to be executed (filled as players confirm)
   const stagedExchanges: StagedExchange[] = []
-  // Players we're waiting for selections from
-  const pendingSelections = new Map<number, { cardsToGive: number; recipientSeat: number }>()
 
   /**
-   * Start the card selection phase.
-   * - Auto-stage Scum/ViceScum's best cards
-   * - Prompt President/VP to select cards (or auto-select for AI)
+   * Start the card exchange phase.
+   * All 4 players get prompted simultaneously — Scum/ViceScum with pre-selected cards,
+   * President/VP with empty selection.
    */
-  function startCardSelecting(): void {
+  function startExchange(): void {
     stagedExchanges.length = 0
-    pendingSelections.clear()
+    exchangeParticipants.clear()
 
     const president = deps.players.find(p => p.rank === 1)
     const scum = deps.players.find(p => p.rank === 4)
     const vp = deps.players.find(p => p.rank === 2)
     const viceScum = deps.players.find(p => p.cardsToGive === 1 && p.rank === 3)
 
-    // Stage Scum's best cards for President (auto-selected)
+    // Set up President ↔ Scum exchange
     if (president && scum) {
       const scumBestCards = chooseCardsToGive(toPresidentPlayer(scum), 2)
-      stagedExchanges.push({
-        giverSeat: scum.seatIndex,
+      
+      // Scum: pre-selected, can't change
+      exchangeParticipants.set(scum.seatIndex, {
+        seatIndex: scum.seatIndex,
+        canSelect: false,
+        cardsNeeded: 0,
+        preSelectedCards: scumBestCards,
         recipientSeat: president.seatIndex,
-        cards: scumBestCards,
+        confirmed: false,
       })
-      console.log(`[CardExchange] Staged: ${scum.name} → ${president.name}:`, scumBestCards.map(c => c.id))
+      console.log(`[CardExchange] Scum (${scum.name}) pre-selected:`, scumBestCards.map(c => c.id))
 
-      // President needs to select cards to give back
-      pendingSelections.set(president.seatIndex, {
-        cardsToGive: 2,
+      // President: needs to select 2 cards
+      exchangeParticipants.set(president.seatIndex, {
+        seatIndex: president.seatIndex,
+        canSelect: true,
+        cardsNeeded: 2,
+        preSelectedCards: [],
         recipientSeat: scum.seatIndex,
+        confirmed: false,
       })
     }
 
-    // Stage ViceScum's best card for VP (auto-selected)
+    // Set up VP ↔ ViceScum exchange
     if (vp && viceScum) {
       const viceScumBestCards = chooseCardsToGive(toPresidentPlayer(viceScum), 1)
-      stagedExchanges.push({
-        giverSeat: viceScum.seatIndex,
+      
+      // ViceScum: pre-selected, can't change
+      exchangeParticipants.set(viceScum.seatIndex, {
+        seatIndex: viceScum.seatIndex,
+        canSelect: false,
+        cardsNeeded: 0,
+        preSelectedCards: viceScumBestCards,
         recipientSeat: vp.seatIndex,
-        cards: viceScumBestCards,
+        confirmed: false,
       })
-      console.log(`[CardExchange] Staged: ${viceScum.name} → ${vp.name}:`, viceScumBestCards.map(c => c.id))
+      console.log(`[CardExchange] ViceScum (${viceScum.name}) pre-selected:`, viceScumBestCards.map(c => c.id))
 
-      // VP needs to select card to give back
-      pendingSelections.set(vp.seatIndex, {
-        cardsToGive: 1,
+      // VP: needs to select 1 card
+      exchangeParticipants.set(vp.seatIndex, {
+        seatIndex: vp.seatIndex,
+        canSelect: true,
+        cardsNeeded: 1,
+        preSelectedCards: [],
         recipientSeat: viceScum.seatIndex,
+        confirmed: false,
       })
     }
 
-    deps.setPhase(PresidentPhase.CardSelecting)
+    deps.setPhase(PresidentPhase.CardExchange)
     deps.broadcastState()
 
-    // Process AI selections and send prompts to humans
-    for (const [seatIndex, info] of pendingSelections) {
+    // Send prompts to all participants
+    for (const [seatIndex, info] of exchangeParticipants) {
       const player = deps.players[seatIndex]
       if (!player) continue
 
+      const recipient = deps.players[info.recipientSeat]
+      
       if (player.isHuman && player.odusId) {
         // Send prompt to human
-        const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President' }
-        const yourRole = roleNames[player.rank ?? 0] ?? 'Unknown'
-        const recipient = deps.players[info.recipientSeat]
-        deps.events.onAwaitingGiveCards(player.odusId, info.cardsToGive, [], yourRole, recipient?.name ?? 'opponent')
+        deps.events.onExchangePrompt(player.odusId, {
+          canSelect: info.canSelect,
+          cardsNeeded: info.cardsNeeded,
+          preSelectedCardIds: info.preSelectedCards.map(c => c.id),
+          recipientName: recipient?.name ?? 'opponent',
+        })
       } else {
-        // AI auto-selects lowest cards
-        const cardsToGive = getLowestCards(player.hand, info.cardsToGive)
+        // AI auto-confirms immediately
         setTimeout(() => {
-          submitSelection(seatIndex, cardsToGive)
+          if (info.canSelect) {
+            // AI President/VP: select lowest cards
+            const cardsToGive = getLowestCards(player.hand, info.cardsNeeded)
+            confirmExchange(seatIndex, cardsToGive.map(c => c.id))
+          } else {
+            // AI Scum/ViceScum: just confirm (cards already pre-selected)
+            confirmExchange(seatIndex, info.preSelectedCards.map(c => c.id))
+          }
         }, 300)
       }
     }
 
-    // If no selections needed (all AI or no exchange), go directly to distributing
-    if (pendingSelections.size === 0) {
-      executeDistribution()
+    // Edge case: no participants (shouldn't happen in 4-player)
+    if (exchangeParticipants.size === 0) {
+      finishExchange()
     }
   }
 
   /**
-   * Submit a player's card selection.
+   * Player confirms their exchange (clicks Exchange button).
+   * For President/VP: cardIds are the cards they selected to give.
+   * For Scum/ViceScum: cardIds should match their pre-selected cards.
    */
-  function submitSelection(seatIndex: number, cards: StandardCard[]): boolean {
-    const pending = pendingSelections.get(seatIndex)
-    if (!pending) {
-      console.warn(`[CardExchange] submitSelection: player ${seatIndex} not pending`)
+  function confirmExchange(seatIndex: number, cardIds: string[]): boolean {
+    const info = exchangeParticipants.get(seatIndex)
+    if (!info) {
+      console.warn(`[CardExchange] confirmExchange: player ${seatIndex} not participating`)
       return false
     }
 
-    if (cards.length !== pending.cardsToGive) {
-      console.warn(`[CardExchange] submitSelection: wrong count ${cards.length} != ${pending.cardsToGive}`)
+    if (info.confirmed) {
+      console.warn(`[CardExchange] confirmExchange: player ${seatIndex} already confirmed`)
       return false
     }
 
     const player = deps.players[seatIndex]
     if (!player) return false
 
-    // Verify cards are in hand
-    const cardIds = new Set(cards.map(c => c.id))
-    const hasAll = cards.every(c => player.hand.some(h => h.id === c.id))
-    if (!hasAll) {
-      console.warn(`[CardExchange] submitSelection: player doesn't have all cards`)
-      return false
+    let cardsToGive: StandardCard[]
+
+    if (info.canSelect) {
+      // President/VP: validate their selection
+      if (cardIds.length !== info.cardsNeeded) {
+        console.warn(`[CardExchange] confirmExchange: wrong count ${cardIds.length} != ${info.cardsNeeded}`)
+        return false
+      }
+
+      // Find cards in hand
+      cardsToGive = []
+      for (const cardId of cardIds) {
+        const card = player.hand.find(c => c.id === cardId)
+        if (!card) {
+          console.warn(`[CardExchange] confirmExchange: card ${cardId} not in hand`)
+          return false
+        }
+        cardsToGive.push(card)
+      }
+    } else {
+      // Scum/ViceScum: use pre-selected cards (ignore cardIds param)
+      cardsToGive = info.preSelectedCards
     }
 
-    // Stage this exchange
+    // Stage the exchange
     stagedExchanges.push({
       giverSeat: seatIndex,
-      recipientSeat: pending.recipientSeat,
-      cards: cards,
+      recipientSeat: info.recipientSeat,
+      cards: cardsToGive,
     })
-    console.log(`[CardExchange] Staged: ${player.name} → seat ${pending.recipientSeat}:`, cards.map(c => c.id))
+    console.log(`[CardExchange] Staged: ${player.name} → seat ${info.recipientSeat}:`, cardsToGive.map(c => c.id))
 
-    pendingSelections.delete(seatIndex)
+    info.confirmed = true
 
-    // If all selections are in, execute the distribution
-    if (pendingSelections.size === 0) {
+    // Check if all participants have confirmed
+    const allConfirmed = Array.from(exchangeParticipants.values()).every(p => p.confirmed)
+    if (allConfirmed) {
       setTimeout(() => {
         executeDistribution()
       }, 100)
@@ -169,9 +225,6 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
    * Execute all staged exchanges simultaneously.
    */
   function executeDistribution(): void {
-    deps.setPhase(PresidentPhase.CardDistributing)
-    deps.broadcastState()
-
     console.log(`[CardExchange] Executing ${stagedExchanges.length} exchanges`)
 
     // Build a map of what each player gives and receives
@@ -202,7 +255,7 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
 
       console.log(`[CardExchange] ${player.name}: gave ${changes.gives.length}, received ${changes.receives.length}, hand now ${player.hand.length}`)
 
-      // Notify player of their exchange
+      // Notify player of their exchange results
       if (player.isHuman && player.odusId) {
         deps.events.onExchangeComplete(player.odusId, changes.gives, changes.receives)
       }
@@ -213,7 +266,7 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
     // Short delay for animation, then start playing
     setTimeout(() => {
       finishExchange()
-    }, 800)
+    }, 1500)  // Longer delay for card animations
   }
 
   /**
@@ -224,28 +277,37 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
     deps.setCurrentPlayer(scum?.seatIndex ?? 0)
     deps.setPhase(PresidentPhase.Playing)
     stagedExchanges.length = 0
+    exchangeParticipants.clear()
     deps.broadcastState()
     deps.processCurrentTurn()
   }
 
   /**
-   * Get pending selection info for a player (used for state resync).
+   * Get exchange info for a player (used for state resync).
    */
-  function getPendingSelection(seatIndex: number) {
-    return pendingSelections.get(seatIndex)
+  function getExchangeInfo(seatIndex: number): PlayerExchangeInfo | undefined {
+    return exchangeParticipants.get(seatIndex)
   }
 
   /**
-   * Check if a player has a pending selection.
+   * Check if a player is participating in exchange.
    */
-  function hasPendingSelection(seatIndex: number): boolean {
-    return pendingSelections.has(seatIndex)
+  function isParticipating(seatIndex: number): boolean {
+    return exchangeParticipants.has(seatIndex)
+  }
+
+  /**
+   * Check if a player has confirmed their exchange.
+   */
+  function hasConfirmed(seatIndex: number): boolean {
+    return exchangeParticipants.get(seatIndex)?.confirmed ?? false
   }
 
   return {
-    startCardSelecting,
-    submitSelection,
-    getPendingSelection,
-    hasPendingSelection,
+    startExchange,
+    confirmExchange,
+    getExchangeInfo,
+    isParticipating,
+    hasConfirmed,
   }
 }

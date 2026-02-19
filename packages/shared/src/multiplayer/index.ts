@@ -78,7 +78,7 @@ export type ClientMessage = (
   // President-specific messages
   | PresidentPlayCardsMessage
   | PresidentPassMessage
-  | PresidentGiveCardsMessage
+  | PresidentConfirmExchangeMessage
   | SpadesMakeBidMessage
   | BugReportMessage
 ) & ClientMessageMeta
@@ -155,9 +155,9 @@ export interface PresidentPassMessage {
   type: 'president_pass'
 }
 
-export interface PresidentGiveCardsMessage {
-  type: 'president_give_cards'
-  cardIds: string[]
+export interface PresidentConfirmExchangeMessage {
+  type: 'president_confirm_exchange'
+  cardIds: string[]  // For President/VP: selected cards. For Scum/ViceScum: empty or pre-selected
 }
 
 export interface SpadesMakeBidMessage {
@@ -205,8 +205,7 @@ export type ServerMessage =
   | PresidentPlayerFinishedMessage
   | PresidentRoundCompleteMessage
   | PresidentGameOverMessage
-  | PresidentCardExchangeInfoMessage
-  | PresidentAwaitingGiveCardsMessage
+  | PresidentExchangePromptMessage
   | PresidentExchangeCompleteMessage
   | PresidentYourTurnMessage
   | SpadesGameStateMessage
@@ -451,20 +450,12 @@ export interface PresidentGameOverMessage {
   finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>
 }
 
-export interface PresidentCardExchangeInfoMessage {
-  type: 'president_card_exchange_info'
-  youGive: StandardCard[]
-  youReceive: StandardCard[]
-  otherPlayerName: string
-  yourRole: string // 'President', 'Scum', etc.
-}
-
-export interface PresidentAwaitingGiveCardsMessage {
-  type: 'president_awaiting_give_cards'
-  cardsToGive: number
-  receivedCards: StandardCard[]
-  yourRole: string // 'President' or 'Vice President'
-  recipientName?: string // Who you're giving cards to
+export interface PresidentExchangePromptMessage {
+  type: 'president_exchange_prompt'
+  canSelect: boolean           // true = President/VP needs to pick cards, false = Scum/ViceScum pre-selected
+  cardsNeeded: number          // How many cards to select (0 for Scum/ViceScum)
+  preSelectedCardIds: string[] // For Scum/ViceScum: their best cards. For Pres/VP: empty
+  recipientName: string        // Who they're exchanging with
 }
 
 export interface PresidentExchangeCompleteMessage {

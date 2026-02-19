@@ -28,7 +28,7 @@ export interface GameActionHandlers {
   handleBootPlayer: (ws: WebSocket, client: ConnectedClient, playerId: number) => void
   handlePresidentPlayCards: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
   handlePresidentPass: (ws: WebSocket, client: ConnectedClient) => void
-  handlePresidentGiveCards: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
+  handlePresidentConfirmExchange: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
   handleLeaveGame: (ws: WebSocket, client: ConnectedClient) => void
 }
 
@@ -246,7 +246,7 @@ export function createGameActionHandlers({
     }
   }
 
-  function handlePresidentGiveCards(
+  function handlePresidentConfirmExchange(
     ws: WebSocket,
     client: ConnectedClient,
     cardIds: string[]
@@ -262,9 +262,9 @@ export function createGameActionHandlers({
       return
     }
 
-    const success = presidentGame.handleGiveCards(client.player.odusId, cardIds)
+    const success = presidentGame.handleConfirmExchange(client.player.odusId, cardIds)
     if (!success) {
-      send(ws, { type: 'error', message: 'Invalid card selection' })
+      send(ws, { type: 'error', message: 'Invalid exchange confirmation' })
     }
   }
 
@@ -280,7 +280,7 @@ export function createGameActionHandlers({
     handleBootPlayer,
     handlePresidentPlayCards,
     handlePresidentPass,
-    handlePresidentGiveCards,
+    handlePresidentConfirmExchange,
     handleLeaveGame,
   }
 }

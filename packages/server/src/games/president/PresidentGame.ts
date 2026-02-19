@@ -76,8 +76,7 @@ export class PresidentGame {
         this.processCurrentTurn()
       },
       events: {
-        onAwaitingGiveCards: this.events.onAwaitingGiveCards,
-        onCardExchangeInfo: this.events.onCardExchangeInfo,
+        onExchangePrompt: this.events.onExchangePrompt,
         onExchangeComplete: this.events.onExchangeComplete,
       },
     })
@@ -177,16 +176,19 @@ export class PresidentGame {
 
     const player = this.players[playerIndex]!
 
-    // Resend awaiting_give_cards if this player needs to give cards (CardSelecting phase)
-    if (this.phase === PresidentPhase.CardSelecting) {
-      const pending = this.cardExchange.getPendingSelection(playerIndex)
-      if (pending) {
-        const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President' }
-        const yourRole = roleNames[player.rank ?? 0] ?? 'Unknown'
-        const recipient = this.players[pending.recipientSeat]
+    // Resend exchange prompt if player is participating and hasn't confirmed yet
+    if (this.phase === PresidentPhase.CardExchange) {
+      const exchangeInfo = this.cardExchange.getExchangeInfo(playerIndex)
+      if (exchangeInfo && !exchangeInfo.confirmed) {
+        const recipient = this.players[exchangeInfo.recipientSeat]
         
-        console.log('Resending awaiting_give_cards to player', playerIndex, player.name)
-        this.events.onAwaitingGiveCards(odusId, pending.cardsToGive, [], yourRole, recipient?.name ?? 'opponent')
+        console.log('Resending exchange_prompt to player', playerIndex, player.name)
+        this.events.onExchangePrompt(odusId, {
+          canSelect: exchangeInfo.canSelect,
+          cardsNeeded: exchangeInfo.cardsNeeded,
+          preSelectedCardIds: exchangeInfo.preSelectedCards.map(c => c.id),
+          recipientName: recipient?.name ?? 'opponent',
+        })
         return
       }
     }
@@ -272,42 +274,36 @@ export class PresidentGame {
   }
 
   /**
-   * Handle a player giving cards during the card selection phase (President/VP)
+   * Handle a player confirming their exchange (clicking Exchange button).
+   * For President/VP: cardIds are the cards they selected to give.
+   * For Scum/ViceScum: cardIds can be empty (their cards are pre-selected).
    */
-  handleGiveCards(odusId: string, cardIds: string[]): boolean {
-    console.log('handleGiveCards called:', { odusId, cardIds })
+  handleConfirmExchange(odusId: string, cardIds: string[]): boolean {
+    console.log('handleConfirmExchange called:', { odusId, cardIds })
     
     const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
     if (playerIndex === -1) {
-      console.log('handleGiveCards: player not found')
+      console.log('handleConfirmExchange: player not found')
       return false
     }
 
-    if (this.phase !== PresidentPhase.CardSelecting) {
-      console.log('handleGiveCards: wrong phase', this.phase)
+    if (this.phase !== PresidentPhase.CardExchange) {
+      console.log('handleConfirmExchange: wrong phase', this.phase)
       return false
     }
 
-    if (!this.cardExchange.hasPendingSelection(playerIndex)) {
-      console.log('handleGiveCards: not awaiting this player')
+    if (!this.cardExchange.isParticipating(playerIndex)) {
+      console.log('handleConfirmExchange: player not participating in exchange')
       return false
     }
 
-    const player = this.players[playerIndex]!
-
-    // Find the cards in hand
-    const cards: StandardCard[] = []
-    for (const cardId of cardIds) {
-      const card = player.hand.find((c) => c.id === cardId)
-      if (!card) {
-        console.log('handleGiveCards: card not in hand', cardId)
-        return false
-      }
-      cards.push(card)
+    if (this.cardExchange.hasConfirmed(playerIndex)) {
+      console.log('handleConfirmExchange: player already confirmed')
+      return false
     }
 
-    console.log('handleGiveCards: submitting selection')
-    return this.cardExchange.submitSelection(playerIndex, cards)
+    console.log('handleConfirmExchange: confirming exchange')
+    return this.cardExchange.confirmExchange(playerIndex, cardIds)
   }
 
   // ---- Internal methods ----
@@ -362,12 +358,12 @@ export class PresidentGame {
       console.log('hasRanks:', hasRanks, 'player ranks:', this.players.map(p => p.rank))
 
       if (hasRanks) {
-        // Start card exchange - President/VP select cards to give
+        // Start card exchange - all players confirm simultaneously
         setTimeout(() => {
           try {
-            this.cardExchange.startCardSelecting()
+            this.cardExchange.startExchange()
           } catch (error) {
-            console.error('Error in setTimeout -> startCardSelecting:', error)
+            console.error('Error in setTimeout -> startExchange:', error)
           }
         }, 1200)
       } else {
@@ -395,11 +391,6 @@ export class PresidentGame {
       }
     }
     return 0
-  }
-
-  // Called when a player submits their card selection during exchange
-  public submitCardSelection(playerSeatIndex: number, cards: StandardCard[]): boolean {
-    return this.cardExchange.submitSelection(playerSeatIndex, cards)
   }
 
   private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {

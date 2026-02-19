@@ -31,11 +31,12 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     yourRole: string
   } | null>(null)
 
-  // Give-back phase state (President/VP choosing cards to give)
-  const isAwaitingGiveCards = ref(false)
-  const cardsToGiveCount = ref(0)
-  const receivedCardsForGiveBack = ref<StandardCard[]>([])
-  const giveBackRole = ref('')
+  // Card exchange phase state
+  const isInExchange = ref(false)
+  const exchangeCanSelect = ref(false)    // true = President/VP picks cards, false = Scum/ViceScum pre-selected
+  const exchangeCardsNeeded = ref(0)      // How many cards to select (0 for Scum/ViceScum)
+  const exchangePreSelectedIds = ref<string[]>([])  // Pre-selected card IDs for Scum/ViceScum
+  const exchangeRecipientName = ref('')
 
   // Local UI state
   const lastPlayMade = ref<{ playerId: number; cards: StandardCard[]; playerName: string } | null>(null)
@@ -52,7 +53,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   const queueController = createMultiplayerQueueController<ServerMessage>(applyMessage)
   const resyncWatchdog = createMultiplayerResyncWatchdog({
     isGameActive: () => gameState.value !== null,
-    isWaitingForUs: () => isMyTurn.value || isAwaitingGiveCards.value,
+    isWaitingForUs: () => isMyTurn.value || isInExchange.value,
     onStaleState: ({ staleThresholdMs, timeSinceLastUpdate, isWaitingForUs }) => {
       logMultiplayerEvent('president-mp', 'stale_state_resync', getDebugSnapshot(), {
         staleThresholdMs,
@@ -246,27 +247,19 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
         console.log('Game over:', message.finalRankings)
         break
 
-      case 'president_card_exchange_info':
-        exchangeInfo.value = {
-          youGive: message.youGive,
-          youReceive: message.youReceive,
-          otherPlayerName: message.otherPlayerName,
-          yourRole: message.yourRole,
-        }
-        // Clear give-back state when we receive exchange summary
-        isAwaitingGiveCards.value = false
-        cardsToGiveCount.value = 0
-        receivedCardsForGiveBack.value = []
-        giveBackRole.value = ''
-        break
-
-      case 'president_awaiting_give_cards':
-        // President or VP needs to choose cards to give
-        isAwaitingGiveCards.value = true
-        cardsToGiveCount.value = message.cardsToGive
-        receivedCardsForGiveBack.value = [] // No received cards until exchange completes
-        giveBackRole.value = message.yourRole
-        console.log(`[PresidentMP] Awaiting give cards: ${message.cardsToGive} to ${message.recipientName}`)
+      case 'president_exchange_prompt':
+        // Player needs to confirm exchange
+        isInExchange.value = true
+        exchangeCanSelect.value = message.canSelect
+        exchangeCardsNeeded.value = message.cardsNeeded
+        exchangePreSelectedIds.value = message.preSelectedCardIds ?? []
+        exchangeRecipientName.value = message.recipientName ?? ''
+        console.log(`[PresidentMP] Exchange prompt:`, {
+          canSelect: message.canSelect,
+          cardsNeeded: message.cardsNeeded,
+          preSelected: message.preSelectedCardIds?.length ?? 0,
+          recipient: message.recipientName,
+        })
         break
 
       case 'president_exchange_complete':
@@ -278,14 +271,15 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
         exchangeInfo.value = {
           youGive: message.youGave,
           youReceive: message.youReceived,
-          otherPlayerName: '',
-          yourRole: giveBackRole.value,
+          otherPlayerName: exchangeRecipientName.value,
+          yourRole: exchangeCanSelect.value ? 'selector' : 'pre-selected',
         }
-        // Clear give-back state
-        isAwaitingGiveCards.value = false
-        cardsToGiveCount.value = 0
-        receivedCardsForGiveBack.value = []
-        giveBackRole.value = ''
+        // Clear exchange state
+        isInExchange.value = false
+        exchangeCanSelect.value = false
+        exchangeCardsNeeded.value = 0
+        exchangePreSelectedIds.value = []
+        exchangeRecipientName.value = ''
         break
 
       case 'player_timed_out':
@@ -300,13 +294,10 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
       case 'error':
         console.error('[PresidentMP] Server error:', message.message, message.code)
-        // Show error to user if it's about invalid card selection
-        if (message.message?.includes('Invalid card selection')) {
-          console.warn('[PresidentMP] Card give rejected - restoring awaiting state')
-          // Re-enable give cards state so user can try again
-          if (cardsToGiveCount.value > 0) {
-            isAwaitingGiveCards.value = true
-          }
+        // Show error to user if it's about invalid exchange confirmation
+        if (message.message?.includes('Invalid exchange')) {
+          console.warn('[PresidentMP] Exchange rejected - state remains for retry')
+          // isInExchange stays true so user can retry
         }
         logMultiplayerEvent('president-mp', 'apply_error', getDebugSnapshot(), {
           code: message.code ?? null,
@@ -365,53 +356,41 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     exchangeInfo.value = null
   }
 
-  function giveCards(cardIds: string[]): void {
-    console.log('[PresidentMP] giveCards called:', {
+  function confirmExchange(cardIds: string[]): void {
+    console.log('[PresidentMP] confirmExchange called:', {
       cardIds,
-      isAwaitingGiveCards: isAwaitingGiveCards.value,
-      cardsToGiveCount: cardsToGiveCount.value,
+      isInExchange: isInExchange.value,
+      canSelect: exchangeCanSelect.value,
+      cardsNeeded: exchangeCardsNeeded.value,
       phase: phase.value,
     })
     
-    // Primary check: are we in the give-cards phase?
-    // Use phase as the primary gate since isAwaitingGiveCards can be cleared
-    // by a race condition (e.g., president_card_exchange_info arriving just before click)
-    const inGivingPhase = phase.value === PresidentPhase.CardSelecting
-    
-    if (!isAwaitingGiveCards.value && !inGivingPhase) {
-      console.warn('[PresidentMP] giveCards rejected: not awaiting and not in PresidentGiving phase')
+    // Must be in exchange phase
+    if (!isInExchange.value && phase.value !== PresidentPhase.CardExchange) {
+      console.warn('[PresidentMP] confirmExchange rejected: not in exchange phase')
       return
     }
     
-    // Validate card count - use stored cardsToGiveCount if available, else infer from rank
-    // President gives 2, VP gives 1
-    const myRank = myPlayer.value?.rank
-    const expectedCount = cardsToGiveCount.value > 0 
-      ? cardsToGiveCount.value 
-      : (myRank === 1 ? 2 : myRank === 2 ? 1 : 0)
-    
-    if (expectedCount === 0) {
-      console.warn('[PresidentMP] giveCards rejected: cannot determine expected card count')
-      return
-    }
-    
-    if (cardIds.length !== expectedCount) {
-      console.warn('[PresidentMP] giveCards rejected: wrong count', cardIds.length, '!=', expectedCount)
-      return
+    // For President/VP (canSelect=true): validate card count
+    // For Scum/ViceScum (canSelect=false): cardIds can be empty or match preSelected
+    if (exchangeCanSelect.value) {
+      if (cardIds.length !== exchangeCardsNeeded.value) {
+        console.warn('[PresidentMP] confirmExchange rejected: wrong count', cardIds.length, '!=', exchangeCardsNeeded.value)
+        return
+      }
     }
 
-    console.log('[PresidentMP] giveCards: sending president_give_cards', { cardIds, expectedCount })
+    console.log('[PresidentMP] confirmExchange: sending president_confirm_exchange', { cardIds })
     
     websocket.send({
-      type: 'president_give_cards',
+      type: 'president_confirm_exchange',
       cardIds,
       expectedStateSeq: getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq),
     })
 
-    // NOTE: We intentionally do NOT clear isAwaitingGiveCards here.
-    // The server will send president_card_exchange_info on success, which clears it.
+    // NOTE: We intentionally do NOT clear isInExchange here.
+    // The server will send president_exchange_complete on success, which clears it.
     // If the server rejects (e.g., sync error), the UI stays open for retry.
-    // This fixes the bug where cards "go back to hand" with no way to resubmit.
   }
 
   function bootPlayer(playerId: number): void {
@@ -467,10 +446,11 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     validActions.value = []
     validPlays.value = []
     exchangeInfo.value = null
-    isAwaitingGiveCards.value = false
-    cardsToGiveCount.value = 0
-    receivedCardsForGiveBack.value = []
-    giveBackRole.value = ''
+    isInExchange.value = false
+    exchangeCanSelect.value = false
+    exchangeCardsNeeded.value = 0
+    exchangePreSelectedIds.value = []
+    exchangeRecipientName.value = ''
     lastStateSeq.value = 0
     queueController.clear()
     gameLost.value = false
@@ -489,11 +469,12 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     pileCleared,
     gameLost,
     
-    // Give-back phase state
-    isAwaitingGiveCards,
-    cardsToGiveCount,
-    receivedCardsForGiveBack,
-    giveBackRole,
+    // Card exchange phase state
+    isInExchange,
+    exchangeCanSelect,
+    exchangeCardsNeeded,
+    exchangePreSelectedIds,
+    exchangeRecipientName,
 
     // Computed
     phase,
@@ -519,7 +500,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     playCards,
     pass,
     acknowledgeExchange,
-    giveCards,
+    confirmExchange,
     bootPlayer,
     requestStateResync,
     initialize,
