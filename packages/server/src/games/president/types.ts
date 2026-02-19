@@ -26,7 +26,8 @@ export interface PresidentGameEvents {
   onRoundComplete: (rankings: Array<{ playerId: number; rank: PlayerRank; name: string }>, roundNumber: number) => void
   onGameOver: (finalRankings: Array<{ playerId: number; name: string; rank: PlayerRank }>) => void
   onCardExchangeInfo: (playerId: string, youGive: StandardCard[], youReceive: StandardCard[], otherPlayerName: string, yourRole: string) => void
-  onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string) => void
+  onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string, recipientName?: string) => void
+  onExchangeComplete: (playerId: string, youGave: StandardCard[], youReceived: StandardCard[]) => void
   onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => void
   onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => void
   onPlayerTimedOut: (playerId: number, playerName: string) => void

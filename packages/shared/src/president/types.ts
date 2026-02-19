@@ -6,8 +6,8 @@ import type { Suit, FullRank, StandardCard, BasePlayer, PlayedCard } from '../co
 export enum PresidentPhase {
   Setup = 'setup',
   Dealing = 'dealing',
-  CardExchange = 'card_exchange',  // Scum gives best cards to President (auto)
-  PresidentGiving = 'president_giving', // President/VP choose cards to give back
+  CardSelecting = 'card_selecting',  // President/VP select cards to give (Scum's best staged but not transferred)
+  CardDistributing = 'card_distributing', // All swaps execute simultaneously
   Playing = 'playing',
   RoundComplete = 'round_complete',
   GameOver = 'game_over',

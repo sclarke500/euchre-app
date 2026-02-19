@@ -169,12 +169,20 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             yourRole,
           })
         },
-        onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string) => {
+        onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string, recipientName?: string) => {
           sendToPlayer(playerId, {
             type: 'president_awaiting_give_cards',
             cardsToGive,
             receivedCards,
             yourRole,
+            recipientName,
+          })
+        },
+        onExchangeComplete: (playerId: string, youGave: StandardCard[], youReceived: StandardCard[]) => {
+          sendToPlayer(playerId, {
+            type: 'president_exchange_complete',
+            youGave,
+            youReceived,
           })
         },
         onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => {
@@ -616,12 +624,20 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             yourRole,
           })
         },
-        onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string) => {
+        onAwaitingGiveCards: (playerId: string, cardsToGive: number, receivedCards: StandardCard[], yourRole: string, recipientName?: string) => {
           sendToPlayer(playerId, {
             type: 'president_awaiting_give_cards',
             cardsToGive,
             receivedCards,
             yourRole,
+            recipientName,
+          })
+        },
+        onExchangeComplete: (playerId: string, youGave: StandardCard[], youReceived: StandardCard[]) => {
+          sendToPlayer(playerId, {
+            type: 'president_exchange_complete',
+            youGave,
+            youReceived,
           })
         },
         onYourTurn: (playerId: string, validActions: string[], validPlays: string[][]) => {

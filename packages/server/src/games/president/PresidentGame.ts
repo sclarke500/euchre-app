@@ -50,10 +50,6 @@ export class PresidentGame {
   private readonly TIMEOUT_AFTER_REMINDERS = 4 // Mark as timed out after 4 reminders (60 seconds)
   private timedOutPlayer: number | null = null
   
-  // Card exchange state - track who still needs to give cards
-  private awaitingGiveCards: number | null = null // seat index of player we're waiting on
-  private pendingExchangeReceivedCards: Map<number, StandardCard[]> = new Map() // what each player received
-
   // AI difficulty
   private readonly aiDifficulty: 'easy' | 'hard'
   private readonly cardExchange: ReturnType<typeof createPresidentCardExchangeController>
@@ -66,14 +62,9 @@ export class PresidentGame {
     this.aiDifficulty = aiDifficulty
     this.cardExchange = createPresidentCardExchangeController({
       players: this.players,
-      pendingExchangeReceivedCards: this.pendingExchangeReceivedCards,
       getPhase: () => this.phase,
       setPhase: (phase) => {
         this.phase = phase
-      },
-      getAwaitingGiveCards: () => this.awaitingGiveCards,
-      setAwaitingGiveCards: (seatIndex) => {
-        this.awaitingGiveCards = seatIndex
       },
       setCurrentPlayer: (seatIndex) => {
         this.currentPlayer = seatIndex
@@ -87,6 +78,7 @@ export class PresidentGame {
       events: {
         onAwaitingGiveCards: this.events.onAwaitingGiveCards,
         onCardExchangeInfo: this.events.onCardExchangeInfo,
+        onExchangeComplete: this.events.onExchangeComplete,
       },
     })
   }
@@ -185,16 +177,18 @@ export class PresidentGame {
 
     const player = this.players[playerIndex]!
 
-    // Resend awaiting_give_cards if this player needs to give cards (PresidentGiving phase)
-    if (this.phase === PresidentPhase.PresidentGiving && this.awaitingGiveCards === playerIndex) {
-      const cardsToGive = player.rank === 1 ? 2 : 1
-      const receivedCards = this.pendingExchangeReceivedCards.get(playerIndex) ?? []
-      const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President' }
-      const yourRole = roleNames[player.rank ?? 0] ?? 'Unknown'
-      
-      console.log('Resending awaiting_give_cards to player', playerIndex, player.name)
-      this.events.onAwaitingGiveCards(odusId, cardsToGive, receivedCards, yourRole)
-      return
+    // Resend awaiting_give_cards if this player needs to give cards (CardSelecting phase)
+    if (this.phase === PresidentPhase.CardSelecting) {
+      const pending = this.cardExchange.getPendingSelection(playerIndex)
+      if (pending) {
+        const roleNames: Record<number, string> = { 1: 'President', 2: 'Vice President' }
+        const yourRole = roleNames[player.rank ?? 0] ?? 'Unknown'
+        const recipient = this.players[pending.recipientSeat]
+        
+        console.log('Resending awaiting_give_cards to player', playerIndex, player.name)
+        this.events.onAwaitingGiveCards(odusId, pending.cardsToGive, [], yourRole, recipient?.name ?? 'opponent')
+        return
+      }
     }
 
     // Resend your_turn if it's this player's turn during Playing phase
@@ -278,7 +272,7 @@ export class PresidentGame {
   }
 
   /**
-   * Handle a player giving cards during the card exchange phase (President/VP)
+   * Handle a player giving cards during the card selection phase (President/VP)
    */
   handleGiveCards(odusId: string, cardIds: string[]): boolean {
     console.log('handleGiveCards called:', { odusId, cardIds })
@@ -289,13 +283,13 @@ export class PresidentGame {
       return false
     }
 
-    if (this.phase !== PresidentPhase.PresidentGiving) {
+    if (this.phase !== PresidentPhase.CardSelecting) {
       console.log('handleGiveCards: wrong phase', this.phase)
       return false
     }
 
-    if (this.awaitingGiveCards !== playerIndex) {
-      console.log('handleGiveCards: not awaiting this player', { awaitingGiveCards: this.awaitingGiveCards, playerIndex })
+    if (!this.cardExchange.hasPendingSelection(playerIndex)) {
+      console.log('handleGiveCards: not awaiting this player')
       return false
     }
 
@@ -312,17 +306,8 @@ export class PresidentGame {
       cards.push(card)
     }
 
-    // Validate correct number of cards
-    const expectedCount = player.rank === 1 ? 2 : 1
-    console.log('handleGiveCards: rank check', { rank: player.rank, expectedCount, actualCount: cards.length })
-    if (cards.length !== expectedCount) {
-      console.log('handleGiveCards: wrong card count')
-      return false
-    }
-
-    console.log('handleGiveCards: calling giveCards')
-    this.giveCards(playerIndex, cards)
-    return true
+    console.log('handleGiveCards: submitting selection')
+    return this.cardExchange.submitSelection(playerIndex, cards)
   }
 
   // ---- Internal methods ----
@@ -344,7 +329,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
-        awaitingGiveCards: this.awaitingGiveCards,
+        awaitingGiveCards: null,
       })
 
       // Deal cards using shared function
@@ -377,13 +362,12 @@ export class PresidentGame {
       console.log('hasRanks:', hasRanks, 'player ranks:', this.players.map(p => p.rank))
 
       if (hasRanks) {
-        // Do card exchange
+        // Start card exchange - President/VP select cards to give
         setTimeout(() => {
           try {
-            this.phase = PresidentPhase.CardExchange
-            this.processCardExchange()
+            this.cardExchange.startCardSelecting()
           } catch (error) {
-            console.error('Error in setTimeout -> processCardExchange:', error)
+            console.error('Error in setTimeout -> startCardSelecting:', error)
           }
         }, 1200)
       } else {
@@ -413,25 +397,9 @@ export class PresidentGame {
     return 0
   }
 
-  private processCardExchange(): void {
-    this.cardExchange.processCardExchange()
-  }
-
-  private startGiveBackPhase(playerSeatIndex: number): void {
-    this.cardExchange.startGiveBackPhase(playerSeatIndex)
-  }
-
-  // Called when a player submits their give-back cards
-  public giveCards(playerSeatIndex: number, cards: StandardCard[]): void {
-    this.cardExchange.giveCards(playerSeatIndex, cards)
-  }
-
-  private completeGiveBack(playerSeatIndex: number, cards: StandardCard[]): void {
-    this.cardExchange.completeGiveBack(playerSeatIndex, cards)
-  }
-
-  private finishCardExchange(): void {
-    this.cardExchange.finishCardExchange()
+  // Called when a player submits their card selection during exchange
+  public submitCardSelection(playerSeatIndex: number, cards: StandardCard[]): boolean {
+    return this.cardExchange.submitSelection(playerSeatIndex, cards)
   }
 
   private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {
@@ -449,7 +417,7 @@ export class PresidentGame {
       gameOver: this.gameOver,
       lastPlayerId: this.lastPlayerId,
       superTwosMode: this.superTwosMode,
-      awaitingGiveCards: this.awaitingGiveCards,
+      awaitingGiveCards: null,
     })
     const newState = processPlay(gameState, playerIndex, cards)
 
@@ -525,7 +493,7 @@ export class PresidentGame {
       gameOver: this.gameOver,
       lastPlayerId: this.lastPlayerId,
       superTwosMode: this.superTwosMode,
-      awaitingGiveCards: this.awaitingGiveCards,
+      awaitingGiveCards: null,
     })
     const newState = processPass(gameState, playerIndex)
 
@@ -574,7 +542,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
-        awaitingGiveCards: this.awaitingGiveCards,
+        awaitingGiveCards: null,
       })
       console.log('Game state built, players finishOrders:', gameState.players.map(p => p.finishOrder))
       const rankedState = assignRanks(gameState)
@@ -647,7 +615,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
-        awaitingGiveCards: this.awaitingGiveCards,
+        awaitingGiveCards: null,
       })
       this.currentPlayer = getNextActivePlayer(gameState, this.currentPlayer)
       this.processCurrentTurn()
@@ -675,7 +643,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
-        awaitingGiveCards: this.awaitingGiveCards,
+        awaitingGiveCards: null,
       })
       const play = computePresidentAIPlay({
         player,

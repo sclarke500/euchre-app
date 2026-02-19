@@ -207,6 +207,7 @@ export type ServerMessage =
   | PresidentGameOverMessage
   | PresidentCardExchangeInfoMessage
   | PresidentAwaitingGiveCardsMessage
+  | PresidentExchangeCompleteMessage
   | PresidentYourTurnMessage
   | SpadesGameStateMessage
   | SpadesYourTurnMessage
@@ -463,6 +464,13 @@ export interface PresidentAwaitingGiveCardsMessage {
   cardsToGive: number
   receivedCards: StandardCard[]
   yourRole: string // 'President' or 'Vice President'
+  recipientName?: string // Who you're giving cards to
+}
+
+export interface PresidentExchangeCompleteMessage {
+  type: 'president_exchange_complete'
+  youGave: StandardCard[]
+  youReceived: StandardCard[]
 }
 
 export interface PresidentYourTurnMessage {

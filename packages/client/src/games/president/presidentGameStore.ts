@@ -110,7 +110,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const isHumanGivingCards = computed(() => {
     const human = humanPlayer.value
     return human && 
-           phase.value === PresidentPhase.PresidentGiving && 
+           phase.value === PresidentPhase.CardSelecting && 
            awaitingGiveBack.value === human.id
   })
   
@@ -214,7 +214,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const advancePhase = () => {
       phase.value = state.phase
 
-      if (state.phase === PresidentPhase.PresidentGiving) {
+      if (state.phase === PresidentPhase.CardSelecting) {
         // Card exchange phase - check if human needs to give cards
         handleGivingPhase()
       } else if (state.phase === PresidentPhase.Playing) {
@@ -277,7 +277,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     }
 
     // No human involvement — continue
-    if (state.phase === PresidentPhase.PresidentGiving) {
+    if (state.phase === PresidentPhase.CardSelecting) {
       setTimeout(() => handleGivingPhase(), 500)
     } else if (state.phase === PresidentPhase.Playing) {
       setTimeout(() => processAITurn(), 500)
@@ -343,7 +343,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     exchangeInfo.value = null
 
     // Continue with the giving phase (VP exchange) or start playing
-    if (phase.value === PresidentPhase.PresidentGiving) {
+    if (phase.value === PresidentPhase.CardSelecting) {
       setTimeout(() => handleGivingPhase(), 500)
     } else if (phase.value === PresidentPhase.Playing) {
       setTimeout(() => processAITurn(), 500)

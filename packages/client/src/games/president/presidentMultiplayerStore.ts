@@ -261,11 +261,31 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
         break
 
       case 'president_awaiting_give_cards':
-        // President or VP needs to choose cards to give back
+        // President or VP needs to choose cards to give
         isAwaitingGiveCards.value = true
         cardsToGiveCount.value = message.cardsToGive
-        receivedCardsForGiveBack.value = message.receivedCards ?? []
+        receivedCardsForGiveBack.value = [] // No received cards until exchange completes
         giveBackRole.value = message.yourRole
+        console.log(`[PresidentMP] Awaiting give cards: ${message.cardsToGive} to ${message.recipientName}`)
+        break
+
+      case 'president_exchange_complete':
+        // Exchange finished - show what we gave and received
+        console.log('[PresidentMP] Exchange complete:', {
+          gave: message.youGave.map((c: any) => c.id),
+          received: message.youReceived.map((c: any) => c.id),
+        })
+        exchangeInfo.value = {
+          youGive: message.youGave,
+          youReceive: message.youReceived,
+          otherPlayerName: '',
+          yourRole: giveBackRole.value,
+        }
+        // Clear give-back state
+        isAwaitingGiveCards.value = false
+        cardsToGiveCount.value = 0
+        receivedCardsForGiveBack.value = []
+        giveBackRole.value = ''
         break
 
       case 'player_timed_out':
@@ -356,7 +376,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     // Primary check: are we in the give-cards phase?
     // Use phase as the primary gate since isAwaitingGiveCards can be cleared
     // by a race condition (e.g., president_card_exchange_info arriving just before click)
-    const inGivingPhase = phase.value === PresidentPhase.PresidentGiving
+    const inGivingPhase = phase.value === PresidentPhase.CardSelecting
     
     if (!isAwaitingGiveCards.value && !inGivingPhase) {
       console.warn('[PresidentMP] giveCards rejected: not awaiting and not in PresidentGiving phase')
