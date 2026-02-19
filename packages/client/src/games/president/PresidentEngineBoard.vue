@@ -180,14 +180,28 @@
 
     <!-- Rules Modal -->
     <Modal :show="showRulesModal" @close="showRulesModal = false">
-      <div class="round-modal dialog-panel">
+      <div class="round-modal dialog-panel rules-modal">
         <h3 class="dialog-title">President Rules</h3>
         <div class="rules-content">
-          <p><strong>Objective:</strong> Be the first to get rid of all your cards to become President.</p>
-          <p><strong>Gameplay:</strong> Play cards equal to or higher than the current pile. You can play singles, pairs, triples, or quads — but must match the play type.</p>
-          <p><strong>Passing:</strong> If you can't or don't want to play, pass. When all players pass, the pile clears and the last player to play starts fresh.</p>
-          <p><strong>Ranks:</strong> President finishes first (best), then Vice President, down to Scum (last). Next round, Scum gives their best cards to President.</p>
-          <p><strong>2s are high:</strong> 2 beats everything except another 2.</p>
+          <p><strong>Overview:</strong> 4 players. Be the first to empty your hand to become President. Also known as "Scum" or "Asshole".</p>
+          
+          <p><strong>Card Ranking:</strong> 2 (high) → A → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 (low). Suits don't matter.</p>
+          
+          <p><strong>Starting:</strong> Player with 3♣ leads first. After that, the Scum (last place) leads.</p>
+          
+          <p><strong>Play:</strong> Play 1 or more cards of the same rank, matching the count (single, pair, triple, quad). Cards must equal or beat the pile's rank. Or pass.</p>
+          
+          <p><strong>Clearing:</strong> When everyone passes, pile clears. Last player to play leads the next round. Playing a 2 (or set of 2s) also clears instantly.</p>
+          
+          <p><strong>Finishing Order:</strong></p>
+          <p>• 1st out → President</p>
+          <p>• 2nd out → Vice President</p>
+          <p>• 3rd out → Vice Scum</p>
+          <p>• Last → Scum</p>
+          
+          <p><strong>Card Exchange:</strong> Before each round, Scum gives their 2 best cards to President, and Vice Scum gives 1 to Vice President. They give back any cards of their choice.</p>
+          
+          <p><strong>Winning:</strong> After several rounds, the player who finishes as President most often wins!</p>
         </div>
         <div class="modal-buttons dialog-actions">
           <button class="modal-btn dialog-btn dialog-btn--primary" @click="showRulesModal = false">Got it</button>

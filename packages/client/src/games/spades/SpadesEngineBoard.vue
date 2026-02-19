@@ -207,14 +207,28 @@
 
   <!-- Rules Modal -->
   <Modal :show="showRulesModal" aria-label="Spades Rules" @close="showRulesModal = false">
-    <div class="rules-panel dialog-panel">
+    <div class="rules-panel dialog-panel rules-modal">
       <h2>Spades Rules</h2>
       <div class="rules-content">
-        <p><strong>Objective:</strong> Be the first team to reach 500 points.</p>
-        <p><strong>Bidding:</strong> Each player bids the number of tricks they expect to win. Partners' bids are combined into a team contract.</p>
-        <p><strong>Nil Bids:</strong> Bidding zero (Nil) is worth 100 points if successful, -100 if you take any tricks. Blind nil (bidding before seeing cards) is worth 200/-200.</p>
-        <p><strong>Gameplay:</strong> Players must follow suit if possible. Spades cannot be led until "broken" (played on another suit).</p>
-        <p><strong>Scoring:</strong> Making your bid earns 10× bid points. Each overtrick (bag) is +1 point, but 10 bags = -100 penalty.</p>
+        <p><strong>Overview:</strong> 4 players in 2 teams. First team to 500 points wins. Uses full 52-card deck. Spades are always trump.</p>
+        
+        <p><strong>Card Ranking:</strong> A (high) → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2 (low). Spades beat all other suits.</p>
+        
+        <p><strong>Dealing:</strong> 13 cards each (entire deck).</p>
+        
+        <p><strong>Bidding:</strong> Starting left of dealer, each player bids how many tricks they'll win (1-13). Team bids are combined. You must bid at least 1 (unless going nil).</p>
+        
+        <p><strong>Nil Bids:</strong></p>
+        <p>• Nil: Bid to win zero tricks. +100 if successful, -100 if you take any.</p>
+        <p>• Blind Nil: Declare before seeing cards. +200/-200. (High risk, high reward!)</p>
+        
+        <p><strong>Play:</strong> Player left of dealer leads (cannot lead spades first trick unless only spades in hand). Must follow suit if able. Spades can only be led after being "broken" (played on another trick).</p>
+        
+        <p><strong>Scoring:</strong></p>
+        <p>• Make bid: 10 × bid points</p>
+        <p>• Overtricks (bags): +1 each, but 10 bags = -100 penalty</p>
+        <p>• Fail bid: -10 × bid points</p>
+        <p>• Going negative (-200): Other team wins instantly</p>
       </div>
       <div class="dialog-actions">
         <button class="btn-primary" @click="showRulesModal = false">Got it</button>

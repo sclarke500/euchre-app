@@ -718,8 +718,9 @@ const canUndo = computed(() => store.canUndo)
 const noMovesAvailable = computed(() => store.noMovesAvailable && !isWon.value)
 const selection = computed(() => store.selection)
 
-// New game confirmation
+// Modals
 const showNewGameConfirm = ref(false)
+const showRulesModal = ref(false)
 
 function confirmNewGame() {
   showNewGameConfirm.value = true
@@ -792,13 +793,22 @@ function doNewGame() {
 
     <!-- Bottom toolbar -->
     <div class="bottom-toolbar">
-      <!-- Left: Back button -->
-      <button class="toolbar-btn back" @click="handleLeaveGame" title="Main Menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H5" />
-          <path d="M12 19l-7-7 7-7" />
-        </svg>
-      </button>
+      <!-- Left: Back and Rules buttons -->
+      <div class="toolbar-left">
+        <button class="toolbar-btn back" @click="handleLeaveGame" title="Main Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button class="toolbar-btn" @click="showRulesModal = true" title="Rules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <path d="M12 17h.01" />
+          </svg>
+        </button>
+      </div>
 
       <!-- Center: Stats -->
       <div class="toolbar-stats">
@@ -883,6 +893,33 @@ function doNewGame() {
         </div>
       </div>
     </Modal>
+
+    <!-- Rules modal -->
+    <Modal :show="showRulesModal" @close="showRulesModal = false">
+      <div class="confirm-modal dialog-panel rules-modal">
+        <h2 class="dialog-title">Klondike Rules</h2>
+        <div class="rules-content dialog-text">
+          <p><strong>Overview:</strong> The classic solitaire! Move all cards to the four foundation piles, sorted by suit from Ace to King.</p>
+          
+          <p><strong>Setup:</strong> 7 tableau columns with 1-7 cards each (top card face-up). Remaining cards form the stock pile.</p>
+          
+          <p><strong>Foundations:</strong> Build up by suit from Ace → King. (♠A, ♠2, ♠3... ♠K)</p>
+          
+          <p><strong>Tableau:</strong> Build down in alternating colors. (Red 6 on Black 7, etc.) Move any face-up card or stack. Empty columns can only be filled with Kings.</p>
+          
+          <p><strong>Stock & Waste:</strong> Click stock to draw cards to the waste pile. Top waste card is playable. When stock empties, click to recycle waste.</p>
+          
+          <p><strong>Moving Cards:</strong> Click to auto-move to foundations, or drag cards between columns. Reveal face-down cards by moving cards above them.</p>
+          
+          <p><strong>Winning:</strong> Get all 52 cards onto the four foundation piles!</p>
+          
+          <p><strong>Tips:</strong> Prioritize revealing face-down cards. Don't rush cards to foundations if you might need them for tableau building.</p>
+        </div>
+        <div class="confirm-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showRulesModal = false">Got it</button>
+        </div>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -949,6 +986,11 @@ function doNewGame() {
   padding: 8px 12px;
   background: rgba(0, 0, 0, 0.6);
   z-index: 100;
+  gap: 8px;
+}
+
+.toolbar-left {
+  display: flex;
   gap: 8px;
 }
 
@@ -1122,6 +1164,26 @@ function doNewGame() {
   .invalid & {
     background: rgba(231, 76, 60, 0.2);
     border: 3px dashed rgba(231, 76, 60, 0.6);
+  }
+}
+
+.rules-content {
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-height: 60vh;
+  overflow-y: auto;
+  
+  p {
+    margin: 0 0 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  strong {
+    color: #fff;
   }
 }
 </style>

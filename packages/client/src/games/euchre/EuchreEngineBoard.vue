@@ -80,14 +80,28 @@
 
     <!-- Rules modal -->
     <Modal :show="showRulesModal" aria-label="Euchre Rules" @close="showRulesModal = false">
-      <div class="game-over-panel dialog-panel">
+      <div class="game-over-panel dialog-panel rules-modal">
         <div class="game-over-title dialog-title">Euchre Rules</div>
         <div class="rules-content dialog-text">
-          <p><strong>Objective:</strong> First team to 10 points wins.</p>
-          <p><strong>Trump:</strong> One suit becomes trump each round. The Jack of trump (Right Bower) and Jack of the same color (Left Bower) are the highest cards.</p>
-          <p><strong>Bidding:</strong> Choose to "order up" the face-up card as trump, or pass. If all pass, you can call any other suit as trump.</p>
-          <p><strong>Play:</strong> Must follow suit if possible. Highest trump wins, or highest card of the led suit.</p>
-          <p><strong>Scoring:</strong> Making your bid = 1 point (2 if alone). Taking all 5 tricks = 2 points. Getting "euchred" = 2 points for opponents.</p>
+          <p><strong>Overview:</strong> 4 players in 2 teams. First team to 10 points wins. Uses 24 cards (9, 10, J, Q, K, A of each suit).</p>
+          
+          <p><strong>Card Ranking:</strong> In trump suit: Right Bower (Jack of trump) → Left Bower (Jack of same color) → A → K → Q → 10 → 9. Non-trump: A → K → Q → J → 10 → 9.</p>
+          
+          <p><strong>Dealing:</strong> 5 cards each. One card turned face-up to propose trump.</p>
+          
+          <p><strong>Bidding Round 1:</strong> Starting left of dealer, each player may "order up" the face-up card (making its suit trump) or pass. If ordered up, dealer takes the card and discards one.</p>
+          
+          <p><strong>Bidding Round 2:</strong> If all pass, players may call any OTHER suit as trump, or pass. Dealer must call if all others pass ("stuck the dealer").</p>
+          
+          <p><strong>Going Alone:</strong> The player who calls trump may "go alone" — their partner sits out. Success earns bonus points.</p>
+          
+          <p><strong>Play:</strong> Player left of dealer leads. Must follow suit if able. Highest trump wins, otherwise highest card of led suit. Winner leads next trick.</p>
+          
+          <p><strong>Scoring:</strong></p>
+          <p>• Making trump (3-4 tricks): 1 point</p>
+          <p>• March (all 5 tricks): 2 points</p>
+          <p>• Alone march: 4 points</p>
+          <p>• Euchred (makers take ≤2 tricks): 2 points to defenders</p>
         </div>
         <div class="game-over-actions dialog-actions">
           <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showRulesModal = false">Got it</button>
