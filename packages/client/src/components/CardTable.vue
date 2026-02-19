@@ -534,8 +534,7 @@ defineExpose({
     inset 0 1px 2px rgba(255, 255, 255, 0.1);
   z-index: 400;
   pointer-events: none;
-  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  // No transition - just appears/disappears at caller's position
 }
 
 </style>
