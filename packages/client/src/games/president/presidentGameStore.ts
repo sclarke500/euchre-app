@@ -411,6 +411,13 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     lastPlayerId.value = state.lastPlayerId
     pendingExchanges.value = state.pendingExchanges
     awaitingGiveBack.value = state.awaitingGiveBack
+    
+    // Clear exchange UI state when moving to Playing phase
+    if (state.phase === PresidentPhase.Playing) {
+      isInExchange.value = false
+      exchangeCanSelect.value = false
+      exchangePreSelectedIds.value = []
+    }
   }
 
   function findStartingPlayer(): number {
