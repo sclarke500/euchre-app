@@ -169,7 +169,7 @@ const positionStyle = computed(() => props.customStyle ?? {})
     }
   }
 
-  // Info tags - positioned at top-right of avatar circle
+  // Info tags - positioned at top-right of avatar circle (opponents)
   .info-tags {
     position: absolute;
     top: -8px;
@@ -177,6 +177,20 @@ const positionStyle = computed(() => props.customStyle ?? {})
     display: flex;
     gap: 4px;
     z-index: 5;
+  }
+
+  // For user avatar, position info tags as pill above the container
+  &.is-user .info-tags {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    background: rgba(40, 40, 55, 0.95);
+    padding: 4px 10px;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
 
   .avatar-glow {

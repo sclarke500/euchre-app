@@ -101,7 +101,7 @@
 
     <!-- User info for the user-avatar slot -->
     <template #user-info>
-      <span v-if="userTrumpInfo" class="user-trump-badge" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</span>
+      <div v-if="userTrumpInfo" class="info-chip trump-chip" :style="{ color: userTrumpInfo.color }">{{ userTrumpInfo.symbol }}</div>
     </template>
 
     <!-- Turn timer (left side, self-contained with panel and animation) -->
