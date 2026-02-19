@@ -258,27 +258,27 @@ defineExpose({
   overflow: hidden;
 
   // Table palette — change these to retheme
-  --felt: #2a8262;           // Rich green
-  --felt-light: #359470;     // Center highlight  
-  --felt-dark: #1e5c48;      // Edge shadow
-  --surface-bg: #1e1e26;
+  --felt: #237555;           // Darker rich green
+  --felt-light: #2a8662;     // Center highlight  
+  --felt-dark: #1a5040;      // Edge shadow
+  --surface-bg: #1a1a22;
 
-  // Floor effect - lighter gray carpet, dark pill will pop
+  // Floor effect - darker carpet
   background:
     // Table shadow - soft dark area under table
-    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.15) 70%, transparent 100%),
+    radial-gradient(ellipse 55% 45% at center 42%, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%),
     // Light pool from overhead lamp
-    radial-gradient(ellipse 75% 60% at center 40%, rgba(255, 250, 240, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 75% 60% at center 40%, rgba(255, 250, 240, 0.04) 0%, transparent 55%),
     // Carpet texture
     repeating-linear-gradient(
       45deg,
       transparent 0px,
       transparent 2px,
-      rgba(0, 0, 0, 0.03) 2px,
-      rgba(0, 0, 0, 0.03) 4px
+      rgba(0, 0, 0, 0.04) 2px,
+      rgba(0, 0, 0, 0.04) 4px
     ),
-    // Base carpet - lighter warm gray
-    linear-gradient(180deg, #3d3d42 0%, #353538 50%, #2d2d32 100%);
+    // Base carpet - darker gray
+    linear-gradient(180deg, #2a2a30 0%, #242428 50%, #1e1e22 100%);
 
 }
 

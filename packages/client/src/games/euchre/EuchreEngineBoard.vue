@@ -118,15 +118,13 @@
 
     <!-- User actions — sliding panel from right -->
     <Transition name="action-slide">
-      <div v-if="showActionPanel" class="action-panel-container">
-        <div class="shiny-overlay" />
-        
+      <div v-if="showActionPanel" class="action-panel-container frosted-panel--right">
         <!-- Round 1: Pass or Order Up -->
         <template v-if="showBidding && game.biddingRound.value === 1">
-          <button class="action-btn primary" @click="handleOrderUp">
+          <button class="frosted-btn frosted-btn--primary" @click="handleOrderUp">
             {{ isUserDealer ? 'Pick Up' : 'Order Up' }}
           </button>
-          <button class="action-btn" @click="handlePass">Pass</button>
+          <button class="frosted-btn" @click="handlePass">Pass</button>
           <label class="action-checkbox">
             <input type="checkbox" v-model="goAlone" />
             Alone
@@ -141,14 +139,14 @@
             <button
               v-for="suit in availableSuits"
               :key="suit.name"
-              class="action-btn suit-btn"
+              class="frosted-btn suit-btn"
               :style="{ color: suit.color }"
               @click="handleCallSuit(suit.name)"
             >
               {{ suit.symbol }}
             </button>
           </div>
-          <button v-if="!mustCall" class="action-btn" @click="handlePass">Pass</button>
+          <button v-if="!mustCall" class="frosted-btn" @click="handlePass">Pass</button>
           <label class="action-checkbox">
             <input type="checkbox" v-model="goAlone" />
             Alone
@@ -672,7 +670,7 @@ onUnmounted(() => {
   }
 }
 
-// Sliding action panel from right - frosted glass
+// Sliding action panel from right - uses global frosted-panel--right
 .action-panel-container {
   position: fixed;
   right: 0;
@@ -685,73 +683,8 @@ onUnmounted(() => {
   gap: 12px;
   padding: 16px 14px;
   padding-right: max(14px, env(safe-area-inset-right));
-  background: rgba(60, 60, 70, 0.65);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border-radius: 20px 0 0 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-right: none;
-  box-shadow: 
-    -4px 0 24px rgba(0, 0, 0, 0.3),
-    inset 1px 1px 0 rgba(255, 255, 255, 0.1);
   min-width: 120px;
-}
-
-.action-panel-container .shiny-overlay {
-  display: none; // Not needed for frosted glass look
-}
-
-.action-panel-container .action-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(70, 70, 80, 0.7);
-  backdrop-filter: blur(8px);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  box-shadow: 
-    0 3px 6px rgba(0, 0, 0, 0.4),
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  width: 100%;
-
-  &:hover {
-    background: linear-gradient(
-      to bottom,
-      rgba(90, 90, 110, 0.95) 0%,
-      rgba(65, 65, 85, 0.95) 100%
-    );
-    border-top-color: rgba(255, 255, 255, 0.4);
-  }
-
-  &:active {
-    transform: translateY(1px);
-    box-shadow: 
-      0 1px 3px rgba(0, 0, 0, 0.4),
-      inset 0 1px 2px rgba(0, 0, 0, 0.2);
-  }
-
-  &.primary {
-    background: linear-gradient(
-      to bottom,
-      rgba(52, 158, 126, 0.95) 0%,
-      rgba(36, 120, 92, 0.95) 100%
-    );
-    border-top-color: rgba(100, 200, 160, 0.4);
-    border-bottom-color: rgba(0, 60, 40, 0.3);
-
-    &:hover {
-      background: linear-gradient(
-        to bottom,
-        rgba(62, 178, 140, 0.95) 0%,
-        rgba(42, 138, 106, 0.95) 100%
-      );
-    }
-  }
+  border-radius: 20px 0 0 20px;
 }
 
 .action-panel-container .suit-buttons {

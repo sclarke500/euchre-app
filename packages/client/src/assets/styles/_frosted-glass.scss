@@ -1,0 +1,115 @@
+// Frosted glass panel and button styles
+// Import this in components that need the frosted look
+
+// Base frosted panel - use as mixin or extend
+@mixin frosted-panel {
+  background: rgba(60, 60, 70, 0.65);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+// Frosted panel class
+.frosted-panel {
+  @include frosted-panel;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+// Side panel variant (attached to edge)
+.frosted-panel--right {
+  @include frosted-panel;
+  border-radius: 16px 0 0 16px;
+  border-right: none;
+  box-shadow: 
+    -4px 0 24px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.frosted-panel--left {
+  @include frosted-panel;
+  border-radius: 0 16px 16px 0;
+  border-left: none;
+  box-shadow: 
+    4px 0 24px rgba(0, 0, 0, 0.3),
+    inset -1px 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+// Frosted button - works inside or outside panels
+@mixin frosted-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(70, 70, 80, 0.7);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  
+  &:hover:not(:disabled) {
+    background: rgba(80, 80, 90, 0.8);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+    background: rgba(60, 60, 70, 0.8);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.frosted-btn {
+  @include frosted-btn;
+}
+
+// Primary action button (green)
+.frosted-btn--primary {
+  @include frosted-btn;
+  background: rgba(46, 125, 90, 0.85);
+  border-color: rgba(80, 180, 130, 0.3);
+  
+  &:hover:not(:disabled) {
+    background: rgba(52, 140, 100, 0.9);
+    border-color: rgba(80, 180, 130, 0.5);
+  }
+  
+  &:active:not(:disabled) {
+    background: rgba(40, 110, 80, 0.9);
+  }
+}
+
+// Danger/warning button (red)
+.frosted-btn--danger {
+  @include frosted-btn;
+  background: rgba(180, 60, 60, 0.8);
+  border-color: rgba(220, 100, 100, 0.3);
+  
+  &:hover:not(:disabled) {
+    background: rgba(200, 70, 70, 0.85);
+    border-color: rgba(220, 100, 100, 0.5);
+  }
+  
+  &:active:not(:disabled) {
+    background: rgba(160, 50, 50, 0.85);
+  }
+}
+
+// Secondary/subtle button
+.frosted-btn--secondary {
+  @include frosted-btn;
+  background: rgba(50, 50, 60, 0.6);
+  
+  &:hover:not(:disabled) {
+    background: rgba(60, 60, 70, 0.7);
+  }
+}
