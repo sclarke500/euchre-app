@@ -39,6 +39,13 @@
     <!-- Round counter (top-right) -->
     <div class="round-indicator">Round {{ game.roundNumber.value }}</div>
 
+    <!-- Exchange phase status (center of table) -->
+    <Transition name="fade">
+      <div v-if="exchangeStatus" class="exchange-status">
+        {{ exchangeStatus }}
+      </div>
+    </Transition>
+
     <!-- Turn timer (left side, self-contained with panel and animation) -->
     <TurnTimer
       v-if="mode === 'multiplayer'"
@@ -215,6 +222,20 @@ const phase = computed(() => game.phase.value)
 const playerCount = computed(() => game.players.value.length || 4) // Default to 4 for President
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
 const userRankBadge = computed(() => getRankBadge(game.humanPlayer.value?.id ?? 0))
+
+// Exchange phase status message
+const exchangeStatus = computed(() => {
+  if (game.phase.value === PresidentPhase.CardSelecting) {
+    if (game.isHumanGivingCards.value) {
+      return null // User is selecting, show action panel instead
+    }
+    return 'Card Exchange in Progress...'
+  }
+  if (game.phase.value === PresidentPhase.CardDistributing) {
+    return 'Swapping Cards...'
+  }
+  return null
+})
 
 // Timer settings - can be sped up via URL param for testing (e.g., ?timerSpeed=fast)
 const timerSettings = computed(() => {
@@ -555,6 +576,35 @@ onUnmounted(() => {
   font-size: 12px;
   font-weight: 600;
   color: #ccc;
+}
+
+// Exchange status - center of table
+.exchange-status {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 400;
+  background: rgba(30, 30, 45, 0.95);
+  border: 2px solid #555;
+  border-radius: 12px;
+  padding: 16px 32px;
+  backdrop-filter: blur(12px);
+  font-size: 16px;
+  font-weight: 600;
+  color: #eee;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 // Action button overrides for President
