@@ -227,7 +227,8 @@ const timerSettings = computed(() => {
     return { gracePeriodMs: 2000, countdownMs: 3000 }
   }
   // Default: 30s grace + 30s countdown = 60s total
-  return { gracePeriodMs: 30000, countdownMs: 30000 }
+  // TODO: Re-enable timer after debugging. Was 30000/30000
+  return { gracePeriodMs: 600000, countdownMs: 600000 }
 })
 
 // Count human players (for reset button visibility)

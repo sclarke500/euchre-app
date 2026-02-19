@@ -341,7 +341,8 @@ const timerSettings = computed(() => {
   if (speed === 'fast') {
     return { gracePeriodMs: 2000, countdownMs: 3000 }
   }
-  return { gracePeriodMs: 30000, countdownMs: 30000 }
+  // TODO: Re-enable timer after debugging. Was 30000/30000
+  return { gracePeriodMs: 600000, countdownMs: 600000 }
 })
 
 // Count human players (for reset button visibility)
