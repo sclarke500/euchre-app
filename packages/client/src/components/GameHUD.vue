@@ -109,7 +109,7 @@ function handleRules() {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  border: 1px solid #444;
+  border: 1px solid $surface-500;
   background: rgba(20, 20, 30, 0.8);
   color: #ccc;
   cursor: pointer;
@@ -133,7 +133,7 @@ function handleRules() {
   left: 0;
   min-width: 160px;
   background: rgba(30, 30, 40, 0.95);
-  border: 1px solid #444;
+  border: 1px solid $surface-500;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);

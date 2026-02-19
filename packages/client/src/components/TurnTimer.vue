@@ -252,7 +252,7 @@ defineExpose({ reset })
   gap: 8px;
   padding: 10px;
   background: rgba(20, 20, 30, 0.85);
-  border: 1px solid #444;
+  border: 1px solid $surface-500;
   border-radius: 10px;
   backdrop-filter: blur(8px);
 }
@@ -291,7 +291,7 @@ defineExpose({ reset })
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid #555;
+  border: 1px solid $surface-500;
   border-radius: 6px;
   background: rgba(60, 60, 80, 0.8);
   color: #aaa;

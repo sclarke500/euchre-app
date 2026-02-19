@@ -473,12 +473,12 @@ const gameTitle = computed(() => {
 
   &.left {
     left: 0;
-    background: linear-gradient(to right, rgba(13, 40, 24, 0.95), transparent);
+    background: linear-gradient(to right, rgba($surface-900, 0.95), transparent);
   }
 
   &.right {
     right: 0;
-    background: linear-gradient(to left, rgba(13, 40, 24, 0.95), transparent);
+    background: linear-gradient(to left, rgba($surface-900, 0.95), transparent);
   }
 }
 
@@ -553,9 +553,9 @@ const gameTitle = computed(() => {
   }
 
   &.active {
-    background: white;
-    border-color: white;
-    color: #1e4d2b;
+    background: $text-primary;
+    border-color: $text-primary;
+    color: $brand-green;
     transform: scale(1.05);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
@@ -605,8 +605,8 @@ const gameTitle = computed(() => {
   padding: $spacing-lg $spacing-xl * 2;
   font-size: 1.5rem;
   font-weight: bold;
-  background: white;
-  color: #1e4d2b;
+  background: $text-primary;
+  color: $brand-green;
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -698,12 +698,12 @@ const gameTitle = computed(() => {
     font-size: 1rem;
     border: 2px solid transparent;
     border-radius: 8px;
-    background: white;
-    color: #333;
+    background: $text-primary;
+    color: $surface-800;
 
     &:focus {
       outline: none;
-      border-color: $secondary-color;
+      border-color: $brand-green-light;
     }
   }
 

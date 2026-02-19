@@ -201,7 +201,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
   color: white;
 }
 
@@ -254,7 +254,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 
 .create-btn {
   background: white;
-  color: #1e4d2b;
+  color: $brand-green;
 }
 
 .start-btn {
@@ -345,7 +345,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   padding: $spacing-lg;
   min-width: 300px;
   max-width: 360px;
-  color: #333;
+  color: $surface-800;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
 
   h3 {
@@ -353,7 +353,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
     text-align: center;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #1e4d2b;
+    color: $brand-green;
   }
 }
 
@@ -370,19 +370,19 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   padding: $spacing-xs $spacing-sm;
   border-radius: 6px;
   background: transparent;
-  color: #666;
+  color: $surface-500;
   font-size: 0.85rem;
   font-weight: 500;
   transition: all 0.15s ease;
 
   &:hover:not(.active) {
-    color: #333;
+    color: $surface-800;
     background: rgba(0, 0, 0, 0.05);
   }
 
   &.active {
     background: white;
-    color: #1e4d2b;
+    color: $brand-green;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 }
@@ -398,7 +398,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 .difficulty-label {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #555;
+  color: $surface-600;
 }
 
 .difficulty-selector {
@@ -412,19 +412,19 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   padding: 6px 14px;
   border-radius: 5px;
   background: transparent;
-  color: #666;
+  color: $surface-500;
   font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.15s ease;
 
   &:hover:not(.active) {
-    color: #333;
+    color: $surface-800;
     background: rgba(0, 0, 0, 0.05);
   }
 
   &.active {
     background: white;
-    color: #1e4d2b;
+    color: $brand-green;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 }
@@ -456,7 +456,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 
   &.active {
     background: white;
-    color: #1e4d2b;
+    color: $brand-green;
   }
 }
 
@@ -471,7 +471,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   padding: $spacing-sm $spacing-md;
   border-radius: 8px;
   background: #f0f0f0;
-  color: #666;
+  color: $surface-500;
   font-weight: 500;
 
   &:hover {
@@ -483,7 +483,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   flex: 1;
   padding: $spacing-sm $spacing-md;
   border-radius: 8px;
-  background: #1e4d2b;
+  background: $brand-green;
   color: white;
   font-weight: bold;
 }

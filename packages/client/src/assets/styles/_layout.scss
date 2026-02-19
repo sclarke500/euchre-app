@@ -14,7 +14,7 @@
   max-width: 1400px;
   max-height: 900px;
   margin: 0 auto;
-  background: radial-gradient(ellipse at center, #1e4d2b 0%, #0d2818 100%);
+  background: radial-gradient(ellipse at center, $brand-green 0%, $surface-900 100%);
   gap: $spacing-sm;
   padding: $spacing-sm;
   box-sizing: border-box;

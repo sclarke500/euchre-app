@@ -892,7 +892,7 @@ function doNewGame() {
 .klondike-board {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -1008,7 +1008,7 @@ function doNewGame() {
 
   &.auto {
     background: #f1c40f;
-    color: #333;
+    color: $surface-800;
   }
 
   svg {
@@ -1044,12 +1044,12 @@ function doNewGame() {
 .win-stat-value {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: $surface-800;
 }
 
 .win-stat-label {
   font-size: 0.75rem;
-  color: #666;
+  color: $surface-500;
   text-transform: uppercase;
 }
 
@@ -1066,12 +1066,12 @@ function doNewGame() {
   border-radius: 8px;
   cursor: pointer;
   background: #e0e0e0;
-  color: #333;
+  color: $surface-800;
   border: none;
 
   &.primary {
     background: #f1c40f;
-    color: #333;
+    color: $surface-800;
   }
 }
 
@@ -1082,11 +1082,11 @@ function doNewGame() {
   h2 {
     font-size: 1.25rem;
     margin-bottom: 8px;
-    color: #333;
+    color: $surface-800;
   }
 
   p {
-    color: #666;
+    color: $surface-500;
     margin-bottom: 20px;
   }
 }

@@ -124,7 +124,7 @@ function checkForUpdates() {
   h2 {
     margin: 0;
     font-size: 1.5rem;
-    color: #1e4d2b;
+    color: $brand-green;
   }
 }
 
@@ -136,7 +136,7 @@ function checkForUpdates() {
   justify-content: center;
   background: #f0f0f0;
   border-radius: 50%;
-  color: #666;
+  color: $surface-500;
 
   svg {
     width: 20px;
@@ -172,13 +172,13 @@ function checkForUpdates() {
   h3 {
     margin: 0 0 $spacing-xs 0;
     font-size: 1.1rem;
-    color: #333;
+    color: $surface-800;
   }
 
   .section-desc {
     margin: 0 0 $spacing-md 0;
     font-size: 0.875rem;
-    color: #666;
+    color: $surface-500;
   }
 }
 
@@ -210,12 +210,12 @@ function checkForUpdates() {
   .option-title {
     font-weight: 600;
     font-size: 0.9rem;
-    color: #333;
+    color: $surface-800;
   }
 
   .option-desc {
     font-size: 0.75rem;
-    color: #666;
+    color: $surface-500;
     margin-top: 2px;
   }
 }
@@ -240,7 +240,7 @@ function checkForUpdates() {
 
   .update-btn {
     font-size: 0.75rem;
-    color: #1e4d2b;
+    color: $brand-green;
     background: none;
     padding: 0;
     text-decoration: underline;
@@ -254,7 +254,7 @@ function checkForUpdates() {
 
 .done-btn {
   padding: $spacing-sm $spacing-xl;
-  background: #1e4d2b;
+  background: $brand-green;
   color: white;
   font-weight: bold;
   font-size: 1rem;

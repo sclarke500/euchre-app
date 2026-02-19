@@ -353,7 +353,7 @@ function backToMenu() {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
 }
 
 // Portrait orientation overlay - controlled via v-if="showLandscapeBlocker"
@@ -364,7 +364,7 @@ function backToMenu() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
+  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
   z-index: 9999;
   align-items: center;
   justify-content: center;
@@ -425,14 +425,14 @@ function backToMenu() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e4d2b 0%, #0d2818 100%);
-  color: white;
+  background: linear-gradient(135deg, $brand-green 0%, $surface-900 100%);
+  color: $text-primary;
   gap: $spacing-md;
 
   button {
     padding: $spacing-sm $spacing-lg;
-    background: white;
-    color: #1e4d2b;
+    background: $text-primary;
+    color: $brand-green;
     font-weight: bold;
     border-radius: 8px;
     cursor: pointer;
@@ -458,7 +458,7 @@ function backToMenu() {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  background: rgba(30, 77, 43, 0.95);
+  background: rgba($brand-green, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: $spacing-sm $spacing-md;

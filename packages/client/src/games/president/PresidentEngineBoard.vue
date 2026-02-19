@@ -635,7 +635,7 @@ onUnmounted(() => {
   right: max(8px, env(safe-area-inset-right));
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
-  border: 1px solid #444;
+  border: 1px solid $surface-500;
   border-radius: 6px;
   padding: 6px 12px;
   backdrop-filter: blur(8px);
@@ -652,7 +652,7 @@ onUnmounted(() => {
   transform: translate(-50%, -50%);
   z-index: 100;
   background: rgba(30, 30, 45, 0.8);
-  border: 1px solid #666;
+  border: 1px solid $surface-500;
   border-radius: 16px;
   padding: 6px 16px;
   font-size: 12px;
@@ -720,7 +720,7 @@ onUnmounted(() => {
 .round-modal {
   padding: 16px;
   text-align: center;
-  color: #333;
+  color: $surface-800;
 
   h2, h3 {
     margin-bottom: 8px;
@@ -773,7 +773,7 @@ onUnmounted(() => {
   border-radius: 6px;
   border: none;
   background: rgba(0, 0, 0, 0.1);
-  color: #333;
+  color: $surface-800;
   cursor: pointer;
 
   &.confirm {
@@ -814,7 +814,7 @@ onUnmounted(() => {
 // Game over / resume modal panel (unified with Spades/Euchre)
 .game-over-panel {
   background: rgba(20, 20, 30, 0.95);
-  border: 1px solid #555;
+  border: 1px solid $surface-500;
   border-radius: 12px;
   padding: 20px 28px;
   text-align: center;

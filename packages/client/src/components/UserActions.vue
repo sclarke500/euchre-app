@@ -109,7 +109,7 @@ const hasContent = computed(() => !!slots.default)
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(240, 240, 245, 0.95);
-  color: #333;
+  color: $surface-800;
   font-size: 14px;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);

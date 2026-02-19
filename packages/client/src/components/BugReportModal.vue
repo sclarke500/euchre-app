@@ -144,7 +144,7 @@ function handleDownload() {
   box-sizing: border-box;
   padding: 10px;
   border-radius: 6px;
-  border: 1px solid #444;
+  border: 1px solid $surface-500;
   background: rgba(0, 0, 0, 0.3);
   color: #fff;
   resize: vertical;
@@ -153,7 +153,7 @@ function handleDownload() {
   font-size: 0.9rem;
   
   &::placeholder {
-    color: #666;
+    color: $surface-500;
   }
 }
 

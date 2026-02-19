@@ -161,6 +161,8 @@ box-shadow: 0 0 12px rgba(36, 117, 82, 0.5);
 
 **Card Face**: `#ffffff` (white)
 **Card Back**: Game-specific pattern on dark base
+**Suit Red** (Hearts/Diamonds): `#e74c3c`
+**Suit Black** (Clubs/Spades): `#2c3e50` (soft blue-black for readability)
 **Selected Highlight**: `rgba(255, 215, 0, 0.3)` (gold glow)
 **Valid Play Highlight**: `rgba(42, 138, 106, 0.6)` (green tint)
 
@@ -214,22 +216,23 @@ $alpha-highlight: 0.12;
 
 ---
 
-## Current Inconsistencies to Fix
+## Resolved Inconsistencies
 
-1. **`$primary-color: #2c3e50`** — legacy blue-gray, not used consistently
-2. **`$secondary-color: #42b983`** — Vue green, conflicts with brand green
-3. **`#1e4d2b`** — old green appearing in some components
-4. **Various hardcoded grays** — `#333`, `#444`, `#555`, `#666` scattered around
-5. **Modal backgrounds** — some use `rgba(245, 245, 245, 0.9)` (light) which breaks dark theme
+1. ~~`$primary-color: #2c3e50`~~ — kept for legacy, mapped to suit black
+2. ~~`$secondary-color: #42b983`~~ — now maps to `$brand-green`
+3. ~~`#1e4d2b` hardcoded~~ — replaced with `$brand-green`
+4. ~~Hardcoded grays~~ — replaced with `$surface-*` tokens
+5. **Still to check**: Modal backgrounds using light colors
 
 ---
 
-## Migration Plan
+## Migration Status
 
-1. ✅ Define new tokens in `_variables.scss`
-2. Replace hardcoded colors with variables
-3. Audit all components for light-theme remnants
-4. Test across all games (Euchre, Spades, President, Klondike)
+- ✅ Define new tokens in `_variables.scss`
+- ✅ Replace hardcoded greens (`#1e4d2b`, `#0d2818`)
+- ✅ Replace hardcoded grays (`#333`-`#666`)
+- ⬜ Audit modals for light-theme remnants
+- ⬜ Test across all games (Euchre, Spades, President, Klondike)
 
 ---
 

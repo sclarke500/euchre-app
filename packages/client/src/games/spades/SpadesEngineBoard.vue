@@ -406,7 +406,7 @@ function handlePlayAgain() {
   right: max(8px, env(safe-area-inset-right));
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
-  border: 1px solid #444;
+  border: 1px solid $surface-500;
   border-radius: 7px;
   padding: 0;
   backdrop-filter: blur(8px);
@@ -471,7 +471,7 @@ function handlePlayAgain() {
 
 .round-summary-panel {
   background: rgba(20, 20, 30, 0.95);
-  border: 1px solid #555;
+  border: 1px solid $surface-500;
   border-radius: 10px;
   padding: 14px 16px;
   min-width: 220px;
@@ -553,7 +553,7 @@ function handlePlayAgain() {
 
 .game-over-panel {
   background: rgba(20, 20, 30, 0.95);
-  border: 1px solid #555;
+  border: 1px solid $surface-500;
   border-radius: 12px;
   padding: 20px 28px;
   text-align: center;
@@ -637,7 +637,7 @@ function handlePlayAgain() {
   font-size: 10px;
   font-weight: bold;
   padding: 3px 6px;
-  border-top: 1px solid #333;
+  border-top: 1px solid $surface-600;
 }
 
 .round-indicator {
