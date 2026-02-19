@@ -5,7 +5,9 @@
 export const GameTimings = {
   /** AI "thinking" delay before playing */
   aiThinkMs: 1000,
-  /** Pause between rounds/phases */
+  /** Short pause between phases (pile clear, continue play) */
+  phasePauseMs: 500,
+  /** Longer pause between rounds */
   roundPauseMs: 1500,
 } as const
 

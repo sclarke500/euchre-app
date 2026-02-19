@@ -28,6 +28,7 @@ import {
   getRankDisplayName,
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
+  createGameTimer,
 } from '@67cards/shared'
 import { CardTimings } from '@/utils/animationTimings'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -35,6 +36,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 export const usePresidentGameStore = defineStore('presidentGame', () => {
   // Settings
   const settingsStore = useSettingsStore()
+  const timer = createGameTimer()
 
   // State
   const players = ref<PresidentPlayer[]>([])
@@ -173,6 +175,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
   // Actions
   function startNewGame(numPlayers: number = 4) {
+    // Cancel any pending timers from previous game
+    timer.cancelAll()
+    
     // Get random AI names
     const aiNames = getRandomAINames(numPlayers - 1)
 
@@ -245,12 +250,12 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     dealCompleteResolve = advancePhase
     // Fallback: if no director signals within 15s, advance anyway
-    setTimeout(() => {
+    timer.schedule('deal-fallback', 15000, () => {
       if (dealCompleteResolve === advancePhase) {
         dealCompleteResolve = null
         advancePhase()
       }
-    }, 15000)
+    })
   }
   
   function handleGivingPhase() {
@@ -343,10 +348,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // No human involvement — continue
     if (state.phase === PresidentPhase.CardExchange) {
-      setTimeout(() => handleGivingPhase(), CardTimings.phaseTransition)
+      timer.schedule('phase-transition', CardTimings.phaseTransition, () => handleGivingPhase())
     } else if (state.phase === PresidentPhase.Playing) {
       // Longer pause after exchange completes so user can see their new cards
-      setTimeout(() => processAITurn(), CardTimings.aiThink)
+      timer.schedule('ai-turn', CardTimings.aiThink, () => processAITurn())
     }
   }
   
@@ -441,10 +446,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // Continue with the giving phase (VP exchange) or start playing
     if (phase.value === PresidentPhase.CardExchange) {
-      setTimeout(() => handleGivingPhase(), CardTimings.phaseTransition)
+      timer.schedule('phase-transition', CardTimings.phaseTransition, () => handleGivingPhase())
     } else if (phase.value === PresidentPhase.Playing) {
       // Longer pause after exchange completes
-      setTimeout(() => processAITurn(), CardTimings.aiThink)
+      timer.schedule('ai-turn', CardTimings.aiThink, () => processAITurn())
     }
   }
 
@@ -523,10 +528,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       phase.value = PresidentPhase.GameOver
     } else {
       // Start next round after delay
-      setTimeout(() => {
+      timer.schedule('next-round', 3000, () => {
         roundNumber.value++
         startRound()
-      }, 3000)
+      })
     }
   }
 
@@ -547,7 +552,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     }
 
     // AI turn - add delay
-    setTimeout(() => {
+    timer.schedule('ai-turn', CardTimings.aiThink, () => {
       if (phase.value !== PresidentPhase.Playing) return
 
       const hard = settingsStore.isHardAI()
@@ -560,7 +565,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       } else {
         playCards(play)
       }
-    }, CardTimings.aiThink)
+    })
   }
 
   function getPlayerRankDisplay(playerId: number): string {
@@ -614,5 +619,10 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     setPlayAnimationCallback,
     setPileClearedCallback,
     setExchangeAnimationCallback,
+    
+    // Timer control (for cleanup/pause)
+    cancelTimers: () => timer.cancelAll(),
+    pauseTimers: () => timer.pauseAll(),
+    resumeTimers: () => timer.resumeAll(),
   }
 })

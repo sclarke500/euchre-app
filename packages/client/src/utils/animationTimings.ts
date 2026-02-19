@@ -41,7 +41,7 @@ export const CardTimings = {
   
   // AI/phase delays (uses shared GameTimings for server/client parity)
   aiThink: GameTimings.aiThinkMs,          // AI "thinking" delay
-  phaseTransition: 500,                    // between SP phases
+  phaseTransition: GameTimings.phasePauseMs, // between phases
   roundEnd: GameTimings.roundPauseMs,      // pause at end of round
   
   // Klondike-specific

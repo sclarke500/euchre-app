@@ -16,6 +16,7 @@ import {
   isValidPlay,
   getRankDisplayName,
   getRandomAINames,
+  GameTimings,
 } from '@67cards/shared'
 import type { PresidentClientGameState, PresidentClientPlayer } from '@67cards/shared'
 import type { PresidentGameEvents, PresidentGamePlayer } from './types.js'
@@ -461,7 +462,7 @@ export class PresidentGame {
         setTimeout(() => {
           this.processCurrentTurn()
         }, 300)
-      }, 800)
+      }, GameTimings.aiThinkMs)
       return
     }
 
@@ -510,7 +511,7 @@ export class PresidentGame {
       this.broadcastState()
       setTimeout(() => {
         this.processCurrentTurn()
-      }, 500)
+      }, GameTimings.phasePauseMs)
     } else {
       this.broadcastState()
       this.processCurrentTurn()
@@ -648,7 +649,7 @@ export class PresidentGame {
       } else {
         this.playCardsInternal(player.seatIndex, play)
       }
-    }, 800)
+    }, GameTimings.aiThinkMs)
   }
 
   private broadcastState(): void {

@@ -24,7 +24,7 @@ import {
   chooseDealerDiscard,
   GameTracker,
 } from '@67cards/shared'
-import { getRandomAINames } from '@67cards/shared'
+import { getRandomAINames, GameTimings } from '@67cards/shared'
 import type { GameEvents, GameOptions, GamePlayer } from './types.js'
 import { buildEuchreClientState } from './state.js'
 import { buildEuchreTurnOptions } from './turns.js'
@@ -291,7 +291,7 @@ export class EuchreGame {
       this.phase = GamePhase.BiddingRound1
       this.broadcastState()
       this.processCurrentTurn()
-    }, 500)
+    }, GameTimings.phasePauseMs)
   }
 
   private processBidInternal(bid: Bid): void {
@@ -467,7 +467,7 @@ export class EuchreGame {
     if (this.currentRound.tricks.length === 5) {
       setTimeout(() => {
         this.completeRound()
-      }, 1500)
+      }, GameTimings.roundPauseMs)
     } else {
       // Start next trick
       setTimeout(() => {
@@ -478,7 +478,7 @@ export class EuchreGame {
         this.phase = GamePhase.Playing
         this.broadcastState()
         this.processCurrentTurn()
-      }, 1500)
+      }, GameTimings.roundPauseMs)
     }
   }
 
@@ -563,7 +563,7 @@ export class EuchreGame {
       } else if (action.type === 'play') {
         this.playCardInternal(player.seatIndex, action.card)
       }
-    }, 800)
+    }, GameTimings.aiThinkMs)
   }
 
   private broadcastState(): void {

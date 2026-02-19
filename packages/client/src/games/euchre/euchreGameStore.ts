@@ -35,8 +35,10 @@ import {
   GameTracker,
   chooseCardToPlayHard,
   isPartnerWinningHard,
+  createGameTimer,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { CardTimings } from '@/utils/animationTimings'
 
 export const useEuchreGameStore = defineStore('game', () => {
   // Get settings
@@ -44,6 +46,7 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   // Game tracker for hard AI (tracks cards played, voids, etc.)
   const gameTracker = new GameTracker()
+  const timer = createGameTimer()
 
   // State
   const players = ref<Player[]>([])
@@ -116,6 +119,9 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   // Actions
   function startNewGame() {
+    // Cancel any pending timers from previous game
+    timer.cancelAll()
+    
     // Get random AI names for this game
     const aiNames = getRandomAINames(3)
 
@@ -207,11 +213,11 @@ export const useEuchreGameStore = defineStore('game', () => {
     passCount.value = 0
 
     // Start bidding phase after dealing animation completes
-    // Animation takes: 500ms delay + 600ms animation = 1100ms, add buffer = 1200ms
-    setTimeout(() => {
+    // Animation takes: 500ms delay + 600ms animation = 1100ms, add buffer
+    timer.schedule('deal-fallback', CardTimings.roundEnd, () => {
       phase.value = GamePhase.BiddingRound1
       processAITurn()
-    }, 1200)
+    })
   }
 
   function makeBid(bid: Bid) {
@@ -424,9 +430,9 @@ export const useEuchreGameStore = defineStore('game', () => {
       // Rotate dealer immediately so chip moves during the pause
       currentDealer.value = (currentDealer.value + 1) % 4
       // Then start next round after the pause
-      setTimeout(() => {
+      timer.schedule('next-round', 2000, () => {
         startNewRound()
-      }, 2000)
+      })
     }
   }
 
@@ -573,5 +579,10 @@ export const useEuchreGameStore = defineStore('game', () => {
     setPlayAnimationCallback,
     setTrickCompleteCallback,
     setDealAnimationCallback,
+    
+    // Timer control (for cleanup/pause)
+    cancelTimers: () => timer.cancelAll(),
+    pauseTimers: () => timer.pauseAll(),
+    resumeTimers: () => timer.resumeAll(),
   }
 })
