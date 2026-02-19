@@ -731,55 +731,69 @@ onUnmounted(() => {
   font-style: italic;
 }
 
-// Modals
+// Modals - match Spades round summary styling
 .round-modal {
-  padding: 16px;
+  min-width: 240px;
+  max-width: 90vw;
   text-align: center;
-  color: $surface-800;
 
   h2, h3 {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    color: #fff;
   }
 
   p {
     margin-bottom: 12px;
-    opacity: 0.8;
+    color: rgba(255, 255, 255, 0.7);
   }
 }
 
 .rankings {
   margin: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 8px 0;
 }
 
 .ranking-row {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  padding: 6px;
+  display: grid;
+  grid-template-columns: 35px 1fr auto;
+  gap: 8px;
+  padding: 6px 8px;
+  color: #ccc;
+  font-size: 0.9rem;
 
   &:nth-child(odd) {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+  
+  &:first-child {
+    color: #ffd700;
+    font-weight: 600;
   }
 }
 
 .position {
   font-weight: bold;
-  width: 30px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
 }
 
 .name {
-  flex: 1;
   text-align: left;
+  color: #fff;
 }
 
 .title {
-  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.6);
   font-style: italic;
+  font-size: 0.85rem;
 }
 
 .next-round-msg {
   font-style: italic;
-  opacity: 0.6;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .modal-btn {
