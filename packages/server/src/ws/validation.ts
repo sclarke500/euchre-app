@@ -101,9 +101,9 @@ const presidentPassSchema = z.object({
   ...clientMetaShape,
 }).strict()
 
-const presidentGiveCardsSchema = z.object({
-  type: z.literal('president_give_cards'),
-  cardIds: z.array(z.string().min(1)).min(1),
+const presidentConfirmExchangeSchema = z.object({
+  type: z.literal('president_confirm_exchange'),
+  cardIds: z.array(z.string().min(1)).min(0),  // Can be empty for Scum/ViceScum
   ...clientMetaShape,
 }).strict()
 
@@ -135,7 +135,7 @@ const clientMessageSchema = z.discriminatedUnion('type', [
   bootPlayerSchema,
   presidentPlayCardsSchema,
   presidentPassSchema,
-  presidentGiveCardsSchema,
+  presidentConfirmExchangeSchema,
   spadesMakeBidSchema,
   bugReportSchema,
 ])
