@@ -418,6 +418,10 @@ const timedOutPlayerName = computed(() => {
 
 // ── Bug Report ──────────────────────────────────────────────────────────
 function buildBugReportPayload() {
+  // Include user's hand and valid plays for debugging card selection issues
+  const humanHand = store.humanPlayer?.hand ?? []
+  const validPlayIds = store.validPlays?.map((c: { id: string }) => c.id) ?? []
+
   return {
     mode: props.mode,
     phase: store.phase,
@@ -425,6 +429,8 @@ function buildBugReportPayload() {
     roundNumber: store.roundNumber,
     scores: store.scores,
     spadesBroken: store.spadesBroken,
+    isHumanTurn: store.isHumanTurn,
+    isHumanPlaying: store.isHumanPlaying,
     players: store.players.map((p: any) => ({
       id: p.id,
       name: p.name,
@@ -435,6 +441,10 @@ function buildBugReportPayload() {
     timedOutPlayer: store.timedOutPlayer ?? null,
     currentTrick: store.currentTrick,
     completedTricksCount: store.completedTricks?.length ?? 0,
+    // Debug info for card selection issues
+    userHandIds: humanHand.map((c: { id: string }) => c.id),
+    validPlayIds,
+    dimmedCount: humanHand.length - validPlayIds.length,
   }
 }
 

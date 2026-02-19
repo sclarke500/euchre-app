@@ -62,13 +62,13 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     return isHumanBidding.value && !userCardsRevealed.value
   })
   // Calculate valid plays locally to avoid flash from server round-trip
+  // Use computed refs consistently to ensure proper reactivity tracking
   const validPlays = computed<StandardCard[]>(() => {
     if (!isMyTurn.value || phase.value !== SpadesPhase.Playing) return []
     const human = humanPlayer.value
     if (!human?.hand) return []
-    const trick = currentTrick.value
-    const spadesBroken = gameState.value?.spadesBroken ?? false
-    return Spades.getLegalPlays(human.hand, trick, spadesBroken)
+    // Use computed values consistently - don't shadow outer computeds
+    return Spades.getLegalPlays(human.hand, currentTrick.value, spadesBroken.value)
   })
 
   function getDebugSnapshot() {
