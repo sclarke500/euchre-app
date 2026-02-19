@@ -106,18 +106,23 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     return canPlay(human.hand, currentPile.value, rules.value.superTwosMode)
   })
   
-  // Check if human needs to give cards back (President/VP giving phase)
+  // Check if human needs to give cards during exchange phase (President/VP)
   const isHumanGivingCards = computed(() => {
     const human = humanPlayer.value
-    return human && 
-           phase.value === PresidentPhase.CardExchange && 
-           awaitingGiveBack.value === human.id
+    if (!human || phase.value !== PresidentPhase.CardExchange) return false
+    // Human is President or VP and it's their turn to give
+    const humanRank = human.rank
+    if (humanRank === PlayerRank.President || humanRank === PlayerRank.VicePresident) {
+      // Check if it's their turn based on awaitingGiveBack or if exchange not started
+      return awaitingGiveBack.value === human.id || awaitingGiveBack.value === null
+    }
+    return false
   })
   
   // Get number of cards human needs to give
   const cardsToGiveCount = computed(() => {
     const human = humanPlayer.value
-    if (!human || !isHumanGivingCards.value) return 0
+    if (!human || phase.value !== PresidentPhase.CardExchange) return 0
     if (human.rank === PlayerRank.President) return 2
     if (human.rank === PlayerRank.VicePresident) return 1
     return 0
@@ -235,14 +240,27 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
   
   function handleGivingPhase() {
-    const human = humanPlayer.value
+    // Determine who needs to give cards first (President, then VP)
+    // The shared startNewRound now returns awaitingGiveBack=null, so we determine locally
+    if (awaitingGiveBack.value === null) {
+      const president = players.value.find(p => p.rank === PlayerRank.President)
+      if (president) {
+        awaitingGiveBack.value = president.id
+      }
+    }
 
-    if (human && awaitingGiveBack.value === human.id) {
+    const human = humanPlayer.value
+    const givingPlayer = players.value.find(p => p.id === awaitingGiveBack.value)
+
+    if (human && givingPlayer && givingPlayer.id === human.id) {
       // Human is President or VP - needs to select cards to give
       waitingForExchangeAck.value = false
-    } else {
+    } else if (givingPlayer) {
       // AI is President/VP - let them give cards automatically
       processAIGiveBack()
+    } else {
+      // No one to give - shouldn't happen but handle gracefully
+      console.warn('[PresidentStore] handleGivingPhase: no giving player found')
     }
   }
   
