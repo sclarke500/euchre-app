@@ -65,21 +65,21 @@
       <!-- Exchange phase: President/VP selecting cards -->
       <template v-if="game.isInExchange.value && game.exchangeCanSelect.value">
         <span class="action-hint">
-          Select {{ game.exchangeCardsNeeded.value }} card{{ game.exchangeCardsNeeded.value !== 1 ? 's' : '' }} to exchange.
+          Select {{ game.exchangeCardsNeeded.value }} card{{ game.exchangeCardsNeeded.value !== 1 ? 's' : '' }}
         </span>
         <button
           class="action-btn primary"
           :disabled="selectedCardIds.size !== game.exchangeCardsNeeded.value"
           @click="confirmExchange"
         >
-          Exchange{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size}/${game.exchangeCardsNeeded.value})` : '' }}
+          Exchange ({{ selectedCardIds.size }}/{{ game.exchangeCardsNeeded.value }})
         </button>
       </template>
 
       <!-- Exchange phase: Scum/ViceScum with pre-selected cards -->
       <template v-else-if="game.isInExchange.value && !game.exchangeCanSelect.value">
         <span class="action-hint">
-          Your {{ game.exchangePreSelectedIds.value.length }} best card{{ game.exchangePreSelectedIds.value.length !== 1 ? 's' : '' }} will be exchanged.
+          Your {{ game.exchangePreSelectedIds.value.length }} best card{{ game.exchangePreSelectedIds.value.length !== 1 ? 's' : '' }}
         </span>
         <button
           class="action-btn primary"
