@@ -1,7 +1,7 @@
 <template>
   <div 
     class="board-card"
-    :class="{ 'arc-fan': useArcFan, 'dimmed': dimmed, 'selected': selected, 'highlighted': highlighted, 'table-skew': position.tableSkew }"
+    :class="{ 'arc-fan': useArcFan, 'dimmed': dimmed, 'selected': selected, 'highlighted': highlighted, 'table-skew': true }"
     :style="cardStyle"
   >
     <div class="card-inner" :class="{ 'face-down': !showFaceUp }">
