@@ -1,7 +1,7 @@
 <template>
   <div 
     class="board-card"
-    :class="{ 'arc-fan': useArcFan, 'dimmed': dimmed, 'selected': selected, 'highlighted': highlighted, 'table-skew': true }"
+    :class="{ 'arc-fan': useArcFan, 'dimmed': dimmed, 'selected': selected, 'highlighted': highlighted }"
     :style="cardStyle"
   >
     <div class="card-inner" :class="{ 'face-down': !showFaceUp }">
@@ -186,12 +186,6 @@ defineExpose({
 
   &:not(.selected):not(.highlighted) {
     transition: margin-top var(--anim-fast) ease, filter 0.7s ease;
-  }
-
-  // 3D perspective skew for cards "on table" - match table's tilt
-  &.table-skew .card-inner {
-    transform: perspective(800px) rotateX(30deg);
-    transform-origin: center bottom;
   }
 }
 
