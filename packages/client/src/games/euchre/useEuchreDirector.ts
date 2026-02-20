@@ -412,7 +412,8 @@ export function useEuchreDirector(
     }
 
     await engine.moveCard(cardId, deck, dealerHand, targetPos, 400)
-    await deck.repositionAll(0)
+    // Animate remaining kitty cards settling (don't snap)
+    await deck.repositionAll(AnimationDurations.fast)
     await dealerHand.setMode('fanned', AnimationDurations.medium)
   }
 

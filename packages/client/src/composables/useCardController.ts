@@ -336,9 +336,10 @@ export function useCardController(
     // Handle remaining deck cards (e.g., kitty in Euchre)
     if (deck.cards.length > 0) {
       if (options.keepRemainingCards) {
-        // Move deck to table center
+        // Move deck to table center with visible scale
         const center = tableLayout.value?.tableCenter ?? tableCenter.value
         deck.position = center
+        deck.scale = CardScales.deck
         for (let i = 0; i < deck.cards.length; i++) {
           const managed = deck.cards[i]
           if (!managed) continue
