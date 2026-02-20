@@ -357,7 +357,7 @@ const bubblePosition = computed(() => {
   // Top opponent - bubble to the RIGHT, tail points left
   &.position-rail-top .avatar-chat-bubble,
   &.position-top .avatar-chat-bubble {
-    left: calc(100% + 10px);
+    left: calc(100% + 8px); // Tighter for rounded corners
     top: 50%;
     transform: translateY(-50%);
   }

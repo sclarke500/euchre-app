@@ -133,7 +133,7 @@ const tailClass = computed(() => {
 
 // Tail pointing LEFT (avatar to the left)
 .tail-left::after {
-  left: -10px;
+  left: -8px; // Tighter to account for rounded corners
   top: 50%;
   transform: translateY(-50%);
   border-right-color: rgba(252, 252, 252, 0.98);
