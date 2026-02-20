@@ -30,8 +30,8 @@ export const useChatStore = defineStore('chat', () => {
    */
   function absoluteToVisualSeat(absoluteSeat: number, playerCount = 4): number {
     const lobbyStore = useLobbyStore()
-    const mySeat = lobbyStore.currentSeat ?? 0
-    return (absoluteSeat - mySeat + playerCount) % playerCount
+    const mySeatIndex = lobbyStore.mySeat ?? 0
+    return (absoluteSeat - mySeatIndex + playerCount) % playerCount
   }
 
   // Computed: unread message count
@@ -74,10 +74,10 @@ export const useChatStore = defineStore('chat', () => {
   function showBubble(message: ChatMessage): void {
     // Convert server's absolute seat to visual seat for UI
     const lobbyStore = useLobbyStore()
-    const mySeat = lobbyStore.currentSeat
+    const mySeatIndex = lobbyStore.mySeat
     const visualSeat = absoluteToVisualSeat(message.seatIndex)
     
-    console.log(`[Chat] showBubble: absolute=${message.seatIndex}, mySeat=${mySeat}, visual=${visualSeat}, from=${message.playerName}`)
+    console.log(`[Chat] showBubble: absolute=${message.seatIndex}, mySeat=${mySeatIndex}, visual=${visualSeat}, from=${message.playerName}`)
     
     // Don't show bubble for own messages (visual seat 0 is always the user)
     if (visualSeat === 0) {
