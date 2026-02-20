@@ -265,10 +265,12 @@ export const useLobbyStore = defineStore('lobby', () => {
     })
   }
 
-  function createTable(tableName?: string): void {
+  function createTable(tableName?: string, extraSettings?: { chatEnabled?: boolean; isPrivate?: boolean }): void {
     // Build settings from shared settingsStore - include aiDifficulty for all games
     const settings: TableSettings = {
       aiDifficulty: settingsStore.aiDifficulty,
+      chatEnabled: extraSettings?.chatEnabled ?? true,
+      isPrivate: extraSettings?.isPrivate ?? false,
       ...(selectedGameType.value === 'president' && { superTwosMode: settingsStore.superTwosAndJokers }),
     }
 

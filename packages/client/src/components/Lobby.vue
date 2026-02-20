@@ -19,6 +19,10 @@ const emit = defineEmits<{
 const lobbyStore = useLobbyStore()
 const showCreateOptions = ref(false)
 
+// Create table options
+const chatEnabled = ref(true)
+const isPrivate = ref(false)
+
 const sortedTables = computed(() => {
   return [...lobbyStore.tables].sort((a, b) => b.createdAt - a.createdAt)
 })
@@ -37,8 +41,14 @@ onUnmounted(() => {
 })
 
 function handleCreateTable() {
-  lobbyStore.createTable()
+  lobbyStore.createTable(undefined, {
+    chatEnabled: chatEnabled.value,
+    isPrivate: isPrivate.value,
+  })
   showCreateOptions.value = false
+  // Reset for next time
+  chatEnabled.value = true
+  isPrivate.value = false
 }
 
 function handleBack() {
@@ -141,6 +151,19 @@ const checkGameStart = computed(() => lobbyStore.gameId)
             <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" />
             <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" />
             <SpadesOptions v-else-if="lobbyStore.selectedGameType === 'spades'" />
+          </div>
+
+          <div class="table-options-section">
+            <label class="toggle-option">
+              <input v-model="chatEnabled" type="checkbox" />
+              <span class="toggle-label">Chat enabled</span>
+            </label>
+            
+            <label class="toggle-option">
+              <input v-model="isPrivate" type="checkbox" />
+              <span class="toggle-label">Private game</span>
+              <span class="toggle-hint">Only friends with the link can join</span>
+            </label>
           </div>
         </div>
         <div class="modal-footer">
@@ -421,6 +444,43 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   background: var(--color-surface-subtle);
   border-radius: var(--radius-md);
   min-height: 50px;
+}
+
+.table-options-section {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.toggle-option {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  cursor: pointer;
+  
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+  
+  .toggle-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  
+  .toggle-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+  }
 }
 
 .player-count-selector {

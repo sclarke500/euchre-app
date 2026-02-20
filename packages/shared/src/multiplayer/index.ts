@@ -52,6 +52,8 @@ export interface TableSettings {
   superTwosMode?: boolean // President only
   maxRounds?: number // President only (default 5)
   aiDifficulty?: 'easy' | 'hard' // All games
+  chatEnabled?: boolean // Enable in-game chat (default true)
+  isPrivate?: boolean // Private game - won't show in public lobby (default false)
 }
 
 export interface Table {
