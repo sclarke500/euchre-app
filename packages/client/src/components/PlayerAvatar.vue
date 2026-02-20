@@ -150,19 +150,26 @@ const positionStyle = computed(() => props.customStyle ?? {})
   }
 
   .player-name {
-    padding: 2px 12px;
+    padding: 3px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: #ccc;
+    color: #e8e8f0;
     white-space: nowrap;
-    background: linear-gradient(180deg, #2a2a36 0%, #1a1a24 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+    background: linear-gradient(180deg, 
+      rgba(70, 70, 90, 0.95) 0%, 
+      rgba(40, 40, 55, 0.98) 50%,
+      rgba(25, 25, 35, 0.98) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
     position: relative;
     z-index: 10;
     box-shadow: 
-      0 2px 6px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      0 3px 10px rgba(0, 0, 0, 0.5),
+      0 1px 3px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
   .player-status {
