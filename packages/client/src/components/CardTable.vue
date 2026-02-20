@@ -17,6 +17,7 @@
         v-show="!seat.isUser"
         :name="playerNames[i] ?? 'Player'"
         :is-current-turn="currentTurnSeat === i"
+        :is-dealer="dealerSeat === i"
         :status="playerStatuses[i]"
         :position="getRailPosition(seat.side)"
         :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
@@ -43,6 +44,7 @@
       <PlayerAvatar
         :name="playerNames[0] ?? 'You'"
         :is-current-turn="currentTurnSeat === 0"
+        :is-dealer="dealerSeat === 0"
         :is-user="true"
         position="bottom"
         :trump-symbol="trumpCallerSeat === 0 ? trumpSymbol : ''"
@@ -50,13 +52,6 @@
       >
         <slot name="user-info" />
       </PlayerAvatar>
-
-      <!-- Dealer chip - animates between player positions -->
-      <div 
-        v-if="dealerSeat >= 0" 
-        class="dealer-chip-table"
-        :style="dealerChipStyle"
-      >D</div>
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
@@ -153,56 +148,6 @@ const avatarStyles = computed(() => {
         return { left: `${seat.handPosition.x}px`, top: `${tableBounds.bottom}px` }
     }
   })
-})
-
-/**
- * Dealer chip position - top-left of each player's avatar, in board coordinates.
- * Uses absolute left/top so the chip visibly animates across the table when dealer changes.
- */
-const dealerChipStyle = computed(() => {
-  const layout = lastLayoutResult.value
-  const board = boardRef.value
-  if (!layout || !board || props.dealerSeat < 0) return { display: 'none' }
-  
-  const seat = seatData.value[props.dealerSeat]
-  if (!seat) return { display: 'none' }
-  
-  const { tableBounds } = layout
-  const chipOffset = { x: -38, y: -38 } // Chip center at avatar's top-left corner
-  
-  // Get avatar center point in board coordinates
-  let avatarX: number
-  let avatarY: number
-  
-  if (seat.isUser) {
-    // User avatar is at bottom center of board
-    avatarX = tableBounds.centerX
-    avatarY = board.offsetHeight - 35 // ~35px from bottom (avatar bottom: 10px + half height)
-  } else {
-    // Opponent avatars positioned on rail
-    switch (seat.side) {
-      case 'left':
-        avatarX = tableBounds.left
-        avatarY = seat.handPosition.y
-        break
-      case 'right':
-        avatarX = tableBounds.right
-        avatarY = seat.handPosition.y
-        break
-      case 'top':
-        avatarX = seat.handPosition.x
-        avatarY = tableBounds.top
-        break
-      default:
-        avatarX = tableBounds.centerX
-        avatarY = tableBounds.bottom
-    }
-  }
-  
-  return {
-    left: `${avatarX + chipOffset.x}px`,
-    top: `${avatarY + chipOffset.y}px`,
-  }
 })
 
 function computeLayout() {
@@ -428,49 +373,6 @@ defineExpose({
     position: relative;
     z-index: 1;
   }
-}
-
-// Dealer chip - poker chip style with striped border
-.dealer-chip-table {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  // Striped border using conic-gradient - blue stripes, thicker
-  background: 
-    radial-gradient(circle at center, #fff 0%, #fff 55%, transparent 55%),
-    conic-gradient(
-      from 0deg,
-      #2563eb 0deg 30deg,
-      #fff 30deg 60deg,
-      #2563eb 60deg 90deg,
-      #fff 90deg 120deg,
-      #2563eb 120deg 150deg,
-      #fff 150deg 180deg,
-      #2563eb 180deg 210deg,
-      #fff 210deg 240deg,
-      #2563eb 240deg 270deg,
-      #fff 270deg 300deg,
-      #2563eb 300deg 330deg,
-      #fff 330deg 360deg
-    );
-  color: #1e40af;
-  font-size: 14px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.5),
-    inset 0 1px 2px rgba(255, 255, 255, 0.8),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
-  z-index: 400;
-  pointer-events: none;
-  // Animate position changes
-  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 </style>
