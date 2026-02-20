@@ -17,7 +17,7 @@ export interface ChatMessage {
 }
 
 export const CHAT_MAX_LENGTH = 120
-export const CHAT_RATE_LIMIT_MS = 2000  // 1 message per 2 seconds
+export const CHAT_RATE_LIMIT_MS = 1000  // 1 message per second
 export const CHAT_HISTORY_LIMIT = 50    // max messages to keep
 import type { StandardCard } from '../core/types.js'
 import type { PresidentPhase, PresidentPile, PlayerRank, PlayType } from '../president/types.js'
