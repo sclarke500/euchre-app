@@ -51,6 +51,7 @@
 import { computed, type CSSProperties } from 'vue'
 import { getAIAvatar, type ChatMessage } from '@67cards/shared'
 import ChatBubble from './chat/ChatBubble.vue'
+import { useLobbyStore } from '@/stores/lobbyStore'
 
 export type AvatarPosition = 'bottom' | 'left' | 'right' | 'top' | 'rail-left' | 'rail-right' | 'rail-top'
 
@@ -88,16 +89,28 @@ const emit = defineEmits<{
   'chat-dismiss': []
 }>()
 
+const lobbyStore = useLobbyStore()
+
 const initial = computed(() => props.name?.[0]?.toUpperCase() ?? '?')
 
-// Auto-detect AI avatar by name if no avatarUrl provided
+// Auto-detect avatar:
+// 1. If avatarUrl prop provided, use it
+// 2. If isUser, check lobbyStore for user's selected avatar
+// 3. Otherwise check if it's an AI name
 const resolvedAvatarUrl = computed(() => {
   if (props.avatarUrl) return props.avatarUrl
+  
+  // User's own avatar from profile
+  if (props.isUser && lobbyStore.avatarUrl) {
+    return lobbyStore.avatarUrl
+  }
+  
+  // AI avatar by name
   const aiAvatar = getAIAvatar(props.name)
   if (aiAvatar) {
-    // AI avatars are in /assets/avatars/ai/
     return `/avatars/ai/${aiAvatar}`
   }
+  
   return ''
 })
 
