@@ -104,7 +104,7 @@ function handleRules() {
   position: absolute;
   top: 10px;
   left: max(10px, env(safe-area-inset-left));
-  z-index: 500;
+  z-index: 600; // Above dealer chip (550), dropdown inside is higher
 }
 
 .hud-btn {
@@ -139,7 +139,7 @@ function handleRules() {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  z-index: 600; // Above dealer chip (550)
+  z-index: 10; // Within game-hud stacking context
 }
 
 .menu-item {
