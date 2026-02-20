@@ -13,11 +13,11 @@ const CARD_ASPECT_RATIO = 1.4
 // Base card width at different viewport breakpoints
 // These are the "1.0 scale" reference sizes
 const VIEWPORT_BREAKPOINTS = [
-  { minWidth: 1920, baseWidth: 85 },   // Large desktop / TV
-  { minWidth: 1440, baseWidth: 78 },   // Desktop
-  { minWidth: 1024, baseWidth: 72 },   // iPad landscape / small desktop
-  { minWidth: 768, baseWidth: 68 },    // iPad portrait
-  { minWidth: 0, baseWidth: 60 },      // Mobile
+  { minWidth: 1920, baseWidth: 77 },   // Large desktop / TV (was 85)
+  { minWidth: 1440, baseWidth: 70 },   // Desktop (was 78)
+  { minWidth: 1024, baseWidth: 65 },   // iPad landscape / small desktop (was 72)
+  { minWidth: 768, baseWidth: 61 },    // iPad portrait (was 68)
+  { minWidth: 0, baseWidth: 54 },      // Mobile (was 60)
 ]
 
 // Context multipliers - these are consistent across all games

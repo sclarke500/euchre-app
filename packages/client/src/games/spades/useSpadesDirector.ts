@@ -42,7 +42,7 @@ export function useSpadesDirector(
     playerIdToSeatIndex,
     userHandScale: CardScales.userHand,
     opponentHandScale: CardScales.opponentHand,
-    userFanSpacing: 30,
+    userFanSpacing: 39, // +30% spread
     opponentFanSpacing: 16,
     playMoveMs: CardTimings.move,
     ...cardControllerPresets.spades,
