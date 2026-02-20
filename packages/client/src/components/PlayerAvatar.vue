@@ -155,10 +155,14 @@ const positionStyle = computed(() => props.customStyle ?? {})
     font-weight: 600;
     color: #ccc;
     white-space: nowrap;
-    background: #1a1a24;
+    background: linear-gradient(180deg, #2a2a36 0%, #1a1a24 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     position: relative;
     z-index: 10;
+    box-shadow: 
+      0 2px 6px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .player-status {
