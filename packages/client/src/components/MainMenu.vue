@@ -3,10 +3,12 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { getPlatformInfo } from '@/utils/platform'
 import SettingsModal from './SettingsModal.vue'
+import ProfileModal from './ProfileModal.vue'
 
 export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 
 const showSettings = ref(false)
+const showProfile = ref(false)
 
 // Carousel scroll state
 const carouselRef = ref<HTMLElement | null>(null)
@@ -103,41 +105,28 @@ watch(selectedGame, (newGame) => {
 
 const lobbyStore = useLobbyStore()
 
-const nicknameInput = ref(lobbyStore.nickname)
-const isEditingNickname = ref(!lobbyStore.hasNickname)
-const nicknameInputRef = ref<HTMLInputElement | null>(null)
 const highlightNickname = ref(false)
 
 const canEnterMultiplayer = computed(() => {
-  return nicknameInput.value.trim().length >= 2
+  return lobbyStore.nickname.trim().length >= 2
 })
-
-function saveNickname() {
-  if (canEnterMultiplayer.value) {
-    lobbyStore.setNickname(nicknameInput.value)
-    isEditingNickname.value = false
-  }
-}
-
-function editNickname() {
-  isEditingNickname.value = true
-}
 
 function handleMultiplayer() {
   if (!canEnterMultiplayer.value) {
-    isEditingNickname.value = true
+    showProfile.value = true
     highlightNickname.value = true
-    nextTick(() => {
-      nicknameInputRef.value?.focus()
-    })
     setTimeout(() => {
       highlightNickname.value = false
     }, 600)
     return
   }
-  saveNickname()
   emit('enterMultiplayer', selectedGame.value)
 }
+
+// Get user's initial for avatar fallback
+const userInitial = computed(() => {
+  return lobbyStore.nickname?.[0]?.toUpperCase() || '?'
+})
 
 function handleSinglePlayer() {
   emit('startSinglePlayer', selectedGame.value)
@@ -164,6 +153,7 @@ const gameTitle = computed(() => {
     </button>
 
     <SettingsModal :show="showSettings" @close="showSettings = false" />
+    <ProfileModal :show="showProfile" @close="showProfile = false" />
 
     <div class="logo-section">
       <img src="@/assets/AppLogo.png" alt="Euchre Logo" class="logo" />
@@ -234,35 +224,26 @@ const gameTitle = computed(() => {
         </button>
       </div>
 
-      <div :class="['nickname-section', { highlight: highlightNickname }]">
-        <template v-if="isEditingNickname">
-          <label for="nickname">Your Nickname</label>
-          <div class="nickname-input-row">
-            <input
-              id="nickname"
-              ref="nicknameInputRef"
-              v-model="nicknameInput"
-              type="text"
-              placeholder="Enter nickname..."
-              maxlength="20"
-              @keyup.enter="saveNickname"
-            />
-            <button
-              class="save-btn"
-              :disabled="!canEnterMultiplayer"
-              @click="saveNickname"
-            >
-              Save
-            </button>
-          </div>
-          <p class="nickname-hint">Required for multiplayer (min 2 characters)</p>
+      <div :class="['profile-section', { highlight: highlightNickname }]">
+        <template v-if="!lobbyStore.hasNickname">
+          <button class="profile-btn setup" @click="showProfile = true">
+            <div class="profile-avatar no-avatar">
+              <span>?</span>
+            </div>
+            <span class="profile-text">Set up your profile</span>
+          </button>
         </template>
         <template v-else>
-          <div class="nickname-display">
-            <span class="nickname-label">Playing as:</span>
-            <span class="nickname-value">{{ lobbyStore.nickname }}</span>
-            <button class="edit-btn" @click="editNickname">Edit</button>
-          </div>
+          <button class="profile-btn" @click="showProfile = true">
+            <div class="profile-avatar" :class="{ 'no-avatar': !lobbyStore.avatarUrl }">
+              <img v-if="lobbyStore.avatarUrl" :src="lobbyStore.avatarUrl" :alt="lobbyStore.nickname" />
+              <span v-else>{{ userInitial }}</span>
+            </div>
+            <div class="profile-info">
+              <span class="profile-name">{{ lobbyStore.nickname }}</span>
+              <span class="profile-hint">Tap to edit</span>
+            </div>
+          </button>
         </template>
       </div>
 
@@ -659,36 +640,15 @@ const gameTitle = computed(() => {
   }
 }
 
-.nickname-section {
-  background: rgba(0, 0, 0, 0.2);
-  padding: $spacing-lg;
-  border-radius: 12px;
-  min-width: 320px;
+.profile-section {
   border: 2px solid transparent;
+  border-radius: 16px;
   transition: border-color var(--anim-fast) ease, box-shadow var(--anim-fast) ease;
-
-  @media (max-height: 500px) {
-    padding: $spacing-md;
-    min-width: 280px;
-  }
-
-  @media (orientation: portrait) {
-    min-width: unset;
-    width: 100%;
-    max-width: 320px;
-  }
 
   &.highlight {
     border-color: #f4d03f;
     box-shadow: 0 0 12px rgba(244, 208, 63, 0.6);
     animation: pulse-highlight var(--anim-medium) ease-in-out 2;
-  }
-
-  label {
-    display: block;
-    font-size: 0.875rem;
-    margin-bottom: $spacing-sm;
-    opacity: 0.9;
   }
 }
 
@@ -701,68 +661,73 @@ const gameTitle = computed(() => {
   }
 }
 
-.nickname-input-row {
-  display: flex;
-  gap: $spacing-sm;
-
-  input {
-    flex: 1;
-    padding: $spacing-sm $spacing-md;
-    font-size: 1rem;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    background: $text-primary;
-    color: $surface-800;
-
-    &:focus {
-      outline: none;
-      border-color: $brand-green-light;
-    }
-  }
-
-  .save-btn {
-    padding: $spacing-sm $spacing-md;
-    background: $secondary-color;
-    color: white;
-    font-weight: bold;
-    border-radius: 8px;
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
-}
-
-.nickname-hint {
-  font-size: 0.75rem;
-  opacity: 0.7;
-  margin-top: $spacing-sm;
-}
-
-.nickname-display {
+.profile-btn {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-
-  .nickname-label {
-    font-size: 0.875rem;
-    opacity: 0.8;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  min-width: 200px;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.35);
   }
-
-  .nickname-value {
-    font-weight: bold;
-    font-size: 1.125rem;
+  
+  &.setup {
+    .profile-text {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
   }
+}
 
-  .edit-btn {
-    margin-left: auto;
-    padding: $spacing-xs $spacing-sm;
-    font-size: 0.75rem;
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
-    border-radius: 4px;
+.profile-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
+  
+  &.no-avatar {
+    background: linear-gradient(145deg, #4a4a5c, #3a3a4c);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    span {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #ddd;
+    }
+  }
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.profile-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: white;
+}
+
+.profile-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .install-hint {

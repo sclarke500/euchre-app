@@ -18,7 +18,18 @@ const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
 const STORAGE_KEYS = {
   odusId: 'odusId',
   nickname: 'odusNickname',
+  avatar: 'odusAvatar',
 } as const
+
+// Available user avatars (filename without extension)
+export const USER_AVATARS = [
+  'ace', 'bear', 'blaze', 'chip', 'clover', 'cookie',
+  'dice', 'fox', 'ghost', 'joker', 'maple', 'maverick',
+  'owl', 'panda', 'retro', 'rocket-girl', 'rocket', 'sage',
+  'shade', 'shadow', 'star', 'storm', 'sunny', 'wolf',
+] as const
+
+export type UserAvatar = typeof USER_AVATARS[number]
 
 export const useLobbyStore = defineStore('lobby', () => {
   const settingsStore = useSettingsStore()
@@ -29,6 +40,7 @@ export const useLobbyStore = defineStore('lobby', () => {
 
   const odusId = ref<string | null>(localStorage.getItem(STORAGE_KEYS.odusId))
   const nickname = ref<string>(localStorage.getItem(STORAGE_KEYS.nickname) || '')
+  const avatar = ref<string | null>(localStorage.getItem(STORAGE_KEYS.avatar))
 
   const tables = ref<Table[]>([])
   const connectedPlayers = ref(0)
@@ -228,6 +240,21 @@ export const useLobbyStore = defineStore('lobby', () => {
     localStorage.setItem(STORAGE_KEYS.nickname, nickname.value)
   }
 
+  function setAvatar(avatarName: string | null): void {
+    avatar.value = avatarName
+    if (avatarName) {
+      localStorage.setItem(STORAGE_KEYS.avatar, avatarName)
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.avatar)
+    }
+  }
+
+  // Get full avatar URL, or null for letter initial
+  const avatarUrl = computed(() => {
+    if (!avatar.value) return null
+    return `/avatars/users/${avatar.value}.jpg`
+  })
+
   function joinLobby(): void {
     if (!hasNickname.value) return
 
@@ -315,6 +342,8 @@ export const useLobbyStore = defineStore('lobby', () => {
     connectionError,
     odusId,
     nickname,
+    avatar,
+    avatarUrl,
     tables,
     connectedPlayers,
     currentTable,
@@ -336,6 +365,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     connect,
     disconnect,
     setNickname,
+    setAvatar,
     joinLobby,
     createTable,
     joinTable,
