@@ -810,7 +810,8 @@ export function useCardController(
     if (!seat) return layout.tableCenter
 
     // Match the avatar positioning from CardTable.vue
-    // Avatars are positioned ON the rail edge
+    // Opponents: positioned ON the rail edge
+    // User (bottom): positioned at bottom of screen (fixed position pill avatar)
     switch (seat.side) {
       case 'left':
         return { x: tableBounds.left, y: seat.handPosition.y }
@@ -819,7 +820,10 @@ export function useCardController(
       case 'top':
         return { x: seat.handPosition.x, y: tableBounds.top }
       case 'bottom':
-        return { x: seat.handPosition.x, y: tableBounds.bottom }
+        // User's pill avatar is at bottom of board, not table edge
+        const board = boardRef.value
+        const bottomY = board ? board.offsetHeight - 35 : tableBounds.bottom
+        return { x: tableBounds.centerX, y: bottomY }
       default:
         return layout.tableCenter
     }
