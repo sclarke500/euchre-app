@@ -211,6 +211,7 @@ export class Hand extends CardContainer {
         zIndex: baseZ + index,
         scale: this.scale,
         flipY,
+        tableSkew: false, // User hand stays flat
       }
     }
 
@@ -268,13 +269,14 @@ export class Pile extends CardContainer {
     if (cardId && this.cardPositions.has(cardId)) {
       return this.cardPositions.get(cardId)!
     }
-    // Default: stacked at pile center
+    // Default: stacked at pile center (on table, so skewed)
     return {
       x: this.position.x,
       y: this.position.y,
       rotation: 0,
       zIndex: 200 + index,
       scale: this.scale,
+      tableSkew: true,
     }
   }
 

@@ -664,6 +664,7 @@ export function useCardController(
         zIndex: 50 + trickNumber * 4 + cardIndex,
         scale: CardScales.tricksWon,
         flipY: 0,
+        tableSkew: true,
       }
     }
 
@@ -708,6 +709,7 @@ export function useCardController(
       zIndex: 50 + trickNumber * 4 + cardIndex,
       scale: CardScales.tricksWon,
       flipY: 0,
+      tableSkew: true,
     }
   }
 
