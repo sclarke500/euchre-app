@@ -49,13 +49,14 @@ onUnmounted(() => {
   if (dismissTimer) clearTimeout(dismissTimer)
 })
 
-// Tail position based on avatar position
+// Tail points TOWARD the avatar
+// position = where the avatar is relative to center
 const tailClass = computed(() => {
   switch (props.position) {
-    case 'top': return 'tail-bottom'
-    case 'bottom': return 'tail-top'
-    case 'left': return 'tail-right'
-    case 'right': return 'tail-left'
+    case 'top': return 'tail-top'       // Avatar above → tail points up
+    case 'bottom': return 'tail-bottom' // Avatar below → tail points down
+    case 'left': return 'tail-left'     // Avatar on left → tail points left
+    case 'right': return 'tail-right'   // Avatar on right → tail points right
     default: return 'tail-bottom'
   }
 })
@@ -76,16 +77,16 @@ const tailClass = computed(() => {
 <style scoped lang="scss">
 .chat-bubble {
   position: absolute;
-  max-width: 180px;
-  padding: 8px 12px;
+  max-width: 240px;
+  padding: 6px 10px;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(245, 245, 245, 0.98) 100%
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(248, 248, 248, 0.98) 100%
   );
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.2),
     0 1px 3px rgba(0, 0, 0, 0.1);
   z-index: 450;
   pointer-events: none;
@@ -97,50 +98,54 @@ const tailClass = computed(() => {
 }
 
 .bubble-text {
-  color: #1f2937;
-  font-size: 13px;
-  line-height: 1.4;
+  color: #1a1a1a;
+  font-size: 14px;
+  line-height: 1.2;
   word-wrap: break-word;
 }
 
-// Speech bubble tails
+// Speech bubble tails - bigger triangles, flush with bubble
 .chat-bubble::after {
   content: '';
   position: absolute;
   width: 0;
   height: 0;
-  border: 8px solid transparent;
+  border: 10px solid transparent;
 }
 
+// Tail pointing DOWN (avatar below bubble)
 .tail-bottom::after {
-  bottom: -14px;
+  bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
-  border-top-color: rgba(245, 245, 245, 0.98);
+  border-top-color: rgba(248, 248, 248, 0.98);
   border-bottom: none;
 }
 
+// Tail pointing UP (avatar above bubble)
 .tail-top::after {
-  top: -14px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  border-bottom-color: rgba(255, 255, 255, 0.95);
+  border-bottom-color: rgba(255, 255, 255, 0.98);
   border-top: none;
 }
 
+// Tail pointing LEFT (avatar to the left)
 .tail-left::after {
-  left: -14px;
+  left: -10px;
   top: 50%;
   transform: translateY(-50%);
-  border-right-color: rgba(250, 250, 250, 0.96);
+  border-right-color: rgba(252, 252, 252, 0.98);
   border-left: none;
 }
 
+// Tail pointing RIGHT (avatar to the right)
 .tail-right::after {
-  right: -14px;
+  right: -10px;
   top: 50%;
   transform: translateY(-50%);
-  border-left-color: rgba(250, 250, 250, 0.96);
+  border-left-color: rgba(252, 252, 252, 0.98);
   border-right: none;
 }
 

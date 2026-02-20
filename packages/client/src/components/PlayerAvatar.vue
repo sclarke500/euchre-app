@@ -339,44 +339,41 @@ const bubblePosition = computed(() => {
   }
 
   // Chat bubble positioning (relative to avatar-container)
+  // Tail touches the bubble edge (no margin gaps)
   .avatar-chat-bubble {
     position: absolute;
     z-index: 450;
   }
   
-  // User (bottom) - bubble appears above
+  // User (bottom) - bubble appears above, tail points down
   &.position-bottom .avatar-chat-bubble {
-    bottom: 100%;
+    bottom: calc(100% + 10px); // 10px = tail size
     left: 50%;
     transform: translateX(-50%);
-    margin-bottom: 12px;
   }
   
-  // Top opponent - bubble appears below
+  // Top opponent - bubble appears below, tail points up
   &.position-rail-top .avatar-chat-bubble,
   &.position-top .avatar-chat-bubble {
-    top: 100%;
+    top: calc(100% + 10px);
     left: 50%;
     transform: translateX(-50%);
-    margin-top: 12px;
   }
   
-  // Left opponent - bubble appears to the right
+  // Left opponent - bubble appears to the right, tail points left
   &.position-rail-left .avatar-chat-bubble,
   &.position-left .avatar-chat-bubble {
-    left: 100%;
+    left: calc(100% + 10px);
     top: 50%;
     transform: translateY(-50%);
-    margin-left: 12px;
   }
   
-  // Right opponent - bubble appears to the left
+  // Right opponent - bubble appears to the left, tail points right
   &.position-rail-right .avatar-chat-bubble,
   &.position-right .avatar-chat-bubble {
-    right: 100%;
+    right: calc(100% + 10px);
     top: 50%;
     transform: translateY(-50%);
-    margin-right: 12px;
   }
 
   // Position variants
