@@ -49,6 +49,9 @@ const hostName = computed(() => {
   return hostSeat?.player?.nickname || 'Unknown'
 })
 
+// Check if private game
+const isPrivate = computed(() => props.table.settings?.isPrivate ?? false)
+
 function handleSeatClick(seatIndex: number) {
   const seat = props.table.seats[seatIndex]
   if (seat?.player === null && !props.isCurrent) {
@@ -61,6 +64,7 @@ function handleSeatClick(seatIndex: number) {
   <!-- LIST VIEW (row for lobby with full seat boxes) -->
   <div v-if="!isCurrent" class="table-row">
     <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
+    <span v-if="isPrivate" class="private-badge" title="Private game">🔒</span>
     <div class="seats-list">
       <div
         v-for="(seat, index) in seats"
@@ -87,6 +91,7 @@ function handleSeatClick(seatIndex: number) {
   <div v-else class="table-card current">
     <div class="table-header">
       <span class="game-type-badge" :class="gameType">{{ gameTypeLabel }}</span>
+      <span v-if="isPrivate" class="private-badge" title="Private game">🔒</span>
       <span class="table-name">{{ table.name }}</span>
       <span class="seat-count">{{ filledSeats }}/{{ maxPlayers }}</span>
     </div>
@@ -222,6 +227,11 @@ function handleSeatClick(seatIndex: number) {
     background: rgba(80, 80, 80, 0.5);
     color: #ccc;
   }
+}
+
+.private-badge {
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
 .table-card .table-name {

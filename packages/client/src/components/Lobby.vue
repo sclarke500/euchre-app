@@ -162,7 +162,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
             <label class="toggle-option">
               <input v-model="isPrivate" type="checkbox" />
               <span class="toggle-label">Private game</span>
-              <span class="toggle-hint">Only friends with the link can join</span>
+              <span class="toggle-hint">Shows 🔒 in lobby - for playing with friends</span>
             </label>
           </div>
         </div>
