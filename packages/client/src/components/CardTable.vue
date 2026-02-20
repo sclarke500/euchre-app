@@ -328,6 +328,10 @@ defineExpose({
   height: 100%;
   position: relative;
   overflow: hidden;
+  
+  // 3D perspective for table skew
+  perspective: 1200px;
+  perspective-origin: center 40%;
 
   // Table palette — change these to retheme
   --felt: #1e6045;           // Deep casino green
@@ -370,6 +374,10 @@ defineExpose({
   // No background on main element - felt goes in ::after
   background: none;
   border: none;
+  
+  // 3D tilt - rotates table toward viewer
+  transform: rotateX(28deg);
+  transform-style: preserve-3d;
   
   // Wood rail - sits behind the felt
   &::before {
