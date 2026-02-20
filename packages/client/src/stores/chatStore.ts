@@ -19,6 +19,9 @@ export const useChatStore = defineStore('chat', () => {
   
   // Bubble timers for auto-dismiss
   const bubbleTimers = ref<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+  
+  // Debug mode: test bubbles stay visible (no auto-dismiss)
+  const debugBubbles = ref(false)
 
   // Computed: unread message count
   const unreadCount = computed(() => {
@@ -101,6 +104,43 @@ export const useChatStore = defineStore('chat', () => {
     bubbleTimers.value.forEach(timer => clearTimeout(timer))
     bubbleTimers.value.clear()
     lastReadAt.value = Date.now()
+    debugBubbles.value = false
+  }
+
+  /**
+   * Toggle test bubbles for all seats (for positioning/styling)
+   * In debug mode, bubbles don't auto-dismiss
+   */
+  function toggleTestBubbles(playerNames: string[] = ['You', 'Left AI', 'Partner', 'Right AI']): void {
+    debugBubbles.value = !debugBubbles.value
+    
+    if (debugBubbles.value) {
+      // Show a test bubble for each seat
+      const testMessages: [number, string][] = [
+        [0, 'Nice play! 🎉'],
+        [1, 'Good luck everyone'],
+        [2, 'Let\'s go team!'],
+        [3, 'gg'],
+      ]
+      
+      testMessages.forEach(([seatIndex, text]) => {
+        const testMessage: ChatMessage = {
+          id: `test-${seatIndex}`,
+          odusId: `test-player-${seatIndex}`,
+          seatIndex,
+          playerName: playerNames[seatIndex] ?? `Player ${seatIndex}`,
+          text,
+          timestamp: Date.now(),
+        }
+        activeBubbles.value.set(seatIndex, testMessage)
+      })
+      
+      console.log('[Chat] Test bubbles ON - Ctrl+Shift+B to toggle')
+    } else {
+      // Clear test bubbles
+      activeBubbles.value.clear()
+      console.log('[Chat] Test bubbles OFF')
+    }
   }
 
   return {
@@ -108,6 +148,7 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     activeBubbles,
     unreadCount,
+    debugBubbles,
     
     // Actions
     sendChatMessage,
@@ -116,5 +157,6 @@ export const useChatStore = defineStore('chat', () => {
     hideBubble,
     markAsRead,
     clearChat,
+    toggleTestBubbles,
   }
 })

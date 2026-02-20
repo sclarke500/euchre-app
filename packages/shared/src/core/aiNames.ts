@@ -1,7 +1,30 @@
 /**
  * List of AI player names
  */
-const AI_NAMES = ['Tron', 'Data', 'Neon', 'Halo', 'Pixel', 'Atlas'] as const
+export const AI_NAMES = ['Tron', 'Data', 'Neon', 'Halo', 'Pixel', 'Atlas'] as const
+
+export type AIName = typeof AI_NAMES[number]
+
+/**
+ * AI avatar mapping: name -> avatar filename
+ * Avatar images should be in /assets/avatars/ai/
+ */
+export const AI_AVATARS: Record<AIName, string> = {
+  Tron: 'tron.png',
+  Data: 'data.png',
+  Neon: 'neon.png',
+  Halo: 'halo.png',
+  Pixel: 'pixel.png',
+  Atlas: 'atlas.png',
+}
+
+/**
+ * Get avatar filename for an AI name
+ * @returns filename or undefined if not an AI name
+ */
+export function getAIAvatar(name: string): string | undefined {
+  return AI_AVATARS[name as AIName]
+}
 
 /**
  * Get a random AI name from the list

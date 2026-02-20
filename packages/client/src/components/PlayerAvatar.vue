@@ -12,7 +12,10 @@
   >
     <div class="avatar-container">
       <div class="avatar-border">
-        <div class="avatar-circle">{{ initial }}</div>
+        <div class="avatar-circle" :class="{ 'has-image': hasAvatar }">
+          <img v-if="hasAvatar" :src="resolvedAvatarUrl" :alt="name" class="avatar-image" />
+          <span v-else class="avatar-initial">{{ initial }}</span>
+        </div>
         <div class="name-column">
           <!-- Info tags - above name for user, top-right for opponents -->
           <div class="info-tags">
@@ -36,6 +39,7 @@
 
 <script setup lang="ts">
 import { computed, type CSSProperties } from 'vue'
+import { getAIAvatar } from '@67cards/shared'
 
 export type AvatarPosition = 'bottom' | 'left' | 'right' | 'top' | 'rail-left' | 'rail-right' | 'rail-top'
 
@@ -51,6 +55,8 @@ const props = withDefaults(defineProps<{
   trumpSymbol?: string
   /** Trump suit color (e.g., #e74c3c for red, #2c3e50 for black) */
   trumpColor?: string
+  /** Optional avatar image URL (overrides auto-detection) */
+  avatarUrl?: string
 }>(), {
   isCurrentTurn: false,
   isUser: false,
@@ -58,9 +64,23 @@ const props = withDefaults(defineProps<{
   position: 'bottom',
   trumpSymbol: '',
   trumpColor: '#2c3e50',
+  avatarUrl: '',
 })
 
 const initial = computed(() => props.name?.[0]?.toUpperCase() ?? '?')
+
+// Auto-detect AI avatar by name if no avatarUrl provided
+const resolvedAvatarUrl = computed(() => {
+  if (props.avatarUrl) return props.avatarUrl
+  const aiAvatar = getAIAvatar(props.name)
+  if (aiAvatar) {
+    // AI avatars are in /assets/avatars/ai/
+    return `/avatars/ai/${aiAvatar}`
+  }
+  return ''
+})
+
+const hasAvatar = computed(() => !!resolvedAvatarUrl.value)
 
 const positionClass = computed(() => `position-${props.position}`)
 
@@ -149,6 +169,23 @@ const positionStyle = computed(() => props.customStyle ?? {})
       0 4px 12px rgba(0, 0, 0, 0.5),
       0 2px 4px rgba(0, 0, 0, 0.3);
     transition: border-color var(--anim-slow, 0.3s) ease, box-shadow var(--anim-slow, 0.3s) ease;
+    overflow: hidden;
+    
+    &.has-image {
+      background: none;
+      padding: 0;
+    }
+  }
+  
+  .avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  
+  .avatar-initial {
+    // Keep existing initial styling
   }
 
   .name-column {

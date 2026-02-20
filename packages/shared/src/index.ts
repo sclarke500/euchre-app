@@ -14,7 +14,7 @@ export * from './euchre/index.js'
 export { FullRank, EuchreRank } from './core/types.js'
 export type { StandardCard, EuchreCard, BasePlayer } from './core/types.js'
 export { createStandardDeck, createEuchreDeck, createPresidentDeck, dealAllCards } from './core/deck.js'
-export { getRandomAIName, getRandomAINames } from './core/aiNames.js'
+export { AI_NAMES, AI_AVATARS, getAIAvatar, getRandomAIName, getRandomAINames, type AIName } from './core/aiNames.js'
 
 // President game (new)
 export * from './president/index.js'

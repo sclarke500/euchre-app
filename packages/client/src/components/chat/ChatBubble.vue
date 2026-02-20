@@ -2,10 +2,14 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import type { ChatMessage } from '@67cards/shared'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   message: ChatMessage
   position: 'top' | 'left' | 'right' | 'bottom'
-}>()
+  /** If true, bubble stays visible (for testing/positioning) */
+  persistent?: boolean
+}>(), {
+  persistent: false,
+})
 
 const emit = defineEmits<{
   dismiss: []
@@ -25,6 +29,9 @@ let fadeTimer: ReturnType<typeof setTimeout> | null = null
 let dismissTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
+  // Skip timers if persistent
+  if (props.persistent) return
+  
   // Start fade-out animation before full dismiss
   fadeTimer = setTimeout(() => {
     isFading.value = true

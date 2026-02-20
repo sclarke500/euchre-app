@@ -65,6 +65,7 @@
         :message="message"
         :position="getBubblePosition(seatIndex).position"
         :style="getBubblePosition(seatIndex).style"
+        :persistent="chatStore.debugBubbles"
         @dismiss="chatStore.hideBubble(seatIndex)"
       />
 
@@ -308,6 +309,14 @@ function computeLayout() {
   return result
 }
 
+// Keyboard shortcut: Ctrl+Shift+B toggles test bubbles
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'b') {
+    e.preventDefault()
+    chatStore.toggleTestBubbles(props.playerNames)
+  }
+}
+
 onMounted(() => {
   computeLayout()
   if (boardRef.value && typeof ResizeObserver !== 'undefined') {
@@ -316,6 +325,7 @@ onMounted(() => {
     })
     resizeObserver.observe(boardRef.value)
   }
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 watch(() => [props.playerCount, props.layout], () => {
@@ -327,6 +337,7 @@ onUnmounted(() => {
     resizeObserver.disconnect()
     resizeObserver = null
   }
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 // Provide engine and layout for director composables
