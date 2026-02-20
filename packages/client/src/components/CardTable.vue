@@ -376,7 +376,7 @@ defineExpose({
   border: none;
   
   // 3D tilt - rotates table toward viewer
-  transform: rotateX(28deg);
+  transform: rotateX(40deg);
   transform-style: preserve-3d;
   
   // Wood rail - sits behind the felt

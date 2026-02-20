@@ -16,8 +16,8 @@ const VIEWPORT_BREAKPOINTS = [
   { minWidth: 1920, baseWidth: 95 },   // Large desktop / TV
   { minWidth: 1440, baseWidth: 88 },   // Desktop
   { minWidth: 1024, baseWidth: 83 },   // iPad landscape / small desktop
-  { minWidth: 768, baseWidth: 78 },    // iPad portrait
-  { minWidth: 0, baseWidth: 70 },      // Mobile
+  { minWidth: 768, baseWidth: 80 },    // iPad portrait
+  { minWidth: 0, baseWidth: 78 },      // Mobile - bumped up for readability
 ]
 
 // Context multipliers - these are consistent across all games
