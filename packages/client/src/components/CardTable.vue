@@ -21,6 +21,7 @@
         :position="getRailPosition(seat.side)"
         :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
         :trump-symbol="trumpCallerSeat === i ? trumpSymbol : ''"
+        :trump-color="trumpCallerSeat === i ? trumpColor : ''"
       >
         <slot :name="`player-info-${i}`" />
       </PlayerAvatar>
@@ -45,6 +46,7 @@
         :is-user="true"
         position="bottom"
         :trump-symbol="trumpCallerSeat === 0 ? trumpSymbol : ''"
+        :trump-color="trumpCallerSeat === 0 ? trumpColor : ''"
       >
         <slot name="user-info" />
       </PlayerAvatar>

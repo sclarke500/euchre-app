@@ -23,7 +23,7 @@
       </div>
       
       <!-- Trump indicator chip - top-right of avatar circle -->
-      <div v-if="props.trumpSymbol" class="trump-chip">{{ props.trumpSymbol }}</div>
+      <div v-if="props.trumpSymbol" class="trump-chip" :style="{ color: props.trumpColor }">{{ props.trumpSymbol }}</div>
       
       <!-- Turn indicator glow -->
       <div v-if="props.isCurrentTurn" class="avatar-glow"></div>
@@ -49,12 +49,15 @@ const props = withDefaults(defineProps<{
   customStyle?: CSSProperties
   /** Trump suit symbol to show (e.g., ♠ ♥ ♦ ♣) */
   trumpSymbol?: string
+  /** Trump suit color (e.g., #e74c3c for red, #2c3e50 for black) */
+  trumpColor?: string
 }>(), {
   isCurrentTurn: false,
   isUser: false,
   status: '',
   position: 'bottom',
   trumpSymbol: '',
+  trumpColor: '#2c3e50',
 })
 
 const initial = computed(() => props.name?.[0]?.toUpperCase() ?? '?')
