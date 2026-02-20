@@ -139,6 +139,7 @@ function handleRules() {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
+  z-index: 600; // Above dealer chip (550)
 }
 
 .menu-item {
