@@ -197,8 +197,8 @@ const positionStyle = computed(() => props.customStyle ?? {})
   // For opponents, position absolutely at top-right of avatar circle (snug like trump chip)
   &:not(.is-user) .name-column .info-tags {
     position: absolute;
-    top: -24px;  // Above avatar circle
-    right: -18px; // Snug to right side
+    top: -45px;
+    right: -14px;
   }
 
   .avatar-glow {
