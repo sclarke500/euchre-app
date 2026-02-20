@@ -221,20 +221,6 @@ export function useEuchreDirector(
     }
   }
 
-  function getDeckOffscreenPosition(dealerSeatIndex: number, tl: TableLayoutResult): { x: number; y: number } {
-    const seat = tl.seats[dealerSeatIndex]
-    if (!seat) return { x: -200, y: -200 }
-    const { tableBounds } = tl
-    const off = 300
-    switch (seat.side) {
-      case 'bottom': return { x: tableBounds.centerX, y: tableBounds.bottom + off }
-      case 'left':   return { x: tableBounds.left - off,   y: tableBounds.centerY }
-      case 'top':    return { x: tableBounds.centerX, y: tableBounds.top - off }
-      case 'right':  return { x: tableBounds.right + off,  y: tableBounds.centerY }
-      default:       return { x: -200, y: -200 }
-    }
-  }
-
   /** Center-cross position for a trick card. */
   function getTrickCardPosition(playerId: number, tableCenter: { x: number; y: number }, cardIndex: number): CardPosition {
     const seatIndex = playerIdToSeatIndex(playerId)
@@ -252,61 +238,6 @@ export function useEuchreDirector(
       rotation: o.rotation,
       zIndex: 500 + cardIndex,
       scale: TRICK_PLAY_SCALE,
-    }
-  }
-
-  /**
-   * Position for a won-trick stack in front of a player's avatar.
-   * Vertical orientation (portrait cards) for top/bottom seats,
-   * horizontal orientation (landscape cards) for left/right seats.
-   * Successive tricks spread along the table edge away from center.
-   */
-  function getPlayerTrickPosition(
-    playerId: number,
-    trickNumber: number,
-    cardIndex: number,
-    tl: TableLayoutResult
-  ): CardPosition {
-    const seat = playerIdToSeatIndex(playerId)
-    const { tableBounds } = tl
-    const inset = 20  // how far inside the table edge
-    const gap = 12    // spacing between successive tricks
-    let x: number, y: number, rotation: number
-
-    switch (seat) {
-      case 0: // bottom (user) — left of player (table left), near bottom edge, spread left
-        x = tableBounds.centerX - 60 - trickNumber * gap
-        y = tableBounds.bottom - inset
-        rotation = 0
-        break
-      case 1: // left — left of player (upward), spread upward
-        x = tableBounds.left + inset
-        y = tableBounds.centerY - 40 - trickNumber * gap
-        rotation = 90
-        break
-      case 2: // top — left of player (table right from their perspective), near top edge, spread right
-        x = tableBounds.centerX + 60 + trickNumber * gap
-        y = tableBounds.top + inset
-        rotation = 0
-        break
-      case 3: // right — left of player (downward), spread downward
-        x = tableBounds.right - inset
-        y = tableBounds.centerY + 40 + trickNumber * gap
-        rotation = 90
-        break
-      default:
-        x = tl.tableCenter.x
-        y = tl.tableCenter.y
-        rotation = 0
-    }
-
-    return {
-      x,
-      y: y - cardIndex * 0.6,
-      rotation,
-      zIndex: 50 + trickNumber * 4 + cardIndex,
-      scale: TRICK_WON_SCALE,
-      flipY: 0,
     }
   }
 
@@ -443,21 +374,8 @@ export function useEuchreDirector(
   // ── Deck animations ─────────────────────────────────────────────────────
 
   async function animateDeckOffscreen() {
-    const deck = engine.getDeck()
-    if (!deck || deck.cards.length === 0) return
-    const tl = getTableLayout()
-    if (!tl) return
-
     const dealerIdx = dealerSeat.value >= 0 ? dealerSeat.value : 0
-    const offPos = getDeckOffscreenPosition(dealerIdx, tl)
-
-    await Promise.all(deck.cards.map(m => {
-      const ref = engine.getCardRef(m.card.id)
-      return ref?.moveTo({ x: offPos.x, y: offPos.y, rotation: 0, zIndex: 50, scale: 1.0 }, DECK_EXIT_MS)
-    }))
-
-    deck.cards = []
-    engine.refreshCards()
+    await cardController.sweepDeckToDealer(dealerIdx, DECK_EXIT_MS)
   }
 
   async function flipTurnUpFaceDown() {

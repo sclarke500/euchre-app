@@ -443,20 +443,17 @@ export function usePresidentDirector(
     const centerPile = engine.getPiles().find(p => p.id === 'center')
     if (!centerPile || centerPile.cards.length === 0) return
 
-    const tl = getTableLayout()
-    if (!tl) return
-
     // Brief pause to show the final state of the pile
     await sleep(PILE_SWEEP_PAUSE_MS)
 
-    // Sweep all cards to the right offscreen
-    const offX = tl.tableBounds.right + 300
+    // Sweep all cards to generic off-screen position (bottom-right)
+    const sweepPos = cardController.getGenericSweepPosition()
 
     await Promise.all(centerPile.cards.map(m => {
       const ref = engine.getCardRef(m.card.id)
       return ref?.moveTo({
-        x: offX,
-        y: tl.tableCenter.y,
+        x: sweepPos.x,
+        y: sweepPos.y,
         rotation: 30,
         zIndex: 50,
         scale: 0.5,

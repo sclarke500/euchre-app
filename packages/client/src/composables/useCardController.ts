@@ -144,8 +144,8 @@ export function useCardController(
     tableCenter.value = layout.tableCenter
 
     const deckPos = dealerSeatIndex !== undefined
-      ? getDealerDeckPosition(dealerSeatIndex, layout)
-      : { x: tableCenter.value.x, y: tableCenter.value.y }
+      ? getAvatarBoardPosition(dealerSeatIndex, layout)
+      : getGenericDealPosition()
     engine.createDeck(deckPos, CardScales.deck)
 
     const baseScale = config.opponentHandScale ?? CardScales.opponentHand
@@ -189,7 +189,7 @@ export function useCardController(
       ? playerIdToSeatIndex(options.dealerPlayerId)
       : options.dealerSeatIndex
     if (dealerSeat !== undefined && tableLayout.value) {
-      const dealerPos = getDealerDeckPosition(dealerSeat, tableLayout.value)
+      const dealerPos = getAvatarBoardPosition(dealerSeat, tableLayout.value)
       deck.position = dealerPos
     }
 
@@ -394,26 +394,6 @@ export function useCardController(
         }
         engine.refreshCards()
       }
-    }
-  }
-
-  function getDealerDeckPosition(dealerSeatIndex: number, layout: TableLayoutResult): { x: number; y: number } {
-    const seat = layout.seats[dealerSeatIndex]
-    if (!seat) return { x: layout.tableCenter.x, y: layout.tableCenter.y }
-
-    const { tableBounds } = layout
-    const off = 280
-    switch (seat.side) {
-      case 'bottom':
-        return { x: tableBounds.centerX, y: tableBounds.bottom + off }
-      case 'left':
-        return { x: tableBounds.left - off, y: tableBounds.centerY }
-      case 'top':
-        return { x: tableBounds.centerX, y: tableBounds.top - off }
-      case 'right':
-        return { x: tableBounds.right + off, y: tableBounds.centerY }
-      default:
-        return { x: layout.tableCenter.x, y: layout.tableCenter.y }
     }
   }
 
@@ -843,6 +823,24 @@ export function useCardController(
   }
 
   /**
+   * Generic off-screen position for dealing (top-left corner).
+   * Used when there's no specific dealer (e.g., President).
+   */
+  function getGenericDealPosition(): { x: number; y: number } {
+    return { x: -100, y: -100 }
+  }
+
+  /**
+   * Generic off-screen position for sweeping cards (bottom-right corner).
+   * Used for clearing piles when there's no specific destination.
+   */
+  function getGenericSweepPosition(): { x: number; y: number } {
+    const board = boardRef.value
+    if (!board) return { x: 1000, y: 1000 }
+    return { x: board.offsetWidth + 100, y: board.offsetHeight + 100 }
+  }
+
+  /**
    * Restore hands from saved state - instantly places cards without animation.
    * Used when resuming a saved single-player game.
    * 
@@ -972,6 +970,39 @@ export function useCardController(
   }
 
   /**
+   * Sweep remaining deck cards to dealer's avatar position.
+   * Used after dealing when kitty/remaining cards should disappear toward dealer.
+   * @param dealerSeatIndex - seat index of dealer
+   * @param durationMs - animation duration (default CardTimings.move)
+   */
+  async function sweepDeckToDealer(dealerSeatIndex: number, durationMs: number = CardTimings.move) {
+    const deck = engine.getDeck()
+    if (!deck || deck.cards.length === 0) return
+
+    const layout = tableLayout.value
+    if (!layout) return
+
+    const targetPos = getAvatarBoardPosition(dealerSeatIndex, layout)
+
+    await Promise.all(deck.cards.map(m => {
+      const ref = engine.getCardRef(m.card.id)
+      if (!ref) return Promise.resolve()
+      return ref.moveTo({
+        x: targetPos.x,
+        y: targetPos.y,
+        rotation: 0,
+        zIndex: 50,
+        scale: 0.05, // Shrink to essentially invisible
+        flipY: 0,    // Face down
+      }, durationMs)
+    }))
+
+    // Clear deck cards after animation
+    deck.cards = []
+    engine.refreshCards()
+  }
+
+  /**
    * Sync the user's visual hand with the server state.
    * Used in MP when server updates hand (e.g., card exchange).
    * Removes cards no longer in hand, adds new cards, sorts and fans.
@@ -1095,5 +1126,8 @@ export function useCardController(
     completeTrick,
     restoreWonTrickStacks,
     hideOpponentHands,
+    sweepDeckToDealer,
+    getGenericDealPosition,
+    getGenericSweepPosition,
   }
 }
