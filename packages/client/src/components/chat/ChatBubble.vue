@@ -77,8 +77,9 @@ const tailClass = computed(() => {
 <style scoped lang="scss">
 .chat-bubble {
   position: absolute;
+  width: max-content;
   max-width: 320px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.98) 0%,
@@ -100,8 +101,7 @@ const tailClass = computed(() => {
 .bubble-text {
   color: #1a1a1a;
   font-size: 14px;
-  line-height: 1.2;
-  word-wrap: break-word;
+  line-height: 1.25;
 }
 
 // Speech bubble tails - bigger triangles, flush with bubble
