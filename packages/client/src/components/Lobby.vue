@@ -268,13 +268,13 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   font-size: 0.875rem;
 
   &.connecting {
-    background: rgba(255, 193, 7, 0.2);
-    color: #ffc107;
+    background: rgba(217, 119, 6, 0.15);
+    color: var(--color-warning);
   }
 
   &.error {
-    background: rgba(244, 67, 54, 0.2);
-    color: #f44336;
+    background: rgba(220, 38, 38, 0.15);
+    color: var(--color-danger);
   }
 }
 
@@ -340,27 +340,27 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 }
 
 .create-options-content {
-  background: white;
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: $spacing-lg;
   min-width: 300px;
   max-width: 360px;
-  color: $surface-800;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xl);
 
   h3 {
     margin: 0 0 $spacing-md 0;
     text-align: center;
     font-size: 1.1rem;
     font-weight: 600;
-    color: $brand-green;
+    color: var(--color-primary);
   }
 }
 
 .game-selector {
   display: flex;
-  background: #f0f0f0;
-  border-radius: 8px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
   padding: 3px;
   margin-bottom: $spacing-md;
 }
@@ -368,22 +368,22 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 .game-pill {
   flex: 1;
   padding: $spacing-xs $spacing-sm;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: $surface-500;
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
   font-weight: 500;
   transition: all 0.15s ease;
 
   &:hover:not(.active) {
-    color: $surface-800;
+    color: var(--color-text);
     background: rgba(0, 0, 0, 0.05);
   }
 
   &.active {
-    background: white;
-    color: $brand-green;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
   }
 }
 
@@ -403,8 +403,8 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 
 .difficulty-selector {
   display: flex;
-  background: #f0f0f0;
-  border-radius: 6px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
   padding: 2px;
 }
 
@@ -412,28 +412,28 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   padding: 6px 14px;
   border-radius: 5px;
   background: transparent;
-  color: $surface-500;
+  color: var(--color-text-secondary);
   font-size: 0.8rem;
   font-weight: 500;
   transition: all 0.15s ease;
 
   &:hover:not(.active) {
-    color: $surface-800;
+    color: var(--color-text);
     background: rgba(0, 0, 0, 0.05);
   }
 
   &.active {
-    background: white;
-    color: $brand-green;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
   }
 }
 
 .game-options-section {
   margin-bottom: $spacing-md;
   padding: $spacing-sm;
-  background: #f8f8f8;
-  border-radius: 8px;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
   min-height: 50px;
 }
 
@@ -445,18 +445,18 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 .count-btn {
   width: 36px;
   height: 36px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
   font-weight: 500;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-border);
   }
 
   &.active {
-    background: white;
-    color: $brand-green;
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
   }
 }
 
@@ -469,22 +469,26 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 .cancel-btn {
   flex: 1;
   padding: $spacing-sm $spacing-md;
-  border-radius: 8px;
-  background: #f0f0f0;
-  color: $surface-500;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
   font-weight: 500;
 
   &:hover {
-    background: #e0e0e0;
+    background: var(--color-border);
   }
 }
 
 .confirm-create-btn {
   flex: 1;
   padding: $spacing-sm $spacing-md;
-  border-radius: 8px;
-  background: $brand-green;
-  color: white;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
   font-weight: bold;
+
+  &:hover {
+    background: var(--color-primary-hover);
+  }
 }
 </style>

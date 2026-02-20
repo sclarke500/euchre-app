@@ -188,10 +188,10 @@ const positionStyle = computed(() => props.customStyle ?? {})
     transform: translateX(-50%);
     margin-top: 4px;
     font-size: 11px;
-    color: #ffd700;
-    background: rgba(0, 0, 0, 0.85);
+    color: var(--color-warning);
+    background: var(--color-dark-surface);
     padding: 3px 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
     white-space: nowrap;
     opacity: 0;

@@ -59,21 +59,21 @@ const hasContent = computed(() => !!slots.default)
 /* Button styles for slotted content */
 :slotted(.action-btn) {
   padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(60, 60, 80, 0.85);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-dark-border);
+  background: var(--color-dark-surface);
   backdrop-filter: blur(8px);
-  color: #fff;
+  color: var(--color-dark-text);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 
   &:hover {
-    background: rgba(80, 80, 100, 0.9);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--color-dark-surface-elevated);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   &:active {
@@ -86,20 +86,20 @@ const hasContent = computed(() => !!slots.default)
   }
 
   &.primary {
-    background: rgba(42, 138, 106, 0.85);
-    border-color: rgba(42, 138, 106, 0.6);
+    background: var(--color-success);
+    border-color: transparent;
 
     &:hover {
-      background: rgba(52, 158, 126, 0.9);
+      background: var(--color-success-hover);
     }
   }
 
   &.danger {
-    background: rgba(180, 60, 60, 0.85);
-    border-color: rgba(180, 60, 60, 0.6);
+    background: var(--color-danger);
+    border-color: transparent;
 
     &:hover {
-      background: rgba(200, 80, 80, 0.9);
+      background: var(--color-danger-hover);
     }
   }
 }
@@ -119,20 +119,20 @@ const hasContent = computed(() => !!slots.default)
   display: flex;
   align-items: center;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-dark-text-secondary);
   font-size: 13px;
   cursor: pointer;
   user-select: none;
 
   input {
-    accent-color: #2a8a6a;
+    accent-color: var(--color-primary);
   }
 }
 
 :slotted(.action-divider) {
   width: 1px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--color-dark-border);
   margin: 0 4px;
 }
 

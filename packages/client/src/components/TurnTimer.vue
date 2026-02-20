@@ -291,10 +291,10 @@ defineExpose({ reset })
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid $surface-500;
-  border-radius: 6px;
-  background: rgba(60, 60, 80, 0.8);
-  color: #aaa;
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-dark-surface);
+  color: var(--color-dark-text-secondary);
   font-size: 16px;
   cursor: pointer;
   display: flex;
@@ -302,8 +302,8 @@ defineExpose({ reset })
   justify-content: center;
   
   &:hover {
-    background: rgba(80, 80, 100, 0.9);
-    color: #fff;
+    background: var(--color-dark-surface-elevated);
+    color: var(--color-dark-text);
   }
   
   &:active {

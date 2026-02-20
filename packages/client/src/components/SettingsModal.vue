@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useSettingsStore, type AIDifficulty } from '@/stores/settingsStore'
+import { useSettingsStore, type AIDifficulty, type AppTheme } from '@/stores/settingsStore'
 import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
 import PresidentOptions from '@/games/president/PresidentOptions.vue'
 import SpadesOptions from '@/games/spades/SpadesOptions.vue'
@@ -32,6 +32,10 @@ function selectDifficulty(difficulty: AIDifficulty) {
   settings.setAIDifficulty(difficulty)
 }
 
+function selectTheme(themeName: AppTheme) {
+  settings.setTheme(themeName)
+}
+
 function checkForUpdates() {
   window.location.reload()
 }
@@ -47,6 +51,48 @@ function checkForUpdates() {
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Theme</h3>
+        <p class="section-desc">Choose the app color scheme</p>
+        <div class="theme-buttons">
+          <button
+            :class="['theme-btn', { active: settings.theme === 'teal' }]"
+            @click="selectTheme('teal')"
+          >
+            <span class="theme-swatch teal"></span>
+            <span>Teal</span>
+          </button>
+          <button
+            :class="['theme-btn', { active: settings.theme === 'navy' }]"
+            @click="selectTheme('navy')"
+          >
+            <span class="theme-swatch navy"></span>
+            <span>Navy</span>
+          </button>
+          <button
+            :class="['theme-btn', { active: settings.theme === 'slate' }]"
+            @click="selectTheme('slate')"
+          >
+            <span class="theme-swatch slate"></span>
+            <span>Slate</span>
+          </button>
+          <button
+            :class="['theme-btn', { active: settings.theme === 'green' }]"
+            @click="selectTheme('green')"
+          >
+            <span class="theme-swatch green"></span>
+            <span>Green</span>
+          </button>
+          <button
+            :class="['theme-btn', { active: settings.theme === 'purple' }]"
+            @click="selectTheme('purple')"
+          >
+            <span class="theme-swatch purple"></span>
+            <span>Purple</span>
+          </button>
+        </div>
       </div>
 
       <div class="settings-section">
@@ -174,6 +220,49 @@ function checkForUpdates() {
   .option-desc {
     @include modal-option-desc;
   }
+}
+
+.theme-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-subtle);
+  }
+
+  &.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-subtle);
+  }
+}
+
+.theme-swatch {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+
+  &.teal { background: #0d7377; }
+  &.navy { background: #1e3a5f; }
+  &.slate { background: #334155; }
+  &.green { background: #1e6045; }
+  &.purple { background: #5b4b8a; }
 }
 
 .modal-footer {

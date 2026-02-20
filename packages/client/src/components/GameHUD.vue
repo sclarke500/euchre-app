@@ -110,17 +110,17 @@ function handleRules() {
 .hud-btn {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  border: 1px solid $surface-500;
-  background: rgba(20, 20, 30, 0.8);
-  color: #ccc;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-dark-border);
+  background: var(--color-dark-surface);
+  color: var(--color-dark-text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   
   &:hover {
-    background: rgba(40, 40, 50, 0.9);
+    background: var(--color-dark-surface-elevated);
   }
   
   svg {
@@ -134,11 +134,11 @@ function handleRules() {
   top: 48px;
   left: 0;
   min-width: 160px;
-  background: rgba(30, 30, 40, 0.95);
-  border: 1px solid $surface-500;
-  border-radius: 8px;
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
 }
 
 .menu-item {
@@ -146,7 +146,7 @@ function handleRules() {
   padding: 12px 16px;
   background: none;
   border: none;
-  color: #ddd;
+  color: var(--color-dark-text);
   font-size: 14px;
   text-align: left;
   cursor: pointer;
@@ -165,7 +165,7 @@ function handleRules() {
   }
   
   &:not(:last-child) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--color-dark-border);
   }
 }
 

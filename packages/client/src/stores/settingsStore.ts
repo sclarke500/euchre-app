@@ -3,9 +3,11 @@ import { ref, watch } from 'vue'
 
 export type AIDifficulty = 'easy' | 'hard'
 export type DealerPassRule = 'canPass' | 'stickTheDealer'
+export type AppTheme = 'teal' | 'navy' | 'slate' | 'green' | 'purple'
 
 interface GameSettings {
   aiDifficulty: AIDifficulty
+  theme: AppTheme
   // Euchre-specific
   dealerPassRule: DealerPassRule
   // President-specific
@@ -18,6 +20,8 @@ interface GameSettings {
 
 const STORAGE_KEY = 'game-settings'
 
+const VALID_THEMES: AppTheme[] = ['teal', 'navy', 'slate', 'green', 'purple']
+
 function loadSettings(): GameSettings {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -25,6 +29,7 @@ function loadSettings(): GameSettings {
       const parsed = JSON.parse(stored)
       return {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
+        theme: VALID_THEMES.includes(parsed.theme) ? parsed.theme : 'teal',
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
         presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
         superTwosAndJokers: parsed.superTwosAndJokers === true,
@@ -37,6 +42,7 @@ function loadSettings(): GameSettings {
   }
   return {
     aiDifficulty: 'easy',
+    theme: 'teal',
     dealerPassRule: 'canPass',
     presidentPlayerCount: 4,
     superTwosAndJokers: false,
@@ -45,20 +51,34 @@ function loadSettings(): GameSettings {
   }
 }
 
+function applyTheme(themeName: AppTheme) {
+  // Remove all theme classes
+  document.body.classList.remove(...VALID_THEMES.map(t => `theme-${t}`))
+  // Add new theme class (teal is default, no class needed)
+  if (themeName !== 'teal') {
+    document.body.classList.add(`theme-${themeName}`)
+  }
+}
+
 export const useSettingsStore = defineStore('settings', () => {
   const initialSettings = loadSettings()
 
   const aiDifficulty = ref<AIDifficulty>(initialSettings.aiDifficulty)
+  const theme = ref<AppTheme>(initialSettings.theme)
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
   const presidentPlayerCount = ref<number>(initialSettings.presidentPlayerCount)
   const superTwosAndJokers = ref<boolean>(initialSettings.superTwosAndJokers)
   const spadesWinningScore = ref<number>(initialSettings.spadesWinningScore)
   const spadesBlindNil = ref<boolean>(initialSettings.spadesBlindNil)
 
+  // Apply theme on load
+  applyTheme(initialSettings.theme)
+
   // Persist settings when they change
-  watch([aiDifficulty, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
+      theme: theme.value,
       dealerPassRule: dealerPassRule.value,
       presidentPlayerCount: presidentPlayerCount.value,
       superTwosAndJokers: superTwosAndJokers.value,
@@ -70,6 +90,11 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setAIDifficulty(difficulty: AIDifficulty) {
     aiDifficulty.value = difficulty
+  }
+
+  function setTheme(newTheme: AppTheme) {
+    theme.value = newTheme
+    applyTheme(newTheme)
   }
 
   function setDealerPassRule(rule: DealerPassRule) {
@@ -101,12 +126,14 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     aiDifficulty,
+    theme,
     dealerPassRule,
     presidentPlayerCount,
     superTwosAndJokers,
     spadesWinningScore,
     spadesBlindNil,
     setAIDifficulty,
+    setTheme,
     setDealerPassRule,
     setPresidentPlayerCount,
     setSuperTwosAndJokers,
