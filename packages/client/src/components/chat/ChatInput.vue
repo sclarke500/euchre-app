@@ -34,7 +34,9 @@ function handleSubmit() {
 }
 
 function handleQuickReact(react: { emoji: string; text: string }) {
-  chatStore.sendChatMessage(react.text, true)
+  // Send emoji + text together (e.g. "🎉 Nice!" not just "Nice!")
+  const message = react.emoji === react.text ? react.emoji : `${react.emoji} ${react.text}`
+  chatStore.sendChatMessage(message, true)
   showQuickReacts.value = false
 }
 
