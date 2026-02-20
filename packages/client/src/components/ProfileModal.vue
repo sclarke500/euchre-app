@@ -53,11 +53,16 @@ function getAvatarName(avatar: string): string {
 
 <template>
   <Modal :show="show" aria-label="Edit Profile" @close="$emit('close')">
-    <div class="modal-light profile-modal">
+    <div class="modal-content">
       <div class="modal-header">
-        <h3>Edit Profile</h3>
+        <h2>Edit Profile</h2>
+        <button class="close-btn" @click="$emit('close')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      
+
       <div class="modal-body">
         <!-- Nickname input -->
         <div class="form-group">
@@ -101,57 +106,59 @@ function getAvatarName(avatar: string): string {
       </div>
       
       <div class="modal-footer">
-        <button class="btn-secondary" @click="$emit('close')">Cancel</button>
-        <button class="btn-primary" :disabled="!canSave" @click="save">Save</button>
+        <button class="cancel-btn" @click="$emit('close')">Cancel</button>
+        <button class="save-btn" :disabled="!canSave" @click="save">Save</button>
       </div>
     </div>
   </Modal>
 </template>
 
 <style scoped lang="scss">
-.profile-modal {
-  width: 400px;
-  max-width: 90vw;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
+@use '@/assets/styles/modal-light' as *;
+
+.modal-content {
+  @include modal-panel;
+  max-width: 420px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.modal-header {
+  @include modal-header;
+  background: var(--color-primary-subtle);
+  border-bottom: 1px solid var(--color-primary);
+
+  h2 {
+    @include modal-title;
+    margin: 0;
+    color: var(--color-primary);
+  }
+}
+
+.close-btn {
+  @include modal-close-btn;
 }
 
 .modal-body {
-  overflow-y: auto;
+  padding: $spacing-md $spacing-lg;
 }
 
 .form-group {
   margin-bottom: 1.25rem;
   
   label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #374151;
+    @include modal-label;
   }
   
   .hint {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-top: 0.25rem;
+    @include modal-help-text;
   }
 }
 
 .nickname-input {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  font-size: 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  color: #1f2937;
-  transition: border-color 0.15s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary, #0d7377);
-  }
+  @include modal-input;
 }
 
 .avatar-grid {
@@ -160,15 +167,26 @@ function getAvatarName(avatar: string): string {
   gap: 8px;
   max-height: 280px;
   overflow-y: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
   padding: 4px;
   
   &::-webkit-scrollbar {
     width: 6px;
   }
   
-  &::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+  &::-webkit-scrollbar-track {
+    background: var(--color-surface-subtle);
     border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 3px;
+    
+    &:hover {
+      background: var(--color-text-muted);
+    }
   }
 }
 
@@ -181,7 +199,7 @@ function getAvatarName(avatar: string): string {
   cursor: pointer;
   overflow: hidden;
   transition: all 0.15s ease;
-  background: #e5e7eb;
+  background: var(--color-surface-subtle);
   
   img {
     width: 100%;
@@ -190,13 +208,13 @@ function getAvatarName(avatar: string): string {
   }
   
   &:hover {
-    border-color: #9ca3af;
+    border-color: var(--color-border-strong);
     transform: scale(1.05);
   }
   
   &.selected {
-    border-color: var(--color-primary, #0d7377);
-    box-shadow: 0 0 0 2px rgba(13, 115, 119, 0.3);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-focus-ring);
   }
   
   &.no-avatar {
@@ -214,8 +232,14 @@ function getAvatarName(avatar: string): string {
 }
 
 .modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
+  @include modal-footer;
+}
+
+.cancel-btn {
+  @include modal-btn-secondary;
+}
+
+.save-btn {
+  @include modal-btn-primary;
 }
 </style>

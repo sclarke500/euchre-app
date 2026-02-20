@@ -243,6 +243,11 @@ export const useLobbyStore = defineStore('lobby', () => {
   function setNickname(name: string): void {
     nickname.value = name.trim()
     localStorage.setItem(STORAGE_KEYS.nickname, nickname.value)
+    
+    // Re-sync to server if connected (so other players see the new name)
+    if (isConnected.value && hasNickname.value) {
+      joinLobby()
+    }
   }
 
   function setAvatar(avatarName: string | null): void {
@@ -251,6 +256,11 @@ export const useLobbyStore = defineStore('lobby', () => {
       localStorage.setItem(STORAGE_KEYS.avatar, avatarName)
     } else {
       localStorage.removeItem(STORAGE_KEYS.avatar)
+    }
+    
+    // Re-sync to server if connected (so other players see the new avatar)
+    if (isConnected.value && hasNickname.value) {
+      joinLobby()
     }
   }
 

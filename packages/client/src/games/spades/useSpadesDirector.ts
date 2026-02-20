@@ -63,6 +63,15 @@ export function useSpadesDirector(
     return names
   })
 
+  const playerAvatars = computed(() => {
+    const avatars: (string | undefined)[] = []
+    for (let seat = 0; seat < 4; seat++) {
+      const player = getPlayerAtSeat(seat)
+      avatars.push(player?.avatar ? `/avatars/users/${player.avatar}.jpg` : undefined)
+    }
+    return avatars
+  })
+
   const playerStatuses = computed(() => ['', '', '', ''])
 
   const dealerSeat = computed(() => playerIdToSeatIndex(game.dealer.value))
