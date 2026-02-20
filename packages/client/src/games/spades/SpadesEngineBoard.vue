@@ -191,6 +191,9 @@
       @timeout="handleTurnTimeout"
     />
 
+    <!-- Chat input (multiplayer only) -->
+    <ChatInput v-if="mode === 'multiplayer'" />
+
     <!-- Blind nil prompt (right side) - shows before cards revealed -->
     <BlindNilPrompt
       :visible="store.blindNilDecisionPending"
@@ -248,6 +251,7 @@ import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
+import ChatInput from '@/components/chat/ChatInput.vue'
 import SpadesBidWheel from './SpadesBidWheel.vue'
 import BlindNilPrompt from './BlindNilPrompt.vue'
 import { useCardTable } from '@/composables/useCardTable'

@@ -124,6 +124,9 @@
       @timeout="handleTurnTimeout"
     />
 
+    <!-- Chat input (multiplayer only) -->
+    <ChatInput v-if="mode === 'multiplayer'" />
+
     <!-- User actions — sliding panel from right -->
     <Transition name="action-slide">
       <div v-if="showActionPanel" class="action-panel-container frosted-panel--right">
@@ -177,6 +180,7 @@ import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
+import ChatInput from '@/components/chat/ChatInput.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useEuchreGameAdapter } from './useEuchreGameAdapter'
 import { useEuchreDirector } from './useEuchreDirector'

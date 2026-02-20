@@ -59,6 +59,9 @@
       @timeout="handleTurnTimeout"
     />
 
+    <!-- Chat input (multiplayer only) -->
+    <ChatInput v-if="mode === 'multiplayer'" />
+
     <!-- User actions — bottom bar -->
     <UserActions :active="game.isHumanTurn.value || game.isInExchange.value || game.isHumanGivingCards.value" :class="{ 'normal-table': playerCount <= 5 }">
 
@@ -223,6 +226,7 @@ import TurnTimer from '@/components/TurnTimer.vue'
 import Modal from '@/components/Modal.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import UserActions from '@/components/UserActions.vue'
+import ChatInput from '@/components/chat/ChatInput.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { usePresidentGameAdapter } from './usePresidentGameAdapter'
 import { usePresidentDirector } from './usePresidentDirector'
