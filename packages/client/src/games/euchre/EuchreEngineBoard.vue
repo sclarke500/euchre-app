@@ -48,6 +48,16 @@
       @bug-report-close="timerPaused = false"
     />
 
+    <!-- Chat icon (multiplayer only) -->
+    <div v-if="mode === 'multiplayer'" class="chat-icon-container">
+      <ChatIcon @click="showChatPanel = true" />
+    </div>
+    <ChatPanel
+      v-if="mode === 'multiplayer'"
+      :show="showChatPanel"
+      @close="showChatPanel = false"
+    />
+
     <!-- Game Over overlay -->
     <Modal :show="game.gameOver.value" :dismiss-on-backdrop="false" aria-label="Game over" @close="emit('leave-game')">
       <div class="game-over-panel dialog-panel">
@@ -181,6 +191,8 @@ import TurnTimer from '@/components/TurnTimer.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
+import ChatIcon from '@/components/chat/ChatIcon.vue'
+import ChatPanel from '@/components/chat/ChatPanel.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useEuchreGameAdapter } from './useEuchreGameAdapter'
 import { useEuchreDirector } from './useEuchreDirector'
@@ -473,6 +485,7 @@ function handlePlayAgain() {
 // Leave confirmation for multiplayer
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
+const showChatPanel = ref(false)
 const timerPaused = ref(false)
 const emit = defineEmits<{
   'leave-game': []
@@ -815,5 +828,13 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+// Chat icon positioned below HUD menu
+.chat-icon-container {
+  position: absolute;
+  top: 60px;
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 500;
 }
 </style>
