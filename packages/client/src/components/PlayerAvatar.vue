@@ -30,6 +30,16 @@
       
       <!-- Turn indicator glow -->
       <div v-if="props.isCurrentTurn" class="avatar-glow"></div>
+      
+      <!-- Chat bubble - positioned relative to avatar -->
+      <ChatBubble
+        v-if="chatMessage"
+        :message="chatMessage"
+        :position="bubblePosition"
+        :persistent="chatPersistent"
+        class="avatar-chat-bubble"
+        @dismiss="emit('chat-dismiss')"
+      />
     </div>
     
     <!-- Status text (e.g., "Passed", "Thinking...") -->
@@ -39,7 +49,8 @@
 
 <script setup lang="ts">
 import { computed, type CSSProperties } from 'vue'
-import { getAIAvatar } from '@67cards/shared'
+import { getAIAvatar, type ChatMessage } from '@67cards/shared'
+import ChatBubble from './chat/ChatBubble.vue'
 
 export type AvatarPosition = 'bottom' | 'left' | 'right' | 'top' | 'rail-left' | 'rail-right' | 'rail-top'
 
@@ -57,6 +68,10 @@ const props = withDefaults(defineProps<{
   trumpColor?: string
   /** Optional avatar image URL (overrides auto-detection) */
   avatarUrl?: string
+  /** Chat message to display as speech bubble */
+  chatMessage?: ChatMessage | null
+  /** Keep bubble visible (for testing/positioning) */
+  chatPersistent?: boolean
 }>(), {
   isCurrentTurn: false,
   isUser: false,
@@ -65,7 +80,13 @@ const props = withDefaults(defineProps<{
   trumpSymbol: '',
   trumpColor: '#2c3e50',
   avatarUrl: '',
+  chatMessage: null,
+  chatPersistent: false,
 })
+
+const emit = defineEmits<{
+  'chat-dismiss': []
+}>()
 
 const initial = computed(() => props.name?.[0]?.toUpperCase() ?? '?')
 
@@ -85,6 +106,24 @@ const hasAvatar = computed(() => !!resolvedAvatarUrl.value)
 const positionClass = computed(() => `position-${props.position}`)
 
 const positionStyle = computed(() => props.customStyle ?? {})
+
+// Map avatar position to bubble tail direction
+const bubblePosition = computed(() => {
+  switch (props.position) {
+    case 'rail-top':
+    case 'top':
+      return 'top' // Bubble below avatar, tail points up
+    case 'rail-left':
+    case 'left':
+      return 'left' // Bubble to right of avatar, tail points left
+    case 'rail-right':
+    case 'right':
+      return 'right' // Bubble to left of avatar, tail points right
+    case 'bottom':
+    default:
+      return 'bottom' // Bubble above avatar, tail points down
+  }
+})
 </script>
 
 <style scoped lang="scss">
@@ -297,6 +336,47 @@ const positionStyle = computed(() => props.customStyle ?? {})
       0 0 12px rgba(255, 215, 0, 0.3),
       0 0 30px rgba(255, 215, 0, 0.15),
       0 0 50px rgba(255, 215, 0, 0.08);
+  }
+
+  // Chat bubble positioning (relative to avatar-container)
+  .avatar-chat-bubble {
+    position: absolute;
+    z-index: 450;
+  }
+  
+  // User (bottom) - bubble appears above
+  &.position-bottom .avatar-chat-bubble {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 12px;
+  }
+  
+  // Top opponent - bubble appears below
+  &.position-rail-top .avatar-chat-bubble,
+  &.position-top .avatar-chat-bubble {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 12px;
+  }
+  
+  // Left opponent - bubble appears to the right
+  &.position-rail-left .avatar-chat-bubble,
+  &.position-left .avatar-chat-bubble {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 12px;
+  }
+  
+  // Right opponent - bubble appears to the left
+  &.position-rail-right .avatar-chat-bubble,
+  &.position-right .avatar-chat-bubble {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 12px;
   }
 
   // Position variants
