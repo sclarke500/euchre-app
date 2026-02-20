@@ -253,6 +253,7 @@ const trumpChipStyle = computed(() => {
     left: `${avatarX + chipOffset.x}px`,
     top: `${avatarY + chipOffset.y}px`,
     color: props.trumpColor || '#fff',
+    zIndex: seat.isUser ? 550 : 400, // Above user avatar (500) when user called trump
   }
 })
 
