@@ -42,7 +42,7 @@
         @click="$emit('card-click', managed.card.id)"
       />
 
-      <!-- User avatar at bottom center of screen -->
+      <!-- User avatar at bottom center of screen (no chat bubble - user sees their own messages in panel) -->
       <PlayerAvatar
         :name="playerNames[0] ?? 'You'"
         :is-current-turn="currentTurnSeat === 0"
@@ -50,9 +50,6 @@
         position="bottom"
         :trump-symbol="trumpCallerSeat === 0 ? trumpSymbol : ''"
         :trump-color="trumpCallerSeat === 0 ? trumpColor : ''"
-        :chat-message="chatStore.activeBubbles.get(0)"
-        :chat-persistent="chatStore.debugBubbles"
-        @chat-dismiss="chatStore.hideBubble(0)"
       >
         <slot name="user-info" />
       </PlayerAvatar>

@@ -108,16 +108,16 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * Toggle test bubbles for all seats (for positioning/styling)
+   * Toggle test bubbles for opponent seats (for positioning/styling)
    * In debug mode, bubbles don't auto-dismiss
+   * Note: User (seat 0) doesn't show their own bubble
    */
   function toggleTestBubbles(playerNames: string[] = ['You', 'Left AI', 'Partner', 'Right AI']): void {
     debugBubbles.value = !debugBubbles.value
     
     if (debugBubbles.value) {
-      // Show a test bubble for each seat
+      // Show a test bubble for each opponent seat (not seat 0 - user)
       const testMessages: [number, string][] = [
-        [0, 'Nice play! 🎉'],
         [1, 'Good luck everyone'],
         [2, 'Let\'s go team!'],
         [3, 'gg'],
