@@ -25,23 +25,17 @@ export const useChatStore = defineStore('chat', () => {
     return messages.value.filter(m => m.timestamp > lastReadAt.value).length
   })
 
-  // Check if we can send (client-side rate limit check for UI feedback)
-  const canSend = computed(() => {
+  // Check if we can send (must be a function, not computed - Date.now() isn't reactive)
+  function canSend(): boolean {
     return Date.now() - lastSentAt.value >= CHAT_RATE_LIMIT_MS
-  })
-
-  // Time until we can send again (for UI)
-  const cooldownRemaining = computed(() => {
-    const elapsed = Date.now() - lastSentAt.value
-    return Math.max(0, CHAT_RATE_LIMIT_MS - elapsed)
-  })
+  }
 
   function sendChatMessage(text: string, isQuickReact?: boolean): boolean {
     const trimmed = text.trim()
     if (!trimmed) return false
     
     // Client-side rate limit check (server will also enforce)
-    if (!canSend.value) {
+    if (!canSend()) {
       console.warn('[Chat] Rate limited - wait before sending')
       return false
     }
@@ -114,11 +108,10 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     activeBubbles,
     unreadCount,
-    canSend,
-    cooldownRemaining,
     
     // Actions
     sendChatMessage,
+    canSend,
     receiveMessage,
     hideBubble,
     markAsRead,

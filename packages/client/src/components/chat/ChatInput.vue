@@ -19,7 +19,7 @@ const quickReacts = [
 ]
 
 const canSubmit = computed(() => {
-  return inputText.value.trim().length > 0 && chatStore.canSend
+  return inputText.value.trim().length > 0 && chatStore.canSend()
 })
 
 function handleSubmit() {
@@ -60,7 +60,7 @@ function handleClickOutside(e: MouseEvent) {
         class="chat-input"
         placeholder="Type a message..."
         :maxlength="CHAT_MAX_LENGTH"
-        :disabled="!chatStore.canSend"
+        :disabled="false"
         @keydown.enter.prevent="handleSubmit"
       />
       <button
