@@ -162,11 +162,13 @@ function checkForUpdates() {
 
 .modal-header {
   @include modal-header;
+  background: var(--color-primary-subtle);
+  border-bottom: 1px solid var(--color-primary);
 
   h2 {
     @include modal-title;
     margin: 0;
-    color: $modal-primary;
+    color: var(--color-primary);
   }
 }
 
@@ -268,6 +270,8 @@ function checkForUpdates() {
 .modal-footer {
   @include modal-footer;
   justify-content: space-between;
+  background: var(--color-primary-subtle);
+  border-top: 1px solid var(--color-primary);
 }
 
 .version-info {
