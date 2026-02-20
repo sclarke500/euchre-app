@@ -197,7 +197,7 @@ export class Hand extends CardContainer {
       if (this.lockedArcRadius === null) {
         // Smaller spacing for flatter fans (less card overlap when nearly parallel)
         // Curved fans (high angle): more spacing needed, flat fans (low angle): less spacing
-        const targetSpacing = Math.min(55, 25 + this.fanCurve * 4)
+        const targetSpacing = Math.min(72, 33 + this.fanCurve * 5.2) // +30% spread
         const curveRad = this.fanCurve * Math.PI / 180
         this.lockedArcRadius = targetSpacing / Math.sin(curveRad)
       }
