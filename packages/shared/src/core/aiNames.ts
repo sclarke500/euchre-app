@@ -7,15 +7,15 @@ export type AIName = typeof AI_NAMES[number]
 
 /**
  * AI avatar mapping: name -> avatar filename
- * Avatar images should be in /assets/avatars/ai/
+ * Avatar images should be in /avatars/ai/
  */
 export const AI_AVATARS: Record<AIName, string> = {
-  Tron: 'tron.png',
-  Data: 'data.png',
-  Neon: 'neon.png',
-  Halo: 'halo.png',
-  Pixel: 'pixel.png',
-  Atlas: 'atlas.png',
+  Tron: 'tron.jpg',
+  Data: 'data.jpg',
+  Neon: 'neon.jpg',
+  Halo: 'halo.jpg',
+  Pixel: 'pixel.jpg',
+  Atlas: 'atlas.jpg',
 }
 
 /**
