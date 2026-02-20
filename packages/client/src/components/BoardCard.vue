@@ -188,12 +188,13 @@ defineExpose({
 }
 
 .card-inner {
-  // Dynamic card size based on viewport (base size, scaled via transform)
-  width: min(49px, 5.6vw);
-  height: min(70px, 8vw);
+  // Dynamic card size from CSS custom properties (set by CardTable via useCardSizing)
+  // Fallback to reasonable defaults if vars not set
+  width: var(--card-base-width, 83px);
+  height: var(--card-base-height, 116px);
   background: #fff;
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
   user-select: none;
 
@@ -211,22 +212,23 @@ defineExpose({
   line-height: 1;
 
   &.top-left {
-    top: 3px;
-    left: 3px;
+    top: 4%;
+    left: 5%;
   }
 
   &.bottom-right {
-    bottom: 3px;
-    right: 3px;
+    bottom: 4%;
+    right: 5%;
     transform: rotate(180deg);
   }
 
+  // Font sizes relative to card width for proper scaling
   .rank {
-    font-size: 15px;
+    font-size: calc(var(--card-base-width, 83px) * 0.18);
   }
 
   .suit {
-    font-size: 13px;
+    font-size: calc(var(--card-base-width, 83px) * 0.16);
   }
 
   &.red { color: #e74c3c; }
@@ -241,7 +243,7 @@ defineExpose({
   transform: translate(-50%, -50%);
 
   .suit-large {
-    font-size: 26px;
+    font-size: calc(var(--card-base-width, 83px) * 0.32);
   }
 
   &.red { color: #e74c3c; }

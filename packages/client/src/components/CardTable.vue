@@ -73,6 +73,7 @@ import BoardCard from './BoardCard.vue'
 import PlayerAvatar, { type AvatarPosition } from './PlayerAvatar.vue'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
+import { useCardSizing } from '@/composables/useCardSizing'
 
 const props = withDefaults(defineProps<{
   playerCount: number
@@ -114,6 +115,9 @@ let resizeObserver: ResizeObserver | null = null
 const engine = props.engine ?? useCardTable()
 const seatData = ref<SeatLayout[]>([])
 const lastLayoutResult = ref<TableLayoutResult | null>(null)
+
+// Dynamic card sizing based on viewport
+const { baseWidth, baseHeight } = useCardSizing()
 
 /**
  * Map seat side to avatar position class
@@ -270,6 +274,10 @@ function computeLayout() {
   el.style.setProperty('--table-right', `${((w - tableBounds.right) / w * 100).toFixed(2)}%`)
   el.style.setProperty('--table-top', `${(tableBounds.top / h * 100).toFixed(2)}%`)
   el.style.setProperty('--table-bottom', `${((h - tableBounds.bottom) / h * 100).toFixed(2)}%`)
+  
+  // Set card base size CSS vars (used by BoardCard)
+  el.style.setProperty('--card-base-width', `${baseWidth.value}px`)
+  el.style.setProperty('--card-base-height', `${baseHeight.value}px`)
 
   return result
 }
