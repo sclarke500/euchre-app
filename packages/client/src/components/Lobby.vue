@@ -19,10 +19,16 @@ const emit = defineEmits<{
 const lobbyStore = useLobbyStore()
 const showCreateOptions = ref(false)
 
-// Create table options
-const chatEnabled = ref(true)
-const isPrivate = ref(false)
-const bootInactive = ref(true)
+// Create table options - load from localStorage with defaults
+const STORAGE_KEYS = {
+  chatEnabled: 'createTable.chatEnabled',
+  isPrivate: 'createTable.isPrivate',
+  bootInactive: 'createTable.bootInactive',
+}
+
+const chatEnabled = ref(localStorage.getItem(STORAGE_KEYS.chatEnabled) !== 'false')
+const isPrivate = ref(localStorage.getItem(STORAGE_KEYS.isPrivate) === 'true')
+const bootInactive = ref(localStorage.getItem(STORAGE_KEYS.bootInactive) !== 'false')
 
 const sortedTables = computed(() => {
   return [...lobbyStore.tables].sort((a, b) => b.createdAt - a.createdAt)
@@ -42,16 +48,17 @@ onUnmounted(() => {
 })
 
 function handleCreateTable() {
+  // Save preferences to localStorage
+  localStorage.setItem(STORAGE_KEYS.chatEnabled, String(chatEnabled.value))
+  localStorage.setItem(STORAGE_KEYS.isPrivate, String(isPrivate.value))
+  localStorage.setItem(STORAGE_KEYS.bootInactive, String(bootInactive.value))
+  
   lobbyStore.createTable(undefined, {
     chatEnabled: chatEnabled.value,
     isPrivate: isPrivate.value,
     bootInactive: bootInactive.value,
   })
   showCreateOptions.value = false
-  // Reset for next time
-  chatEnabled.value = true
-  isPrivate.value = false
-  bootInactive.value = true
 }
 
 function handleBack() {
