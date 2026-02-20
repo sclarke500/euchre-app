@@ -22,6 +22,7 @@ const clientMetaShape = {
 const joinLobbySchema = z.object({
   type: z.literal('join_lobby'),
   nickname: z.string().min(1).max(32),
+  avatar: z.string().max(32).optional(),
   odusId: z.string().optional(),
   ...clientMetaShape,
 }).strict()

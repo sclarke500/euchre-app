@@ -129,6 +129,7 @@ export interface SpadesClientGameState {
 export interface SpadesClientPlayer {
   id: number
   name: string
+  avatar?: string               // User's selected avatar filename
   teamId: number
   bid: SpadesBid | null
   tricksWon: number

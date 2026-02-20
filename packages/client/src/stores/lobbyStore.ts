@@ -266,6 +266,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     websocket.send({
       type: 'join_lobby',
       nickname: nickname.value,
+      avatar: avatar.value || undefined,
       odusId: odusId.value || undefined,
     })
   }

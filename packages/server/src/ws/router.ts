@@ -3,7 +3,7 @@ import type { ClientMessage, Bid, Suit } from '@67cards/shared'
 import type { ConnectedClient } from './types.js'
 
 export interface MessageHandlers {
-  joinLobby: (ws: WebSocket, client: ConnectedClient, nickname: string, odusId?: string) => void
+  joinLobby: (ws: WebSocket, client: ConnectedClient, nickname: string, avatar?: string, odusId?: string) => void
   createTable: (
     ws: WebSocket,
     client: ConnectedClient,
@@ -42,7 +42,7 @@ export function routeClientMessage(
 ): void {
   switch (message.type) {
     case 'join_lobby':
-      handlers.joinLobby(ws, client, message.nickname, message.odusId)
+      handlers.joinLobby(ws, client, message.nickname, message.avatar, message.odusId)
       break
     case 'create_table':
       handlers.createTable(ws, client, message.tableName, message.gameType, message.maxPlayers, message.settings)

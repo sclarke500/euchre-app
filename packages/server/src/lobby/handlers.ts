@@ -13,7 +13,7 @@ import type { ConnectedClient } from '../ws/types.js'
 import { findRuntimeByPlayer, getRuntime } from '../sessions/registry.js'
 
 export interface LobbyHandlers {
-  handleJoinLobby: (ws: WebSocket, client: ConnectedClient, nickname: string, odusId?: string) => void
+  handleJoinLobby: (ws: WebSocket, client: ConnectedClient, nickname: string, avatar?: string, odusId?: string) => void
   handleCreateTable: (
     ws: WebSocket,
     client: ConnectedClient,
@@ -67,12 +67,13 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     }
   }
 
-  function handleJoinLobby(ws: WebSocket, client: ConnectedClient, nickname: string, odusId?: string): void {
+  function handleJoinLobby(ws: WebSocket, client: ConnectedClient, nickname: string, avatar?: string, odusId?: string): void {
     const playerId = odusId || generateId()
 
     client.player = {
       odusId: playerId,
       nickname,
+      avatar,
       connectedAt: Date.now(),
     }
 

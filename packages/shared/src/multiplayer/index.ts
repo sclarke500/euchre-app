@@ -37,6 +37,7 @@ import type {
 export interface LobbyPlayer {
   odusId: string // Unique player ID (UUID)
   nickname: string
+  avatar?: string // User's selected avatar filename (e.g., 'ace', 'bear')
   connectedAt: number
 }
 
@@ -109,6 +110,7 @@ export type ClientMessage = (
 export interface JoinLobbyMessage {
   type: 'join_lobby'
   nickname: string
+  avatar?: string // User's selected avatar filename
   odusId?: string // Optional - for reconnection
 }
 
@@ -308,6 +310,7 @@ export interface ClientGameState {
 export interface ClientPlayer {
   id: number
   name: string
+  avatar?: string // User's selected avatar filename
   handSize: number // Other players: only count
   hand?: Card[] // Only populated for the receiving player
   isHuman: boolean
@@ -434,6 +437,7 @@ export interface PresidentClientGameState {
 export interface PresidentClientPlayer {
   id: number
   name: string
+  avatar?: string // User's selected avatar filename
   handSize: number // Other players only see count
   hand?: StandardCard[] // Only populated for the receiving player
   isHuman: boolean

@@ -16,6 +16,7 @@
         :key="'avatar-' + i"
         v-show="!seat.isUser"
         :name="playerNames[i] ?? 'Player'"
+        :avatar-url="playerAvatars[i]"
         :is-current-turn="currentTurnSeat === i"
         :status="playerStatuses[i]"
         :position="getRailPosition(seat.side)"
@@ -79,6 +80,7 @@ import { useCardSizing } from '@/composables/useCardSizing'
 const props = withDefaults(defineProps<{
   playerCount: number
   playerNames: string[]
+  playerAvatars?: (string | undefined)[] // Avatar URLs for each player
   layout?: 'normal' | 'wide'
   engine?: CardTableEngine
   dealerSeat?: number
@@ -101,6 +103,7 @@ const props = withDefaults(defineProps<{
   playerStatuses: () => [],
   currentTurnSeat: -1,
   avatarOpacities: () => [],
+  playerAvatars: () => [],
   gameName: '',
 })
 
