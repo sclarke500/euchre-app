@@ -31,8 +31,7 @@ watch(() => props.show, (isOpen) => {
   if (isOpen) {
     chatStore.markAsRead()
     scrollToBottom()
-    // Focus input when panel opens
-    nextTick(() => inputRef.value?.focus())
+    // Don't auto-focus input - causes keyboard to pop up on mobile
   }
 })
 
@@ -49,11 +48,6 @@ function scrollToBottom() {
       messagesRef.value.scrollTop = messagesRef.value.scrollHeight
     }
   })
-}
-
-function formatTime(timestamp: number): string {
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 function handleBackdropClick(e: MouseEvent) {
@@ -115,7 +109,6 @@ function handleQuickReact(emoji: string) {
               <div class="message-bubble">
                 <span v-if="msg.seatIndex !== 0" class="message-name">{{ msg.playerName }}</span>
                 <span class="message-text">{{ msg.text }}</span>
-                <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
               </div>
             </div>
           </div>
@@ -319,13 +312,6 @@ function handleQuickReact(emoji: string) {
   color: rgba(255, 255, 255, 0.95);
   word-break: break-word;
   line-height: 1.4;
-}
-
-.message-time {
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.45);
-  text-align: right;
-  margin-top: 2px;
 }
 
 // Input area at bottom
