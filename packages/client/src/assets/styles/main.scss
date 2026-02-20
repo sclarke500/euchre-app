@@ -1,5 +1,6 @@
 // Main SCSS entry point
 @use './variables' as *;
+@use './theme';        // CSS custom properties for theming
 @use './reset';
 @use './layout';
 @use './cards';
