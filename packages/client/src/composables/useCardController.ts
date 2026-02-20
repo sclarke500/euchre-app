@@ -146,7 +146,9 @@ export function useCardController(
     const deckPos = dealerSeatIndex !== undefined
       ? getAvatarBoardPosition(dealerSeatIndex, layout)
       : getGenericDealPosition()
-    engine.createDeck(deckPos, CardScales.deck)
+    // When dealing from a player's avatar, use hidden scale (matches collapsed hand)
+    const deckScale = dealerSeatIndex !== undefined ? CardScales.hidden : CardScales.deck
+    engine.createDeck(deckPos, deckScale)
 
     const baseScale = config.opponentHandScale ?? CardScales.opponentHand
     for (let i = 0; i < getPlayerCount(); i++) {
@@ -191,6 +193,7 @@ export function useCardController(
     if (dealerSeat !== undefined && tableLayout.value) {
       const dealerPos = getAvatarBoardPosition(dealerSeat, tableLayout.value)
       deck.position = dealerPos
+      deck.scale = CardScales.hidden // Match hidden hand scale
     }
 
 
