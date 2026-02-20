@@ -169,13 +169,14 @@ const dealerChipStyle = computed(() => {
   if (!seat) return { display: 'none' }
   
   const { tableBounds } = layout
-  const chipOffset = { x: -38, y: -10 } // Top-left of avatar
+  const chipOffset = { x: -38, y: -38 } // Top-left of avatar
   
   if (seat.isUser) {
     // User avatar is fixed at bottom of screen - use bottom positioning
+    // Pill avatar is ~50px tall, positioned at bottom: 10px
     return {
       left: `${tableBounds.centerX + chipOffset.x}px`,
-      bottom: '50px', // Above user's pill avatar (bottom: 10px + avatar height ~40px)
+      bottom: '70px', // Top-left of user pill (10px + 50px avatar + 10px offset)
       top: 'auto',
     }
   }
