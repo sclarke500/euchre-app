@@ -1,7 +1,7 @@
 <template>
   <div 
     class="board-card"
-    :class="{ 'arc-fan': useArcFan, 'dimmed': dimmed, 'selected': selected, 'highlighted': highlighted }"
+    :class="{ 'arc-fan': useArcFan, 'dimmed': dimmed, 'selected': selected, 'highlighted': highlighted, 'table-skew': position.tableSkew }"
     :style="cardStyle"
   >
     <div class="card-inner" :class="{ 'face-down': !showFaceUp }">
@@ -47,6 +47,7 @@ const position = ref<CardPosition>(props.initialPosition ?? {
   zIndex: 1,
   scale: 1,
   flipY: 0,
+  tableSkew: false,
 })
 
 const isAnimating = ref(false)
@@ -120,6 +121,7 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
         zIndex: target.zIndex,
         scale: (start.scale ?? 1) + ((target.scale ?? 1) - (start.scale ?? 1)) * eased,
         flipY: (start.flipY ?? 0) + ((target.flipY ?? (start.flipY ?? 0)) - (start.flipY ?? 0)) * eased,
+        tableSkew: target.tableSkew ?? false, // Snap to target (no interpolation for bool)
       }
       
       if (progress < 1) {
@@ -184,6 +186,12 @@ defineExpose({
 
   &:not(.selected):not(.highlighted) {
     transition: margin-top var(--anim-fast) ease, filter 0.7s ease;
+  }
+
+  // 3D perspective skew for cards "on table" - makes card look like it's lying flat
+  &.table-skew .card-inner {
+    transform: perspective(400px) rotateX(40deg);
+    transform-origin: center bottom;
   }
 }
 

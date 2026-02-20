@@ -541,6 +541,7 @@ export function useCardController(
       zIndex: 300 + cardIndex, // Below user avatar (500)
       scale: CardScales.playArea,
       flipY: 180,
+      tableSkew: true, // Cards on table get 3D skew
     }
   }
 
@@ -560,6 +561,7 @@ export function useCardController(
       zIndex: 300 + playIndex * 4 + cardIndex, // Below user avatar (500)
       scale: CardScales.playArea,
       flipY: 180,
+      tableSkew: true, // Cards on table get 3D skew
     }
   }
 

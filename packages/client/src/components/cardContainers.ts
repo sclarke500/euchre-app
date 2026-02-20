@@ -5,6 +5,7 @@ export interface CardPosition {
   zIndex: number
   scale?: number    // 1.0 = normal size
   flipY?: number    // 0-180 degrees for flip animation
+  tableSkew?: boolean // Apply 3D perspective skew (for cards "on table")
 }
 
 export interface BoardCardRef {
