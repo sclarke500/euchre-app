@@ -8,6 +8,8 @@ const tableSettingsSchema = z.object({
   superTwosMode: z.boolean().optional(),
   maxRounds: z.number().int().min(1).optional(),
   aiDifficulty: z.enum(['easy', 'hard']).optional(),
+  chatEnabled: z.boolean().optional(),
+  isPrivate: z.boolean().optional(),
 }).strict()
 
 const clientMetaShape = {
