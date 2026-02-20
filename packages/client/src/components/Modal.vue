@@ -151,6 +151,12 @@ watch(
         : null
       applyScrollLock()
       await nextTick()
+      // Reset scroll position of modal content and any scrollable children
+      if (dialogRef.value) {
+        dialogRef.value.scrollTop = 0
+        dialogRef.value.querySelectorAll<HTMLElement>('.modal-body, .dialog-text, .rules-content')
+          .forEach(el => el.scrollTop = 0)
+      }
       focusDialog()
       return
     }
