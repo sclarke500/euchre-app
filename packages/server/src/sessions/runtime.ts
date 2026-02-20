@@ -8,6 +8,7 @@ export interface RuntimePlayerInfo {
 export interface HumanPlayerSeat {
   odusId: string
   name: string
+  avatar?: string
   seatIndex: number
 }
 

@@ -94,12 +94,13 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     })
 
     // Collect human players from the table
-    const humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }> = []
+    const humanPlayers: Array<{ odusId: string; name: string; avatar?: string; seatIndex: number }> = []
     for (const seat of table.seats) {
       if (seat.player) {
         humanPlayers.push({
           odusId: seat.player.odusId,
           name: seat.player.nickname,
+          avatar: seat.player.avatar,
           seatIndex: seat.odusIndex,
         })
       }
@@ -526,7 +527,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     }
 
     // Collect all human players currently in the game
-    const humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }> = []
+    const humanPlayers: Array<{ odusId: string; name: string; avatar?: string; seatIndex: number }> = []
     for (const [, c] of clients) {
       if (c.gameId === oldGameId && c.player) {
         // Find their seat index from the old game
@@ -538,6 +539,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
           humanPlayers.push({
             odusId: c.player.odusId,
             name: c.player.nickname,
+            avatar: c.player.avatar,
             seatIndex: playerInfo.seatIndex,
           })
         }

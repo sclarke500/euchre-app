@@ -55,7 +55,7 @@ export class SpadesGame {
     return this.stateSeq
   }
 
-  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }>): void {
+  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; avatar?: string; seatIndex: number }>): void {
     const aiCount = 4 - humanPlayers.length
     const aiNames = getRandomAINames(aiCount)
     let aiNameIndex = 0
@@ -68,6 +68,7 @@ export class SpadesGame {
           odusId: humanPlayer.odusId,
           seatIndex: i,
           name: humanPlayer.name,
+          avatar: humanPlayer.avatar,
           isHuman: true,
           hand: [],
           teamId: i % 2,

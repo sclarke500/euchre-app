@@ -3,6 +3,7 @@
     ref="tableRef"
     :player-count="4"
     :player-names="director.playerNames.value"
+    :player-avatars="director.playerAvatars.value"
     :player-statuses="director.playerStatuses.value"
     :avatar-opacities="avatarOpacities"
     :engine="engine"

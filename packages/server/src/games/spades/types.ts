@@ -9,6 +9,7 @@ export interface SpadesGamePlayer {
   odusId: string | null
   seatIndex: number
   name: string
+  avatar?: string
   isHuman: boolean
   hand: StandardCard[]
   teamId: number

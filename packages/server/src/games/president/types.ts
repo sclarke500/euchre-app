@@ -9,6 +9,7 @@ export interface PresidentGamePlayer {
   odusId: string | null
   seatIndex: number
   name: string
+  avatar?: string
   isHuman: boolean
   hand: StandardCard[]
   rank: PlayerRank | null

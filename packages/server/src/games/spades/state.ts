@@ -116,6 +116,7 @@ export function buildSpadesClientState({
     const clientPlayer: SpadesClientPlayer = {
       id: p.seatIndex,
       name: p.name,
+      avatar: p.avatar,
       teamId: p.teamId,
       bid: p.bid,
       tricksWon: p.tricksWon,

@@ -90,7 +90,7 @@ export class PresidentGame {
   /**
    * Initialize the game with players
    */
-  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }>): void {
+  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; avatar?: string; seatIndex: number }>): void {
     // Count how many AI players we need
     const aiCount = this.maxPlayers - humanPlayers.length
     const aiNames = getRandomAINames(aiCount)
@@ -105,6 +105,7 @@ export class PresidentGame {
           odusId: humanPlayer.odusId,
           seatIndex: i,
           name: humanPlayer.name,
+          avatar: humanPlayer.avatar,
           isHuman: true,
           hand: [],
           rank: null,

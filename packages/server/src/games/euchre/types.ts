@@ -4,6 +4,7 @@ export interface GamePlayer {
   odusId: string | null
   seatIndex: number
   name: string
+  avatar?: string
   isHuman: boolean
   hand: Card[]
   teamId: number

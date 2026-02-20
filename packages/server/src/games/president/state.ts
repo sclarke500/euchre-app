@@ -43,6 +43,7 @@ export function buildPresidentClientState({
   const clientPlayers: PresidentClientPlayer[] = players.map((p, index) => ({
     id: index,
     name: p.name,
+    avatar: p.avatar,
     handSize: p.hand.length,
     hand: index === playerIndex ? p.hand : undefined,
     isHuman: p.isHuman,

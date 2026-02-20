@@ -68,7 +68,7 @@ export class EuchreGame {
   /**
    * Initialize the game with players
    */
-  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; seatIndex: number }>): void {
+  initializePlayers(humanPlayers: Array<{ odusId: string; name: string; avatar?: string; seatIndex: number }>): void {
     // Count how many AI players we need
     const aiCount = 4 - humanPlayers.length
     const aiNames = getRandomAINames(aiCount)
@@ -83,6 +83,7 @@ export class EuchreGame {
           odusId: humanPlayer.odusId,
           seatIndex: i,
           name: humanPlayer.name,
+          avatar: humanPlayer.avatar,
           isHuman: true,
           hand: [],
           teamId: i % 2,

@@ -16,6 +16,7 @@ import type { Card, Trick, TeamScore, Bid, ServerMessage } from '@67cards/shared
 export interface EuchreAdapterPlayer {
   id: number
   name: string
+  avatar?: string
   hand: Card[]
   handSize: number
   isHuman: boolean
@@ -246,6 +247,7 @@ function createMultiplayerAdapter(): EuchreGameAdapter {
     return store.players.map(p => ({
       id: p.id,
       name: p.name,
+      avatar: p.avatar,
       // Opponents don't have actual cards — create placeholders so hand.length is correct
       // for the director to deal and fan the right number of cards
       hand: p.hand ?? Array.from({ length: p.handSize }, (_, i) => ({

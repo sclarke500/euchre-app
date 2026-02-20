@@ -140,6 +140,20 @@ export function useEuchreDirector(
     })
   )
 
+  const playerAvatars = computed(() =>
+    [0, 1, 2, 3].map(seat => {
+      const pid = seatIndexToPlayerId(seat)
+      const player = game.players.value[pid]
+      if (!player) return undefined
+      // For user, return their avatar from lobbyStore (already done in PlayerAvatar)
+      // For others, return their avatar from game state if human
+      if (player.avatar) {
+        return `/avatars/users/${player.avatar}.jpg`
+      }
+      return undefined
+    })
+  )
+
   const playerInfo = computed(() =>
     [0, 1, 2, 3].map(seat => {
       const pid = seatIndexToPlayerId(seat)
@@ -1023,6 +1037,7 @@ export function useEuchreDirector(
 
   return {
     playerNames,
+    playerAvatars,
     playerInfo,
     playerStatuses,
     dealerSeat,
