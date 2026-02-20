@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { ChatMessage } from '@67cards/shared'
 import { CHAT_RATE_LIMIT_MS } from '@67cards/shared'
 import { websocket } from '@/services/websocket'
+import { useLobbyStore } from './lobbyStore'
 
 export const useChatStore = defineStore('chat', () => {
   // All chat messages for current game
@@ -22,6 +23,16 @@ export const useChatStore = defineStore('chat', () => {
   
   // Debug mode: test bubbles stay visible (no auto-dismiss)
   const debugBubbles = ref(false)
+
+  /**
+   * Convert absolute seat index (from server) to visual seat index (for UI)
+   * Visual seat 0 is always the current user
+   */
+  function absoluteToVisualSeat(absoluteSeat: number, playerCount = 4): number {
+    const lobbyStore = useLobbyStore()
+    const mySeat = lobbyStore.currentSeat ?? 0
+    return (absoluteSeat - mySeat + playerCount) % playerCount
+  }
 
   // Computed: unread message count
   const unreadCount = computed(() => {
@@ -61,16 +72,17 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function showBubble(message: ChatMessage): void {
-    const { seatIndex } = message
+    // Convert server's absolute seat to visual seat for UI
+    const visualSeat = absoluteToVisualSeat(message.seatIndex)
     
     // Clear existing timer for this seat
-    const existingTimer = bubbleTimers.value.get(seatIndex)
+    const existingTimer = bubbleTimers.value.get(visualSeat)
     if (existingTimer) {
       clearTimeout(existingTimer)
     }
     
-    // Set the active bubble
-    activeBubbles.value.set(seatIndex, message)
+    // Set the active bubble (using visual seat index)
+    activeBubbles.value.set(visualSeat, message)
     
     // Calculate duration: 3s base + 1s per 50 chars, max 8s
     const baseMs = 3000
@@ -79,10 +91,10 @@ export const useChatStore = defineStore('chat', () => {
     
     // Auto-dismiss after duration
     const timer = setTimeout(() => {
-      hideBubble(seatIndex)
+      hideBubble(visualSeat)
     }, duration)
     
-    bubbleTimers.value.set(seatIndex, timer)
+    bubbleTimers.value.set(visualSeat, timer)
   }
 
   function hideBubble(seatIndex: number): void {
