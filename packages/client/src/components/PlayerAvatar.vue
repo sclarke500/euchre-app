@@ -108,17 +108,19 @@ const positionClass = computed(() => `position-${props.position}`)
 const positionStyle = computed(() => props.customStyle ?? {})
 
 // Map avatar position to bubble tail direction
+// Side players: bubble above (out of table area)
+// Top player: bubble to the right (out of table area)
+// User (bottom): bubble above
 const bubblePosition = computed(() => {
   switch (props.position) {
     case 'rail-top':
     case 'top':
-      return 'top' // Bubble below avatar, tail points up
+      return 'left' // Bubble to RIGHT of avatar, tail points left toward avatar
     case 'rail-left':
     case 'left':
-      return 'left' // Bubble to right of avatar, tail points left
     case 'rail-right':
     case 'right':
-      return 'right' // Bubble to left of avatar, tail points right
+      return 'bottom' // Bubble ABOVE avatar, tail points down toward avatar
     case 'bottom':
     default:
       return 'bottom' // Bubble above avatar, tail points down
@@ -339,41 +341,41 @@ const bubblePosition = computed(() => {
   }
 
   // Chat bubble positioning (relative to avatar-container)
-  // Tail touches the bubble edge (no margin gaps)
+  // Keep bubbles OUT of the table/card play area
   .avatar-chat-bubble {
     position: absolute;
     z-index: 450;
   }
   
-  // User (bottom) - bubble appears above, tail points down
+  // User (bottom) - bubble ABOVE, tail points down
   &.position-bottom .avatar-chat-bubble {
-    bottom: calc(100% + 10px); // 10px = tail size
+    bottom: calc(100% + 10px);
     left: 50%;
     transform: translateX(-50%);
   }
   
-  // Top opponent - bubble appears below, tail points up
+  // Top opponent - bubble to the RIGHT, tail points left
   &.position-rail-top .avatar-chat-bubble,
   &.position-top .avatar-chat-bubble {
-    top: calc(100% + 10px);
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  
-  // Left opponent - bubble appears to the right, tail points left
-  &.position-rail-left .avatar-chat-bubble,
-  &.position-left .avatar-chat-bubble {
     left: calc(100% + 10px);
     top: 50%;
     transform: translateY(-50%);
   }
   
-  // Right opponent - bubble appears to the left, tail points right
+  // Left opponent - bubble ABOVE, tail points down
+  &.position-rail-left .avatar-chat-bubble,
+  &.position-left .avatar-chat-bubble {
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  // Right opponent - bubble ABOVE, tail points down
   &.position-rail-right .avatar-chat-bubble,
   &.position-right .avatar-chat-bubble {
-    right: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%);
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   // Position variants
