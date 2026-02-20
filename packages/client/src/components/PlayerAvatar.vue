@@ -22,6 +22,9 @@
         </div>
       </div>
       
+      <!-- Trump indicator chip - top-right of avatar circle -->
+      <div v-if="props.trumpSymbol" class="trump-chip">{{ props.trumpSymbol }}</div>
+      
       <!-- Turn indicator glow -->
       <div v-if="props.isCurrentTurn" class="avatar-glow"></div>
     </div>
@@ -44,11 +47,14 @@ const props = withDefaults(defineProps<{
   position?: AvatarPosition
   /** Custom positioning style (for table-relative placement) */
   customStyle?: CSSProperties
+  /** Trump suit symbol to show (e.g., ♠ ♥ ♦ ♣) */
+  trumpSymbol?: string
 }>(), {
   isCurrentTurn: false,
   isUser: false,
   status: '',
   position: 'bottom',
+  trumpSymbol: '',
 })
 
 const initial = computed(() => props.name?.[0]?.toUpperCase() ?? '?')
@@ -218,6 +224,29 @@ const positionStyle = computed(() => props.customStyle ?? {})
     border-radius: 50%;
     background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
     animation: pulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
+  // Trump indicator chip - positioned at top-right of avatar circle
+  .trump-chip {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+    border: 2px solid #ddd;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+      0 2px 6px rgba(0, 0, 0, 0.4),
+      inset 0 1px 2px rgba(255, 255, 255, 0.8),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+    z-index: 10;
     pointer-events: none;
   }
 

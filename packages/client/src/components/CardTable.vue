@@ -20,6 +20,7 @@
         :status="playerStatuses[i]"
         :position="getRailPosition(seat.side)"
         :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
+        :trump-symbol="trumpCallerSeat === i ? trumpSymbol : ''"
       >
         <slot :name="`player-info-${i}`" />
       </PlayerAvatar>
@@ -43,6 +44,7 @@
         :is-current-turn="currentTurnSeat === 0"
         :is-user="true"
         position="bottom"
+        :trump-symbol="trumpCallerSeat === 0 ? trumpSymbol : ''"
       >
         <slot name="user-info" />
       </PlayerAvatar>
@@ -53,13 +55,6 @@
         class="dealer-chip-table"
         :style="dealerChipStyle"
       >D</div>
-
-      <!-- Trump indicator - top-right of trump caller's avatar -->
-      <div 
-        v-if="trumpCallerSeat >= 0 && trumpSymbol" 
-        class="trump-chip-table"
-        :style="trumpChipStyle"
-      >{{ trumpSymbol }}</div>
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
@@ -205,55 +200,6 @@ const dealerChipStyle = computed(() => {
   return {
     left: `${avatarX + chipOffset.x}px`,
     top: `${avatarY + chipOffset.y}px`,
-  }
-})
-
-/**
- * Trump chip position - top-right of trump caller's avatar, in board coordinates.
- */
-const trumpChipStyle = computed(() => {
-  const layout = lastLayoutResult.value
-  const board = boardRef.value
-  if (!layout || !board || props.trumpCallerSeat < 0) return { display: 'none' }
-  
-  const seat = seatData.value[props.trumpCallerSeat]
-  if (!seat) return { display: 'none' }
-  
-  const { tableBounds } = layout
-  const chipOffset = { x: 18, y: -28 } // Snug against avatar's top-right, raised 10px
-  
-  // Get avatar center point in board coordinates
-  let avatarX: number
-  let avatarY: number
-  
-  if (seat.isUser) {
-    avatarX = tableBounds.centerX
-    avatarY = board.offsetHeight - 35
-  } else {
-    switch (seat.side) {
-      case 'left':
-        avatarX = tableBounds.left
-        avatarY = seat.handPosition.y
-        break
-      case 'right':
-        avatarX = tableBounds.right
-        avatarY = seat.handPosition.y
-        break
-      case 'top':
-        avatarX = seat.handPosition.x
-        avatarY = tableBounds.top
-        break
-      default:
-        avatarX = tableBounds.centerX
-        avatarY = tableBounds.bottom
-    }
-  }
-  
-  return {
-    left: `${avatarX + chipOffset.x}px`,
-    top: `${avatarY + chipOffset.y}px`,
-    color: props.trumpColor || '#fff',
-    zIndex: seat.isUser ? 550 : 400, // Above user avatar (500) when user called trump
   }
 })
 
@@ -523,28 +469,6 @@ defineExpose({
               top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-// Trump indicator chip - white background like dealer chip, colored suit symbol
-.trump-chip-table {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
-  border: 2px solid #ddd;
-  font-size: 18px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.4),
-    inset 0 1px 2px rgba(255, 255, 255, 0.8),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.15);
-  z-index: 400;
-  pointer-events: none;
-  // No transition - just appears/disappears at caller's position
 }
 
 </style>
