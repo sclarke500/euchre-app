@@ -28,8 +28,8 @@ function handleSubmit() {
   const sent = chatStore.sendChatMessage(inputText.value)
   if (sent) {
     inputText.value = ''
-    // Keep focus on input for quick follow-up messages
-    nextTick(() => inputRef.value?.focus())
+    // Blur input to dismiss mobile keyboard
+    inputRef.value?.blur()
   }
 }
 

@@ -73,7 +73,17 @@ export const useChatStore = defineStore('chat', () => {
 
   function showBubble(message: ChatMessage): void {
     // Convert server's absolute seat to visual seat for UI
+    const lobbyStore = useLobbyStore()
+    const mySeat = lobbyStore.currentSeat
     const visualSeat = absoluteToVisualSeat(message.seatIndex)
+    
+    console.log(`[Chat] showBubble: absolute=${message.seatIndex}, mySeat=${mySeat}, visual=${visualSeat}, from=${message.playerName}`)
+    
+    // Don't show bubble for own messages (visual seat 0 is always the user)
+    if (visualSeat === 0) {
+      console.log('[Chat] Skipping own message bubble')
+      return
+    }
     
     // Clear existing timer for this seat
     const existingTimer = bubbleTimers.value.get(visualSeat)
