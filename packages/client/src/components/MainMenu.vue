@@ -423,34 +423,34 @@ const gameTitle = computed(() => {
     font-family: 'Rock Salt', cursive;
     font-size: 4rem;
     font-weight: 400;
-    margin-bottom: $spacing-xl * 2;
+    margin-bottom: $spacing-lg;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 
     @media (max-height: 500px) {
       font-size: 2rem;
-      margin-bottom: $spacing-md;
+      margin-bottom: $spacing-sm;
     }
 
     // Portrait mode - smaller title
     @media (orientation: portrait) {
       font-size: 2.5rem;
-      margin-bottom: $spacing-lg;
+      margin-bottom: $spacing-md;
     }
   }
 }
 
 .game-carousel-wrapper {
   position: relative;
-  margin-bottom: $spacing-xl;
+  margin-bottom: $spacing-lg;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible; // Allow cards to be fully visible
 
   @media (max-height: 500px) {
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-sm;
   }
 
   @media (orientation: portrait) {
-    margin-bottom: $spacing-lg;
+    margin-bottom: $spacing-md;
     // Extend to edges for full-width scroll
     width: calc(100% + #{$spacing-md} * 2);
     margin-left: -$spacing-md;
@@ -580,16 +580,16 @@ const gameTitle = computed(() => {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
-  margin-bottom: $spacing-xl * 2;
+  margin-bottom: $spacing-lg;
 
   @media (max-height: 500px) {
     flex-direction: row;
-    margin-bottom: $spacing-lg;
+    margin-bottom: $spacing-md;
   }
 
   @media (orientation: portrait) {
     gap: $spacing-md;
-    margin-bottom: $spacing-lg;
+    margin-bottom: $spacing-md;
     width: 100%;
     max-width: 320px;
   }
