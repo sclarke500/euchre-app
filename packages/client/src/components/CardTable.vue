@@ -516,22 +516,23 @@ defineExpose({
               transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// Trump indicator chip - shows suit symbol at trump caller's avatar
+// Trump indicator chip - white background like dealer chip, colored suit symbol
 .trump-chip-table {
   position: absolute;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(30, 35, 45, 0.95);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  font-size: 16px;
+  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+  border: 2px solid #ddd;
+  font-size: 18px;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.5),
-    inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.15);
   z-index: 400;
   pointer-events: none;
   // No transition - just appears/disappears at caller's position
