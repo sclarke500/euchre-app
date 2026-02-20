@@ -220,7 +220,7 @@ const trumpChipStyle = computed(() => {
   if (!seat) return { display: 'none' }
   
   const { tableBounds } = layout
-  const chipOffset = { x: 18, y: -18 } // Snug against avatar's top-right
+  const chipOffset = { x: 18, y: -28 } // Snug against avatar's top-right, raised 10px
   
   // Get avatar center point in board coordinates
   let avatarX: number
