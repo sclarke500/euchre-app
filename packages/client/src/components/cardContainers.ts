@@ -64,6 +64,7 @@ export abstract class CardContainer {
         rotation: pos.rotation,
         zIndex: pos.zIndex,
         scale: pos.scale,
+        tableSkew: pos.tableSkew,
         // flipY intentionally omitted
       }, duration)
     })
