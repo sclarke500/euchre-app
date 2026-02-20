@@ -354,11 +354,11 @@ const bubblePosition = computed(() => {
     transform: translateX(-50%);
   }
   
-  // Top opponent - bubble to the RIGHT, tail points left
+  // Top opponent - bubble to the RIGHT, tail points left, raised to avoid scoreboard
   &.position-rail-top .avatar-chat-bubble,
   &.position-top .avatar-chat-bubble {
-    left: calc(100% + 8px); // Tighter for rounded corners
-    top: 50%;
+    left: calc(100% + 8px);
+    top: 35%;
     transform: translateY(-50%);
   }
   

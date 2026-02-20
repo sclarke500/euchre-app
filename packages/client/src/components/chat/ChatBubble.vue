@@ -78,7 +78,7 @@ const tailClass = computed(() => {
 .chat-bubble {
   position: absolute;
   width: max-content;
-  max-width: 320px;
+  max-width: 280px;
   padding: 6px 12px;
   background: linear-gradient(
     180deg,
