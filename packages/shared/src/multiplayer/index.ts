@@ -1,6 +1,24 @@
 // Multiplayer Types for WebSocket Communication
 
 import type { Suit, Card, GameState, Bid, GamePhase, TeamScore, Trick } from '../euchre/types.js'
+
+// ============================================
+// Chat Types
+// ============================================
+
+export interface ChatMessage {
+  id: string              // unique: `${odusId}-${timestamp}`
+  odusId: string          // sender's odusId
+  seatIndex: number       // sender's seat (for bubble positioning)
+  playerName: string      // display name
+  text: string            // message content (max 120 chars)
+  timestamp: number       // Date.now()
+  isQuickReact?: boolean  // true if from quick reaction picker
+}
+
+export const CHAT_MAX_LENGTH = 120
+export const CHAT_RATE_LIMIT_MS = 2000  // 1 message per 2 seconds
+export const CHAT_HISTORY_LIMIT = 50    // max messages to keep
 import type { StandardCard } from '../core/types.js'
 import type { PresidentPhase, PresidentPile, PlayerRank, PlayType } from '../president/types.js'
 import type {
@@ -81,6 +99,8 @@ export type ClientMessage = (
   | PresidentConfirmExchangeMessage
   | SpadesMakeBidMessage
   | BugReportMessage
+  // Chat
+  | ChatSendMessage
 ) & ClientMessageMeta
 
 export interface JoinLobbyMessage {
@@ -171,6 +191,12 @@ export interface BugReportMessage {
   payload: string // JSON-stringified diagnostic data
 }
 
+export interface ChatSendMessage {
+  type: 'chat_send'
+  text: string
+  isQuickReact?: boolean
+}
+
 // ============================================
 // Server -> Client Messages
 // ============================================
@@ -211,6 +237,8 @@ export type ServerMessage =
   | SpadesGameStateMessage
   | SpadesYourTurnMessage
   | BugReportAckMessage
+  // Chat
+  | ChatBroadcastMessage
 
 export interface WelcomeMessage {
   type: 'welcome'
@@ -372,6 +400,11 @@ export interface BugReportAckMessage {
   type: 'bug_report_ack'
   success: boolean
   issueUrl?: string
+}
+
+export interface ChatBroadcastMessage {
+  type: 'chat_broadcast'
+  message: ChatMessage
 }
 
 // ============================================

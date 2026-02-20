@@ -30,6 +30,7 @@ export interface MessageHandlers {
   spadesMakeBid: (ws: WebSocket, client: ConnectedClient, bidType: 'normal' | 'nil' | 'blind_nil', count: number) => void
   bootPlayer: (ws: WebSocket, client: ConnectedClient, playerId: number) => void
   bugReport: (ws: WebSocket, client: ConnectedClient, payload: string) => void
+  chatSend: (ws: WebSocket, client: ConnectedClient, text: string, isQuickReact?: boolean) => void
   unknownMessage: (ws: WebSocket) => void
 }
 
@@ -90,6 +91,9 @@ export function routeClientMessage(
       break
     case 'bug_report':
       handlers.bugReport(ws, client, message.payload)
+      break
+    case 'chat_send':
+      handlers.chatSend(ws, client, message.text, message.isQuickReact)
       break
     default:
       handlers.unknownMessage(ws)

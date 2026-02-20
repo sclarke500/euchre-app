@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BidAction, Suit } from '@67cards/shared'
+import { BidAction, Suit, CHAT_MAX_LENGTH } from '@67cards/shared'
 import type { ClientMessage } from '@67cards/shared'
 
 const gameTypeSchema = z.enum(['euchre', 'president', 'spades'])
@@ -120,6 +120,13 @@ const bugReportSchema = z.object({
   ...clientMetaShape,
 }).strict()
 
+const chatSendSchema = z.object({
+  type: z.literal('chat_send'),
+  text: z.string().min(1).max(CHAT_MAX_LENGTH),
+  isQuickReact: z.boolean().optional(),
+  ...clientMetaShape,
+}).strict()
+
 const clientMessageSchema = z.discriminatedUnion('type', [
   joinLobbySchema,
   createTableSchema,
@@ -138,6 +145,7 @@ const clientMessageSchema = z.discriminatedUnion('type', [
   presidentConfirmExchangeSchema,
   spadesMakeBidSchema,
   bugReportSchema,
+  chatSendSchema,
 ])
 
 export function parseClientMessage(data: unknown): {

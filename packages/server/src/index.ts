@@ -11,6 +11,7 @@ import { enqueueGameCommand } from './sessions/commandQueue.js'
 import { handleBugReport } from './bugReport.js'
 import { createLobbyHandlers, type DisconnectedPlayer } from './lobby/handlers.js'
 import { createSessionHandlers } from './sessions/handlers.js'
+import { createChatHandlers } from './chat/handlers.js'
 import {
   games,
   presidentGames,
@@ -96,6 +97,11 @@ const gameActions = createGameActionHandlers({
   tryRecoverGameId,
   replacePlayerWithAI: (client, trackForReconnect = false) =>
     replacePlayerWithAI(client, disconnectedPlayers, trackForReconnect),
+})
+
+const chatHandlers = createChatHandlers({
+  send,
+  broadcastToGame,
 })
 
 function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMessage): void {
@@ -191,6 +197,8 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       const result = await handleBugReport(clientId, payload)
       send(socket, { type: 'bug_report_ack', success: result.success, issueUrl: result.issueUrl })
     },
+    chatSend: (socket, c, text, isQuickReact) =>
+      chatHandlers.handleChatSend(socket, c, text, isQuickReact),
     unknownMessage: (socket) => send(socket, { type: 'error', message: 'Unknown message type' }),
   })
 }
