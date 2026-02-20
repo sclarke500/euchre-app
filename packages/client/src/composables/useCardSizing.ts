@@ -24,7 +24,7 @@ const VIEWPORT_BREAKPOINTS = [
 export const CardScales = {
   userHand: 1.5,        // Player's hand - largest for readability
   opponentHand: 0.65,   // Opponent hands - smaller to fit on table
-  playArea: 0.85,       // Cards played to center
+  playArea: 0.7,        // Cards played to center (smaller for skewed view)
   deck: 0.8,            // Deal stack
   tricksWon: 0.5,       // Won trick piles - small stacks
   sweep: 0.6,           // Cards being swept off table

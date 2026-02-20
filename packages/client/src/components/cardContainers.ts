@@ -96,6 +96,7 @@ export class Deck extends CardContainer {
       zIndex: 100 + index,
       scale: this.scale,
       flipY: 0,  // deck cards are always face-down by default
+      tableSkew: true, // Deck/kitty on table gets 3D skew
     }
   }
   
@@ -177,6 +178,7 @@ export class Hand extends CardContainer {
         zIndex: baseZ + index,
         scale: this.scale,
         flipY,
+        tableSkew: !this.isUser, // Opponent/dealt stacks get 3D skew
       }
     }
     
@@ -225,6 +227,7 @@ export class Hand extends CardContainer {
       zIndex: baseZ + index,
       scale: this.scale,
       flipY,
+      tableSkew: !this.isUser, // Opponent hands get 3D skew
     }
   }
   
