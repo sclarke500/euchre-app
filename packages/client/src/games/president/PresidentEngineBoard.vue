@@ -59,7 +59,7 @@
 
     <!-- Turn timer (left side, self-contained with panel and animation) -->
     <TurnTimer
-      v-if="mode === 'multiplayer'"
+      v-if="mode === 'multiplayer' && bootInactiveEnabled"
       ref="turnTimerRef"
       :active="game.isHumanTurn.value && !director.isAnimating.value"
       :paused="timerPaused"
@@ -260,6 +260,7 @@ const emit = defineEmits<{
 // Multiplayer lobby integration
 const lobbyStore = props.mode === 'multiplayer' ? useLobbyStore() : null
 const isHost = computed(() => lobbyStore?.isHost ?? false)
+const bootInactiveEnabled = computed(() => lobbyStore?.currentTable?.settings?.bootInactive !== false)
 
 // Singleplayer store for startNewGame
 const presidentStore = props.mode === 'singleplayer' ? usePresidentGameStore() : null

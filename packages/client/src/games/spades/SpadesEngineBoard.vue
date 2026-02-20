@@ -191,7 +191,7 @@
 
     <!-- Turn timer (left side, self-contained with panel and animation) -->
     <TurnTimer
-      v-if="mode === 'multiplayer'"
+      v-if="mode === 'multiplayer' && bootInactiveEnabled"
       ref="turnTimerRef"
       :active="store.isHumanTurn || store.showBidWheel"
       :paused="timerPaused"
@@ -285,6 +285,7 @@ const emit = defineEmits<{
 // Multiplayer lobby integration
 const lobbyStore = props.mode === 'multiplayer' ? useLobbyStore() : null
 const isHost = computed(() => lobbyStore?.isHost ?? false)
+const bootInactiveEnabled = computed(() => lobbyStore?.currentTable?.settings?.bootInactive !== false)
 
 const adapter = useSpadesGameAdapter(props.mode)
 const store = proxyRefs(adapter)

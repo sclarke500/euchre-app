@@ -54,6 +54,7 @@ export interface TableSettings {
   aiDifficulty?: 'easy' | 'hard' // All games
   chatEnabled?: boolean // Enable in-game chat (default true)
   isPrivate?: boolean // Private game - won't show in public lobby (default false)
+  bootInactive?: boolean // Show turn timer and allow booting inactive players (default true)
 }
 
 export interface Table {

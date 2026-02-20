@@ -10,6 +10,7 @@ const tableSettingsSchema = z.object({
   aiDifficulty: z.enum(['easy', 'hard']).optional(),
   chatEnabled: z.boolean().optional(),
   isPrivate: z.boolean().optional(),
+  bootInactive: z.boolean().optional(),
 }).strict()
 
 const clientMetaShape = {

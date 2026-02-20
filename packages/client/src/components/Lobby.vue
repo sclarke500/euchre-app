@@ -22,6 +22,7 @@ const showCreateOptions = ref(false)
 // Create table options
 const chatEnabled = ref(true)
 const isPrivate = ref(false)
+const bootInactive = ref(true)
 
 const sortedTables = computed(() => {
   return [...lobbyStore.tables].sort((a, b) => b.createdAt - a.createdAt)
@@ -44,11 +45,13 @@ function handleCreateTable() {
   lobbyStore.createTable(undefined, {
     chatEnabled: chatEnabled.value,
     isPrivate: isPrivate.value,
+    bootInactive: bootInactive.value,
   })
   showCreateOptions.value = false
   // Reset for next time
   chatEnabled.value = true
   isPrivate.value = false
+  bootInactive.value = true
 }
 
 function handleBack() {
@@ -163,6 +166,12 @@ const checkGameStart = computed(() => lobbyStore.gameId)
               <input v-model="isPrivate" type="checkbox" />
               <span class="toggle-label">Private game</span>
               <span class="toggle-hint">Shows 🔒 in lobby - for playing with friends</span>
+            </label>
+            
+            <label class="toggle-option">
+              <input v-model="bootInactive" type="checkbox" />
+              <span class="toggle-label">Boot inactive players</span>
+              <span class="toggle-hint">Show turn timer and allow kicking AFK players</span>
             </label>
           </div>
         </div>

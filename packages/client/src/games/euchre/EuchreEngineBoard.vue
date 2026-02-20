@@ -124,7 +124,7 @@
 
     <!-- Turn timer (left side, self-contained with panel and animation) -->
     <TurnTimer
-      v-if="mode === 'multiplayer'"
+      v-if="mode === 'multiplayer' && bootInactiveEnabled"
       ref="turnTimerRef"
       :active="game.isHumanTurn.value && !director.isAnimating.value"
       :paused="timerPaused"
@@ -465,6 +465,7 @@ const mpStore = props.mode === 'multiplayer' ? useEuchreMultiplayerStore() : nul
 const lobbyStore = props.mode === 'multiplayer' ? useLobbyStore() : null
 const gameStore = props.mode === 'singleplayer' ? useEuchreGameStore() : null
 const isHost = computed(() => lobbyStore?.isHost ?? false)
+const bootInactiveEnabled = computed(() => lobbyStore?.currentTable?.settings?.bootInactive !== false)
 
 // Game over state
 const winnerText = computed(() => {
