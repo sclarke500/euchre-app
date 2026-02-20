@@ -10,6 +10,7 @@ import type {
 } from '@67cards/shared'
 import { websocket } from '@/services/websocket'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useChatStore } from '@/stores/chatStore'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
 
@@ -145,6 +146,12 @@ export const useLobbyStore = defineStore('lobby', () => {
           connectionError.value = null
         }, 5000)
         break
+
+      case 'chat_broadcast': {
+        const chatStore = useChatStore()
+        chatStore.receiveMessage(message.message)
+        break
+      }
     }
   }
 
