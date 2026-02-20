@@ -63,7 +63,7 @@ export function usePresidentDirector(
     playerCount: () => playerCount.value,
     userSeatIndex: 0,
     userHandScale: CardScales.userHand,
-    opponentHandScale: CardScales.tricksWon, // Smaller for President (13+ cards) - using 0.5
+    opponentHandScale: CardScales.opponentHand, // Same 0.65 as other games
     userFanSpacing: 18,
     opponentFanSpacing: 10,
     ...cardControllerPresets.president,
