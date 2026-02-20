@@ -22,9 +22,6 @@
         </div>
       </div>
       
-      <!-- Dealer chip - top-left of avatar circle -->
-      <div v-if="props.isDealer" class="dealer-chip">D</div>
-      
       <!-- Trump indicator chip - top-right of avatar circle -->
       <div v-if="props.trumpSymbol" class="trump-chip" :style="{ color: props.trumpColor }">{{ props.trumpSymbol }}</div>
       
@@ -54,8 +51,6 @@ const props = withDefaults(defineProps<{
   trumpSymbol?: string
   /** Trump suit color (e.g., #e74c3c for red, #2c3e50 for black) */
   trumpColor?: string
-  /** Show dealer chip */
-  isDealer?: boolean
 }>(), {
   isCurrentTurn: false,
   isUser: false,
@@ -63,7 +58,6 @@ const props = withDefaults(defineProps<{
   position: 'bottom',
   trumpSymbol: '',
   trumpColor: '#2c3e50',
-  isDealer: false,
 })
 
 const initial = computed(() => props.name?.[0]?.toUpperCase() ?? '?')
@@ -233,40 +227,6 @@ const positionStyle = computed(() => props.customStyle ?? {})
     border-radius: 50%;
     background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
     animation: pulse 2s ease-in-out infinite;
-    pointer-events: none;
-  }
-  
-  // Dealer chip - positioned at top-left of avatar circle
-  .dealer-chip {
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    // Striped border using conic-gradient - blue stripes
-    background: 
-      radial-gradient(circle at center, #fff 0%, #fff 55%, transparent 55%),
-      conic-gradient(
-        from 0deg,
-        #2563eb 0deg 30deg, #fff 30deg 60deg,
-        #2563eb 60deg 90deg, #fff 90deg 120deg,
-        #2563eb 120deg 150deg, #fff 150deg 180deg,
-        #2563eb 180deg 210deg, #fff 210deg 240deg,
-        #2563eb 240deg 270deg, #fff 270deg 300deg,
-        #2563eb 300deg 330deg, #fff 330deg 360deg
-      );
-    color: #1e40af;
-    font-size: 12px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 
-      0 2px 6px rgba(0, 0, 0, 0.4),
-      inset 0 1px 2px rgba(255, 255, 255, 0.8),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.15);
-    z-index: 10;
     pointer-events: none;
   }
   
