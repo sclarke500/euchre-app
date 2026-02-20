@@ -103,53 +103,33 @@ function checkForUpdates() {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/modal-light' as *;
+
 .modal-content {
-  background: white;
-  border-radius: 12px;
+  @include modal-panel;
   max-width: 480px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
   text-align: left;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $spacing-lg;
-  border-bottom: 1px solid #eee;
+  @include modal-header;
 
   h2 {
+    @include modal-title;
     margin: 0;
-    font-size: 1.5rem;
-    color: $brand-green;
+    color: $modal-primary;
   }
 }
 
 .close-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f0f0f0;
-  border-radius: 50%;
-  color: $surface-500;
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  &:hover {
-    background: #e0e0e0;
-  }
+  @include modal-close-btn;
 }
 
 .game-section {
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid $modal-border;
 
   &:last-of-type {
     border-bottom: none;
@@ -157,28 +137,24 @@ function checkForUpdates() {
 }
 
 .game-header {
+  @include modal-section-title;
   padding: $spacing-sm $spacing-lg;
-  background: #f5f5f5;
-  font-size: 0.75rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #888;
+  background: $modal-bg-subtle;
+  margin: 0;
 }
 
 .settings-section {
   padding: $spacing-md $spacing-lg;
 
   h3 {
-    margin: 0 0 $spacing-xs 0;
-    font-size: 1.1rem;
-    color: $surface-800;
+    @include modal-label;
+    font-size: 1rem;
+    margin-bottom: $spacing-xs;
   }
 
   .section-desc {
+    @include modal-help-text;
     margin: 0 0 $spacing-md 0;
-    font-size: 0.875rem;
-    color: $surface-500;
   }
 }
 
@@ -188,44 +164,21 @@ function checkForUpdates() {
 }
 
 .option-btn {
+  @include modal-option-card;
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: $spacing-sm $spacing-md;
-  background: #f0f0f0;
-  border-radius: 10px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  &:hover {
-    background: #e8e8e8;
-  }
-
-  &.active {
-    background: rgba(30, 77, 43, 0.15);
-  }
 
   .option-title {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: $surface-800;
+    @include modal-option-title;
   }
 
   .option-desc {
-    font-size: 0.75rem;
-    color: $surface-500;
-    margin-top: 2px;
+    @include modal-option-desc;
   }
 }
 
 .modal-footer {
-  padding: $spacing-lg;
-  display: flex;
+  @include modal-footer;
   justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #eee;
 }
 
 .version-info {
@@ -235,33 +188,16 @@ function checkForUpdates() {
 
   .version-label {
     font-size: 0.75rem;
-    color: #999;
+    color: $modal-text-muted;
   }
 
   .update-btn {
+    @include modal-btn-link;
     font-size: 0.75rem;
-    color: $brand-green;
-    background: none;
-    padding: 0;
-    text-decoration: underline;
-    cursor: pointer;
-
-    &:hover {
-      color: #2a6b3d;
-    }
   }
 }
 
 .done-btn {
-  padding: $spacing-sm $spacing-xl;
-  background: $brand-green;
-  color: white;
-  font-weight: bold;
-  font-size: 1rem;
-  border-radius: 8px;
-
-  &:hover {
-    background: #2a6b3d;
-  }
+  @include modal-btn-primary;
 }
 </style>

@@ -1,36 +1,43 @@
 <template>
   <Modal :show="show" @close="$emit('close')">
-    <div class="dialog-panel bug-modal">
-      <h2 class="dialog-title">🐛 Bug Report</h2>
-      <p class="dialog-text">Describe what went wrong. We'll capture a game snapshot automatically.</p>
-
-      <textarea
-        v-model="description"
-        class="bug-textarea"
-        rows="4"
-        placeholder="What happened? What did you expect to happen?"
-      />
-
-      <div class="bug-info">
-        <span class="info-item">{{ gameType }}</span>
-        <span class="info-item">{{ mode === 'multiplayer' ? 'Multiplayer' : 'Single Player' }}</span>
-      </div>
-
-      <div class="dialog-actions bug-actions">
-        <button class="dialog-btn dialog-btn--primary" :disabled="sending" @click="handleSend">
-          {{ sending ? 'Sending...' : 'Send Report' }}
+    <div class="bug-modal">
+      <div class="modal-header">
+        <h2>🐛 Bug Report</h2>
+        <button class="close-btn" @click="$emit('close')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
         </button>
-        <button class="dialog-btn dialog-btn--muted" @click="$emit('close')">Cancel</button>
+      </div>
+      
+      <div class="modal-body">
+        <p class="help-text">Describe what went wrong. We'll capture a game snapshot automatically.</p>
+
+        <textarea
+          v-model="description"
+          class="bug-textarea"
+          rows="4"
+          placeholder="What happened? What did you expect to happen?"
+        />
+
+        <div class="bug-info">
+          <span class="info-item">{{ gameType }}</span>
+          <span class="info-item">{{ mode === 'multiplayer' ? 'Multiplayer' : 'Single Player' }}</span>
+        </div>
       </div>
 
-      <div class="bug-secondary-actions">
-        <button class="link-btn" @click="handleCopy">Copy to clipboard</button>
-        <span class="divider">•</span>
-        <button class="link-btn" @click="handleDownload">Download JSON</button>
-        <template v-if="showResync">
-          <span class="divider">•</span>
-          <button class="link-btn" @click="$emit('resync')">Resync game</button>
-        </template>
+      <div class="modal-footer">
+        <div class="secondary-actions">
+          <button class="link-btn" @click="handleCopy">Copy</button>
+          <button class="link-btn" @click="handleDownload">Download</button>
+          <button v-if="showResync" class="link-btn" @click="$emit('resync')">Resync</button>
+        </div>
+        <div class="primary-actions">
+          <button class="btn-secondary" @click="$emit('close')">Cancel</button>
+          <button class="btn-primary" :disabled="sending" @click="handleSend">
+            {{ sending ? 'Sending...' : 'Send Report' }}
+          </button>
+        </div>
       </div>
     </div>
   </Modal>
@@ -126,75 +133,79 @@ function handleDownload() {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/modal-light' as *;
+
 .bug-modal {
+  @include modal-panel;
   min-width: 320px;
-  max-width: 400px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.modal-header {
+  @include modal-header;
+
+  h2 {
+    @include modal-title;
+    margin: 0;
+  }
+}
+
+.close-btn {
+  @include modal-close-btn;
+}
+
+.modal-body {
+  @include modal-body;
+}
+
+.help-text {
+  @include modal-help-text;
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
 }
 
 .bug-textarea {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
-  resize: vertical;
-  margin-bottom: 12px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.4);
-  }
-  
-  &:focus {
-    outline: none;
-    border-color: rgba(255, 255, 255, 0.25);
-  }
+  @include modal-textarea;
+  margin-bottom: 0.75rem;
 }
 
 .bug-info {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: $modal-text-muted;
   
   .info-item {
     text-transform: capitalize;
   }
 }
 
-.bug-actions {
-  margin-bottom: 12px;
+.modal-footer {
+  @include modal-footer;
+  justify-content: space-between;
 }
 
-.bug-secondary-actions {
+.secondary-actions {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0.75rem;
 }
 
 .link-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.75rem;
-  cursor: pointer;
-  padding: 4px;
-  
-  &:hover {
-    color: rgba(255, 255, 255, 0.8);
-  }
+  @include modal-btn-link;
+  font-size: 0.8125rem;
 }
 
-.divider {
-  color: rgba(255, 255, 255, 0.2);
-  font-size: 0.6rem;
+.primary-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  @include modal-btn-primary;
+}
+
+.btn-secondary {
+  @include modal-btn-secondary;
 }
 </style>
