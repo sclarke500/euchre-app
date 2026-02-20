@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
 import { CHAT_MAX_LENGTH } from '@67cards/shared'
 
@@ -28,6 +28,8 @@ function handleSubmit() {
   const sent = chatStore.sendChatMessage(inputText.value)
   if (sent) {
     inputText.value = ''
+    // Keep focus on input for quick follow-up messages
+    nextTick(() => inputRef.value?.focus())
   }
 }
 

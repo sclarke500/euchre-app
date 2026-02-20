@@ -58,6 +58,16 @@
         :style="dealerChipStyle"
       >D</div>
 
+      <!-- Chat bubbles above avatars -->
+      <ChatBubble
+        v-for="[seatIndex, message] in chatStore.activeBubbles"
+        :key="message.id"
+        :message="message"
+        :position="getBubblePosition(seatIndex).position"
+        :style="getBubblePosition(seatIndex).style"
+        @dismiss="chatStore.hideBubble(seatIndex)"
+      />
+
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
     </div>
@@ -68,6 +78,8 @@
 import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
 import BoardCard from './BoardCard.vue'
 import PlayerAvatar, { type AvatarPosition } from './PlayerAvatar.vue'
+import ChatBubble from './chat/ChatBubble.vue'
+import { useChatStore } from '@/stores/chatStore'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import { useCardSizing } from '@/composables/useCardSizing'
@@ -154,6 +166,66 @@ const avatarStyles = computed(() => {
     }
   })
 })
+
+// Chat bubbles
+const chatStore = useChatStore()
+
+/**
+ * Get bubble position and orientation for a seat
+ */
+function getBubblePosition(seatIndex: number): { style: Record<string, string>; position: 'top' | 'left' | 'right' | 'bottom' } {
+  const layout = lastLayoutResult.value
+  if (!layout) return { style: {}, position: 'bottom' }
+  
+  // User is always seat 0, positioned at bottom
+  if (seatIndex === 0) {
+    return {
+      style: {
+        left: '50%',
+        bottom: '140px', // Above the user avatar
+        transform: 'translateX(-50%)',
+      },
+      position: 'bottom',
+    }
+  }
+  
+  const seat = seatData.value[seatIndex]
+  if (!seat) return { style: {}, position: 'bottom' }
+  
+  const { tableBounds } = layout
+  const bubbleOffset = 70 // pixels above/beside the avatar
+  
+  switch (seat.side) {
+    case 'left':
+      return {
+        style: {
+          left: `${tableBounds.left + bubbleOffset}px`,
+          top: `${seat.handPosition.y - 50}px`,
+        },
+        position: 'left',
+      }
+    case 'right':
+      return {
+        style: {
+          left: `${tableBounds.right - bubbleOffset}px`,
+          top: `${seat.handPosition.y - 50}px`,
+          transform: 'translateX(-100%)',
+        },
+        position: 'right',
+      }
+    case 'top':
+      return {
+        style: {
+          left: `${seat.handPosition.x}px`,
+          top: `${tableBounds.top + bubbleOffset}px`,
+          transform: 'translateX(-50%)',
+        },
+        position: 'top',
+      }
+    default:
+      return { style: {}, position: 'bottom' }
+  }
+}
 
 /**
  * Dealer chip position - top-left of each player's avatar.
