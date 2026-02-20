@@ -103,47 +103,49 @@ const checkGameStart = computed(() => lobbyStore.gameId)
       aria-label="Create table"
       @close="showCreateOptions = false"
     >
-      <div class="create-options-content">
-        <h3>Create Table</h3>
-
-        <div class="game-selector">
-          <button
-            v-for="game in ['euchre', 'president', 'spades'] as const"
-            :key="game"
-            :class="['game-pill', { active: lobbyStore.selectedGameType === game }]"
-            @click="selectGameType(game)"
-          >
-            {{ game.charAt(0).toUpperCase() + game.slice(1) }}
-          </button>
+      <div class="modal-light">
+        <div class="modal-header">
+          <h3>Create Table</h3>
         </div>
-
-        <div class="bot-difficulty-row">
-          <span class="difficulty-label">Bot Difficulty</span>
-          <div class="difficulty-selector">
+        <div class="modal-body">
+          <div class="game-selector">
             <button
-              :class="['difficulty-pill', { active: settings.aiDifficulty === 'easy' }]"
-              @click="settings.setAIDifficulty('easy')"
+              v-for="game in ['euchre', 'president', 'spades'] as const"
+              :key="game"
+              :class="['game-pill', { active: lobbyStore.selectedGameType === game }]"
+              @click="selectGameType(game)"
             >
-              Easy
-            </button>
-            <button
-              :class="['difficulty-pill', { active: settings.aiDifficulty === 'hard' }]"
-              @click="settings.setAIDifficulty('hard')"
-            >
-              Hard
+              {{ game.charAt(0).toUpperCase() + game.slice(1) }}
             </button>
           </div>
-        </div>
 
-        <div class="game-options-section">
-          <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" />
-          <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" />
-          <SpadesOptions v-else-if="lobbyStore.selectedGameType === 'spades'" />
-        </div>
+          <div class="bot-difficulty-row">
+            <span class="difficulty-label">Bot Difficulty</span>
+            <div class="difficulty-selector">
+              <button
+                :class="['difficulty-pill', { active: settings.aiDifficulty === 'easy' }]"
+                @click="settings.setAIDifficulty('easy')"
+              >
+                Easy
+              </button>
+              <button
+                :class="['difficulty-pill', { active: settings.aiDifficulty === 'hard' }]"
+                @click="settings.setAIDifficulty('hard')"
+              >
+                Hard
+              </button>
+            </div>
+          </div>
 
-        <div class="create-actions">
-          <button class="cancel-btn" @click="showCreateOptions = false">Cancel</button>
-          <button class="confirm-create-btn" @click="handleCreateTable">Create</button>
+          <div class="game-options-section">
+            <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" />
+            <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" />
+            <SpadesOptions v-else-if="lobbyStore.selectedGameType === 'spades'" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showCreateOptions = false">Cancel</button>
+          <button class="btn-primary" @click="handleCreateTable">Create</button>
         </div>
       </div>
     </Modal>
@@ -339,23 +341,8 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   z-index: 100;
 }
 
-.create-options-content {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: $spacing-lg;
-  min-width: 300px;
-  max-width: 360px;
-  color: var(--color-text);
-  box-shadow: var(--shadow-xl);
-
-  h3 {
-    margin: 0 0 $spacing-md 0;
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-primary);
-  }
-}
+// --- Create Table Modal Inner Styles ---
+// (modal wrapper is .modal-light from _modal-light.scss)
 
 .game-selector {
   display: flex;
@@ -398,7 +385,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 .difficulty-label {
   font-size: 0.85rem;
   font-weight: 500;
-  color: $surface-600;
+  color: var(--color-text-secondary);
 }
 
 .difficulty-selector {
@@ -430,7 +417,6 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 }
 
 .game-options-section {
-  margin-bottom: $spacing-md;
   padding: $spacing-sm;
   background: var(--color-surface-subtle);
   border-radius: var(--radius-md);
@@ -457,38 +443,6 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   &.active {
     background: var(--color-primary);
     color: var(--color-text-on-primary);
-  }
-}
-
-.create-actions {
-  display: flex;
-  gap: $spacing-sm;
-  margin-top: $spacing-md;
-}
-
-.cancel-btn {
-  flex: 1;
-  padding: $spacing-sm $spacing-md;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
-  font-weight: 500;
-
-  &:hover {
-    background: var(--color-border);
-  }
-}
-
-.confirm-create-btn {
-  flex: 1;
-  padding: $spacing-sm $spacing-md;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-text-on-primary);
-  font-weight: bold;
-
-  &:hover {
-    background: var(--color-primary-hover);
   }
 }
 </style>

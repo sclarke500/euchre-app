@@ -81,9 +81,11 @@
 
     <!-- Rules modal -->
     <Modal :show="showRulesModal" aria-label="Euchre Rules" @close="showRulesModal = false">
-      <div class="game-over-panel dialog-panel rules-modal">
-        <div class="game-over-title dialog-title">Euchre Rules</div>
-        <div class="rules-content dialog-text">
+      <div class="modal-light rules-modal">
+        <div class="modal-header">
+          <h3>Euchre Rules</h3>
+        </div>
+        <div class="modal-body">
           <p><strong>Overview:</strong> 4 players in 2 teams. First team to 10 points wins. Uses 24 cards (9, 10, J, Q, K, A of each suit).</p>
           
           <p><strong>Card Ranking:</strong> In trump suit: Right Bower (Jack of trump) → Left Bower (Jack of same color) → A → K → Q → 10 → 9. Non-trump: A → K → Q → J → 10 → 9.</p>
@@ -104,8 +106,8 @@
           <p>• Alone march: 4 points</p>
           <p>• Euchred (makers take ≤2 tricks): 2 points to defenders</p>
         </div>
-        <div class="game-over-actions dialog-actions">
-          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showRulesModal = false">Got it</button>
+        <div class="modal-footer">
+          <button class="btn-primary" @click="showRulesModal = false">Got it</button>
         </div>
       </div>
     </Modal>

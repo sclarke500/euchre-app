@@ -10,6 +10,29 @@
   color: var(--color-text);
 }
 
+// --- Shaded Header ---
+// Use this for modal titles - creates a subtle colored band
+// Change once here, updates all modals
+@mixin modal-shaded-header {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-hover) 100%
+  );
+  color: var(--color-text-on-primary);
+  padding: 1rem 1.5rem;
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem; // Pull to edges if panel has 1.5rem padding
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  text-align: center;
+  
+  h2, h3, .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: inherit;
+  }
+}
+
 // --- Typography ---
 @mixin modal-title {
   font-size: 1.25rem;
@@ -283,3 +306,156 @@ $modal-text-secondary: var(--color-text-secondary);
 $modal-bg-subtle: var(--color-surface-subtle);
 $modal-border: var(--color-border);
 $modal-primary: var(--color-primary);
+
+// ============================================================================
+// MODAL LIGHT CLASS
+// Add this class to modal content to get consistent light styling
+// Works with existing dialog-panel, dialog-title, dialog-actions structure
+// ============================================================================
+
+.modal-light {
+  @include modal-panel;
+  padding: 0; // Header goes to edge
+  overflow: hidden; // Clip header border-radius
+  min-width: 300px;
+  max-width: 420px;
+  
+  // --- Shaded Header ---
+  .modal-header {
+    @include modal-shaded-header;
+    margin: 0; // Override mixin's negative margin since we have no padding
+  }
+  
+  // --- Content Area ---
+  .modal-body {
+    padding: 1.5rem;
+    color: var(--color-text);
+    line-height: 1.6;
+    
+    p {
+      margin: 0 0 1rem 0;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+    
+    strong {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+  }
+  
+  // --- Footer with Actions ---
+  .modal-footer {
+    @include modal-footer;
+  }
+  
+  // --- Buttons ---
+  .btn-primary {
+    @include modal-btn-primary;
+  }
+  
+  .btn-secondary {
+    @include modal-btn-secondary;
+  }
+  
+  .btn-danger {
+    @include modal-btn-danger;
+  }
+  
+  // =========================================================================
+  // LEGACY SUPPORT: dialog-* classes (for existing modals)
+  // Maps old dark-theme class names to light styling
+  // =========================================================================
+  
+  &.dialog-panel {
+    // Already has modal-panel applied, just reset legacy overrides
+    background: var(--color-surface);
+    border: none;
+    box-shadow: var(--shadow-modal);
+  }
+  
+  .dialog-header {
+    @include modal-shaded-header;
+    margin: 0;
+  }
+  
+  .dialog-title {
+    @include modal-shaded-header;
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .dialog-text {
+    padding: 1.5rem;
+    color: var(--color-text);
+    line-height: 1.6;
+    
+    p {
+      margin: 0 0 1rem 0;
+      color: var(--color-text);
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+    
+    strong {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+  }
+  
+  .dialog-actions {
+    @include modal-footer;
+  }
+  
+  .dialog-btn {
+    @include modal-btn;
+  }
+  
+  .dialog-btn--primary {
+    @include modal-btn-primary;
+  }
+  
+  .dialog-btn--muted {
+    @include modal-btn-secondary;
+  }
+}
+
+// ============================================================================
+// RULES MODAL SPECIFIC
+// Extended content area for scrollable rule text
+// ============================================================================
+
+.modal-light.rules-modal {
+  max-width: 480px;
+  
+  .dialog-text,
+  .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+    
+    // Scrollbar styling
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: var(--color-surface-subtle);
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-border-strong);
+      border-radius: 3px;
+      
+      &:hover {
+        background: var(--color-text-muted);
+      }
+    }
+  }
+}

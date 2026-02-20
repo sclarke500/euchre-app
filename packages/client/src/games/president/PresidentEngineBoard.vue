@@ -181,9 +181,11 @@
 
     <!-- Rules Modal -->
     <Modal :show="showRulesModal" @close="showRulesModal = false">
-      <div class="round-modal dialog-panel rules-modal">
-        <h3 class="dialog-title">President Rules</h3>
-        <div class="rules-content">
+      <div class="modal-light rules-modal">
+        <div class="modal-header">
+          <h3>President Rules</h3>
+        </div>
+        <div class="modal-body">
           <p><strong>Overview:</strong> 4 players. Be the first to empty your hand to become President. Also known as "Scum" or "Asshole".</p>
           
           <p><strong>Card Ranking:</strong> 2 (high) → A → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 (low). Suits don't matter.</p>
@@ -204,8 +206,8 @@
           
           <p><strong>Winning:</strong> After several rounds, the player who finishes as President most often wins!</p>
         </div>
-        <div class="modal-buttons dialog-actions">
-          <button class="modal-btn dialog-btn dialog-btn--primary" @click="showRulesModal = false">Got it</button>
+        <div class="modal-footer">
+          <button class="btn-primary" @click="showRulesModal = false">Got it</button>
         </div>
       </div>
     </Modal>

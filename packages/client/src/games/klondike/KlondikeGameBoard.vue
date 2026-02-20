@@ -896,9 +896,11 @@ function doNewGame() {
 
     <!-- Rules modal -->
     <Modal :show="showRulesModal" @close="showRulesModal = false">
-      <div class="confirm-modal dialog-panel rules-modal">
-        <h2 class="dialog-title">Klondike Rules</h2>
-        <div class="rules-content dialog-text">
+      <div class="modal-light rules-modal">
+        <div class="modal-header">
+          <h3>Klondike Rules</h3>
+        </div>
+        <div class="modal-body">
           <p><strong>Overview:</strong> The classic solitaire! Move all cards to the four foundation piles, sorted by suit from Ace to King.</p>
           
           <p><strong>Setup:</strong> 7 tableau columns with 1-7 cards each (top card face-up). Remaining cards form the stock pile.</p>
@@ -915,8 +917,8 @@ function doNewGame() {
           
           <p><strong>Tips:</strong> Prioritize revealing face-down cards. Don't rush cards to foundations if you might need them for tableau building.</p>
         </div>
-        <div class="confirm-actions dialog-actions">
-          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="showRulesModal = false">Got it</button>
+        <div class="modal-footer">
+          <button class="btn-primary" @click="showRulesModal = false">Got it</button>
         </div>
       </div>
     </Modal>

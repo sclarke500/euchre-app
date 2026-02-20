@@ -208,9 +208,11 @@
 
   <!-- Rules Modal -->
   <Modal :show="showRulesModal" aria-label="Spades Rules" @close="showRulesModal = false">
-    <div class="rules-panel dialog-panel rules-modal">
-      <h2>Spades Rules</h2>
-      <div class="rules-content">
+    <div class="modal-light rules-modal">
+      <div class="modal-header">
+        <h3>Spades Rules</h3>
+      </div>
+      <div class="modal-body">
         <p><strong>Overview:</strong> 4 players in 2 teams. First team to 500 points wins. Uses full 52-card deck. Spades are always trump.</p>
         
         <p><strong>Card Ranking:</strong> A (high) → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2 (low). Spades beat all other suits.</p>
@@ -231,7 +233,7 @@
         <p>• Fail bid: -10 × bid points</p>
         <p>• Going negative (-200): Other team wins instantly</p>
       </div>
-      <div class="dialog-actions">
+      <div class="modal-footer">
         <button class="btn-primary" @click="showRulesModal = false">Got it</button>
       </div>
     </div>
