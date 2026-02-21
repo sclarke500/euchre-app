@@ -3,9 +3,12 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
 import { CHAT_MAX_LENGTH } from '@67cards/shared'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   show: boolean
-}>()
+  mode?: 'overlay' | 'sidebar'
+}>(), {
+  mode: 'overlay',
+})
 
 const emit = defineEmits<{
   close: []
@@ -77,14 +80,15 @@ function handleQuickReact(emoji: string) {
 </script>
 
 <template>
-  <Teleport to="body">
+  <!-- Overlay mode: teleport to body with backdrop -->
+  <Teleport v-if="mode === 'overlay'" to="body">
     <Transition name="panel">
       <div
         v-if="show"
         class="chat-panel-overlay"
         @click="handleBackdropClick"
       >
-        <div class="chat-panel">
+        <div class="chat-panel overlay-panel">
           <div class="panel-header">
             <h3>Chat</h3>
             <button class="close-btn" @click="$emit('close')" title="Close">
@@ -161,6 +165,82 @@ function handleQuickReact(emoji: string) {
       </div>
     </Transition>
   </Teleport>
+
+  <!-- Sidebar mode: inline, no backdrop -->
+  <div v-else-if="mode === 'sidebar'" class="chat-panel sidebar-panel">
+    <div class="panel-header">
+      <h3>Chat</h3>
+      <button class="close-btn" @click="$emit('close')" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    
+    <div ref="messagesRef" class="messages-container">
+      <div v-if="chatStore.messages.length === 0" class="empty-state">
+        <div class="empty-icon">💬</div>
+        <span>No messages yet</span>
+      </div>
+      
+      <div
+        v-for="msg in chatStore.messages"
+        :key="msg.id"
+        class="message-row"
+        :class="{ 'is-own': msg.seatIndex === 0 }"
+      >
+        <div class="message-bubble">
+          <span v-if="msg.seatIndex !== 0" class="message-name">{{ msg.playerName }}</span>
+          <span class="message-text">{{ msg.text }}</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Input area at bottom -->
+    <div class="panel-input-area">
+      <div class="input-row">
+        <input
+          ref="inputRef"
+          v-model="inputText"
+          type="text"
+          class="panel-input"
+          placeholder="Message..."
+          :maxlength="CHAT_MAX_LENGTH"
+          @keydown.enter.prevent="handleSubmit"
+        />
+        <button
+          class="emoji-btn"
+          :class="{ active: showQuickReacts }"
+          @click="showQuickReacts = !showQuickReacts"
+        >
+          😊
+        </button>
+        <button
+          class="send-btn"
+          :disabled="!canSubmit"
+          @click="handleSubmit"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Quick emoji picker -->
+      <Transition name="picker">
+        <div v-if="showQuickReacts" class="quick-picker">
+          <button
+            v-for="react in quickReacts"
+            :key="react.emoji"
+            class="picker-emoji"
+            @click="handleQuickReact(react.emoji)"
+          >
+            {{ react.emoji }}
+          </button>
+        </div>
+      </Transition>
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -174,16 +254,27 @@ function handleQuickReact(emoji: string) {
 }
 
 .chat-panel {
-  width: 300px;
-  max-width: 85vw;
   height: 100%;
-  background: rgba(25, 28, 38, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(25, 28, 38, 0.95);
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
+  
+  // Overlay mode (inside teleport)
+  &.overlay-panel {
+    width: 300px;
+    max-width: 85vw;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
+  }
+  
+  // Sidebar mode (inline)
+  &.sidebar-panel {
+    width: 100%;
+    border-right: none;
+    box-shadow: none;
+  }
 }
 
 .panel-header {

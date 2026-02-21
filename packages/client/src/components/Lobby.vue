@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import TableCard from '@/components/TableCard.vue'
@@ -8,6 +8,10 @@ import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
 import PresidentOptions from '@/games/president/PresidentOptions.vue'
 import SpadesOptions from '@/games/spades/SpadesOptions.vue'
 import type { GameType } from '@67cards/shared'
+
+const props = defineProps<{
+  initialTableCode?: string
+}>()
 
 const settings = useSettingsStore()
 

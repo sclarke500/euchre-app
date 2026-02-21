@@ -1,27 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
-import { useLobbyStore } from './stores/lobbyStore'
-import MainMenu, { type GameType } from './components/MainMenu.vue'
-import Lobby from './components/Lobby.vue'
+import { useRoute } from 'vue-router'
 import AppToast from './components/AppToast.vue'
-import { EuchreEngineBoard } from './games/euchre'
-import { PresidentEngineBoard } from './games/president'
-import { KlondikeGameBoard } from './games/klondike'
-import { SpadesEngineBoard } from './games/spades'
 
-const lobbyStore = useLobbyStore()
+const route = useRoute()
 
-// App view state
-type AppView = 'menu' | 'euchreSinglePlayer' | 'presidentSinglePlayer' | 'klondikeSinglePlayer' | 'spadesSinglePlayer' | 'lobby' | 'multiplayerGame'
-
-// Check for dev URL parameters
-const urlParams = new URLSearchParams(window.location.search)
-const initialView: AppView = 'menu'
-const currentView = ref<AppView>(initialView)
-const currentGame = ref<GameType>('euchre')
-
-// Views that require landscape orientation
-const landscapeRequiredViews = ['euchreSinglePlayer', 'presidentSinglePlayer', 'spadesSinglePlayer', 'multiplayerGame', 'lobby']
+// Routes that require landscape orientation
+const landscapeRoutes = ['/play', '/lobby', '/game']
 
 // Track landscape orientation
 const isLandscape = ref(true)
@@ -30,35 +15,41 @@ function updateOrientation() {
   isLandscape.value = window.innerWidth > window.innerHeight
 }
 
-// Track if the current landscape-required view has been initialized (mounted in landscape at least once)
-// Once initialized, we keep the component mounted to preserve state even when rotating to portrait
+// Track if current view has been initialized in landscape
 const hasInitializedInLandscape = ref(false)
 
-// Show landscape blocker when in portrait on landscape-required views
-const showLandscapeBlocker = computed(() => {
-  return landscapeRequiredViews.includes(currentView.value) && !isLandscape.value
+// Check if current route requires landscape
+const requiresLandscape = computed(() => {
+  const path = route.path
+  // Klondike doesn't require landscape
+  if (path === '/play/klondike') return false
+  return landscapeRoutes.some(r => path.startsWith(r))
 })
 
-// Render landscape-required views once they've been initialized in landscape
-// Key insight: once mounted, STAY mounted (don't unmount on portrait rotation)
-const canRenderLandscapeView = computed(() => {
-  if (!landscapeRequiredViews.includes(currentView.value)) return true
-  // If already initialized, keep it mounted regardless of current orientation
+// Show landscape blocker when in portrait on landscape-required routes
+const showLandscapeBlocker = computed(() => {
+  return requiresLandscape.value && !isLandscape.value
+})
+
+// Render landscape-required views once initialized in landscape
+const canRenderView = computed(() => {
+  if (!requiresLandscape.value) return true
   if (hasInitializedInLandscape.value) return true
-  // Otherwise, wait for landscape before first mount
   return isLandscape.value
 })
 
-// Initialize when we're in landscape on a landscape-required view
-watch([isLandscape, currentView], ([landscape, view]) => {
-  if (landscape && landscapeRequiredViews.includes(view)) {
+// Initialize when in landscape on landscape-required route
+watch([isLandscape, () => route.path], ([landscape, path]) => {
+  if (landscape && landscapeRoutes.some(r => path.startsWith(r))) {
     hasInitializedInLandscape.value = true
   }
 }, { immediate: true })
 
-// Reset initialization flag when leaving landscape-required views
-watch(currentView, (newView, oldView) => {
-  if (landscapeRequiredViews.includes(oldView) && !landscapeRequiredViews.includes(newView)) {
+// Reset initialization when leaving landscape-required routes
+watch(() => route.path, (newPath, oldPath) => {
+  const wasLandscapeRoute = landscapeRoutes.some(r => oldPath?.startsWith(r))
+  const isLandscapeRoute = landscapeRoutes.some(r => newPath.startsWith(r))
+  if (wasLandscapeRoute && !isLandscapeRoute) {
     hasInitializedInLandscape.value = false
   }
 })
@@ -71,8 +62,7 @@ const isIOS = ref(false)
 const isStandalone = ref(false)
 const isAppInstalled = ref(false)
 
-// IMPORTANT: Capture beforeinstallprompt immediately - it fires early and only once per page load
-// Must be set up before onMounted to avoid missing the event
+// Capture beforeinstallprompt immediately
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault()
@@ -82,7 +72,6 @@ if (typeof window !== 'undefined') {
 }
 
 onMounted(async () => {
-  // Track orientation for delayed view rendering
   updateOrientation()
   window.addEventListener('resize', updateOrientation)
   
@@ -90,21 +79,17 @@ onMounted(async () => {
   isStandalone.value = window.matchMedia('(display-mode: standalone)').matches
     || (window.navigator as any).standalone === true
 
-  // If running standalone, mark as installed for future browser visits
   if (isStandalone.value) {
     localStorage.setItem('pwa-installed', 'true')
     console.log('PWA: Running in standalone mode')
-    return // Don't show any prompts when running as PWA
+    return
   }
 
-  // Detect iOS
   isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent)
   console.log('PWA: iOS detected:', isIOS.value)
 
-  // Check if app was previously installed
   const wasInstalled = localStorage.getItem('pwa-installed') === 'true'
 
-  // Also check using getInstalledRelatedApps API (Chrome on Android)
   if ('getInstalledRelatedApps' in navigator) {
     try {
       const relatedApps = await (navigator as any).getInstalledRelatedApps()
@@ -117,39 +102,31 @@ onMounted(async () => {
     }
   }
 
-  // If we know it's installed, show "open in app" prompt
   if (wasInstalled || isAppInstalled.value) {
     const openDismissed = localStorage.getItem('pwa-open-dismissed')
     const openDismissedTime = openDismissed ? parseInt(openDismissed, 10) : 0
     const hoursSinceDismissed = (Date.now() - openDismissedTime) / (1000 * 60 * 60)
 
-    // Show again after 24 hours
     if (hoursSinceDismissed > 24) {
       showOpenInAppPrompt.value = true
     }
-    return // Don't show install prompt if already installed
+    return
   }
 
-  // For users who haven't installed - check dismissal time
   const dismissed = localStorage.getItem('pwa-install-dismissed')
   const dismissedTime = dismissed ? parseInt(dismissed, 10) : 0
   const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
 
   console.log('PWA: Days since dismissed:', daysSinceDismissed, 'Has deferred prompt:', !!deferredPrompt.value)
 
-  // Only show install prompts on mobile (desktop users are fine with browser tabs)
   const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   
   if (daysSinceDismissed > 7 && isMobile) {
-    // Show prompt after a brief delay
     setTimeout(() => {
-      // For Android/Chrome - show if we have the deferred prompt
       if (deferredPrompt.value) {
         console.log('PWA: Showing install prompt (Android/Chrome)')
         showInstallPrompt.value = true
-      }
-      // For iOS - always show manual instructions
-      else if (isIOS.value) {
+      } else if (isIOS.value) {
         console.log('PWA: Showing install instructions (iOS)')
         showInstallPrompt.value = true
       } else {
@@ -163,22 +140,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateOrientation)
-})
-
-// Watch for multiplayer game start
-watch(() => lobbyStore.gameId, (gameId) => {
-  if (gameId) {
-    currentView.value = 'multiplayerGame'
-  }
-})
-
-// Watch for being kicked/disconnected from multiplayer game
-// Only trigger if we don't have an active gameId (normal game start clears table but sets gameId)
-watch(() => lobbyStore.currentTable, (table) => {
-  if (!table && currentView.value === 'multiplayerGame' && !lobbyStore.gameId) {
-    // Table was removed while in game without a gameId - kicked/disconnected
-    currentView.value = 'lobby'
-  }
 })
 
 async function installPWA() {
@@ -202,44 +163,13 @@ function dismissOpenInAppPrompt() {
   showOpenInAppPrompt.value = false
   localStorage.setItem('pwa-open-dismissed', Date.now().toString())
 }
-
-function startSinglePlayer(game: GameType) {
-  currentGame.value = game
-  if (game === 'president') {
-    currentView.value = 'presidentSinglePlayer'
-    // PresidentEngineBoard initializes the game in onMounted
-  } else if (game === 'klondike') {
-    currentView.value = 'klondikeSinglePlayer'
-    // KlondikeGameBoard initializes the game in onMounted
-  } else if (game === 'spades') {
-    currentView.value = 'spadesSinglePlayer'
-    // SpadesEngineBoard initializes the game in onMounted
-  } else {
-    currentView.value = 'euchreSinglePlayer'
-    // EuchreEngineBoard initializes the game in onMounted
-  }
-}
-
-function enterMultiplayer(game: GameType) {
-  currentGame.value = game
-  // Pre-select game type for new table modal (klondike excluded - no multiplayer)
-  if (game !== 'klondike') {
-    lobbyStore.setGameType(game)
-  }
-  currentView.value = 'lobby'
-}
-
-function backToMenu() {
-  currentView.value = 'menu'
-  lobbyStore.disconnect()
-}
 </script>
 
 <template>
   <div id="app">
     <AppToast />
 
-    <!-- Portrait orientation overlay for mobile - only on game boards -->
+    <!-- Portrait orientation overlay -->
     <div v-if="showLandscapeBlocker" class="rotate-device-overlay">
       <div class="rotate-content">
         <div class="rotate-icon">
@@ -307,65 +237,8 @@ function backToMenu() {
       </div>
     </Transition>
 
-    <!-- Main Menu -->
-    <MainMenu
-      v-if="currentView === 'menu'"
-      @start-single-player="startSinglePlayer"
-      @enter-multiplayer="enterMultiplayer"
-    />
-
-    <!-- Euchre Single Player Game (engine-based) - delay until landscape -->
-    <EuchreEngineBoard
-      v-else-if="currentView === 'euchreSinglePlayer' && canRenderLandscapeView"
-      mode="singleplayer"
-      @leave-game="currentView = 'menu'"
-    />
-
-    <!-- President Single Player Game (engine-based) - delay until landscape -->
-    <PresidentEngineBoard
-      v-else-if="currentView === 'presidentSinglePlayer' && canRenderLandscapeView"
-      @leave-game="currentView = 'menu'"
-    />
-
-    <!-- Klondike Single Player Game (supports portrait, no delay needed) -->
-    <KlondikeGameBoard
-      v-else-if="currentView === 'klondikeSinglePlayer'"
-      @leave-game="currentView = 'menu'"
-    />
-
-    <!-- Spades Single Player Game - delay until landscape -->
-    <SpadesEngineBoard
-      v-else-if="currentView === 'spadesSinglePlayer' && canRenderLandscapeView"
-      mode="singleplayer"
-      @leave-game="currentView = 'menu'"
-    />
-
-    <!-- Multiplayer Lobby - delay until landscape -->
-    <Lobby
-      v-else-if="currentView === 'lobby' && canRenderLandscapeView"
-      @back="backToMenu"
-    />
-
-    <!-- Multiplayer Euchre Game - delay until landscape -->
-    <EuchreEngineBoard
-      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'euchre' && canRenderLandscapeView"
-      mode="multiplayer"
-      @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
-    />
-
-    <!-- Multiplayer President Game - delay until landscape -->
-    <PresidentEngineBoard
-      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'president' && canRenderLandscapeView"
-      mode="multiplayer"
-      @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
-    />
-
-    <!-- Multiplayer Spades Game - delay until landscape -->
-    <SpadesEngineBoard
-      v-else-if="currentView === 'multiplayerGame' && lobbyStore.currentGameType === 'spades' && canRenderLandscapeView"
-      mode="multiplayer"
-      @leave-game="lobbyStore.leaveGame(); currentView = 'lobby'"
-    />
+    <!-- Router View - only render when allowed (landscape check) -->
+    <router-view v-if="canRenderView" />
   </div>
 </template>
 
@@ -377,7 +250,6 @@ function backToMenu() {
   background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
 }
 
-// Portrait orientation overlay - controlled via v-if="showLandscapeBlocker"
 .rotate-device-overlay {
   display: flex;
   position: fixed;
@@ -439,28 +311,6 @@ function backToMenu() {
   }
 }
 
-.multiplayer-game {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
-  color: $text-primary;
-  gap: $spacing-md;
-
-  button {
-    padding: $spacing-sm $spacing-lg;
-    background: $text-primary;
-    color: $brand-green;
-    font-weight: bold;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-}
-
-// Install prompt styles
 .install-prompt {
   position: fixed;
   bottom: 0;
@@ -469,7 +319,6 @@ function backToMenu() {
   z-index: 9998;
   padding: $spacing-sm;
 
-  // Hide on desktop
   @media (min-width: 769px) {
     display: none;
   }
@@ -559,7 +408,6 @@ function backToMenu() {
   }
 }
 
-// Slide up animation
 .slide-up-enter-active,
 .slide-up-leave-active {
   transition: all var(--anim-medium) ease;

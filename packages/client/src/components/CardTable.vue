@@ -107,8 +107,9 @@ const props = withDefaults(defineProps<{
   gameName: '',
 })
 
-defineEmits<{
+const emit = defineEmits<{
   'card-click': [cardId: string]
+  'layout-changed': [layout: TableLayoutResult]
 }>()
 
 const boardRef = ref<HTMLElement | null>(null)
@@ -245,6 +246,9 @@ function computeLayout() {
   el.style.setProperty('--card-base-width', `${baseWidth.value}px`)
   el.style.setProperty('--card-base-height', `${baseHeight.value}px`)
 
+  // Notify listeners of layout change
+  emit('layout-changed', result)
+
   return result
 }
 
@@ -297,6 +301,13 @@ defineExpose({
   width: 100%;
   height: 100%;
   color: #fff;
+  
+  // Constrain table size on large screens, center it
+  :global(.full-mode) & {
+    max-width: 1050px;
+    max-height: 700px;
+    margin: auto;
+  }
 }
 
 .board {

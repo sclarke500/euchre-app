@@ -1,4 +1,5 @@
 <template>
+  <div class="president-board-wrapper">
   <CardTable
     ref="tableRef"
     :player-count="playerCount"
@@ -35,16 +36,6 @@
       @rules="showRulesModal = true"
       @bug-report-open="timerPaused = true"
       @bug-report-close="timerPaused = false"
-    />
-
-    <!-- Chat icon (multiplayer only) -->
-    <div v-if="mode === 'multiplayer'" class="chat-icon-container">
-      <ChatIcon @click="showChatPanel = true" />
-    </div>
-    <ChatPanel
-      v-if="mode === 'multiplayer'"
-      :show="showChatPanel"
-      @close="showChatPanel = false"
     />
 
     <!-- Round counter (top-right) -->
@@ -234,6 +225,15 @@
     </Modal>
 
   </CardTable>
+
+  <!-- Chat (multiplayer only) -->
+  <template v-if="mode === 'multiplayer'">
+    <div class="chat-icon-container">
+      <ChatIcon @click="showChatPanel = true" />
+    </div>
+    <ChatPanel :show="showChatPanel" @close="showChatPanel = false" />
+  </template>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -685,6 +685,19 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+.president-board-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.chat-icon-container {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+}
+
 // Round indicator - top right (similar to Spades scoreboard)
 .round-indicator {
   position: fixed;

@@ -1109,6 +1109,15 @@ export function useEuchreDirector(
     playerStatuses.value = ['', '', '', '']
   }
 
+  /**
+   * Handle layout change (resize, orientation).
+   * Repositions all card containers and animates cards.
+   */
+  async function handleLayoutChange(): Promise<void> {
+    if (isAnimating.value) return  // Don't reposition during animations
+    await cardController.handleLayoutChange(200)
+  }
+
   return {
     playerNames,
     playerAvatars,
@@ -1124,6 +1133,7 @@ export function useEuchreDirector(
     clearPlayerStatuses,
     handleDealerDiscard,
     hideOpponentHands,
+    handleLayoutChange,
     cleanup,
   }
 }

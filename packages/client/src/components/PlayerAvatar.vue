@@ -213,6 +213,12 @@ const bubblePosition = computed(() => {
     border-radius: 50%;
     background: linear-gradient(145deg, #4a4a5c, #3a3a4c);
     border: 2px solid #5a5a70;
+    
+    // Larger avatars in full mode (iPad/desktop)
+    :global(.full-mode) & {
+      width: 64px;
+      height: 64px;
+    }
     display: flex;
     align-items: center;
     justify-content: center;
@@ -253,6 +259,13 @@ const bubblePosition = computed(() => {
     padding: 3px 14px;
     font-size: 13px;
     font-weight: 600;
+    
+    // Larger name labels in full mode (iPad/desktop)
+    :global(.full-mode) & {
+      padding: 5px 24px;
+      font-size: 14px;
+      margin: 0 10px;
+    }
     color: #e8e8f0;
     white-space: nowrap;
     background: linear-gradient(180deg, 

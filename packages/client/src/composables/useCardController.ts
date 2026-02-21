@@ -31,7 +31,7 @@ import { Suit } from '@67cards/shared'
 import { FullRank } from '@67cards/shared'
 import type { CardPosition } from '@/components/cardContainers'
 import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
-import { CardScales, getBaseCardWidth, getViewportWidth } from './useCardSizing'
+import { CardScales, getBaseCardWidth, getViewportWidth, isMobile } from './useCardSizing'
 
 export type PlayAreaMode = 'trick' | 'overlay'
 export type TrickCompleteMode = 'stack' | 'sweep'
@@ -287,7 +287,9 @@ export function useCardController(
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
       const cardCount = userHand.cards.length
       // Consistent position - same for all hand sizes
-      const targetY = board.offsetHeight - 80
+      // User hand higher on full mode (more room), lower on mobile (maximize space)
+      const bottomOffset = isMobile() ? 80 : 120
+      const targetY = board.offsetHeight - bottomOffset
       const targetScale = config.userHandScale ?? CardScales.userHand
 
       userHand.position = { x: targetX, y: targetY }
@@ -1135,10 +1137,93 @@ export function useCardController(
     await Promise.all(moves.filter(Boolean))
   }
 
+  /**
+   * Handle layout change (resize, orientation change).
+   * Repositions all containers and animates cards to new positions.
+   */
+  async function handleLayoutChange(animationMs: number = 200): Promise<void> {
+    const board = boardRef.value
+    if (!board) return
+
+    // Recalculate layout
+    const newLayout = computeTableLayout(board.offsetWidth, board.offsetHeight, layoutType, getPlayerCount())
+    tableLayout.value = newLayout
+    tableCenter.value = newLayout.tableCenter
+
+    // Update deck position (at table center for now)
+    const deck = engine.getDeck()
+    if (deck) {
+      deck.position = { x: newLayout.tableCenter.x, y: newLayout.tableCenter.y }
+    }
+
+    // Update hand positions from layout seats
+    const hands = engine.getHands()
+    const userSeatIndex = getUserSeatIndex()
+    
+    for (let i = 0; i < hands.length; i++) {
+      const hand = hands[i]
+      const seat = newLayout.seats[i]
+      if (!hand || !seat) continue
+      
+      if (seat.isUser) {
+        // User hand: bottom center with offset
+        const bottomOffset = isMobile() ? 80 : 120
+        hand.position = {
+          x: newLayout.tableCenter.x,
+          y: board.offsetHeight - bottomOffset
+        }
+      } else {
+        // Opponent hands: use seat position
+        hand.position = { ...seat.handPosition }
+      }
+      
+      // Reset arc lock so fan recalculates for new size
+      hand.resetArcLock()
+    }
+
+    // Update pile positions
+    const piles = engine.getPiles()
+    for (const pile of piles) {
+      if (pile.id === 'center') {
+        // Center pile at table center
+        pile.position = { x: newLayout.tableCenter.x, y: newLayout.tableCenter.y }
+      } else if (pile.id.startsWith('tricks-won-player-')) {
+        // Trick piles near player's avatar
+        const seatIdx = parseInt(pile.id.replace('tricks-won-player-', ''))
+        const seat = newLayout.seats[seatIdx]
+        if (seat) {
+          const offset = seat.isUser ? { x: 80, y: -30 } : { x: 40, y: 30 }
+          pile.position = {
+            x: seat.handPosition.x + offset.x,
+            y: seat.handPosition.y + offset.y
+          }
+        }
+      }
+    }
+
+    // Animate all cards to new positions
+    const promises: Promise<void>[] = []
+    
+    if (deck) {
+      promises.push(deck.repositionAll(animationMs))
+    }
+    
+    for (const hand of hands) {
+      promises.push(hand.repositionAll(animationMs))
+    }
+    
+    for (const pile of piles) {
+      promises.push(pile.repositionAll(animationMs))
+    }
+
+    await Promise.all(promises)
+  }
+
   return {
     tableCenter,
     tableLayout,
     setupTable,
+    handleLayoutChange,
     dealFromPlayers,
     restoreHands,
     revealUserHand,
