@@ -13,12 +13,15 @@ const CARD_ASPECT_RATIO = 1.4
 // Base card width at different viewport breakpoints
 // These are the "1.0 scale" reference sizes
 const VIEWPORT_BREAKPOINTS = [
-  { minWidth: 1920, baseWidth: 77 },   // Large desktop / TV (was 85)
-  { minWidth: 1440, baseWidth: 70 },   // Desktop (was 78)
-  { minWidth: 1024, baseWidth: 65 },   // iPad landscape / small desktop (was 72)
-  { minWidth: 768, baseWidth: 61 },    // iPad portrait (was 68)
+  { minWidth: 1920, baseWidth: 77 },   // Large desktop / TV
+  { minWidth: 1440, baseWidth: 70 },   // Desktop
+  { minWidth: 1024, baseWidth: 65 },   // iPad landscape / small desktop
+  { minWidth: 768, baseWidth: 61 },    // iPad portrait
   { minWidth: 0, baseWidth: 52 },      // Mobile portrait
 ]
+
+// Mobile landscape (phone sideways) - special case, tight vertical space
+const MOBILE_LANDSCAPE_BASE_WIDTH = 57
 
 // Context multipliers - these are consistent across all games
 export const CardScales = {
@@ -62,8 +65,7 @@ export function getBaseCardWidth(): number {
   
   let baseWidth: number
   if (isMobileLandscape) {
-    // Mobile landscape gets smaller cards (tight vertical space)
-    baseWidth = 52
+    baseWidth = MOBILE_LANDSCAPE_BASE_WIDTH
   } else {
     const breakpoint = VIEWPORT_BREAKPOINTS.find(bp => width >= bp.minWidth)
     baseWidth = breakpoint?.baseWidth ?? 83
