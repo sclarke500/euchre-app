@@ -407,22 +407,6 @@ async function animateDeal() {
   const dealerX = -100
   const dealerY = window.innerHeight * 0.67
   
-  // First, place all cards at dealer position (create new Map for reactivity)
-  const newMap = new Map<string, CardPosition>()
-  for (const pos of finalPositions) {
-    newMap.set(pos.id, {
-      ...pos,
-      x: dealerX,
-      y: dealerY,
-      faceUp: false, // Start face down
-    })
-  }
-  cardPositionsRef.value = newMap
-  
-  // Wait a frame for initial positions to render
-  await nextTick()
-  await new Promise(r => setTimeout(r, 50))
-  
   // Build deal order: tableau cards dealt row by row (col 0 card 0, col 1 card 0, col 1 card 1, etc.)
   const dealOrder: { cardId: string; finalPos: CardPosition; delay: number }[] = []
   const state = store.gameState
@@ -445,6 +429,29 @@ async function animateDeal() {
       }
     }
   }
+
+  // Initialize positions:
+  // - Tableau deal cards start at dealer origin (animated deal)
+  // - Non-tableau cards (stock/foundation/waste) start at final positions
+  const dealtCardIds = new Set(dealOrder.map(d => d.cardId))
+  const newMap = new Map<string, CardPosition>()
+  for (const pos of finalPositions) {
+    if (dealtCardIds.has(pos.id)) {
+      newMap.set(pos.id, {
+        ...pos,
+        x: dealerX,
+        y: dealerY,
+        faceUp: false,
+      })
+    } else {
+      newMap.set(pos.id, pos)
+    }
+  }
+  cardPositionsRef.value = newMap
+
+  // Wait a frame for initial positions to render
+  await nextTick()
+  await new Promise(r => setTimeout(r, 50))
   
   // Mark all cards as animating (elevated z-index)
   animatingCardIds.value = new Set(dealOrder.map(d => d.cardId))
@@ -467,6 +474,7 @@ async function animateDeal() {
   
   // Wait for all animations to complete
   await new Promise(r => setTimeout(r, delay + 350)) // 350ms for the CSS transition
+
   animatingCardIds.value = new Set() // Clear all
   isAnimating.value = false
 }
@@ -566,10 +574,17 @@ function handleContainerMeasured(
 
 // Click handlers
 async function handleStockClick() {
+  if (isAnimating.value) return
+
   const stockRect = layout.containers.value.stock
   const wasteRect = layout.containers.value.waste
   const prevWasteCount = store.waste.length
   const prevStockCount = store.stock.length
+
+  if (!stockRect || !wasteRect) {
+    store.handleDrawCard()
+    return
+  }
   
   // Identify cards that will be drawn (top of stock) BEFORE state change
   // These cards are already rendered at the stock position
@@ -579,32 +594,43 @@ async function handleStockClick() {
   
   // Block the watcher during animation
   isAnimating.value = true
-  
-  store.handleDrawCard()
-  
-  // Verify cards were drawn
-  const newWasteCount = store.waste.length
-  if (stockRect && wasteRect && newWasteCount > prevWasteCount) {
-    const drawnCards = store.waste.slice(prevWasteCount)
+  try {
+    // Before changing state, ensure drawn cards are positioned at stock
     const map = cardPositionsRef.value
-    const finalPositions = layout.calculatePositions(store.gameState)
     
-    // Cards are already at stock position - no need to reset them
-    // Just make sure they exist in the map with correct initial state
-    for (const card of drawnCards) {
-      const existing = map.get(card.id)
-      if (!existing) {
-        // Card wasn't in map yet, add it at stock position
-        map.set(card.id, {
-          id: card.id,
+    // Position the cards that will be drawn at the stock location
+    for (const cardId of cardsToDrawIds) {
+      const existing = map.get(cardId)
+      if (existing) {
+        map.set(cardId, {
+          ...existing,
           x: stockRect.x,
           y: stockRect.y,
-          z: 100,
           faceUp: false,
-          card,
         })
+      } else {
+        const sourceCard = store.stock.find(c => c.id === cardId)
+        if (sourceCard) {
+          map.set(cardId, {
+            id: sourceCard.id,
+            x: stockRect.x,
+            y: stockRect.y,
+            z: 100,
+            faceUp: false,
+            card: sourceCard,
+          })
+        }
       }
     }
+    triggerRef(cardPositionsRef)
+
+    store.handleDrawCard()
+
+    // Verify cards were drawn
+    const newWasteCount = store.waste.length
+    if (newWasteCount > prevWasteCount) {
+      const drawnCards = store.waste.slice(prevWasteCount)
+      const finalPositions = layout.calculatePositions(store.gameState)
     
     // Collect existing waste card positions (they'll collapse after new cards fan out)
     const existingWastePositions = finalPositions.filter(p => 
@@ -620,17 +646,27 @@ async function handleStockClick() {
     await nextTick()
     await new Promise(r => setTimeout(r, 30))
     
-    // Animate: Slide cards from stock to waste AND flip simultaneously
-    for (const card of drawnCards) {
+    // Animate: Slide cards from stock to waste center position and flip simultaneously
+    // Calculate the center landing position for the waste pile
+    const wasteCenterX = wasteRect.x + wasteRect.width / 2 - layout.cardWidth.value / 2
+    const wasteCenterY = wasteRect.y
+    
+    // For multiple cards, stack them slightly offset at the landing position
+    for (let i = 0; i < drawnCards.length; i++) {
+      const card = drawnCards[i]
+      if (!card) continue
       updatePosition(card.id, {
-        x: wasteRect.x,
-        y: wasteRect.y,
-        faceUp: true,
+        x: wasteCenterX + (i * 2), // Slight horizontal offset for stacking
+        y: wasteCenterY + (i * 1), // Slight vertical offset for stacking
+        faceUp: true, // Flip as they move
       })
     }
     
     // Wait for slide+flip animation to complete
     await new Promise(r => setTimeout(r, 320))
+    
+    // Brief pause to let cards "land" before fanning
+    await new Promise(r => setTimeout(r, 150))
     
     // Step 2: Fan new cards to their final positions
     for (const card of drawnCards) {
@@ -644,25 +680,29 @@ async function handleStockClick() {
     }
     
     // Wait for fan animation to complete
-    await new Promise(r => setTimeout(r, 300))
+    await new Promise(r => setTimeout(r, 350))
     
-    // Step 4: Snap old waste cards to their collapsed positions
-    for (const pos of existingWastePositions) {
-      const existing = map.get(pos.id)
-      if (existing) {
-        map.set(pos.id, { ...existing, x: pos.x, y: pos.y, z: pos.z })
+      // Step 4: Snap old waste cards to their collapsed positions
+      for (const pos of existingWastePositions) {
+        const existing = map.get(pos.id)
+        if (existing) {
+          map.set(pos.id, { ...existing, x: pos.x, y: pos.y, z: pos.z })
+        }
       }
+      triggerRef(cardPositionsRef)
+
+      // Clean up
+      for (const card of drawnCards) {
+        animatingCardIds.value.delete(card.id)
+      }
+    } else {
+      // Recycle/no-draw path: watcher was paused, so force a sync.
+      syncPositionsFromState()
     }
-    triggerRef(cardPositionsRef)
-    
-    // Clean up
-    for (const card of drawnCards) {
-      animatingCardIds.value.delete(card.id)
-    }
+  } finally {
+    animatingCardIds.value = new Set() // Clear all
+    isAnimating.value = false
   }
-  
-  animatingCardIds.value = new Set() // Clear all
-  isAnimating.value = false
 }
 
 function handleWasteClick() {
@@ -683,6 +723,12 @@ function handleTableauClick(index: number) {
 function handleCardClick(cardId: string) {
   // Find which card was clicked and handle appropriately
   const state = store.gameState
+
+  // Check stock (stock cards are rendered in the card layer and can intercept slot clicks)
+  if (state.stock.some(c => c.id === cardId)) {
+    void handleStockClick()
+    return
+  }
   
   // Check waste
   if (state.waste.length > 0 && state.waste[state.waste.length - 1]?.id === cardId) {

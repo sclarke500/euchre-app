@@ -17,17 +17,17 @@ test.describe('Klondike Solitaire', () => {
 
   test('deals tableau cards on start', async ({ page }) => {
     // Tableau has 28 cards (7 columns: 1+2+3+4+5+6+7)
-    // Stock cards are NOT in the card layer (shown in stock slot)
+    // Plus top 3 stock cards are rendered in the card layer for draw animation
     const cards = page.locator('.klondike-card')
-    await expect(cards).toHaveCount(28, { timeout: 5000 })
+    await expect(cards).toHaveCount(31, { timeout: 5000 })
     
     // 7 should be face-up (one per tableau column)
     const faceUpCards = page.locator('.klondike-card.face-up')
     await expect(faceUpCards).toHaveCount(7)
     
-    // 21 should be face-down (in tableau)
+    // 24 should be face-down (21 tableau + 3 stock render cards)
     const faceDownCards = page.locator('.klondike-card.face-down')
-    await expect(faceDownCards).toHaveCount(21)
+    await expect(faceDownCards).toHaveCount(24)
     
     // Stock slot should show a card back (indicating cards are there)
     const stockCardBack = page.locator('.stock-slot .card-back')
@@ -53,6 +53,10 @@ test.describe('Klondike Solitaire', () => {
     await expect(page.locator('.klondike-card.face-up')).toHaveCount(7, { timeout: 5000 })
     
     // Draw from stock
+    const movesText = page.getByText(/\d+ moves/)
+    const initialText = await movesText.textContent()
+    const initialMoves = parseInt(initialText?.match(/\d+/)?.[0] || '0')
+
     const stockSlot = page.locator('.stock-slot').first()
     await stockSlot.click()
     await page.waitForTimeout(500)
@@ -69,8 +73,10 @@ test.describe('Klondike Solitaire', () => {
     // Wait for undo animation and state update
     await page.waitForTimeout(800)
     
-    // Undo should return to initial 7 face-up cards
-    await expect(page.locator('.klondike-card.face-up')).toHaveCount(7, { timeout: 3000 })
+    // Undo should return move count to initial value
+    const afterUndoText = await movesText.textContent()
+    const afterUndoMoves = parseInt(afterUndoText?.match(/\d+/)?.[0] || '0')
+    expect(afterUndoMoves).toBe(initialMoves)
   })
 
   test('move count increases on draw', async ({ page }) => {
@@ -88,6 +94,31 @@ test.describe('Klondike Solitaire', () => {
     await page.waitForTimeout(300)
     
     // Move count should increase
+    const afterText = await movesText.textContent()
+    const afterMoves = parseInt(afterText?.match(/\d+/)?.[0] || '0')
+    expect(afterMoves).toBe(initialMoves + 1)
+  })
+
+  test('clicking stock area always draws even with card layer on top', async ({ page }) => {
+    // Wait for initial deal stabilization
+    await expect(page.locator('.klondike-card.face-up')).toHaveCount(7, { timeout: 5000 })
+
+    const movesText = page.getByText(/\d+ moves/)
+    const initialText = await movesText.textContent()
+    const initialMoves = parseInt(initialText?.match(/\d+/)?.[0] || '0')
+
+    const stockSlot = page.locator('.stock-slot').first()
+    const box = await stockSlot.boundingBox()
+    expect(box).not.toBeNull()
+
+    // Click by page coordinates so the topmost element receives the event
+    await page.mouse.click(
+      box!.x + box!.width / 2,
+      box!.y + box!.height / 2
+    )
+
+    await page.waitForTimeout(600)
+
     const afterText = await movesText.textContent()
     const afterMoves = parseInt(afterText?.match(/\d+/)?.[0] || '0')
     expect(afterMoves).toBe(initialMoves + 1)

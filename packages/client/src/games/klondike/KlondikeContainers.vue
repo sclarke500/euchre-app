@@ -144,11 +144,6 @@ defineExpose({
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
               </svg>
             </template>
-            <template v-else>
-              <div class="card-back">
-                <div class="card-back-pattern"></div>
-              </div>
-            </template>
           </div>
           <div ref="wasteRef" class="waste-slot" @click="emit('wasteClick')"></div>
         </div>
@@ -206,11 +201,6 @@ defineExpose({
               <path d="M1 4v6h6" />
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
             </svg>
-          </template>
-          <template v-else>
-            <div class="card-back">
-              <div class="card-back-pattern"></div>
-            </div>
           </template>
         </div>
         <div ref="wasteRef" class="waste-slot" @click="emit('wasteClick')"></div>

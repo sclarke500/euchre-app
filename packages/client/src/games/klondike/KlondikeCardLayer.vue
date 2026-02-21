@@ -116,8 +116,6 @@ function findCardSource(cardId: string): {
 function handlePointerDown(event: PointerEvent, cardId: string, pos: CardPosition) {
   // Only handle left mouse button or touch
   if (event.button !== 0) return
-  // Don't drag face-down cards
-  if (!pos.faceUp) return
   
   isDragging.value = false
   dragStartPos.value = { x: event.clientX, y: event.clientY }
@@ -135,7 +133,8 @@ function handlePointerMove(event: PointerEvent, cardId: string, pos: CardPositio
   const distance = Math.sqrt(dx * dx + dy * dy)
   
   // Start drag after moving 5px (prevents accidental drags on clicks)
-  if (!isDragging.value && distance > 5) {
+  // Face-down cards are clickable but not draggable.
+  if (!isDragging.value && pos.faceUp && distance > 5) {
     isDragging.value = true
     emit('dragStart', cardId, event.clientX, event.clientY, 'tableau')
   }
