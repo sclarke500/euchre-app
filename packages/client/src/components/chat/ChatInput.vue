@@ -131,7 +131,7 @@ function handleClickOutside(e: MouseEvent) {
 }
 
 .chat-input {
-  width: 180px;
+  width: 110px;
   background: transparent;
   border: none;
   outline: none;
@@ -147,7 +147,7 @@ function handleClickOutside(e: MouseEvent) {
   }
   
   @media (max-width: 480px) {
-    width: 140px;
+    width: 85px;
     font-size: 13px;
   }
 }
