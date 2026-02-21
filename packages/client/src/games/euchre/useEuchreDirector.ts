@@ -728,9 +728,39 @@ export function useEuchreDirector(
         break
       }
 
-      case GamePhase.BiddingRound2:
+      case GamePhase.BiddingRound1: {
+        // Joining mid-game or reconnect during bidding round 1
+        // If engine isn't set up, initialize and sync cards
+        const userHand = engine.getHands()[0]
+        if (!userHand || userHand.cards.length === 0) {
+          // Try local restore first
+          const restored = cardController.attemptLocalRestore()
+          if (!restored) {
+            // No snapshot — set up table and sync from server
+            setupTable()
+            await nextTick()
+            await syncUserHandWithServerState()
+            await cardController.hideOpponentHands()
+          }
+        }
+        break
+      }
+
+      case GamePhase.BiddingRound2: {
+        // Joining mid-game during bidding round 2
+        const userHandR2 = engine.getHands()[0]
+        if (!userHandR2 || userHandR2.cards.length === 0) {
+          const restored = cardController.attemptLocalRestore()
+          if (!restored) {
+            setupTable()
+            await nextTick()
+            await syncUserHandWithServerState()
+            await cardController.hideOpponentHands()
+          }
+        }
         await flipTurnUpFaceDown()
         break
+      }
 
       case GamePhase.DealerDiscard: {
         // Order-up: animate turn-up card to dealer's hand.
@@ -749,6 +779,18 @@ export function useEuchreDirector(
       }
 
       case GamePhase.Playing: {
+        // First check if we're joining mid-game (no cards set up)
+        const userHandPlaying = engine.getHands()[0]
+        if (!userHandPlaying || userHandPlaying.cards.length === 0) {
+          const restored = cardController.attemptLocalRestore()
+          if (!restored) {
+            setupTable()
+            await nextTick()
+            await syncUserHandWithServerState()
+            await cardController.hideOpponentHands()
+          }
+        }
+        
         if (oldPhase === GamePhase.DealerDiscard) {
           // Dealer finished discarding — sweep deck and hide opponent hands.
           // For local user dealer, handleDealerDiscard() already did the animation.
