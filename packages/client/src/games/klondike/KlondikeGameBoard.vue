@@ -565,6 +565,7 @@ function handleContainerMeasured(
 // Click handlers
 async function handleStockClick() {
   const stockRect = layout.containers.value.stock
+  const wasteRect = layout.containers.value.waste
   const prevWasteCount = store.waste.length
   
   // Block the watcher during animation
@@ -574,32 +575,31 @@ async function handleStockClick() {
   
   // Identify newly drawn cards
   const newWasteCount = store.waste.length
-  if (stockRect && newWasteCount > prevWasteCount) {
+  if (stockRect && wasteRect && newWasteCount > prevWasteCount) {
     const drawnCards = store.waste.slice(prevWasteCount)
     
-    // Position new cards at stock initially
+    // Position new cards at stock initially (face down)
     const map = cardPositionsRef.value
     const finalPositions = layout.calculatePositions(store.gameState)
     
     for (const card of drawnCards) {
       const finalPos = finalPositions.find(p => p.id === card.id)
       if (finalPos) {
-        // Place at stock first
         map.set(card.id, {
           ...finalPos,
           x: stockRect.x,
           y: stockRect.y,
-          faceUp: false, // Start face down
+          faceUp: false,
         })
       }
     }
     
-    // Collect existing waste card positions (they'll shift left as new cards arrive)
+    // Collect existing waste card positions (they'll shift left)
     const existingWastePositions = finalPositions.filter(p => 
       store.waste.some(c => c.id === p.id) && !drawnCards.some(c => c.id === p.id)
     )
     
-    // Wait a frame then animate everything together
+    // Wait a frame for initial position to apply
     await nextTick()
     await new Promise(r => setTimeout(r, 20))
     
@@ -608,33 +608,41 @@ async function handleStockClick() {
       animatingCardIds.value.add(card.id)
     }
     
-    // Shift existing waste cards at the same time as new cards start arriving
+    // Step 1: Flip all drawn cards face up at the waste position (rightmost spot)
+    // Move them to waste position and flip simultaneously
+    for (const card of drawnCards) {
+      updatePosition(card.id, {
+        x: wasteRect.x,
+        y: wasteRect.y,
+        faceUp: true,
+      })
+    }
+    
+    // Wait for flip animation to complete
+    await new Promise(r => setTimeout(r, 280))
+    
+    // Step 2: Fan cards to their final positions + shift existing waste cards
     for (const pos of existingWastePositions) {
       updatePosition(pos.id, { x: pos.x, y: pos.y, z: pos.z })
     }
     
-    // Stagger the animations for new cards
-    let delay = 0
     for (const card of drawnCards) {
       const finalPos = finalPositions.find(p => p.id === card.id)
       if (finalPos) {
-        setTimeout(() => {
-          updatePosition(card.id, {
-            x: finalPos.x,
-            y: finalPos.y,
-            faceUp: true,
-          })
-          // Remove from animating set after animation completes
-          setTimeout(() => {
-            animatingCardIds.value.delete(card.id)
-          }, 350)
-        }, delay)
-        delay += 60 // Stagger each card
+        updatePosition(card.id, {
+          x: finalPos.x,
+          y: finalPos.y,
+        })
       }
     }
     
-    // Wait for animation to complete
-    await new Promise(r => setTimeout(r, delay + 350))
+    // Wait for fan animation to complete
+    await new Promise(r => setTimeout(r, 300))
+    
+    // Clean up
+    for (const card of drawnCards) {
+      animatingCardIds.value.delete(card.id)
+    }
   }
   
   animatingCardIds.value = new Set() // Clear all
