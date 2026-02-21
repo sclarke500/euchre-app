@@ -37,10 +37,10 @@ watch(
     if (gameId) {
       const gameType = lobbyStore.currentGameType || 'euchre'
       const path = `/game/${gameType}/${gameId}`
-      console.log('[LobbyView] Game started, navigating to:', path)
+      console.log('[LobbyView] Game started, navigating to:', path, 'currentRoute:', route.fullPath)
       try {
-        await router.push(path)
-        console.log('[LobbyView] Navigation completed')
+        const result = await router.push(path)
+        console.log('[LobbyView] Navigation result:', result, 'newRoute:', router.currentRoute.value.fullPath)
       } catch (err) {
         console.error('[LobbyView] Navigation failed:', err)
         // Force navigation via location if router fails
