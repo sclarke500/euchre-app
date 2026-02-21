@@ -30,16 +30,37 @@ function updateOrientation() {
   isLandscape.value = window.innerWidth > window.innerHeight
 }
 
+// Track if the current landscape-required view has been initialized (mounted in landscape at least once)
+// Once initialized, we keep the component mounted to preserve state even when rotating to portrait
+const hasInitializedInLandscape = ref(false)
+
 // Show landscape blocker when in portrait on landscape-required views
 const showLandscapeBlocker = computed(() => {
   return landscapeRequiredViews.includes(currentView.value) && !isLandscape.value
 })
 
-// Delay rendering landscape-required views until actually in landscape
-// This prevents layout calculations with portrait dimensions
+// Render landscape-required views once they've been initialized in landscape
+// Key insight: once mounted, STAY mounted (don't unmount on portrait rotation)
 const canRenderLandscapeView = computed(() => {
   if (!landscapeRequiredViews.includes(currentView.value)) return true
+  // If already initialized, keep it mounted regardless of current orientation
+  if (hasInitializedInLandscape.value) return true
+  // Otherwise, wait for landscape before first mount
   return isLandscape.value
+})
+
+// Initialize when we're in landscape on a landscape-required view
+watch([isLandscape, currentView], ([landscape, view]) => {
+  if (landscape && landscapeRequiredViews.includes(view)) {
+    hasInitializedInLandscape.value = true
+  }
+}, { immediate: true })
+
+// Reset initialization flag when leaving landscape-required views
+watch(currentView, (newView, oldView) => {
+  if (landscapeRequiredViews.includes(oldView) && !landscapeRequiredViews.includes(newView)) {
+    hasInitializedInLandscape.value = false
+  }
 })
 
 // PWA install prompt
