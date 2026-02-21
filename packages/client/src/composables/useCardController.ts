@@ -420,7 +420,7 @@ export function useCardController(
     if (userHand) {
       userHand.faceUp = false
       userHand.flipCards(false)
-      userHand.scale = config.opponentHandScale ?? CardScales.opponentHand
+      userHand.scale = config.userHandScale ?? CardScales.userHand
       userHand.resetArcLock() // Reset arc radius lock for new hand
     }
 
