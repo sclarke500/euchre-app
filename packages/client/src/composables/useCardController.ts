@@ -1087,7 +1087,9 @@ export function useCardController(
       engine.refreshCards()
       // Wait for Vue to render new BoardCard components and register refs
       await nextTick()
-      await nextTick() // Double nextTick to ensure refs are registered
+      await nextTick()
+      // Extra delay to ensure BoardCard onMounted has run and registered refs
+      await new Promise(r => setTimeout(r, 50))
     }
 
     // Sort and re-fan
@@ -1099,6 +1101,9 @@ export function useCardController(
         .map(id => cardMap.get(id))
         .filter((m): m is NonNullable<typeof m> => m != null)
     }
+
+    // Ensure hand is in fanned mode for proper positioning
+    userHand.mode = 'fanned'
 
     // Animate remaining/new cards to their positions
     const moves = userHand.cards.map((managed, index) => {
