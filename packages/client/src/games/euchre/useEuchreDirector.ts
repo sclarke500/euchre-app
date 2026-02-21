@@ -450,7 +450,7 @@ export function useEuchreDirector(
 
     const deckPos = deck.getCardPosition(deck.cards.length - 1)
     await Promise.all([
-      cardRef?.moveTo({ ...deckPos, flipY: 0, scale: 1.0, zIndex: 1000 }, DISCARD_MS),
+      cardRef?.moveTo({ ...deckPos, flipY: 0, zIndex: 1000 }, DISCARD_MS),
       userHand.setMode('fanned', AnimationDurations.medium),
     ])
 
