@@ -839,25 +839,27 @@ const selection = computed(() => store.selection)
 
 // Victory celebration
 function celebrateWin() {
-  const duration = 3000
+  const duration = 4000
   const end = Date.now() + duration
 
   const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6']
   
   ;(function frame() {
     confetti({
-      particleCount: 3,
+      particleCount: 5,
       angle: 60,
-      spread: 55,
-      origin: { x: 0, y: 0.7 },
+      spread: 70,
+      origin: { x: 0, y: 0.6 },
       colors,
+      zIndex: 100000,
     })
     confetti({
-      particleCount: 3,
+      particleCount: 5,
       angle: 120,
-      spread: 55,
-      origin: { x: 1, y: 0.7 },
+      spread: 70,
+      origin: { x: 1, y: 0.6 },
       colors,
+      zIndex: 100000,
     })
 
     if (Date.now() < end) {
