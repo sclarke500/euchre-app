@@ -512,30 +512,23 @@ export function useEuchreDirector(
     const allCards = playerPiles.flatMap(pile => pile?.cards ?? [])
     if (allCards.length === 0) return
 
-    // Determine off-screen target based on next dealer's side
-    const seat = tl.seats[nextDealerSeat]
     if (!boardRef.value) return
-    const boardW = boardRef.value.offsetWidth
-    const boardH = boardRef.value.offsetHeight
 
-    let targetX: number, targetY: number
-    switch (seat?.side ?? 'bottom') {
-      case 'bottom': targetX = tl.tableCenter.x; targetY = boardH + 100; break
-      case 'top':    targetX = tl.tableCenter.x; targetY = -100; break
-      case 'left':   targetX = -100; targetY = tl.tableCenter.y; break
-      case 'right':  targetX = boardW + 100; targetY = tl.tableCenter.y; break
-      default:       targetX = tl.tableCenter.x; targetY = boardH + 100; break
-    }
+    // Wait for dealer chip to finish animating (500ms CSS transition)
+    await sleep(600)
+
+    // Sweep cards to new dealer's deck position (where they'll be dealt from)
+    const deckPos = getDealerDeckPosition(nextDealerSeat, tl)
 
     await Promise.all(allCards.map((m, i) => {
       const ref = engine.getCardRef(m.card.id)
       if (!ref) return Promise.resolve()
       return ref.moveTo({
-        x: targetX,
-        y: targetY,
-        rotation: ref.getPosition().rotation + 90,
+        x: deckPos.x,
+        y: deckPos.y,
+        rotation: 0,
         zIndex: 10 + i,
-        scale: TRICK_WON_SCALE,
+        scale: TRICK_WON_SCALE, // Scale down like a collected deck
       }, 500)
     }))
   }
