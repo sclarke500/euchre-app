@@ -182,12 +182,14 @@ const dealerChipStyle = computed(() => {
   const chipOffset = { x: -38, y: -38 } // Top-left of avatar
   
   if (seat.isUser) {
-    // User avatar is fixed at bottom of screen - use bottom positioning
-    // Position at top-left of the "S" circle (left side of pill avatar)
+    // User avatar is fixed at bottom of screen
+    // Convert to top positioning so CSS transition works (can't animate between top/bottom)
+    const boardHeight = board.offsetHeight
+    const chipTop = boardHeight - 50 - 28 // 50px from bottom, minus chip height
     return {
       left: `${tableBounds.centerX - 88}px`, // Left edge of avatar circle
-      bottom: '50px', // Top of avatar circle
-      top: 'auto',
+      top: `${chipTop}px`,
+      bottom: 'auto',
     }
   }
   
