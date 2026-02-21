@@ -23,6 +23,8 @@ import { createMessagingHelpers } from './orchestration/messaging.js'
 import {
   hasAlreadyReconnected,
   logOrchestrationEvent,
+  markPlayerDisconnected,
+  markPlayerReconnected,
   replacePlayerWithAI,
   tryRecoverGameId,
 } from './orchestration/playerLifecycle.js'
@@ -192,6 +194,8 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       routeGameCommand(() => gameActions.handleSpadesMakeBid(socket, c, bidType, count)),
     bootPlayer: (socket, c, playerId) =>
       routeGameCommand(() => gameActions.handleBootPlayer(socket, c, playerId)),
+    bootDisconnectedPlayer: (socket, c, playerId) =>
+      routeGameCommand(() => gameActions.handleBootDisconnectedPlayer(socket, c, playerId)),
     bugReport: async (socket, c, payload) => {
       const clientId = c.player?.odusId ?? 'unknown'
       const result = await handleBugReport(clientId, payload)
@@ -245,13 +249,13 @@ const { app } = createWebSocketServer({
     if (client.tableId) {
       lobbyHandlers.handleLeaveTable(ws, client)
     }
-    // Replace disconnected player with AI if they were in a game
-    // Track for reconnection so they can rejoin within the grace period
+    // Mark player as disconnected if they were in a game
+    // Don't replace with AI yet — other players can boot them or they can reconnect
     if (client.gameId && client.player) {
       if (!hasAlreadyReconnected(clients, ws, client)) {
-        replacePlayerWithAI(client, disconnectedPlayers, true)
+        markPlayerDisconnected(client)
       } else {
-        console.log(`Skipping AI replacement for ${client.player.odusId} - already reconnected`)
+        console.log(`Skipping disconnect marking for ${client.player.odusId} - already reconnected`)
       }
     }
     clients.delete(ws)

@@ -26,6 +26,7 @@ export interface GameActionHandlers {
   handlePlayCard: (ws: WebSocket, client: ConnectedClient, cardId: string) => void
   handleDiscardCard: (ws: WebSocket, client: ConnectedClient, cardId: string) => void
   handleBootPlayer: (ws: WebSocket, client: ConnectedClient, playerId: number) => void
+  handleBootDisconnectedPlayer: (ws: WebSocket, client: ConnectedClient, playerId: number) => void
   handlePresidentPlayCards: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
   handlePresidentPass: (ws: WebSocket, client: ConnectedClient) => void
   handlePresidentConfirmExchange: (ws: WebSocket, client: ConnectedClient, cardIds: string[]) => void
@@ -206,6 +207,36 @@ export function createGameActionHandlers({
     }
   }
 
+  /**
+   * Boot a disconnected player (convert to AI).
+   * Any player in the game can request this for a disconnected player.
+   */
+  function handleBootDisconnectedPlayer(
+    ws: WebSocket,
+    client: ConnectedClient,
+    playerId: number
+  ): void {
+    const gameId = requireActivePlayerAndGame(ws, client)
+    if (!gameId) {
+      return
+    }
+
+    const runtimeEntry = getRuntime(gameId)
+    if (!runtimeEntry) {
+      send(ws, { type: 'error', message: 'Game not found' })
+      return
+    }
+
+    const success = runtimeEntry.runtime.bootDisconnectedPlayer?.(playerId) ?? false
+    
+    if (!success) {
+      console.log(
+        `Boot disconnected request for player ${playerId} ignored (not disconnected or already booted)`
+      )
+      send(ws, { type: 'error', message: 'Player is not disconnected' })
+    }
+  }
+
   function handlePresidentPlayCards(
     ws: WebSocket,
     client: ConnectedClient,
@@ -278,6 +309,7 @@ export function createGameActionHandlers({
     handlePlayCard,
     handleDiscardCard,
     handleBootPlayer,
+    handleBootDisconnectedPlayer,
     handlePresidentPlayCards,
     handlePresidentPass,
     handlePresidentConfirmExchange,

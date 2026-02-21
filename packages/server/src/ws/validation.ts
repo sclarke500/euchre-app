@@ -94,6 +94,12 @@ const bootPlayerSchema = z.object({
   ...clientMetaShape,
 }).strict()
 
+const bootDisconnectedPlayerSchema = z.object({
+  type: z.literal('boot_disconnected_player'),
+  playerId: z.number().int().min(0).max(7),
+  ...clientMetaShape,
+}).strict()
+
 const presidentPlayCardsSchema = z.object({
   type: z.literal('president_play_cards'),
   cardIds: z.array(z.string().min(1)).min(1),
@@ -144,6 +150,7 @@ const clientMessageSchema = z.discriminatedUnion('type', [
   discardCardSchema,
   requestStateSchema,
   bootPlayerSchema,
+  bootDisconnectedPlayerSchema,
   presidentPlayCardsSchema,
   presidentPassSchema,
   presidentConfirmExchangeSchema,

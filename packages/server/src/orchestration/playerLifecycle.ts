@@ -81,6 +81,79 @@ export function replacePlayerWithAI(
   })
 }
 
+/**
+ * Mark a player as disconnected (connection lost).
+ * Does NOT replace with AI — just flags them as disconnected.
+ * Other players can boot them to trigger AI replacement.
+ */
+export function markPlayerDisconnected(client: ConnectedClient): boolean {
+  if (!client.player || !client.gameId) return false
+
+  const odusId = client.player.odusId
+  const gameId = client.gameId
+  const runtimeEntry = getRuntime(gameId)
+
+  if (!runtimeEntry) {
+    logOrchestrationEvent('mark_disconnected_missing_runtime', {
+      gameId,
+      playerId: odusId,
+    })
+    return false
+  }
+
+  const idx = runtimeEntry.runtime.findPlayerIndexByOdusId(odusId)
+  if (idx < 0) {
+    logOrchestrationEvent('mark_disconnected_player_not_found', {
+      gameId,
+      playerId: odusId,
+    })
+    return false
+  }
+
+  // Call the game's markPlayerDisconnected method
+  const success = runtimeEntry.runtime.markPlayerDisconnected?.(idx) ?? false
+  
+  logOrchestrationEvent('mark_player_disconnected', {
+    gameId,
+    gameType: runtimeEntry.type,
+    playerId: odusId,
+    playerName: client.player.nickname,
+    seatIndex: idx,
+    success,
+  })
+
+  return success
+}
+
+/**
+ * Mark a player as reconnected (connection restored).
+ */
+export function markPlayerReconnected(client: ConnectedClient): boolean {
+  if (!client.player || !client.gameId) return false
+
+  const odusId = client.player.odusId
+  const gameId = client.gameId
+  const runtimeEntry = getRuntime(gameId)
+
+  if (!runtimeEntry) return false
+
+  const idx = runtimeEntry.runtime.findPlayerIndexByOdusId(odusId)
+  if (idx < 0) return false
+
+  const success = runtimeEntry.runtime.markPlayerReconnected?.(idx) ?? false
+  
+  logOrchestrationEvent('mark_player_reconnected', {
+    gameId,
+    gameType: runtimeEntry.type,
+    playerId: odusId,
+    playerName: client.player.nickname,
+    seatIndex: idx,
+    success,
+  })
+
+  return success
+}
+
 export function hasAlreadyReconnected(
   clients: Map<WebSocket, ConnectedClient>,
   ws: WebSocket,

@@ -97,6 +97,7 @@ export type ClientMessage = (
   | DiscardCardMessage
   | RequestStateMessage
   | BootPlayerMessage
+  | BootDisconnectedPlayerMessage
   // President-specific messages
   | PresidentPlayCardsMessage
   | PresidentPassMessage
@@ -168,6 +169,11 @@ export interface RequestStateMessage {
 export interface BootPlayerMessage {
   type: 'boot_player'
   playerId: number // Seat index of player to boot
+}
+
+export interface BootDisconnectedPlayerMessage {
+  type: 'boot_disconnected_player'
+  playerId: number // Seat index of disconnected player to boot
 }
 
 // President-specific client messages

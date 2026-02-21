@@ -14,18 +14,18 @@ describe('EuchreGame Disconnection', () => {
     broadcastSpy = vi.fn()
     
     game = new EuchreGame('test-game', {
-      onStateChange: broadcastSpy,
-      onBidMade: vi.fn(),
-      onCardPlayed: vi.fn(),
-      onTrickComplete: vi.fn(),
-      onRoundComplete: vi.fn(),
-      onGameOver: vi.fn(),
-      onYourTurn: vi.fn(),
-      onTurnReminder: vi.fn(),
-      onPlayerTimedOut: vi.fn(),
-      onPlayerBooted: vi.fn(),
-      onPlayerDisconnected: vi.fn(),
-      onPlayerReconnected: vi.fn(),
+      onStateChange: broadcastSpy as any,
+      onBidMade: vi.fn() as any,
+      onCardPlayed: vi.fn() as any,
+      onTrickComplete: vi.fn() as any,
+      onRoundComplete: vi.fn() as any,
+      onGameOver: vi.fn() as any,
+      onYourTurn: vi.fn() as any,
+      onTurnReminder: vi.fn() as any,
+      onPlayerTimedOut: vi.fn() as any,
+      onPlayerBooted: vi.fn() as any,
+      onPlayerDisconnected: vi.fn() as any,
+      onPlayerReconnected: vi.fn() as any,
     })
     
     // Initialize with one human player

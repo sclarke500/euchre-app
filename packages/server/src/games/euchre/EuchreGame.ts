@@ -745,10 +745,8 @@ export class EuchreGame {
     this.events.onPlayerReconnected?.(playerIndex, player.name)
     this.broadcastState()
 
-    // Restart turn timer if it's their turn
-    if (this.currentRound?.currentPlayer === playerIndex) {
-      this.startTurnReminderTimeout()
-    }
+    // If it's their turn, resend your_turn to restart the timer
+    // (resendStateToPlayer in lobby handler handles this)
 
     return true
   }

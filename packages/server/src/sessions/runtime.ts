@@ -23,6 +23,10 @@ export interface GameRuntime {
   bootPlayer(playerIndex: number): boolean
   getPlayerInfo(odusId: string): RuntimePlayerInfo | null
   getStateSeq(): number
+  // New disconnection handling (optional for backwards compatibility during rollout)
+  markPlayerDisconnected?(playerIndex: number): boolean
+  markPlayerReconnected?(playerIndex: number): boolean
+  bootDisconnectedPlayer?(playerIndex: number): boolean
 }
 
 export interface RuntimeWithType {

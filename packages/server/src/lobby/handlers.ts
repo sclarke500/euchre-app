@@ -80,37 +80,25 @@ export function createLobbyHandlers(deps: LobbyDependencies): LobbyHandlers {
     // Check if this player is in an active game (reconnecting)
     let reconnectedToGame = false
     
-    // First, check if they disconnected recently and their seat was converted to AI
-    const disconnectedInfo = disconnectedPlayers.get(playerId)
-    if (disconnectedInfo) {
-      const elapsed = Date.now() - disconnectedInfo.disconnectTime
-      if (elapsed <= RECONNECT_GRACE_PERIOD_MS) {
-        const runtimeEntry = getRuntime(disconnectedInfo.gameId)
-        if (runtimeEntry) {
-          const restored = runtimeEntry.runtime.restoreHumanPlayer(disconnectedInfo.seatIndex, playerId, nickname)
-          if (restored) {
-            client.gameId = disconnectedInfo.gameId
-            console.log(
-              `Player ${nickname} restored to ${runtimeEntry.type} game ${disconnectedInfo.gameId} at seat ${disconnectedInfo.seatIndex}`
-            )
-            reconnectedToGame = true
-            runtimeEntry.runtime.resendStateToPlayer(playerId)
-          }
-        }
+    // Check if they're in a game (may be marked as disconnected)
+    const runtimeMatch = findRuntimeByPlayer(playerId)
+    if (runtimeMatch) {
+      client.gameId = runtimeMatch.gameId
+      console.log(`Player ${nickname} reconnected to ${runtimeMatch.entry.type} game ${runtimeMatch.gameId}`)
+      reconnectedToGame = true
+      
+      // Clear their disconnected flag if set
+      const playerIndex = runtimeMatch.entry.runtime.findPlayerIndexByOdusId(playerId)
+      if (playerIndex >= 0) {
+        runtimeMatch.entry.runtime.markPlayerReconnected?.(playerIndex)
       }
-      // Remove from disconnected players map (either restored or expired)
-      disconnectedPlayers.delete(playerId)
+      
+      runtimeMatch.entry.runtime.resendStateToPlayer(playerId)
     }
     
-    // Also check if they're still in a game with their odusId intact (didn't disconnect long enough to be replaced)
-    if (!reconnectedToGame) {
-      const runtimeMatch = findRuntimeByPlayer(playerId)
-      if (runtimeMatch) {
-        client.gameId = runtimeMatch.gameId
-        console.log(`Player ${nickname} reconnected to ${runtimeMatch.entry.type} game ${runtimeMatch.gameId}`)
-        reconnectedToGame = true
-        runtimeMatch.entry.runtime.resendStateToPlayer(playerId)
-      }
+    // Legacy: clean up old disconnectedPlayers map entry if present
+    if (disconnectedPlayers.has(playerId)) {
+      disconnectedPlayers.delete(playerId)
     }
 
     // Send welcome with assigned/confirmed ID
