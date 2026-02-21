@@ -15,6 +15,7 @@ export interface SpadesGamePlayer {
   teamId: number
   bid: SpadesBid | null
   tricksWon: number
+  disconnected?: boolean
 }
 
 export interface SpadesGameEvents {
@@ -28,4 +29,6 @@ export interface SpadesGameEvents {
   onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => void
   onPlayerTimedOut: (playerId: number, playerName: string) => void
   onPlayerBooted: (playerId: number, playerName: string) => void
+  onPlayerDisconnected?: (playerId: number, playerName: string) => void
+  onPlayerReconnected?: (playerId: number, playerName: string) => void
 }

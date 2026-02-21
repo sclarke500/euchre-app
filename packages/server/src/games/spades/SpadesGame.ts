@@ -190,6 +190,52 @@ export class SpadesGame {
     return this.replaceWithAI(playerIndex)
   }
 
+  /**
+   * Mark a human player as disconnected (connection lost).
+   */
+  markPlayerDisconnected(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.isHuman || player.disconnected) return false
+
+    console.log(`Player ${player.name} (seat ${playerIndex}) disconnected`)
+    player.disconnected = true
+
+    if (this.currentPlayer === playerIndex) {
+      this.clearTurnTimer()
+    }
+
+    this.events.onPlayerDisconnected?.(playerIndex, player.name)
+    this.broadcastState()
+    return true
+  }
+
+  /**
+   * Mark a disconnected player as reconnected.
+   */
+  markPlayerReconnected(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.disconnected) return false
+
+    console.log(`Player ${player.name} (seat ${playerIndex}) reconnected`)
+    player.disconnected = false
+
+    this.events.onPlayerReconnected?.(playerIndex, player.name)
+    this.broadcastState()
+    return true
+  }
+
+  /**
+   * Boot a disconnected player (convert to AI).
+   */
+  bootDisconnectedPlayer(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.disconnected) return false
+
+    console.log(`Booting disconnected player ${player.name} (seat ${playerIndex})`)
+    player.disconnected = false
+    return this.replaceWithAI(playerIndex)
+  }
+
   restoreHumanPlayer(seatIndex: number, odusId: string, nickname: string): boolean {
     const player = this.players[seatIndex]
     if (!player) return false

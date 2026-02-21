@@ -452,6 +452,7 @@ export interface PresidentClientPlayer {
   finishOrder: number | null
   cardsToGive: number
   cardsToReceive: number
+  disconnected?: boolean
 }
 
 export interface PresidentGameStateMessage {

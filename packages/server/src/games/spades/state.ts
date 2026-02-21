@@ -121,6 +121,8 @@ export function buildSpadesClientState({
       bid: p.bid,
       tricksWon: p.tricksWon,
       handSize: p.hand.length,
+      isHuman: p.isHuman,
+      disconnected: p.disconnected,
     }
 
     if (forPlayerId && p.odusId === forPlayerId) {

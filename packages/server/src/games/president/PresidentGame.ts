@@ -787,7 +787,54 @@ export class PresidentGame {
   }
 
   /**
+   * Mark a human player as disconnected (connection lost).
+   */
+  markPlayerDisconnected(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.isHuman || player.disconnected) return false
+
+    console.log(`Player ${player.name} (seat ${playerIndex}) disconnected`)
+    player.disconnected = true
+
+    if (this.currentPlayer === playerIndex) {
+      this.clearTurnReminderTimeout()
+    }
+
+    this.events.onPlayerDisconnected?.(playerIndex, player.name)
+    this.broadcastState()
+    return true
+  }
+
+  /**
+   * Mark a disconnected player as reconnected.
+   */
+  markPlayerReconnected(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.disconnected) return false
+
+    console.log(`Player ${player.name} (seat ${playerIndex}) reconnected`)
+    player.disconnected = false
+
+    this.events.onPlayerReconnected?.(playerIndex, player.name)
+    this.broadcastState()
+    return true
+  }
+
+  /**
+   * Boot a disconnected player (convert to AI).
+   */
+  bootDisconnectedPlayer(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.disconnected) return false
+
+    console.log(`Booting disconnected player ${player.name} (seat ${playerIndex})`)
+    player.disconnected = false
+    return this.replaceWithAI(playerIndex)
+  }
+
+  /**
    * Restore a disconnected player to their seat, replacing the AI that took over.
+   * @deprecated Use markPlayerReconnected instead
    */
   restoreHumanPlayer(seatIndex: number, odusId: string, nickname: string): boolean {
     const player = this.players[seatIndex]

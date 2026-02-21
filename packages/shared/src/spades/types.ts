@@ -135,4 +135,6 @@ export interface SpadesClientPlayer {
   tricksWon: number
   hand?: StandardCard[]         // Only present for the requesting player
   handSize: number              // Number of cards in hand (for all players)
+  isHuman?: boolean
+  disconnected?: boolean        // True if player lost connection
 }

@@ -16,6 +16,7 @@ export interface PresidentGamePlayer {
   finishOrder: number | null
   cardsToGive: number
   cardsToReceive: number
+  disconnected?: boolean
 }
 
 export interface ExchangePromptInfo {
@@ -39,4 +40,6 @@ export interface PresidentGameEvents {
   onTurnReminder: (playerId: string, validActions: string[], validPlays: string[][]) => void
   onPlayerTimedOut: (playerId: number, playerName: string) => void
   onPlayerBooted: (playerId: number, playerName: string) => void
+  onPlayerDisconnected?: (playerId: number, playerName: string) => void
+  onPlayerReconnected?: (playerId: number, playerName: string) => void
 }

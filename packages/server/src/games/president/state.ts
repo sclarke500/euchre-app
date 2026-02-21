@@ -51,6 +51,7 @@ export function buildPresidentClientState({
     finishOrder: p.finishOrder,
     cardsToGive: p.cardsToGive,
     cardsToReceive: p.cardsToReceive,
+    disconnected: p.disconnected,
   }))
 
   return {
