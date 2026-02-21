@@ -44,6 +44,13 @@ function updateViewport() {
 let listenerAttached = false
 
 /**
+ * Get current viewport width
+ */
+export function getViewportWidth(): number {
+  return viewportWidth.value
+}
+
+/**
  * Get the base card width for current viewport
  */
 export function getBaseCardWidth(): number {

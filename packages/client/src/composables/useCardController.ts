@@ -31,7 +31,7 @@ import { Suit } from '@67cards/shared'
 import { FullRank } from '@67cards/shared'
 import type { CardPosition } from '@/components/cardContainers'
 import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
-import { CardScales, getBaseCardWidth } from './useCardSizing'
+import { CardScales, getBaseCardWidth, getViewportWidth } from './useCardSizing'
 
 export type PlayAreaMode = 'trick' | 'overlay'
 export type TrickCompleteMode = 'stack' | 'sweep'
@@ -292,8 +292,12 @@ export function useCardController(
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
-      const baseFanSpacing = Math.round(getBaseCardWidth() * 0.36)
-      userHand.fanSpacing = config.userFanSpacing ?? Math.min(baseFanSpacing, 320 / Math.max(1, cardCount))
+      // Fan spacing: base is 36% of card width, but tightens for more cards
+      // Max total fan width is ~40% of viewport width
+      const baseWidth = getBaseCardWidth()
+      const baseFanSpacing = Math.round(baseWidth * 0.36)
+      const maxFanWidth = getViewportWidth() * 0.4
+      userHand.fanSpacing = config.userFanSpacing ?? Math.min(baseFanSpacing, maxFanWidth / Math.max(1, cardCount))
       // Dynamic curve: fewer cards = more curve, more cards = less curve
       // 5 cards: ~8°, 8 cards: ~2.5°, 13 cards: ~1.5° (nearly flat for big hands)
       const dynamicCurve = cardCount > 0 ? Math.max(1.5, Math.min(9, 20 / cardCount + (cardCount <= 6 ? 4 : 0))) : 0
