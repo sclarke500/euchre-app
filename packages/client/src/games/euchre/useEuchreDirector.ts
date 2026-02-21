@@ -864,6 +864,15 @@ export function useEuchreDirector(
         const newPhase = msg.state.phase as GamePhase
         if (newPhase !== oldPhase) {
           await handlePhaseTransitionMP(newPhase, oldPhase)
+        } else if (newPhase !== GamePhase.Setup && newPhase !== GamePhase.Dealing) {
+          // Same phase (reconnect/state refresh) — ensure cards are synced
+          // Check if user hand needs syncing (engine might be empty after reconnect)
+          const userHand = engine.getHands()[0]
+          const serverHandSize = game.myHand?.value?.length ?? 0
+          if (serverHandSize > 0 && (!userHand || userHand.cards.length === 0)) {
+            await syncUserHandWithServerState()
+            await cardController.hideOpponentHands()
+          }
         }
         break
       }
