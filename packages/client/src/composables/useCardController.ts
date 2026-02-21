@@ -463,7 +463,8 @@ export function useCardController(
     if (userHand) {
       userHand.faceUp = false
       userHand.flipCards(false)
-      userHand.scale = config.userHandScale ?? CardScales.userHand
+      // Start at smaller scale during deal - will animate to full size after cards land
+      userHand.scale = config.opponentHandScale ?? CardScales.opponentHand
       userHand.resetArcLock() // Reset arc radius lock for new hand
     }
 
