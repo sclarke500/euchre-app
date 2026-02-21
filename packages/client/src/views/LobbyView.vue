@@ -33,11 +33,19 @@ watch(() => lobbyStore.currentTable?.odusId, (tableId) => {
 // Navigate to game when it starts
 watch(
   () => lobbyStore.gameId,
-  (gameId) => {
+  async (gameId) => {
     if (gameId) {
       const gameType = lobbyStore.currentGameType || 'euchre'
-      console.log('[LobbyView] Game started, navigating to:', `/game/${gameType}/${gameId}`)
-      router.push(`/game/${gameType}/${gameId}`)
+      const path = `/game/${gameType}/${gameId}`
+      console.log('[LobbyView] Game started, navigating to:', path)
+      try {
+        await router.push(path)
+        console.log('[LobbyView] Navigation completed')
+      } catch (err) {
+        console.error('[LobbyView] Navigation failed:', err)
+        // Force navigation via location if router fails
+        window.location.href = path
+      }
     }
   },
   { immediate: true }
