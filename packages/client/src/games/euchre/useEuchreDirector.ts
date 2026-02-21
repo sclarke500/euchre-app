@@ -199,6 +199,33 @@ export function useEuchreDirector(
     return (seatIndex + myId) % 4
   }
 
+  // ── Fingerprint for persistence ──────────────────────────────────────────
+
+  function buildFingerprint() {
+    const myHand = game.myHand?.value ?? []
+    const myHandHash = [...myHand.map(c => c.id)].sort().join(',')
+    const tricksTaken = game.tricksTaken?.value
+    const trickCount = tricksTaken ? (tricksTaken[0] ?? 0) + (tricksTaken[1] ?? 0) : 0
+    
+    return {
+      stateSeq: 0, // Not available in adapter, rely on phase + hand hash
+      phase: game.phase.value,
+      dealer: game.dealer?.value,
+      currentPlayer: game.currentPlayer?.value,
+      trickCount,
+      myHandHash,
+    }
+  }
+
+  // Generate session key for persistence
+  // Use a combination of player IDs to create a unique session identifier
+  function getSessionKey(): string {
+    if (!game.isMultiplayer) return 'sp'
+    // Use player names/IDs as a stable session identifier
+    const playerIds = game.players.value.map(p => p.name).join('-')
+    return `mp-${playerIds}` || 'mp-unknown'
+  }
+
   // ── Shared card controller ──────────────────────────────────────────────
 
   const cardController = useCardController(engine, boardRef, {
@@ -212,6 +239,12 @@ export function useEuchreDirector(
     opponentFanSpacing: 16,
     playMoveMs: CARD_PLAY_MS,
     ...cardControllerPresets.euchre,
+    persistence: game.isMultiplayer ? {
+      enabled: true,
+      gameType: 'euchre',
+      sessionKey: getSessionKey,
+      getFingerprint: buildFingerprint,
+    } : undefined,
   })
 
   // ── Layout helpers ──────────────────────────────────────────────────────
@@ -862,6 +895,10 @@ export function useEuchreDirector(
         const oldPhase = game.phase.value
         game.applyMessage!(msg)
         const newPhase = msg.state.phase as GamePhase
+        
+        // Reconcile local snapshot with server state
+        cardController.reconcileWithServer(buildFingerprint())
+        
         if (newPhase !== oldPhase) {
           await handlePhaseTransitionMP(newPhase, oldPhase)
         } else if (newPhase !== GamePhase.Setup && newPhase !== GamePhase.Dealing) {
@@ -910,19 +947,30 @@ export function useEuchreDirector(
       // If state already exists (e.g., messages arrived before mount), catch up
       const phase = game.phase.value
       if (phase !== GamePhase.Setup && lastAnimatedPhase.value === null) {
-        setupTable()
-        await nextTick()
-        if (phase === GamePhase.Dealing) {
-          await animateDeal()
+        // Try local restore first (instant recovery from sleep/wake)
+        const restored = cardController.attemptLocalRestore()
+        
+        if (restored) {
+          console.log('[EuchreDirector] Restored from local snapshot')
+          // Still need to position cards after restore
+          await nextTick()
+          engine.refreshCards()
         } else {
-          // Game already past dealing (reconnect/late mount) — sync user hand from state
-          const myHand = game.myHand?.value ?? []
-          if (myHand.length > 0) {
-            const trump = game.trump.value?.suit ?? null
-            // Cast through unknown to bridge Euchre Card type and StandardCard
-            const sorter = (cards: StandardCard[]) => sortEuchreHand(cards as unknown as Card[], trump) as unknown as StandardCard[]
-            await cardController.syncUserHandWithState(myHand as unknown as StandardCard[], sorter)
-            await cardController.hideOpponentHands()
+          // No snapshot or stale — rebuild from server state
+          setupTable()
+          await nextTick()
+          if (phase === GamePhase.Dealing) {
+            await animateDeal()
+          } else {
+            // Game already past dealing (reconnect/late mount) — sync user hand from state
+            const myHand = game.myHand?.value ?? []
+            if (myHand.length > 0) {
+              const trump = game.trump.value?.suit ?? null
+              // Cast through unknown to bridge Euchre Card type and StandardCard
+              const sorter = (cards: StandardCard[]) => sortEuchreHand(cards as unknown as Card[], trump) as unknown as StandardCard[]
+              await cardController.syncUserHandWithState(myHand as unknown as StandardCard[], sorter)
+              await cardController.hideOpponentHands()
+            }
           }
         }
         lastAnimatedPhase.value = phase
@@ -1067,6 +1115,10 @@ export function useEuchreDirector(
     playerStatuses.value = ['', '', '', '']
   }
 
+  function clearPersistence() {
+    cardController.clearSnapshot()
+  }
+
   return {
     playerNames,
     playerAvatars,
@@ -1083,5 +1135,6 @@ export function useEuchreDirector(
     handleDealerDiscard,
     hideOpponentHands,
     cleanup,
+    clearPersistence,
   }
 }

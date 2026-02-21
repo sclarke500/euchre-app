@@ -175,7 +175,8 @@ export function clearSnapshot(gameType: string, sessionKey: string): void {
 
 export function fingerprintsMatch(a: Fingerprint, b: Fingerprint): boolean {
   // Core match: stateSeq and phase must match
-  if (a.stateSeq !== b.stateSeq) return false
+  // Skip stateSeq check if both are 0 (not available)
+  if (a.stateSeq !== 0 && b.stateSeq !== 0 && a.stateSeq !== b.stateSeq) return false
   if (a.phase !== b.phase) return false
   
   // Hand hash must match (catches card changes)
