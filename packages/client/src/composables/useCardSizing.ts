@@ -49,7 +49,9 @@ let listenerAttached = false
 export function getBaseCardWidth(): number {
   const width = viewportWidth.value
   const breakpoint = VIEWPORT_BREAKPOINTS.find(bp => width >= bp.minWidth)
-  return breakpoint?.baseWidth ?? 83
+  const baseWidth = breakpoint?.baseWidth ?? 83
+  console.log(`[CardSizing] viewport: ${width}px → baseWidth: ${baseWidth}px`)
+  return baseWidth
 }
 
 /**
