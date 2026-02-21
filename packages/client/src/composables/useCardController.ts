@@ -925,7 +925,7 @@ export function useCardController(
             x: avatarPos.x,
             y: avatarPos.y,
             rotation: 0,
-            zIndex: 50,
+            zIndex: 1,  // Below avatars (350+)
             scale: hideScale,
           })
         }
@@ -969,7 +969,7 @@ export function useCardController(
             x: avatarPos.x,
             y: avatarPos.y,
             rotation: 0,
-            zIndex: 50,
+            zIndex: 1,  // Below avatars (350+)
             scale: hideScale,
           }, duration))
         }
@@ -1001,7 +1001,7 @@ export function useCardController(
         x: targetPos.x,
         y: targetPos.y,
         rotation: 0,
-        zIndex: 50,
+        zIndex: 1,  // Below avatars (350+)
         scale: 0.05, // Shrink to essentially invisible
         flipY: 0,    // Face down
       }, durationMs)
