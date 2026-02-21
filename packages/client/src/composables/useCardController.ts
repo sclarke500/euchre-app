@@ -23,7 +23,7 @@
  * - handleDealerDiscard() - discards dealer's card after pickup
  */
 
-import { ref, type Ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, type Ref, nextTick } from 'vue'
 import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
 import type { CardTableEngine } from './useCardTable'
 import type { StandardCard } from '@67cards/shared'
@@ -32,16 +32,6 @@ import { FullRank } from '@67cards/shared'
 import type { CardPosition } from '@/components/cardContainers'
 import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
 import { CardScales } from './useCardSizing'
-import {
-  serializeEngine,
-  saveSnapshot as saveSnapshotToStorage,
-  loadSnapshot as loadSnapshotFromStorage,
-  clearSnapshot as clearSnapshotFromStorage,
-  fingerprintsMatch,
-  isSnapshotFresh,
-  type Fingerprint,
-  type CardEngineSnapshot,
-} from './useCardPersistence'
 
 export type PlayAreaMode = 'trick' | 'overlay'
 export type TrickCompleteMode = 'stack' | 'sweep'
@@ -61,14 +51,6 @@ export const cardControllerPresets = {
   },
 }
 
-export interface PersistenceConfig {
-  enabled: boolean
-  gameType: string
-  sessionKey: string | (() => string)
-  getFingerprint: () => import('./useCardPersistence').Fingerprint
-  maxAgeMs?: number
-}
-
 export interface CardControllerConfig {
   layout?: 'normal' | 'wide'
   playerCount: number | (() => number)
@@ -86,7 +68,6 @@ export interface CardControllerConfig {
   playMoveMs?: number
   opponentCollapseScale?: number
   opponentCollapseDurationMs?: number
-  persistence?: PersistenceConfig
 }
 
 export interface DealOptions {
@@ -151,244 +132,6 @@ export function useCardController(
   const tableLayout = ref<TableLayoutResult | null>(null)
   const tricksWonByPlayer = ref<Record<number, number>>({})
   const hiddenSeatIndices = new Set<number>()
-
-  // ─── Persistence ─────────────────────────────────────────────────────────
-
-  const persistence = config.persistence
-  let isDirty = false
-  let saveTimeout: ReturnType<typeof setTimeout> | null = null
-  let isAnimating = false
-
-  const getSessionKey = () => {
-    if (!persistence) return ''
-    return typeof persistence.sessionKey === 'function'
-      ? persistence.sessionKey()
-      : persistence.sessionKey
-  }
-
-  function markDirty() {
-    if (!persistence?.enabled) return
-    isDirty = true
-    
-    // Debounced save after card movements
-    if (saveTimeout !== null) {
-      clearTimeout(saveTimeout)
-    }
-    saveTimeout = setTimeout(() => {
-      saveTimeout = null
-      if (isDirty && !isAnimating) {
-        saveCurrentState()
-        isDirty = false
-      } else if (isDirty) {
-        // Animation in progress — retry after a short delay
-        markDirty()
-      }
-    }, 500)
-  }
-  
-  /** Force save immediately, regardless of animation state */
-  function forceSave() {
-    if (!persistence?.enabled) return
-    if (saveTimeout !== null) {
-      clearTimeout(saveTimeout)
-      saveTimeout = null
-    }
-    saveCurrentState()
-    isDirty = false
-  }
-
-  function setAnimating(value: boolean) {
-    isAnimating = value
-  }
-
-  function saveCurrentState(): boolean {
-    if (!persistence?.enabled) return false
-    
-    const snapshot = serializeEngine(
-      engine,
-      persistence.gameType,
-      getSessionKey(),
-      persistence.getFingerprint()
-    )
-    
-    return saveSnapshotToStorage(snapshot)
-  }
-
-  function attemptLocalRestore(): boolean {
-    if (!persistence?.enabled) return false
-    
-    const sessionKey = getSessionKey()
-    const snapshot = loadSnapshotFromStorage(persistence.gameType, sessionKey)
-    
-    if (!snapshot) return false
-    
-    // Check freshness
-    const maxAge = persistence.maxAgeMs ?? 5 * 60 * 1000
-    if (!isSnapshotFresh(snapshot, maxAge)) {
-      console.log('[CardController] Snapshot too old, discarding')
-      clearSnapshotFromStorage(persistence.gameType, sessionKey)
-      return false
-    }
-    
-    // Restore containers from snapshot
-    try {
-      restoreFromSnapshot(snapshot)
-      console.log('[CardController] Restored from local snapshot')
-      return true
-    } catch (err) {
-      console.warn('[CardController] Failed to restore from snapshot:', err)
-      clearSnapshotFromStorage(persistence.gameType, sessionKey)
-      return false
-    }
-  }
-
-  function restoreFromSnapshot(snapshot: CardEngineSnapshot): void {
-    // First, setup the table to create containers
-    const board = boardRef.value
-    if (!board) throw new Error('Board not available')
-    
-    const layout = computeTableLayout(board.offsetWidth, board.offsetHeight, layoutType, getPlayerCount())
-    tableLayout.value = layout
-    tableCenter.value = layout.tableCenter
-    
-    // Reset engine but don't create default containers yet
-    engine.reset()
-    
-    // Create deck if snapshot has one
-    if (snapshot.containers.deck) {
-      const deckPos = getGenericDealPosition()
-      engine.createDeck(deckPos, CardScales.deck)
-      const deck = engine.getDeck()
-      if (deck) {
-        for (const cardId of snapshot.containers.deck.cardIds) {
-          const cardData = snapshot.cards[cardId]
-          if (cardData) {
-            deck.addCard({ id: cardId, suit: cardData.suit as any, rank: cardData.rank as any }, false)
-          }
-        }
-      }
-    }
-    
-    // Create hands from snapshot
-    const userScale = config.userHandScale ?? CardScales.userHand
-    const opponentScale = config.opponentHandScale ?? CardScales.opponentHand
-    
-    for (let i = 0; i < snapshot.containers.hands.length; i++) {
-      const handSnapshot = snapshot.containers.hands[i]
-      const seat = layout.seats[i]
-      if (!seat || !handSnapshot) continue
-      
-      engine.createHand(handSnapshot.id, seat.handPosition, {
-        fanSpacing: seat.isUser ? (config.userFanSpacing ?? 30) : (config.opponentFanSpacing ?? 16),
-        faceUp: handSnapshot.faceUp,
-        rotation: seat.rotation,
-        scale: seat.isUser ? userScale : opponentScale,
-        fanCurve: seat.isUser ? (config.userFanCurve ?? 0) : 0,
-        angleToCenter: seat.angleToCenter,
-        isUser: seat.isUser,
-      })
-      
-      const hand = engine.getHands()[i]
-      if (hand) {
-        hand.mode = handSnapshot.mode
-        for (const cardId of handSnapshot.cardIds) {
-          const cardData = snapshot.cards[cardId]
-          if (cardData) {
-            hand.addCard({ id: cardId, suit: cardData.suit as any, rank: cardData.rank as any }, handSnapshot.faceUp)
-          }
-        }
-      }
-    }
-    
-    // Create piles from snapshot
-    for (const pileSnapshot of snapshot.containers.piles) {
-      engine.createPile(pileSnapshot.id, layout.tableCenter, CardScales.tricksWon)
-      const pile = engine.getPiles().find(p => p.id === pileSnapshot.id)
-      if (pile) {
-        for (const cardId of pileSnapshot.cardIds) {
-          const cardData = snapshot.cards[cardId]
-          if (cardData) {
-            pile.addCard({ id: cardId, suit: cardData.suit as any, rank: cardData.rank as any }, true)
-          }
-        }
-      }
-    }
-    
-    // Refresh to update refs
-    engine.refreshCards()
-    
-    // Position cards in their containers (instant, no animation)
-    // Without this, cards are in containers but have no visual position
-    const hands = engine.getHands()
-    for (const hand of hands) {
-      hand.repositionAll(0) // instant
-    }
-    
-    const deck = engine.getDeck()
-    if (deck) {
-      deck.repositionAll(0)
-    }
-    
-    for (const pile of engine.getPiles()) {
-      pile.repositionAll(0)
-    }
-  }
-
-  function reconcileWithServer(serverFingerprint: Fingerprint): void {
-    if (!persistence?.enabled) return
-    
-    const sessionKey = getSessionKey()
-    const snapshot = loadSnapshotFromStorage(persistence.gameType, sessionKey)
-    
-    if (!snapshot) return // Nothing to reconcile
-    
-    if (fingerprintsMatch(snapshot.fingerprint, serverFingerprint)) {
-      console.log('[CardController] Snapshot matches server state, keeping')
-      return
-    }
-    
-    // Mismatch — discard snapshot
-    console.log('[CardController] Snapshot fingerprint mismatch, discarding', {
-      snapshot: snapshot.fingerprint,
-      server: serverFingerprint,
-    })
-    clearSnapshotFromStorage(persistence.gameType, sessionKey)
-  }
-
-  function clearPersistence(): void {
-    if (!persistence?.enabled) return
-    clearSnapshotFromStorage(persistence.gameType, getSessionKey())
-  }
-
-  // Visibility change listener for save-on-hide
-  function handleVisibilityChange() {
-    if (document.hidden && persistence?.enabled) {
-      // Force save when going to background, regardless of animation state
-      forceSave()
-    }
-  }
-  
-  function handlePageHide() {
-    if (persistence?.enabled) {
-      forceSave()
-    }
-  }
-  
-  // Cleanup function for unmount
-  function cleanupPersistence() {
-    if (persistence?.enabled) {
-      forceSave()
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', handleVisibilityChange)
-        window.removeEventListener('pagehide', handlePageHide)
-      }
-    }
-  }
-
-  if (persistence?.enabled && typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('pagehide', handlePageHide)
-  }
 
   function setupTable(dealerSeatIndex?: number) {
     engine.reset()
@@ -658,8 +401,6 @@ export function useCardController(
         engine.refreshCards()
       }
     }
-    
-    markDirty()
   }
 
   async function sortUserHand(sorter: (cards: StandardCard[]) => StandardCard[], duration: number = CardTimings.sort) {
@@ -897,8 +638,6 @@ export function useCardController(
       })
       await Promise.all(moves)
     }
-    
-    markDirty()
   }
 
   function getPlayerTrickPosition(playerId: number, trickNumber: number, cardIndex: number): CardPosition {
@@ -1010,7 +749,6 @@ export function useCardController(
       [winnerId]: tricksWon + 1,
     }
     engine.refreshCards()
-    markDirty()
   }
 
   async function restoreWonTrickStacks(tricks: CompletedTrickSnapshot[]) {
@@ -1407,14 +1145,5 @@ export function useCardController(
     getGenericDealPosition,
     getGenericSweepPosition,
     getAvatarBoardPosition,
-    // Persistence
-    attemptLocalRestore,
-    reconcileWithServer,
-    saveSnapshot: saveCurrentState,
-    clearSnapshot: clearPersistence,
-    markDirty,
-    setAnimating,
-    forceSave,
-    cleanupPersistence,
   }
 }
