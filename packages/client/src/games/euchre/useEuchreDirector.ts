@@ -8,7 +8,7 @@
 
 import { watch, nextTick, computed, ref, type Ref } from 'vue'
 import { GamePhase, getEffectiveSuit, getCardValue, isPlayerSittingOut } from '@67cards/shared'
-import type { Card, Suit, ServerMessage } from '@67cards/shared'
+import type { Card, Suit, ServerMessage, StandardCard } from '@67cards/shared'
 import type { EuchreGameAdapter } from './useEuchreGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
@@ -885,6 +885,16 @@ export function useEuchreDirector(
         await nextTick()
         if (phase === GamePhase.Dealing) {
           await animateDeal()
+        } else {
+          // Game already past dealing (reconnect/late mount) — sync user hand from state
+          const myHand = game.myHand?.value ?? []
+          if (myHand.length > 0) {
+            const trump = game.trump.value?.suit ?? null
+            // Cast through unknown to bridge Euchre Card type and StandardCard
+            const sorter = (cards: StandardCard[]) => sortEuchreHand(cards as unknown as Card[], trump) as unknown as StandardCard[]
+            await cardController.syncUserHandWithState(myHand as unknown as StandardCard[], sorter)
+            await cardController.hideOpponentHands()
+          }
         }
         lastAnimatedPhase.value = phase
       }
