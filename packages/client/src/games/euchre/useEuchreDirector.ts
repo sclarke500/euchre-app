@@ -870,6 +870,11 @@ export function useEuchreDirector(
           const userHand = engine.getHands()[0]
           const serverHandSize = game.myHand?.value?.length ?? 0
           if (serverHandSize > 0 && (!userHand || userHand.cards.length === 0)) {
+            // Engine might not be set up yet — initialize it first
+            if (!userHand) {
+              setupTable()
+              await nextTick()
+            }
             await syncUserHandWithServerState()
             await cardController.hideOpponentHands()
           }
