@@ -521,7 +521,8 @@ export function useCardController(
     const layout = tableLayout.value
     const center = layout?.tableCenter ?? tableCenter.value
     const seatIndex = playerIdToSeatIndex(playerId)
-    const d = 45
+    // Tighter spacing on mobile (cards are smaller)
+    const d = isMobile() ? 28 : 45
     const offsets: Record<number, { x: number; y: number; rotation: number }> = {
       0: { x: 0, y: d, rotation: 0 },
       1: { x: -d, y: 0, rotation: -8 },
