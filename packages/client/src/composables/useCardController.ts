@@ -171,15 +171,30 @@ export function useCardController(
     isDirty = true
     
     // Debounced save after card movements
-    if (saveTimeout === null) {
-      saveTimeout = setTimeout(() => {
-        if (isDirty && !isAnimating) {
-          saveCurrentState()
-          isDirty = false
-        }
-        saveTimeout = null
-      }, 500)
+    if (saveTimeout !== null) {
+      clearTimeout(saveTimeout)
     }
+    saveTimeout = setTimeout(() => {
+      saveTimeout = null
+      if (isDirty && !isAnimating) {
+        saveCurrentState()
+        isDirty = false
+      } else if (isDirty) {
+        // Animation in progress — retry after a short delay
+        markDirty()
+      }
+    }, 500)
+  }
+  
+  /** Force save immediately, regardless of animation state */
+  function forceSave() {
+    if (!persistence?.enabled) return
+    if (saveTimeout !== null) {
+      clearTimeout(saveTimeout)
+      saveTimeout = null
+    }
+    saveCurrentState()
+    isDirty = false
   }
 
   function setAnimating(value: boolean) {
@@ -301,6 +316,22 @@ export function useCardController(
     
     // Refresh to update refs
     engine.refreshCards()
+    
+    // Position cards in their containers (instant, no animation)
+    // Without this, cards are in containers but have no visual position
+    const hands = engine.getHands()
+    for (const hand of hands) {
+      hand.repositionAll(0) // instant
+    }
+    
+    const deck = engine.getDeck()
+    if (deck) {
+      deck.repositionAll(0)
+    }
+    
+    for (const pile of engine.getPiles()) {
+      pile.repositionAll(0)
+    }
   }
 
   function reconcileWithServer(serverFingerprint: Fingerprint): void {
@@ -331,20 +362,32 @@ export function useCardController(
 
   // Visibility change listener for save-on-hide
   function handleVisibilityChange() {
-    if (document.hidden && persistence?.enabled && isDirty && !isAnimating) {
-      saveCurrentState()
-      isDirty = false
+    if (document.hidden && persistence?.enabled) {
+      // Force save when going to background, regardless of animation state
+      forceSave()
+    }
+  }
+  
+  function handlePageHide() {
+    if (persistence?.enabled) {
+      forceSave()
+    }
+  }
+  
+  // Cleanup function for unmount
+  function cleanupPersistence() {
+    if (persistence?.enabled) {
+      forceSave()
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('pagehide', handlePageHide)
+      }
     }
   }
 
   if (persistence?.enabled && typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    // Also try pagehide for iOS
-    window.addEventListener('pagehide', () => {
-      if (persistence?.enabled && isDirty) {
-        saveCurrentState()
-      }
-    })
+    window.addEventListener('pagehide', handlePageHide)
   }
 
   function setupTable(dealerSeatIndex?: number) {
@@ -1370,5 +1413,7 @@ export function useCardController(
     clearSnapshot: clearPersistence,
     markDirty,
     setAnimating,
+    forceSave,
+    cleanupPersistence,
   }
 }

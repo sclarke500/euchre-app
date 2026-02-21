@@ -1139,6 +1139,8 @@ export function useEuchreDirector(
     for (const timer of statusTimers) {
       if (timer) clearTimeout(timer)
     }
+    // Save and cleanup persistence
+    cardController.cleanupPersistence()
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
