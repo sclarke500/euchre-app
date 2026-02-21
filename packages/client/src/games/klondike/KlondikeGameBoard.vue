@@ -839,7 +839,7 @@ const selection = computed(() => store.selection)
 
 // Victory celebration
 function celebrateWin() {
-  const duration = 4000
+  const duration = 2000
   const end = Date.now() + duration
 
   const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6']
