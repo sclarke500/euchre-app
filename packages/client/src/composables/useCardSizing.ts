@@ -17,7 +17,7 @@ const VIEWPORT_BREAKPOINTS = [
   { minWidth: 1440, baseWidth: 70 },   // Desktop (was 78)
   { minWidth: 1024, baseWidth: 65 },   // iPad landscape / small desktop (was 72)
   { minWidth: 768, baseWidth: 61 },    // iPad portrait (was 68)
-  { minWidth: 0, baseWidth: 45 },      // Mobile (testing - drastic reduction)
+  { minWidth: 0, baseWidth: 52 },      // Mobile portrait
 ]
 
 // Context multipliers - these are consistent across all games
@@ -63,7 +63,7 @@ export function getBaseCardWidth(): number {
   let baseWidth: number
   if (isMobileLandscape) {
     // Mobile landscape gets smaller cards (tight vertical space)
-    baseWidth = 45
+    baseWidth = 52
   } else {
     const breakpoint = VIEWPORT_BREAKPOINTS.find(bp => width >= bp.minWidth)
     baseWidth = breakpoint?.baseWidth ?? 83
