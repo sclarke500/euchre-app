@@ -12,7 +12,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 const CARD_ASPECT_RATIO = 1.4
 
 // Card sizes for each mode
-const MOBILE_BASE_WIDTH = 52
+const MOBILE_BASE_WIDTH = 56
 const FULL_BASE_WIDTH = 70
 
 // Context multipliers for mobile (need differentiation due to small screen)
