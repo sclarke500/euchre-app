@@ -403,9 +403,9 @@ async function animateDeal() {
   // Get final positions
   const finalPositions = layout.calculatePositions(store.gameState)
   
-  // Deal from bottom-left, off screen (like a dealer)
+  // Deal from left side, 2/3 down the screen
   const dealerX = -100
-  const dealerY = window.innerHeight + 50
+  const dealerY = window.innerHeight * 0.67
   
   // First, place all cards at dealer position (create new Map for reactivity)
   const newMap = new Map<string, CardPosition>()
