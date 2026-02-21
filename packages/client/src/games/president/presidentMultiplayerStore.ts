@@ -400,6 +400,19 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     })
   }
 
+  function bootDisconnectedPlayer(playerId: number): void {
+    websocket.send({
+      type: 'boot_disconnected_player',
+      playerId,
+    })
+  }
+
+  // Computed: players who are disconnected (excluding self)
+  const disconnectedPlayers = computed(() => {
+    const myId = myPlayerId.value
+    return players.value.filter((p: any) => p.disconnected && p.isHuman && p.id !== myId)
+  })
+
   function requestStateResync(): void {
     logMultiplayerEvent('president-mp', 'request_state_resync', getDebugSnapshot())
     websocket.send({
@@ -502,9 +515,13 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     acknowledgeExchange,
     confirmExchange,
     bootPlayer,
+    bootDisconnectedPlayer,
     requestStateResync,
     initialize,
     cleanup,
+
+    // Disconnection
+    disconnectedPlayers,
 
     // Queue control (for director)
     enableQueueMode,

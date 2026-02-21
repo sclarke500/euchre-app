@@ -189,6 +189,14 @@
       </button>
     </div>
 
+    <!-- Disconnected player banner (multiplayer only) -->
+    <DisconnectedPlayerBanner
+      v-if="mode === 'multiplayer' && firstDisconnectedPlayer"
+      :player-name="firstDisconnectedPlayer.name"
+      :can-boot="true"
+      @boot="handleBootDisconnected"
+    />
+
     <!-- Turn timer (left side, self-contained with panel and animation) -->
     <TurnTimer
       v-if="mode === 'multiplayer' && bootInactiveEnabled"
@@ -264,6 +272,7 @@ import TurnTimer from '@/components/TurnTimer.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatIcon from '@/components/chat/ChatIcon.vue'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
+import DisconnectedPlayerBanner from '@/components/DisconnectedPlayerBanner.vue'
 import SpadesBidWheel from './SpadesBidWheel.vue'
 import BlindNilPrompt from './BlindNilPrompt.vue'
 import { useCardTable } from '@/composables/useCardTable'
@@ -389,6 +398,19 @@ const timedOutPlayerName = computed(() => {
   if (store.timedOutPlayer === null || store.timedOutPlayer === undefined) return null
   return store.players.find((player: { id: number; name: string }) => player.id === store.timedOutPlayer)?.name ?? null
 })
+
+// First disconnected player (for banner display)
+const firstDisconnectedPlayer = computed(() => {
+  if (props.mode !== 'multiplayer' || !store.disconnectedPlayers) return null
+  const disconnected = store.disconnectedPlayers
+  return disconnected.length > 0 ? disconnected[0] : null
+})
+
+// Boot disconnected player
+function handleBootDisconnected() {
+  if (!firstDisconnectedPlayer.value) return
+  store.bootDisconnectedPlayer?.(firstDisconnectedPlayer.value.id)
+}
 
 // ── Bug Report ──────────────────────────────────────────────────────────
 function buildBugReportPayload() {

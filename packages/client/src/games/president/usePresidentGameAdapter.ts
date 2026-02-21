@@ -43,6 +43,7 @@ export interface PresidentGameAdapter {
   gameOver: ComputedRef<boolean>
   finishedPlayers: ComputedRef<number[]>
   timedOutPlayer: ComputedRef<number | null>
+  disconnectedPlayers?: ComputedRef<Array<{ id: number; name: string; isHuman?: boolean }>>
   gameLost: Ref<boolean>  // True when server says game is unrecoverable
 
   // Actions
@@ -54,6 +55,7 @@ export interface PresidentGameAdapter {
   getPlayerRankDisplay: (playerId: number) => string
   dealAnimationComplete: () => void  // Signal store that deal animation is done
   bootPlayer?: (playerId: number) => void
+  bootDisconnectedPlayer?: (playerId: number) => void
 
   // Animation callbacks — store waits for these before advancing turns
   setPlayAnimationCallback?: (cb: ((play: { cards: StandardCard[], playerId: number, playIndex: number }) => Promise<void>) | null) => void
@@ -201,6 +203,7 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     finishedPlayers: computed(() => store.finishedPlayers),
     timedOutPlayer: computed(() => store.timedOutPlayer),
     gameLost: toRef(store, 'gameLost'),
+    disconnectedPlayers: computed(() => store.disconnectedPlayers ?? []),
 
     // Actions
     playCards: (cards: StandardCard[]) => {
@@ -232,6 +235,7 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     },
     dealAnimationComplete: () => {}, // No-op for multiplayer (server controls timing)
     bootPlayer: (playerId: number) => store.bootPlayer(playerId),
+    bootDisconnectedPlayer: (playerId: number) => store.bootDisconnectedPlayer(playerId),
 
     // Multiplayer-specific
     isMultiplayer: true,

@@ -203,6 +203,16 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     websocket.send({ type: 'boot_player', playerId })
   }
 
+  function bootDisconnectedPlayer(playerId: number): void {
+    websocket.send({ type: 'boot_disconnected_player', playerId })
+  }
+
+  // Computed: players who are disconnected (excluding self)
+  const disconnectedPlayers = computed(() => {
+    const myId = humanPlayer.value?.id
+    return players.value.filter((p: any) => p.disconnected && p.isHuman && p.id !== myId)
+  })
+
   function requestStateResync(): void {
     logMultiplayerEvent('spades-mp', 'request_state_resync', getDebugSnapshot())
     websocket.send({ type: 'request_state' })
@@ -305,9 +315,13 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     declineBlindNil,
     playCard,
     bootPlayer,
+    bootDisconnectedPlayer,
     requestStateResync,
     initialize,
     cleanup,
+
+    // Disconnection
+    disconnectedPlayers,
 
     enableQueueMode,
     disableQueueMode,

@@ -69,6 +69,14 @@
       @timeout="handleTurnTimeout"
     />
 
+    <!-- Disconnected player banner (multiplayer only) -->
+    <DisconnectedPlayerBanner
+      v-if="mode === 'multiplayer' && firstDisconnectedPlayer"
+      :player-name="firstDisconnectedPlayer.name"
+      :can-boot="true"
+      @boot="handleBootDisconnected"
+    />
+
     <!-- Chat input (multiplayer only) -->
     <ChatInput v-if="mode === 'multiplayer'" />
 
@@ -239,6 +247,7 @@ import UserActions from '@/components/UserActions.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatIcon from '@/components/chat/ChatIcon.vue'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
+import DisconnectedPlayerBanner from '@/components/DisconnectedPlayerBanner.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { usePresidentGameAdapter } from './usePresidentGameAdapter'
 import { usePresidentDirector } from './usePresidentDirector'
@@ -320,6 +329,19 @@ function handleLeaveClick() {
 const humanCount = computed(() => 
   game.players.value.filter(p => p.isHuman).length
 )
+
+// First disconnected player (for banner display)
+const firstDisconnectedPlayer = computed(() => {
+  if (props.mode !== 'multiplayer') return null
+  const disconnected = game.disconnectedPlayers?.value ?? []
+  return disconnected.length > 0 ? disconnected[0] : null
+})
+
+// Boot disconnected player
+function handleBootDisconnected() {
+  if (!firstDisconnectedPlayer.value) return
+  game.bootDisconnectedPlayer?.(firstDisconnectedPlayer.value.id)
+}
 
 // Card selection state (multi-select for same-rank cards)
 const selectedCardIds = ref<Set<string>>(new Set())

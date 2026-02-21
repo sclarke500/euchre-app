@@ -35,6 +35,7 @@ export interface SpadesGameAdapter {
   isHumanPlaying: ComputedRef<boolean>
   validPlays: ComputedRef<StandardCard[]>
   timedOutPlayer: ComputedRef<number | null>
+  disconnectedPlayers: ComputedRef<Array<{ id: number; name: string; isHuman?: boolean }>>
   gameLost: Ref<boolean>
   blindNilDecisionPending: ComputedRef<boolean>
   showBidWheel: ComputedRef<boolean>
@@ -46,6 +47,7 @@ export interface SpadesGameAdapter {
   revealCards: () => void
   requestStateResync?: () => void
   bootPlayer?: (playerId: number) => void
+  bootDisconnectedPlayer?: (playerId: number) => void
 
   setPlayAnimationCallback: (cb: ((play: { card: StandardCard; playerId: number }) => Promise<void>) | null) => void
   setTrickCompleteCallback: (cb: ((winnerId: number) => Promise<void>) | null) => void
@@ -108,6 +110,7 @@ function useSpadesSinglePlayerAdapter(): SpadesGameAdapter {
     isHumanPlaying: computed(() => !!store.isHumanPlaying),
     validPlays: computed(() => store.validPlays),
     timedOutPlayer: computed(() => null),
+    disconnectedPlayers: computed(() => []),
     gameLost: ref(false),
     blindNilDecisionPending: computed(() => !!store.blindNilDecisionPending),
     showBidWheel: computed(() => !!store.showBidWheel),
@@ -165,6 +168,7 @@ function useSpadesMultiplayerAdapter(): SpadesGameAdapter {
     isHumanPlaying: computed(() => store.isHumanPlaying),
     validPlays: computed(() => store.validPlays),
     timedOutPlayer: computed(() => store.timedOutPlayer),
+    disconnectedPlayers: computed(() => store.disconnectedPlayers ?? []),
     gameLost: toRef(store, 'gameLost'),
     blindNilDecisionPending: computed(() => store.blindNilDecisionPending),
     showBidWheel: computed(() => store.isHumanBidding && !store.blindNilDecisionPending),
@@ -176,6 +180,7 @@ function useSpadesMultiplayerAdapter(): SpadesGameAdapter {
     revealCards: () => store.declineBlindNil(),
     requestStateResync: () => store.requestStateResync(),
     bootPlayer: (playerId) => store.bootPlayer(playerId),
+    bootDisconnectedPlayer: (playerId) => store.bootDisconnectedPlayer(playerId),
 
     setPlayAnimationCallback: () => {},
     setTrickCompleteCallback: () => {},
