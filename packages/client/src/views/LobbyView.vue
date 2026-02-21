@@ -31,11 +31,17 @@ watch(() => lobbyStore.currentTable?.odusId, (tableId) => {
 })
 
 // Navigate to game when it starts
-watch(() => lobbyStore.gameId, (gameId) => {
-  if (gameId && lobbyStore.currentGameType) {
-    router.push(`/game/${lobbyStore.currentGameType}/${gameId}`)
-  }
-})
+watch(
+  () => lobbyStore.gameId,
+  (gameId) => {
+    if (gameId) {
+      const gameType = lobbyStore.currentGameType || 'euchre'
+      console.log('[LobbyView] Game started, navigating to:', `/game/${gameType}/${gameId}`)
+      router.push(`/game/${gameType}/${gameId}`)
+    }
+  },
+  { immediate: true }
+)
 
 function goBack() {
   lobbyStore.disconnect()
