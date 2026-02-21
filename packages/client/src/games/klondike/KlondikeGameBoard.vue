@@ -879,21 +879,6 @@ watch(isWon, (won) => {
 const showNewGameConfirm = ref(false)
 const showRulesModal = ref(false)
 
-// DEV: Test victory flow
-const testAutoComplete = ref(false)
-const testWin = ref(false)
-function triggerTestVictory() {
-  testAutoComplete.value = true
-  setTimeout(() => {
-    testAutoComplete.value = false
-    testWin.value = true
-    celebrateWin()
-  }, 2000)
-}
-function closeTestWin() {
-  testWin.value = false
-}
-
 function confirmNewGame() {
   showNewGameConfirm.value = true
 }
@@ -949,7 +934,7 @@ function doNewGame() {
     
     <!-- Prominent auto-complete button in stock area -->
     <button 
-      v-if="(canAutoComplete && !isAutoCompleting && store.stock.length === 0) || testAutoComplete"
+      v-if="canAutoComplete && !isAutoCompleting && store.stock.length === 0"
       class="auto-complete-prominent"
       @click="handleAutoComplete"
     >
@@ -958,9 +943,6 @@ function doNewGame() {
       </svg>
       <span>Auto Complete</span>
     </button>
-    
-    <!-- DEV: Test victory button -->
-    <button class="test-victory-btn" @click="triggerTestVictory">🧪 Test Win</button>
     
     <!-- Drop zone highlight overlay -->
     <div v-if="activeDropZone" class="drop-zone-highlight" :class="{ valid: activeDropZone.isValid, invalid: !activeDropZone.isValid }">
@@ -1045,7 +1027,7 @@ function doNewGame() {
     </div>
 
     <!-- Win modal -->
-    <Modal :show="isWon || testWin" @close="closeTestWin">
+    <Modal :show="isWon" :dismissOnBackdrop="false" :dismissOnEsc="false">
       <div class="modal-light victory-modal">
         <div class="modal-header">
           <h3>🎉 You Win!</h3>
@@ -1337,26 +1319,6 @@ function doNewGame() {
   }
   50% {
     box-shadow: 0 4px 20px rgba(241, 196, 15, 0.7);
-  }
-}
-
-// DEV: Test victory button (remove before production)
-.test-victory-btn {
-  position: absolute;
-  bottom: 80px;
-  left: 12px;
-  z-index: 100;
-  padding: 8px 12px;
-  background: rgba(155, 89, 182, 0.9);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  
-  &:hover {
-    background: rgba(155, 89, 182, 1);
   }
 }
 
