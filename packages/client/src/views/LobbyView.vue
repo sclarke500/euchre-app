@@ -40,9 +40,16 @@ watch(
       console.log('[LobbyView] Game started, navigating to:', path, 'currentRoute:', route.fullPath)
       try {
         const result = await router.push(path)
-        console.log('[LobbyView] Navigation result:', result, 'newRoute:', router.currentRoute.value.fullPath)
-      } catch (err) {
-        console.error('[LobbyView] Navigation failed:', err)
+        // Vue Router returns NavigationFailure on abort/redirect, undefined on success
+        if (result) {
+          console.error('[LobbyView] Navigation failure:', result.type, 'from:', result.from?.fullPath, 'to:', result.to?.fullPath)
+          // Force navigation if router silently failed
+          window.location.href = path
+        } else {
+          console.log('[LobbyView] Navigation success, newRoute:', router.currentRoute.value.fullPath)
+        }
+      } catch (err: any) {
+        console.error('[LobbyView] Navigation threw:', err?.message || err, 'type:', err?.type)
         // Force navigation via location if router fails
         window.location.href = path
       }
