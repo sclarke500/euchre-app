@@ -644,16 +644,31 @@ export function useEuchreDirector(
         }
 
         await sleep(AnimationDurations.medium + AnimationBuffers.settle)
-        await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
+        await Promise.all([syncUserHandWithServerState(), animateDeckOffscreen()])
         await hideOpponentHands()
       }
     } else {
       // Round 2 call, or dealer's partner going alone — just sweep deck
-      await Promise.all([sortUserHand(AnimationDurations.medium), animateDeckOffscreen()])
+      // Use syncUserHandWithServerState instead of sortUserHand to ensure
+      // cards are properly visible and synced after the transition
+      await Promise.all([syncUserHandWithServerState(), animateDeckOffscreen()])
       await hideOpponentHands()
     }
 
     await handleAloneVisuals(currentTrumpInfo)
+  }
+
+  /**
+   * Sync user's visual hand with server state.
+   * More robust than sortUserHand() — handles missing cards, ensures face-up state.
+   */
+  async function syncUserHandWithServerState() {
+    const myHand = game.myHand?.value ?? []
+    if (myHand.length === 0) return
+    
+    const trump = game.trump.value?.suit ?? null
+    const sorter = (cards: StandardCard[]) => sortEuchreHand(cards as unknown as Card[], trump) as unknown as StandardCard[]
+    await cardController.syncUserHandWithState(myHand as unknown as StandardCard[], sorter)
   }
 
   // ── Multiplayer: phase transition handler ─────────────────────────────
