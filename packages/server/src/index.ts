@@ -28,6 +28,7 @@ import {
   replacePlayerWithAI,
   tryRecoverGameId,
 } from './orchestration/playerLifecycle.js'
+import { recordSyncRequired, getMetrics } from './metrics.js'
 import { createGameActionHandlers } from './orchestration/gameActions.js'
 
 const PORT = parseInt(process.env.PORT || '3001', 10)
@@ -143,12 +144,20 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
   if (typeof message.expectedStateSeq === 'number' && client.gameId) {
     const currentSeq = getCurrentStateSeq(client.gameId)
     if (currentSeq !== null && message.expectedStateSeq !== currentSeq) {
+      const gameType = client.gameId ? (getRuntime(client.gameId)?.type ?? null) : null
       logOrchestrationEvent('client_message_seq_mismatch', {
         messageType: message.type,
         gameId: client.gameId,
         expectedStateSeq: message.expectedStateSeq,
         currentStateSeq: currentSeq,
         playerId: client.player?.odusId ?? null,
+      })
+      recordSyncRequired({
+        gameId: client.gameId,
+        gameType,
+        playerId: client.player?.odusId ?? null,
+        expectedSeq: message.expectedStateSeq,
+        actualSeq: currentSeq,
       })
       send(ws, { type: 'error', message: 'State out of date. Resyncing.', code: 'sync_required' })
       sessionHandlers.handleRequestState(ws, client)
@@ -281,6 +290,20 @@ app.post('/api/bug-report', async (req, res) => {
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', clients: clients.size })
+})
+
+// Metrics endpoint (sync issues, uptime)
+app.get('/api/metrics', (_req, res) => {
+  const metrics = getMetrics()
+  res.json({
+    ...metrics,
+    activeClients: clients.size,
+    activeGames: {
+      euchre: games.size,
+      president: presidentGames.size,
+      spades: spadesGames.size,
+    },
+  })
 })
 
 console.log(`Euchre/President HTTP + WebSocket server running on port ${PORT}`)
