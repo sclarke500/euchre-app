@@ -171,11 +171,8 @@ function getCardZIndex(pos: CardPosition): number {
     <div
       v-for="pos in positions"
       :key="pos.id"
-      class="klondike-card"
+      class="klondike-card-wrapper"
       :class="{ 
-        'face-up': pos.faceUp, 
-        'face-down': !pos.faceUp,
-        'flipping': isFlipping(pos.id),
         'dragging': isBeingDragged(pos.id)
       }"
       :style="{
@@ -183,32 +180,45 @@ function getCardZIndex(pos: CardPosition): number {
         zIndex: getCardZIndex(pos),
         width: `${cardWidth}px`,
         height: `${cardHeight}px`,
-        '--card-width': `${cardWidth}px`,
-        '--card-height': `${cardHeight}px`,
       }"
       @pointerdown="handlePointerDown($event, pos.id, pos)"
       @pointermove="handlePointerMove($event, pos.id, pos)"
       @pointerup="handlePointerUp($event, pos.id)"
       @pointercancel="handlePointerCancel"
     >
-      <!-- Face up card -->
-      <template v-if="pos.faceUp">
-        <div class="card-corner top-left" :class="{ red: isRedSuit(pos.card.suit) }">
-          <div class="rank">{{ pos.card.rank }}</div>
-          <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
-        </div>
-        <div class="card-center" :class="{ red: isRedSuit(pos.card.suit) }">
-          {{ getSuitSymbol(pos.card.suit) }}
-        </div>
-        <div class="card-corner bottom-right" :class="{ red: isRedSuit(pos.card.suit) }">
-          <div class="rank">{{ pos.card.rank }}</div>
-          <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
-        </div>
-      </template>
-      <!-- Face down card -->
-      <template v-else>
-        <div class="card-back-pattern"></div>
-      </template>
+      <div
+        class="klondike-card"
+        :class="{ 
+          'face-up': pos.faceUp, 
+          'face-down': !pos.faceUp,
+          'flipping': isFlipping(pos.id),
+        }"
+        :style="{
+          width: `${cardWidth}px`,
+          height: `${cardHeight}px`,
+          '--card-width': `${cardWidth}px`,
+          '--card-height': `${cardHeight}px`,
+        }"
+      >
+        <!-- Face up card -->
+        <template v-if="pos.faceUp">
+          <div class="card-corner top-left" :class="{ red: isRedSuit(pos.card.suit) }">
+            <div class="rank">{{ pos.card.rank }}</div>
+            <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
+          </div>
+          <div class="card-center" :class="{ red: isRedSuit(pos.card.suit) }">
+            {{ getSuitSymbol(pos.card.suit) }}
+          </div>
+          <div class="card-corner bottom-right" :class="{ red: isRedSuit(pos.card.suit) }">
+            <div class="rank">{{ pos.card.rank }}</div>
+            <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
+          </div>
+        </template>
+        <!-- Face down card -->
+        <template v-else>
+          <div class="card-back-pattern"></div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -224,21 +234,33 @@ function getCardZIndex(pos: CardPosition): number {
   z-index: 10; // Above containers layer
 }
 
-.klondike-card {
+.klondike-card-wrapper {
   position: absolute;
   left: 0;
   top: 0;
   // transform, width, height, z-index set via inline style
-  border-radius: 6px;
   pointer-events: auto;
   cursor: pointer;
   transition-property: transform;
   transition-duration: 0.3s;
   transition-timing-function: ease-out;
   will-change: transform;
-  backface-visibility: hidden; // Force GPU layer
   touch-action: none; // Prevent browser handling of touch for drag
   user-select: none;
+  
+  &.dragging {
+    transition: none; // Disable transition during drag
+    cursor: grabbing;
+    
+    .klondike-card {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+  }
+}
+
+.klondike-card {
+  border-radius: 6px;
+  backface-visibility: hidden; // Force GPU layer
   
   &.face-up {
     background: white;
@@ -256,30 +278,20 @@ function getCardZIndex(pos: CardPosition): number {
   }
   
   &.flipping {
-    animation: card-flip 0.3s ease-out;
-    z-index: 1000 !important; // Bring to front during flip
-  }
-  
-  &.dragging {
-    transition: none; // Disable transition during drag
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    cursor: grabbing;
+    animation: card-flip 0.3s ease-in-out;
   }
 }
 
-// Card flip animation - quick "reveal" effect
+// Card flip animation - horizontal flip using scaleX
 @keyframes card-flip {
   0% {
-    filter: brightness(0.5);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    transform: scaleX(1);
   }
   50% {
-    filter: brightness(1.2);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+    transform: scaleX(0);
   }
   100% {
-    filter: brightness(1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transform: scaleX(1);
   }
 }
 
