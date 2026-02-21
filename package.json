@@ -11,6 +11,7 @@
   },
   "scripts": {
     "dev": "npm run dev -w @67cards/client",
+    "dev:lan": "./scripts/dev-lan.sh",
     "build": "npm run build -w @67cards/shared && npm run build -w @67cards/client",
     "build:client": "npm run build -w @67cards/client",
     "build:server": "npm run build -w @67cards/server",
