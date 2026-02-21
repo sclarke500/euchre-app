@@ -48,6 +48,7 @@ import { ref, watch } from 'vue'
 import Modal from './Modal.vue'
 import { sendBugReport } from '@/services/autoBugReport'
 import { useToast } from '@/composables/useToast'
+import { getRecentLogs } from '@/utils/consoleCapture'
 
 const props = defineProps<{
   show: boolean
@@ -82,6 +83,7 @@ function getFullPayload() {
     timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent,
     screenSize: `${window.innerWidth}x${window.innerHeight}`,
+    consoleLogs: getRecentLogs(50),
   }
 }
 

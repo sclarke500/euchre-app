@@ -81,6 +81,8 @@ export interface EuchreGameAdapter {
   setPlayAnimationCallback?: (cb: ((data: { card: Card; playerId: number }) => Promise<void>) | null) => void
   setTrickCompleteCallback?: (cb: ((winnerId: number) => Promise<void>) | null) => void
   setDealAnimationCallback?: (cb: (() => Promise<void>) | null) => void
+  setDiscardAnimationCallback?: (cb: (() => void) | null) => void
+  startPlayingPhase?: () => void
 }
 
 function createEmptyTrick(): Trick {
@@ -237,6 +239,8 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
     setPlayAnimationCallback: (cb) => store.setPlayAnimationCallback(cb),
     setTrickCompleteCallback: (cb) => store.setTrickCompleteCallback(cb),
     setDealAnimationCallback: (cb) => store.setDealAnimationCallback(cb),
+    setDiscardAnimationCallback: (cb) => store.setDiscardAnimationCallback(cb),
+    startPlayingPhase: () => store.startPlayingPhase(),
   }
 }
 

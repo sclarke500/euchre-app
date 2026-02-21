@@ -171,6 +171,7 @@ export class SpadesGame {
     player.isHuman = false
     player.name = aiNames[0] ?? 'Bot'
     player.odusId = null
+    player.avatar = undefined  // Clear avatar for AI players
 
     this.events.onPlayerBooted(playerIndex, player.name)
     this.broadcastState()

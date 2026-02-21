@@ -538,6 +538,13 @@ export const useEuchreGameStore = defineStore('game', () => {
     phase.value = GamePhase.Playing
   }
 
+  // Callback for director to signal discard animation complete
+  let discardAnimationCallback: (() => void) | null = null
+
+  function setDiscardAnimationCallback(cb: (() => void) | null) {
+    discardAnimationCallback = cb
+  }
+
   function dealerDiscard(card: Card) {
     if (!currentRound.value) return
 
@@ -549,7 +556,14 @@ export const useEuchreGameStore = defineStore('game', () => {
       dealer.hand.splice(cardIndex, 1)
     }
 
-    startPlayingPhase()
+    // If callback is set, wait for director to signal animation complete
+    // Otherwise start immediately (fallback for non-animated scenarios)
+    if (discardAnimationCallback) {
+      discardAnimationCallback()
+      discardAnimationCallback = null
+    } else {
+      startPlayingPhase()
+    }
   }
 
   return {
@@ -579,6 +593,8 @@ export const useEuchreGameStore = defineStore('game', () => {
     setPlayAnimationCallback,
     setTrickCompleteCallback,
     setDealAnimationCallback,
+    setDiscardAnimationCallback,
+    startPlayingPhase,  // For director to call after discard animation
     
     // Timer control (for cleanup/pause)
     cancelTimers: () => timer.cancelAll(),

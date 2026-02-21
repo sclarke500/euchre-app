@@ -680,6 +680,7 @@ export class EuchreGame {
     player.isHuman = false
     player.name = aiNames[0] ?? 'Bot'
     player.odusId = null
+    player.avatar = undefined  // Clear avatar for AI players
 
     // Notify about the replacement
     this.events.onPlayerBooted(playerIndex, player.name)

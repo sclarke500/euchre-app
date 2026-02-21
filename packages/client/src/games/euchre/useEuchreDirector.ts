@@ -454,6 +454,12 @@ export function useEuchreDirector(
       userHand.setMode('fanned', AnimationDurations.medium),
     ])
 
+    // For SP: register callback so we control when playing phase starts
+    // (prevents AI from playing before animation completes)
+    game.setDiscardAnimationCallback?.(() => {
+      // Don't start playing yet — we'll call startPlayingPhase after animations
+    })
+
     game.discardCard(cardId)
 
     await sleep(AnimationDurations.medium + AnimationBuffers.settle)
@@ -461,6 +467,9 @@ export function useEuchreDirector(
 
     const currentTrumpInfo = game.trump.value
     if (currentTrumpInfo) await handleAloneVisuals(currentTrumpInfo)
+
+    // Now that all animations are done, start the playing phase (SP only)
+    game.startPlayingPhase?.()
 
     isAnimating.value = false
   }

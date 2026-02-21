@@ -118,8 +118,8 @@ function handleClickOutside(e: MouseEvent) {
   gap: 4px;
   background: linear-gradient(
     180deg,
-    rgba(45, 48, 58, 0.85) 0%,
-    rgba(28, 30, 38, 0.9) 100%
+    rgba(45, 48, 58, 0.5) 0%,
+    rgba(28, 30, 38, 0.5) 100%
   );
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);

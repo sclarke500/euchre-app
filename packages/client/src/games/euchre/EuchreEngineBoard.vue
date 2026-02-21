@@ -472,10 +472,12 @@ watch(
 function handleCardClick(cardId: string) {
   const phase = game.phase.value
 
+  // Block all clicks during animation (prevents accidental discard of turn-up card)
+  if (director.isAnimating.value) return
+
   if (phase === GamePhase.DealerDiscard && isUserDealer.value) {
     director.handleDealerDiscard(cardId)
   } else if (phase === GamePhase.Playing && game.isHumanTurn.value) {
-    if (director.isAnimating.value) return
     // Allow click if validCardIds is empty (server hasn't sent list yet) or card is valid
     if (director.validCardIds.value.size === 0 || director.validCardIds.value.has(cardId)) {
       game.playCard(cardId)

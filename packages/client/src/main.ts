@@ -2,6 +2,10 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import './assets/styles/main.scss'
+import { installConsoleCapture } from './utils/consoleCapture'
+
+// Install console capture early (before any logging)
+installConsoleCapture()
 
 // Log build version
 const buildDate = new Date(__BUILD_TIME__)
