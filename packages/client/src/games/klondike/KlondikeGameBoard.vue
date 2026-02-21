@@ -6,6 +6,7 @@ import { canMoveToTableau, canMoveToFoundation } from '@67cards/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '@/components/Modal.vue'
+import confetti from 'canvas-confetti'
 
 const emit = defineEmits<{
   leaveGame: []
@@ -836,6 +837,42 @@ const canUndo = computed(() => store.canUndo)
 const noMovesAvailable = computed(() => store.noMovesAvailable && !isWon.value)
 const selection = computed(() => store.selection)
 
+// Victory celebration
+function celebrateWin() {
+  const duration = 3000
+  const end = Date.now() + duration
+
+  const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6']
+  
+  ;(function frame() {
+    confetti({
+      particleCount: 3,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0, y: 0.7 },
+      colors,
+    })
+    confetti({
+      particleCount: 3,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1, y: 0.7 },
+      colors,
+    })
+
+    if (Date.now() < end) {
+      requestAnimationFrame(frame)
+    }
+  })()
+}
+
+// Watch for win and trigger celebration
+watch(isWon, (won) => {
+  if (won) {
+    celebrateWin()
+  }
+})
+
 // Modals
 const showNewGameConfirm = ref(false)
 const showRulesModal = ref(false)
@@ -892,6 +929,18 @@ function doNewGame() {
       @drag-move="handleDragMove"
       @drag-end="handleDragEnd"
     />
+    
+    <!-- Prominent auto-complete button in stock area -->
+    <button 
+      v-if="canAutoComplete && !isAutoCompleting && store.stock.length === 0"
+      class="auto-complete-prominent"
+      @click="handleAutoComplete"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      </svg>
+      <span>Auto Complete</span>
+    </button>
     
     <!-- Drop zone highlight overlay -->
     <div v-if="activeDropZone" class="drop-zone-highlight" :class="{ valid: activeDropZone.isValid, invalid: !activeDropZone.isValid }">
@@ -977,25 +1026,29 @@ function doNewGame() {
 
     <!-- Win modal -->
     <Modal :show="isWon">
-      <div class="win-modal dialog-panel">
-        <h1 class="dialog-title">🎉 You Win!</h1>
-        <div class="win-stats">
-          <div class="win-stat">
-            <span class="win-stat-value">{{ score }}</span>
-            <span class="win-stat-label">Score</span>
-          </div>
-          <div class="win-stat">
-            <span class="win-stat-value">{{ formattedTime }}</span>
-            <span class="win-stat-label">Time</span>
-          </div>
-          <div class="win-stat">
-            <span class="win-stat-value">{{ moveCount }}</span>
-            <span class="win-stat-label">Moves</span>
+      <div class="modal-light victory-modal">
+        <div class="modal-header">
+          <h3>🎉 You Win!</h3>
+        </div>
+        <div class="modal-body">
+          <div class="victory-stats">
+            <div class="victory-stat">
+              <span class="stat-value">{{ score }}</span>
+              <span class="stat-label">Score</span>
+            </div>
+            <div class="victory-stat">
+              <span class="stat-value">{{ formattedTime }}</span>
+              <span class="stat-label">Time</span>
+            </div>
+            <div class="victory-stat">
+              <span class="stat-value">{{ moveCount }}</span>
+              <span class="stat-label">Moves</span>
+            </div>
           </div>
         </div>
-        <div class="win-actions dialog-actions">
-          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleNewGame">Play Again</button>
-          <button class="action-btn dialog-btn dialog-btn--muted" @click="handleLeaveGame">Main Menu</button>
+        <div class="modal-footer victory-actions">
+          <button class="btn-secondary" @click="handleLeaveGame">Main Menu</button>
+          <button class="btn-primary" @click="handleNewGame">Play Again</button>
         </div>
       </div>
     </Modal>
@@ -1179,61 +1232,91 @@ function doNewGame() {
   }
 }
 
-.win-modal {
-  text-align: center;
-  padding: 16px;
-
-  h1 {
-    font-size: 1.5rem;
-    margin-bottom: 16px;
-    color: #f1c40f;
+// Victory modal (uses modal-light class from global styles)
+.victory-modal {
+  min-width: 280px;
+  
+  .modal-header {
+    background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+    
+    h3 {
+      color: #1a1a2e;
+      margin: 0;
+    }
   }
 }
 
-.win-stats {
+.victory-stats {
   display: flex;
   justify-content: center;
   gap: 24px;
-  margin-bottom: 24px;
 }
 
-.win-stat {
+.victory-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.win-stat-value {
-  font-size: 1.5rem;
+.stat-value {
+  font-size: 1.75rem;
   font-weight: bold;
-  color: $surface-800;
+  color: var(--color-text);
 }
 
-.win-stat-label {
+.stat-label {
   font-size: 0.75rem;
-  color: $surface-500;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.win-actions {
+.victory-actions {
+  justify-content: center;
+}
+
+// Prominent auto-complete button (in stock area when empty)
+.auto-complete-prominent {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+  border: none;
+  border-radius: 12px;
+  color: #1a1a2e;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4);
+  animation: pulse-glow 2s ease-in-out infinite;
+  
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+  
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(241, 196, 15, 0.5);
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
-.action-btn {
-  padding: 12px 24px;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #e0e0e0;
-  color: $surface-800;
-  border: none;
-
-  &.primary {
-    background: #f1c40f;
-    color: $surface-800;
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(241, 196, 15, 0.7);
   }
 }
 
