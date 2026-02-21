@@ -46,7 +46,9 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (lobbyStore.isAtTable) {
+  // Only leave table if not transitioning to a game
+  // (gameId being set means we're starting a game, not leaving)
+  if (lobbyStore.isAtTable && !lobbyStore.gameId) {
     lobbyStore.leaveTable()
   }
 })
