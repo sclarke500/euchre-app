@@ -1,174 +1,213 @@
-# Card Engine State Persistence
+# Card Engine State Persistence — Implementation Plan
+
+**Status:** Ready for implementation  
+**Last Updated:** 2026-02-21  
+**Reviews:** GPT (card-engine-persistence-review.md), Grok (card-engine-persistence-analysis.md)
+
+---
 
 ## Problem
 
-When the browser tab sleeps (screen off, tab backgrounded) or WebSocket reconnects, the card engine's visual state is lost. Vue components unmount, and we have to rebuild from server state. This causes:
+When browser tab sleeps or WebSocket reconnects, card engine visual state is lost. Components unmount, refs disappear, and we rebuild from server state — causing 2-5 second delays and visual glitches.
 
-1. Delay while waiting for server sync
-2. Visual glitches (cards in wrong position/scale)
-3. Edge cases we keep patching (user hand, trick piles, etc.)
+## Solution
 
-## Goal
+Persist **semantic card state** (ownership, order, face-up) to sessionStorage. On wake/reconnect, restore instantly from local snapshot, then validate against server state.
 
-Persist card engine state locally so reconnects/wakes restore instantly. Should work for all games (Euchre, Spades, President, Klondike) with minimal game-specific code.
+**Key principle:** Persist *what cards exist where*, not *pixel coordinates*. Recompute positions from current layout.
 
-## Design
+---
 
-### What to Persist
-
-The entire `CardTableEngine` state:
+## Snapshot Schema
 
 ```typescript
-interface PersistedEngineState {
-  version: number              // Schema version for migrations
-  timestamp: number            // When state was saved
-  sessionId: string            // Game session identifier
+interface CardEngineSnapshot {
+  version: 1
+  savedAt: number
+  gameType: 'euchre' | 'spades' | 'president' | 'klondike'
+  sessionKey: string
   
-  deck: PersistedContainer | null
-  hands: PersistedContainer[]
-  piles: PersistedContainer[]
+  // Server state fingerprint — used to detect stale snapshots
+  fingerprint: {
+    stateSeq: number
+    phase: string
+    dealer?: number
+    currentPlayer?: number
+    trickCount?: number
+    myHandHash: string  // sorted card IDs joined, for quick comparison
+  }
   
-  // Optional game-specific visual state
-  extras?: Record<string, unknown>
+  // Semantic container state (no coordinates)
+  containers: {
+    deck: ContainerSnapshot | null
+    hands: HandSnapshot[]
+    piles: PileSnapshot[]
+  }
+  
+  // Card registry — allows reconstructing cards without server
+  cards: Record<string, { suit: string; rank: string }>
 }
 
-interface PersistedContainer {
+interface ContainerSnapshot {
   id: string
-  type: 'deck' | 'hand' | 'pile'
-  position: { x: number; y: number }
-  scale: number
-  rotation: number
-  mode?: 'fanned' | 'stacked' | 'looseStack'
-  
-  cards: PersistedCard[]
+  cardIds: string[]  // Order matters for positioning
 }
 
-interface PersistedCard {
-  id: string
-  suit: string
-  rank: string
+interface HandSnapshot extends ContainerSnapshot {
+  mode: 'fanned' | 'looseStack'
   faceUp: boolean
-  position: { x: number; y: number }
-  rotation: number
-  scale: number
-  zIndex: number
+}
+
+interface PileSnapshot extends ContainerSnapshot {
+  // For trick piles, store count per player for reconstruction
+  metadata?: Record<string, unknown>
 }
 ```
 
-### Storage
+**Storage key:** `cardEngine:${gameType}:${sessionKey}`
 
-**sessionStorage** (recommended):
-- Per-tab isolation (no multi-tab conflicts)
-- Automatically cleared when tab closes
-- ~5MB limit (plenty for card state)
+---
 
-**Key format:** `cardEngine:${gameType}:${sessionId}`
+## Two-Stage Restore Lifecycle
 
-Example: `cardEngine:euchre:lobby-abc123`
+### Stage 1: Instant Local Restore (on mount/wake)
 
-### When to Save
+```typescript
+function attemptLocalRestore(): boolean {
+  const snapshot = loadSnapshot(gameType, sessionKey)
+  if (!snapshot) return false
+  
+  // Check age (max 5 minutes)
+  if (Date.now() - snapshot.savedAt > 5 * 60 * 1000) {
+    clearSnapshot()
+    return false
+  }
+  
+  // Reconstruct containers from semantic state
+  for (const hand of snapshot.containers.hands) {
+    const engineHand = engine.getHand(hand.id)
+    if (!engineHand) continue
+    
+    engineHand.mode = hand.mode
+    for (const cardId of hand.cardIds) {
+      const cardData = snapshot.cards[cardId]
+      if (cardData) {
+        engineHand.addCard({ id: cardId, ...cardData }, hand.faceUp)
+      }
+    }
+  }
+  
+  // Similar for piles...
+  
+  // Recompute positions from current layout
+  repositionAllContainers()
+  
+  return true
+}
+```
 
-Two strategies:
+### Stage 2: Server Reconciliation (when game_state arrives)
 
-1. **On state change** - After each card movement completes
-   - Pros: Always up to date
-   - Cons: Frequent writes
+```typescript
+function reconcileWithServer(serverState: GameState): void {
+  const snapshot = loadSnapshot(gameType, sessionKey)
+  if (!snapshot) return  // Nothing to reconcile
+  
+  // Compare fingerprints
+  const serverFingerprint = buildFingerprint(serverState)
+  
+  if (fingerprintsMatch(snapshot.fingerprint, serverFingerprint)) {
+    // Snapshot is valid — keep visuals, clear pending restore flag
+    return
+  }
+  
+  // Fingerprint mismatch — server state diverged while sleeping
+  // Discard snapshot and rebuild from server
+  clearSnapshot()
+  rebuildFromServerState(serverState)
+}
 
-2. **On visibility change** - When `document.hidden` becomes true
-   - Pros: Fewer writes
-   - Cons: Might miss state if browser kills tab instantly
+function fingerprintsMatch(a: Fingerprint, b: Fingerprint): boolean {
+  return a.stateSeq === b.stateSeq
+    && a.phase === b.phase
+    && a.myHandHash === b.myHandHash
+}
+```
 
-**Recommendation:** Hybrid approach:
-- Save on visibility change (primary)
-- Debounced save after card movements (backup, 500ms debounce)
+---
 
-### When to Restore
+## Save Triggers
 
-On `useCardController` initialization:
-1. Check for persisted state matching current sessionId
-2. If found and recent (< 5 min old), restore it
-3. Skip server sync for visual state (cards already positioned)
-4. Still sync game logic state from server (scores, turn, etc.)
+1. **`visibilitychange`** — when `document.hidden` becomes true
+2. **`pagehide`** — backup for iOS Safari
+3. **Debounced after card movements** — 500ms after animation batch completes
 
-### API
+**Rules:**
+- Never save mid-animation (check `isAnimating` flag)
+- Only save if state is dirty (cards moved since last save)
+- Mark dirty on: card move, card add/remove, mode change
 
 ```typescript
 // In useCardController
-interface CardControllerConfig {
-  // ... existing config ...
-  
-  // Persistence options
-  persistence?: {
-    enabled: boolean
-    sessionId: string | (() => string)
-    gameType: string
-    maxAge?: number  // Max age in ms before state is stale (default: 5min)
+let isDirty = false
+let saveTimeout: number | null = null
+
+function markDirty() {
+  isDirty = true
+  if (persistence?.enabled && saveTimeout === null) {
+    saveTimeout = window.setTimeout(() => {
+      if (isDirty && !isAnimating.value) {
+        saveSnapshot()
+        isDirty = false
+      }
+      saveTimeout = null
+    }, 500)
   }
 }
 
-// Returned from useCardController
-interface CardController {
-  // ... existing methods ...
+// Visibility change handler
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && persistence?.enabled && isDirty && !isAnimating.value) {
+    saveSnapshot()
+    isDirty = false
+  }
+})
+```
+
+---
+
+## API
+
+### useCardController config
+
+```typescript
+interface CardControllerConfig {
+  // ... existing config ...
   
-  // Manual persistence control
-  persistState(): void
-  clearPersistedState(): void
-  hasPersistedState(): boolean
+  persistence?: {
+    enabled: boolean
+    gameType: 'euchre' | 'spades' | 'president' | 'klondike'
+    sessionKey: string | (() => string)
+    getFingerprint: () => Fingerprint  // Game provides this
+  }
 }
 ```
 
-### Implementation Phases
+### Returned methods
 
-**Phase 1: Core Persistence (useCardController)**
-- Add serialize/deserialize functions to CardTableEngine
-- Add persistence config to useCardController
-- Implement save on visibility change
-- Implement restore on mount
-
-**Phase 2: Game Integration**
-- Add sessionId to each game's director/adapter
-- Enable persistence in Euchre MP
-- Test reconnect scenarios
-
-**Phase 3: Rollout to Other Games**
-- Spades MP
-- President MP
-- Klondike (single-player, different sessionId strategy)
-
-### Edge Cases
-
-1. **Stale state**: If server state has advanced (new hand dealt), persisted state is wrong
-   - Solution: Include `stateSeq` or equivalent in extras, compare on restore
-   - If mismatch, discard persisted state and rebuild from server
-
-2. **Game ended**: Don't restore state for a finished game
-   - Solution: Clear persisted state on game over
-
-3. **Multiple games**: Player joins different lobby
-   - Solution: sessionId includes lobby/game ID, old state ignored
-
-4. **Tab duplication**: User duplicates tab
-   - Solution: sessionStorage is per-tab, each tab has own state
-
-### File Changes
-
-```
-packages/client/src/
-├── composables/
-│   ├── useCardController.ts    # Add persistence logic
-│   └── useCardPersistence.ts   # New: serialize/deserialize helpers
-├── components/
-│   └── cardContainers.ts       # Add toJSON/fromJSON methods
-└── games/
-    ├── euchre/
-    │   └── useEuchreDirector.ts  # Pass sessionId to controller
-    ├── spades/
-    │   └── useSpadesDirector.ts
-    └── president/
-        └── usePresidentDirector.ts
+```typescript
+interface CardController {
+  // ... existing methods ...
+  
+  // Persistence
+  attemptLocalRestore(): boolean
+  reconcileWithServer(fingerprint: Fingerprint): void
+  saveSnapshot(): void
+  clearSnapshot(): void
+}
 ```
 
-### Example Usage
+### Game integration example
 
 ```typescript
 // In useEuchreDirector
@@ -176,30 +215,129 @@ const cardController = useCardController(engine, boardRef, {
   ...cardControllerPresets.euchre,
   persistence: {
     enabled: game.isMultiplayer,
-    sessionId: () => game.lobbyCode.value ?? 'sp',
     gameType: 'euchre',
+    sessionKey: () => game.lobbyCode.value ?? 'sp',
+    getFingerprint: () => ({
+      stateSeq: game.stateSeq.value,
+      phase: game.phase.value,
+      dealer: game.dealer.value,
+      currentPlayer: game.currentPlayer.value,
+      trickCount: game.tricksTaken.value?.[0] + game.tricksTaken.value?.[1],
+      myHandHash: game.myHand.value?.map(c => c.id).sort().join(',') ?? '',
+    }),
+  },
+})
+
+// On mount
+onMounted(() => {
+  if (!cardController.attemptLocalRestore()) {
+    setupTable()  // Fall back to normal setup
   }
 })
+
+// In game_state handler
+case 'game_state': {
+  game.applyMessage!(msg)
+  cardController.reconcileWithServer(buildFingerprint(msg.state))
+  // ... rest of handler
+}
+
+// On game end/leave
+function leaveGame() {
+  cardController.clearSnapshot()
+  // ... cleanup
+}
 ```
-
-### Success Metrics
-
-- Reconnect shows cards instantly (< 100ms)
-- No visual glitches on wake
-- Works across all multiplayer games
-- Zero game-specific persistence code
 
 ---
 
-## Open Questions
+## File Changes
 
-1. Should we persist on every card move (debounced) or only on visibility change?
-2. How to handle state reconciliation if server has diverged?
-3. Should single-player games use this? (They already have save/restore)
+### New file: `packages/client/src/composables/useCardPersistence.ts`
 
-## Review Requested
+```typescript
+// Snapshot serialization/deserialization
+// Storage operations
+// Fingerprint comparison
+export function serializeEngine(engine: CardTableEngine, fingerprint: Fingerprint): CardEngineSnapshot
+export function deserializeToEngine(snapshot: CardEngineSnapshot, engine: CardTableEngine): void
+export function loadSnapshot(gameType: string, sessionKey: string): CardEngineSnapshot | null
+export function saveSnapshot(snapshot: CardEngineSnapshot): void
+export function clearSnapshot(gameType: string, sessionKey: string): void
+```
 
-- Architecture soundness
-- Edge cases we're missing
-- API ergonomics
-- Performance concerns
+### Modified: `packages/client/src/composables/useCardController.ts`
+
+- Add persistence config option
+- Add `attemptLocalRestore()`, `reconcileWithServer()`, `saveSnapshot()`, `clearSnapshot()`
+- Add dirty tracking and save triggers
+- Wire up visibility change listener
+
+### Modified: `packages/client/src/components/cardContainers.ts`
+
+- Add `toSnapshot()` method to Hand, Pile, Deck classes
+- Add static `fromSnapshot()` factory methods
+
+### Modified: Directors
+
+- `useEuchreDirector.ts` — add persistence config, mount restore, reconcile in game_state
+- `useSpadesDirector.ts` — same
+- `usePresidentDirector.ts` — same
+
+---
+
+## Implementation Phases
+
+### Phase 1: Core Infrastructure (2-3 hours)
+- [ ] Create `useCardPersistence.ts` with serialize/deserialize
+- [ ] Add `toSnapshot()` to container classes
+- [ ] Add persistence config to `useCardController`
+- [ ] Implement save triggers (visibility, debounced)
+- [ ] Unit tests for serialization
+
+### Phase 2: Euchre MP Integration (1-2 hours)
+- [ ] Add fingerprint builder to Euchre adapter/director
+- [ ] Enable persistence in director
+- [ ] Add `attemptLocalRestore()` on mount
+- [ ] Add `reconcileWithServer()` in game_state handler
+- [ ] Clear on game end/leave
+- [ ] Manual testing: sleep/wake scenarios
+
+### Phase 3: Remaining Games (1-2 hours)
+- [ ] Spades MP integration
+- [ ] President MP integration
+- [ ] Cross-game testing
+
+### Phase 4: Polish (1 hour)
+- [ ] Add logging for debugging
+- [ ] Handle edge cases (storage quota, corrupted data)
+- [ ] Update daily memory with lessons learned
+
+---
+
+## Test Scenarios
+
+Must pass before shipping:
+
+1. **Basic wake** — Lock phone 30s during play, unlock → cards visible immediately
+2. **Reconnect** — Force WebSocket disconnect, reconnect → no blank period
+3. **Stale discard** — Sleep through phase transition → snapshot discarded, rebuild correct
+4. **Orientation** — Rotate while sleeping → restored positions correct for new layout
+5. **Tab isolation** — Two tabs with different games → no cross-contamination
+6. **Game end** — Complete game → snapshot cleared, no restore on new game
+
+---
+
+## Open Questions (Resolved)
+
+1. ~~Save frequency~~ → Visibility change + 500ms debounce after moves
+2. ~~Reconciliation strategy~~ → Two-stage: instant local, then server validation
+3. ~~Single-player~~ → Defer; SP already has save/restore. Focus on MP first.
+
+---
+
+## References
+
+- GPT Review: `docs/designs/card-engine-persistence-review.md`
+- Grok Analysis: `docs/designs/card-engine-persistence-analysis.md`
+- cardgames.io approach: localStorage for stats, no dynamic backend for SP
