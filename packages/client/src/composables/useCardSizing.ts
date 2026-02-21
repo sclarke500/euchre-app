@@ -48,9 +48,21 @@ let listenerAttached = false
  */
 export function getBaseCardWidth(): number {
   const width = viewportWidth.value
-  const breakpoint = VIEWPORT_BREAKPOINTS.find(bp => width >= bp.minWidth)
-  const baseWidth = breakpoint?.baseWidth ?? 83
-  console.log(`[CardSizing] viewport: ${width}px → baseWidth: ${baseWidth}px`)
+  const height = viewportHeight.value
+  
+  // Detect mobile landscape: width > height AND height is small (phone-sized)
+  const isMobileLandscape = width > height && height < 500
+  
+  let baseWidth: number
+  if (isMobileLandscape) {
+    // Mobile landscape gets smaller cards (tight vertical space)
+    baseWidth = 45
+  } else {
+    const breakpoint = VIEWPORT_BREAKPOINTS.find(bp => width >= bp.minWidth)
+    baseWidth = breakpoint?.baseWidth ?? 83
+  }
+  
+  console.log(`[CardSizing] ${width}x${height} ${isMobileLandscape ? '(landscape)' : ''} → baseWidth: ${baseWidth}px`)
   return baseWidth
 }
 
