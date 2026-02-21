@@ -569,29 +569,39 @@ async function handleStockClick() {
   const stockRect = layout.containers.value.stock
   const wasteRect = layout.containers.value.waste
   const prevWasteCount = store.waste.length
+  const prevStockCount = store.stock.length
+  
+  // Identify cards that will be drawn (top of stock) BEFORE state change
+  // These cards are already rendered at the stock position
+  const drawCount = store.gameState.drawCount
+  const cardsToDrawCount = Math.min(drawCount, prevStockCount)
+  const cardsToDrawIds = store.stock.slice(-cardsToDrawCount).map(c => c.id)
   
   // Block the watcher during animation
   isAnimating.value = true
   
   store.handleDrawCard()
   
-  // Identify newly drawn cards
+  // Verify cards were drawn
   const newWasteCount = store.waste.length
   if (stockRect && wasteRect && newWasteCount > prevWasteCount) {
     const drawnCards = store.waste.slice(prevWasteCount)
-    
-    // Position new cards at stock initially (face down)
     const map = cardPositionsRef.value
     const finalPositions = layout.calculatePositions(store.gameState)
     
+    // Cards are already at stock position - no need to reset them
+    // Just make sure they exist in the map with correct initial state
     for (const card of drawnCards) {
-      const finalPos = finalPositions.find(p => p.id === card.id)
-      if (finalPos) {
+      const existing = map.get(card.id)
+      if (!existing) {
+        // Card wasn't in map yet, add it at stock position
         map.set(card.id, {
-          ...finalPos,
+          id: card.id,
           x: stockRect.x,
           y: stockRect.y,
+          z: 100,
           faceUp: false,
+          card,
         })
       }
     }
@@ -601,17 +611,16 @@ async function handleStockClick() {
       store.waste.some(c => c.id === p.id) && !drawnCards.some(c => c.id === p.id)
     )
     
-    // Wait a frame for initial positions to apply
-    await nextTick()
-    await new Promise(r => setTimeout(r, 20))
-    
     // Mark drawn cards as animating (elevated z-index)
     for (const card of drawnCards) {
       animatingCardIds.value.add(card.id)
     }
     
-    // Step 1: Slide cards from stock to waste AND flip simultaneously
-    // This makes it look like the top card lifts off and flips as it moves
+    // Small delay to ensure cards are rendered at stock first
+    await nextTick()
+    await new Promise(r => setTimeout(r, 30))
+    
+    // Animate: Slide cards from stock to waste AND flip simultaneously
     for (const card of drawnCards) {
       updatePosition(card.id, {
         x: wasteRect.x,

@@ -68,9 +68,26 @@ export function useKlondikeLayout() {
     const positions: CardPosition[] = []
     let zIndex = 1
 
-    // Stock cards - NOT rendered in card layer
-    // The stock slot shows a card back if there are cards
-    // This keeps the card layer clickable
+    // Stock cards - render top cards so they can animate when drawn
+    const stockRect = containers.value.stock
+    if (stockRect && state.stock.length > 0) {
+      // Render top drawCount cards (the ones that will be drawn next)
+      const cardsToRender = Math.min(state.drawCount, state.stock.length)
+      const startIdx = state.stock.length - cardsToRender
+      for (let i = startIdx; i < state.stock.length; i++) {
+        const card = state.stock[i]
+        if (card) {
+          positions.push({
+            id: card.id,
+            x: stockRect.x,
+            y: stockRect.y,
+            z: zIndex++,
+            faceUp: false,
+            card,
+          })
+        }
+      }
+    }
 
     // Waste cards (fanned horizontally, face up, RIGHT-ALIGNED)
     const wasteRect = containers.value.waste
