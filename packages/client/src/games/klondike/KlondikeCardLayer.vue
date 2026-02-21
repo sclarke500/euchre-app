@@ -25,9 +25,14 @@ const emit = defineEmits<{
 // Track cards that are currently flipping (for animation)
 const flippingCards = ref<Set<string>>(new Set())
 
+// Track which face to show for flipping cards (delays face swap to midpoint)
+const showFaceUpOverride = ref<Map<string, boolean>>(new Map())
+
 // Track if we're in a drag operation
 const isDragging = ref(false)
 const dragStartPos = ref<{ x: number; y: number } | null>(null)
+
+const FLIP_DURATION = 300 // ms - must match CSS animation
 
 // Watch for face-up changes to trigger flip animation
 watch(
@@ -41,10 +46,19 @@ watch(
       // Detect flip from face-down to face-up
       if (wasFaceUp === false && faceUp === true) {
         flippingCards.value.add(id)
-        // Remove after animation completes
+        // Keep showing back face until midpoint of animation
+        showFaceUpOverride.value.set(id, false)
+        
+        // At midpoint, switch to showing front face
+        setTimeout(() => {
+          showFaceUpOverride.value.set(id, true)
+        }, FLIP_DURATION / 2)
+        
+        // After animation completes, clean up
         setTimeout(() => {
           flippingCards.value.delete(id)
-        }, 300)
+          showFaceUpOverride.value.delete(id)
+        }, FLIP_DURATION)
       }
     }
   },
@@ -53,6 +67,14 @@ watch(
 
 function isFlipping(cardId: string): boolean {
   return flippingCards.value.has(cardId)
+}
+
+// Get what face to show - respects flip animation timing
+function shouldShowFaceUp(cardId: string, actualFaceUp: boolean): boolean {
+  if (showFaceUpOverride.value.has(cardId)) {
+    return showFaceUpOverride.value.get(cardId)!
+  }
+  return actualFaceUp
 }
 
 function isBeingDragged(cardId: string): boolean {
@@ -189,8 +211,8 @@ function getCardZIndex(pos: CardPosition): number {
       <div
         class="klondike-card"
         :class="{ 
-          'face-up': pos.faceUp, 
-          'face-down': !pos.faceUp,
+          'face-up': shouldShowFaceUp(pos.id, pos.faceUp), 
+          'face-down': !shouldShowFaceUp(pos.id, pos.faceUp),
           'flipping': isFlipping(pos.id),
         }"
         :style="{
@@ -201,7 +223,7 @@ function getCardZIndex(pos: CardPosition): number {
         }"
       >
         <!-- Face up card -->
-        <template v-if="pos.faceUp">
+        <template v-if="shouldShowFaceUp(pos.id, pos.faceUp)">
           <div class="card-corner top-left" :class="{ red: isRedSuit(pos.card.suit) }">
             <div class="rank">{{ pos.card.rank }}</div>
             <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
