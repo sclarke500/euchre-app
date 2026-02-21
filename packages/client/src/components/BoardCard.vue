@@ -195,7 +195,7 @@ defineExpose({
   width: var(--card-base-width, 83px);
   height: var(--card-base-height, 116px);
   background: #fff;
-  border-radius: 6px;
+  border-radius: calc(var(--card-base-width, 83px) * 0.07);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
   user-select: none;
@@ -224,13 +224,13 @@ defineExpose({
     transform: rotate(180deg);
   }
 
-  // Font sizes scale with card
+  // Font sizes scale with card (no minimums - fully proportional)
   .rank {
-    font-size: max(18px, calc(var(--card-base-width, 83px) * 0.32));
+    font-size: calc(var(--card-base-width, 83px) * 0.28);
   }
 
   .suit {
-    font-size: max(16px, calc(var(--card-base-width, 83px) * 0.28));
+    font-size: calc(var(--card-base-width, 83px) * 0.24);
   }
 
   &.red { color: #e74c3c; }
@@ -245,7 +245,7 @@ defineExpose({
   transform: translate(-50%, -50%);
 
   .suit-large {
-    font-size: max(32px, calc(var(--card-base-width, 83px) * 0.55));
+    font-size: calc(var(--card-base-width, 83px) * 0.45);
   }
 
   &.red { color: #e74c3c; }
