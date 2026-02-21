@@ -31,7 +31,7 @@ import { Suit } from '@67cards/shared'
 import { FullRank } from '@67cards/shared'
 import type { CardPosition } from '@/components/cardContainers'
 import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
-import { CardScales } from './useCardSizing'
+import { CardScales, getBaseCardWidth } from './useCardSizing'
 
 export type PlayAreaMode = 'trick' | 'overlay'
 export type TrickCompleteMode = 'stack' | 'sweep'
@@ -155,7 +155,9 @@ export function useCardController(
     for (let i = 0; i < getPlayerCount(); i++) {
       const seat = layout.seats[i]!
       engine.createHand(`hand-${i}`, seat.handPosition, {
-        fanSpacing: seat.isUser ? (config.userFanSpacing ?? 30) : (config.opponentFanSpacing ?? 16),
+        fanSpacing: seat.isUser 
+          ? (config.userFanSpacing ?? Math.round(getBaseCardWidth() * 0.36))
+          : (config.opponentFanSpacing ?? Math.round(getBaseCardWidth() * 0.19)),
         faceUp: false,
         rotation: seat.rotation,
         scale: seat.isUser ? userScale : opponentScale,
@@ -290,7 +292,8 @@ export function useCardController(
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
-      userHand.fanSpacing = config.userFanSpacing ?? Math.min(30, 320 / Math.max(1, cardCount))
+      const baseFanSpacing = Math.round(getBaseCardWidth() * 0.36)
+      userHand.fanSpacing = config.userFanSpacing ?? Math.min(baseFanSpacing, 320 / Math.max(1, cardCount))
       // Dynamic curve: fewer cards = more curve, more cards = less curve
       // 5 cards: ~8°, 8 cards: ~2.5°, 13 cards: ~1.5° (nearly flat for big hands)
       const dynamicCurve = cardCount > 0 ? Math.max(1.5, Math.min(9, 20 / cardCount + (cardCount <= 6 ? 4 : 0))) : 0
