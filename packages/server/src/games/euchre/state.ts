@@ -36,6 +36,7 @@ export function buildEuchreClientState({
     hand: index === playerIndex ? p.hand : undefined,
     isHuman: p.isHuman,
     teamId: p.teamId,
+    disconnected: p.disconnected,
   }))
 
   let team0Tricks = 0

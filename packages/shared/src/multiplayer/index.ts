@@ -315,6 +315,7 @@ export interface ClientPlayer {
   hand?: Card[] // Only populated for the receiving player
   isHuman: boolean
   teamId: number
+  disconnected?: boolean // True if player lost connection (waiting for reconnect or boot)
 }
 
 export interface GameStateMessage {

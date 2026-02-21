@@ -707,7 +707,70 @@ export class EuchreGame {
   }
 
   /**
+   * Mark a human player as disconnected (connection lost).
+   * Player stays human, game pauses if it's their turn.
+   */
+  markPlayerDisconnected(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.isHuman || player.disconnected) {
+      return false
+    }
+
+    console.log(`Player ${player.name} (seat ${playerIndex}) disconnected`)
+    player.disconnected = true
+
+    // Pause turn timer if it's their turn
+    if (this.currentRound?.currentPlayer === playerIndex) {
+      this.clearTurnReminderTimeout()
+    }
+
+    this.events.onPlayerDisconnected?.(playerIndex, player.name)
+    this.broadcastState()
+    return true
+  }
+
+  /**
+   * Mark a disconnected player as reconnected.
+   * Resumes game if it was their turn.
+   */
+  markPlayerReconnected(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.disconnected) {
+      return false
+    }
+
+    console.log(`Player ${player.name} (seat ${playerIndex}) reconnected`)
+    player.disconnected = false
+
+    this.events.onPlayerReconnected?.(playerIndex, player.name)
+    this.broadcastState()
+
+    // Restart turn timer if it's their turn
+    if (this.currentRound?.currentPlayer === playerIndex) {
+      this.startTurnReminderTimeout()
+    }
+
+    return true
+  }
+
+  /**
+   * Boot a disconnected player (convert to AI).
+   * Other players can call this to continue the game.
+   */
+  bootDisconnectedPlayer(playerIndex: number): boolean {
+    const player = this.players[playerIndex]
+    if (!player || !player.disconnected) {
+      return false
+    }
+
+    console.log(`Booting disconnected player ${player.name} (seat ${playerIndex})`)
+    player.disconnected = false
+    return this.replaceWithAI(playerIndex)
+  }
+
+  /**
    * Restore a disconnected player to their seat, replacing the AI that took over.
+   * @deprecated Use markPlayerReconnected instead — players no longer get replaced with AI on disconnect
    */
   restoreHumanPlayer(seatIndex: number, odusId: string, nickname: string): boolean {
     const player = this.players[seatIndex]

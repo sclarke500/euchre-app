@@ -8,6 +8,7 @@ export interface GamePlayer {
   isHuman: boolean
   hand: Card[]
   teamId: number
+  disconnected?: boolean
 }
 
 export interface GameEvents {
@@ -21,6 +22,8 @@ export interface GameEvents {
   onTurnReminder: (playerId: string, validActions: string[], validCards?: string[]) => void
   onPlayerTimedOut: (playerId: number, playerName: string) => void
   onPlayerBooted: (playerId: number, playerName: string) => void
+  onPlayerDisconnected?: (playerId: number, playerName: string) => void
+  onPlayerReconnected?: (playerId: number, playerName: string) => void
 }
 
 export interface GameOptions {
