@@ -114,8 +114,15 @@ export function drawCard(state: KlondikeState): MoveResult {
 
   // Draw cards from stock to waste (1 or 3 based on drawCount)
   const cardsToDraw = Math.min(newState.drawCount, newState.stock.length)
+  const drawn: KlondikeCard[] = []
   for (let i = 0; i < cardsToDraw; i++) {
     const card = newState.stock.pop()!
+    drawn.push(card)
+  }
+
+  // Preserve packet order so the original stock top card stays on top in waste.
+  for (let i = drawn.length - 1; i >= 0; i--) {
+    const card = drawn[i]!
     card.faceUp = true
     newState.waste.push(card)
   }

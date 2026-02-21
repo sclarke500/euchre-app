@@ -412,6 +412,7 @@ async function animateDeal() {
   const state = store.gameState
   let delay = 0
   const DEAL_DELAY = 50 // ms between each card
+  const STOCK_ARRIVAL_DELAY = 45
   
   // Deal tableau row by row
   for (let row = 0; row < 7; row++) {
@@ -430,6 +431,9 @@ async function animateDeal() {
     }
   }
 
+  const stockCardIdSet = new Set(state.stock.map((card) => card.id))
+  const stockArrivalOrder = finalPositions.filter((pos) => stockCardIdSet.has(pos.id))
+
   // Initialize positions:
   // - Tableau deal cards start at dealer origin (animated deal)
   // - Non-tableau cards (stock/foundation/waste) start at final positions
@@ -437,6 +441,13 @@ async function animateDeal() {
   const newMap = new Map<string, CardPosition>()
   for (const pos of finalPositions) {
     if (dealtCardIds.has(pos.id)) {
+      newMap.set(pos.id, {
+        ...pos,
+        x: dealerX,
+        y: dealerY,
+        faceUp: false,
+      })
+    } else if (stockCardIdSet.has(pos.id)) {
       newMap.set(pos.id, {
         ...pos,
         x: dealerX,
@@ -453,8 +464,11 @@ async function animateDeal() {
   await nextTick()
   await new Promise(r => setTimeout(r, 50))
   
-  // Mark all cards as animating (elevated z-index)
-  animatingCardIds.value = new Set(dealOrder.map(d => d.cardId))
+  // Mark deal + stock-arrival cards as animating (elevated z-index)
+  animatingCardIds.value = new Set([
+    ...dealOrder.map((d) => d.cardId),
+    ...stockArrivalOrder.map((p) => p.id),
+  ])
   
   // Animate each card to its final position
   for (const { cardId, finalPos, delay: cardDelay } of dealOrder) {
@@ -474,6 +488,25 @@ async function animateDeal() {
   
   // Wait for all animations to complete
   await new Promise(r => setTimeout(r, delay + 350)) // 350ms for the CSS transition
+
+  // Bring stock pile into place after tableau deal completes.
+  for (const [index, pos] of stockArrivalOrder.entries()) {
+    setTimeout(() => {
+      updatePosition(pos.id, {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z,
+        faceUp: false,
+      })
+      setTimeout(() => {
+        animatingCardIds.value.delete(pos.id)
+      }, 350)
+    }, index * STOCK_ARRIVAL_DELAY)
+  }
+
+  if (stockArrivalOrder.length > 0) {
+    await new Promise((r) => setTimeout(r, (stockArrivalOrder.length - 1) * STOCK_ARRIVAL_DELAY + 350))
+  }
 
   animatingCardIds.value = new Set() // Clear all
   isAnimating.value = false
@@ -657,7 +690,8 @@ async function handleStockClick() {
       if (!card) continue
       updatePosition(card.id, {
         x: wasteCenterX + (i * 2), // Slight horizontal offset for stacking
-        y: wasteCenterY + (i * 1), // Slight vertical offset for stacking
+        y: wasteCenterY,
+        z: 2000 + i, // Keep drawn stack above existing waste during flip phase
         faceUp: true, // Flip as they move
       })
     }
@@ -675,18 +709,32 @@ async function handleStockClick() {
         updatePosition(card.id, {
           x: finalPos.x,
           y: finalPos.y,
+          z: finalPos.z,
         })
       }
+    }
+
+    // Move existing waste cards in the same fan transition so there is no post-fan snap.
+    for (const pos of existingWastePositions) {
+      updatePosition(pos.id, {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z,
+      })
     }
     
     // Wait for fan animation to complete
     await new Promise(r => setTimeout(r, 350))
     
-      // Step 4: Snap old waste cards to their collapsed positions
-      for (const pos of existingWastePositions) {
-        const existing = map.get(pos.id)
-        if (existing) {
-          map.set(pos.id, { ...existing, x: pos.x, y: pos.y, z: pos.z })
+      // Reconcile all visible card positions from current state.
+      // Ensures newly exposed stock cards are rendered after a draw.
+      const finalIds = new Set(finalPositions.map((p) => p.id))
+      for (const pos of finalPositions) {
+        map.set(pos.id, pos)
+      }
+      for (const id of Array.from(map.keys())) {
+        if (!finalIds.has(id)) {
+          map.delete(id)
         }
       }
       triggerRef(cardPositionsRef)

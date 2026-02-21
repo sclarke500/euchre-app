@@ -71,8 +71,9 @@ export function useKlondikeLayout() {
     // Stock cards - render top cards so they can animate when drawn
     const stockRect = containers.value.stock
     if (stockRect && state.stock.length > 0) {
-      // Render top drawCount cards (the ones that will be drawn next)
-      const cardsToRender = Math.min(state.drawCount, state.stock.length)
+      // Render top drawCount + 1 cards so one card remains visible in stock
+      // while drawCount cards animate to waste.
+      const cardsToRender = Math.min(state.drawCount + 1, state.stock.length)
       const startIdx = state.stock.length - cardsToRender
       for (let i = startIdx; i < state.stock.length; i++) {
         const card = state.stock[i]
