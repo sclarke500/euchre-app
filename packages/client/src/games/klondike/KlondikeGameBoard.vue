@@ -400,18 +400,20 @@ async function animateDeal() {
   
   isAnimating.value = true
   
-  const stockRect = layout.containers.value.stock!
-  
   // Get final positions
   const finalPositions = layout.calculatePositions(store.gameState)
   
-  // First, place all cards at stock position (create new Map for reactivity)
+  // Deal from bottom-left, off screen (like a dealer)
+  const dealerX = -100
+  const dealerY = window.innerHeight + 50
+  
+  // First, place all cards at dealer position (create new Map for reactivity)
   const newMap = new Map<string, CardPosition>()
   for (const pos of finalPositions) {
     newMap.set(pos.id, {
       ...pos,
-      x: stockRect.x,
-      y: stockRect.y,
+      x: dealerX,
+      y: dealerY,
       faceUp: false, // Start face down
     })
   }
