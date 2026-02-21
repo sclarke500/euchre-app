@@ -617,11 +617,20 @@ async function handleStockClick() {
       animatingCardIds.value.add(card.id)
     }
     
-    // Step 1: Flip all drawn cards face up at the waste position (rightmost spot)
+    // Step 1: Slide cards from stock to waste position (still face down)
     for (const card of drawnCards) {
       updatePosition(card.id, {
         x: wasteRect.x,
         y: wasteRect.y,
+      })
+    }
+    
+    // Wait for slide animation
+    await new Promise(r => setTimeout(r, 200))
+    
+    // Step 2: Flip all cards face up at waste position
+    for (const card of drawnCards) {
+      updatePosition(card.id, {
         faceUp: true,
       })
     }
