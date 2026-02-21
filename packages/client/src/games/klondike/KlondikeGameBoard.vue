@@ -594,19 +594,10 @@ async function handleStockClick() {
       }
     }
     
-    // Collect existing waste card positions (they'll collapse to the left)
+    // Collect existing waste card positions (they'll collapse after new cards fan out)
     const existingWastePositions = finalPositions.filter(p => 
       store.waste.some(c => c.id === p.id) && !drawnCards.some(c => c.id === p.id)
     )
-    
-    // Instantly snap existing waste cards to their collapsed positions (no animation)
-    // Do this before triggering any reactive updates
-    for (const pos of existingWastePositions) {
-      const existing = map.get(pos.id)
-      if (existing) {
-        map.set(pos.id, { ...existing, x: pos.x, y: pos.y, z: pos.z })
-      }
-    }
     
     // Wait a frame for initial positions to apply
     await nextTick()
@@ -651,6 +642,15 @@ async function handleStockClick() {
     
     // Wait for fan animation to complete
     await new Promise(r => setTimeout(r, 300))
+    
+    // Step 4: Snap old waste cards to their collapsed positions
+    for (const pos of existingWastePositions) {
+      const existing = map.get(pos.id)
+      if (existing) {
+        map.set(pos.id, { ...existing, x: pos.x, y: pos.y, z: pos.z })
+      }
+    }
+    triggerRef(cardPositionsRef)
     
     // Clean up
     for (const card of drawnCards) {
