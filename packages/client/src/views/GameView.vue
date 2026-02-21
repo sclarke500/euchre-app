@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { EuchreEngineBoard } from '@/games/euchre'
 import { PresidentEngineBoard } from '@/games/president'
 import { SpadesEngineBoard } from '@/games/spades'
@@ -21,6 +21,9 @@ const isValidGameType = computed(() => validGameTypes.includes(props.gameType as
 
 // Track if we're ready to render the game board (WebSocket connected)
 const isReady = ref(false)
+
+// Track if user confirmed leaving (to skip prompt on intentional leave)
+const confirmedLeave = ref(false)
 
 // Handle reconnect/validation on mount
 onMounted(async () => {
@@ -56,7 +59,31 @@ onMounted(async () => {
   isReady.value = true
 })
 
+// Navigation guard - prompt before leaving game via back button
+onBeforeRouteLeave((to, from) => {
+  // Skip prompt if user already confirmed via leave button
+  if (confirmedLeave.value) {
+    return true
+  }
+  
+  // Skip prompt if game is over or not in progress
+  if (!lobbyStore.gameId) {
+    return true
+  }
+  
+  // Prompt user
+  const confirmed = window.confirm('Leave game? You\'ll forfeit the current game.')
+  if (confirmed) {
+    lobbyStore.leaveGame()
+    return true
+  }
+  
+  // Cancel navigation
+  return false
+})
+
 function leaveGame() {
+  confirmedLeave.value = true
   lobbyStore.leaveGame()
   router.push('/lobby')
 }
