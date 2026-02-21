@@ -150,14 +150,15 @@ export function useCardController(
     const deckScale = dealerSeatIndex !== undefined ? CardScales.hidden : CardScales.deck
     engine.createDeck(deckPos, deckScale)
 
-    const baseScale = config.opponentHandScale ?? CardScales.opponentHand
+    const userScale = config.userHandScale ?? CardScales.userHand
+    const opponentScale = config.opponentHandScale ?? CardScales.opponentHand
     for (let i = 0; i < getPlayerCount(); i++) {
       const seat = layout.seats[i]!
       engine.createHand(`hand-${i}`, seat.handPosition, {
         fanSpacing: seat.isUser ? (config.userFanSpacing ?? 30) : (config.opponentFanSpacing ?? 16),
         faceUp: false,
         rotation: seat.rotation,
-        scale: baseScale,
+        scale: seat.isUser ? userScale : opponentScale,
         fanCurve: seat.isUser ? (config.userFanCurve ?? 0) : 0,
         angleToCenter: seat.angleToCenter,
         isUser: seat.isUser,
