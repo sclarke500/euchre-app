@@ -594,12 +594,21 @@ async function handleStockClick() {
       }
     }
     
-    // Collect existing waste card positions (they'll shift left)
+    // Collect existing waste card positions (they'll collapse to the left)
     const existingWastePositions = finalPositions.filter(p => 
       store.waste.some(c => c.id === p.id) && !drawnCards.some(c => c.id === p.id)
     )
     
-    // Wait a frame for initial position to apply
+    // Instantly snap existing waste cards to their collapsed positions (no animation)
+    // Do this before triggering any reactive updates
+    for (const pos of existingWastePositions) {
+      const existing = map.get(pos.id)
+      if (existing) {
+        map.set(pos.id, { ...existing, x: pos.x, y: pos.y, z: pos.z })
+      }
+    }
+    
+    // Wait a frame for initial positions to apply
     await nextTick()
     await new Promise(r => setTimeout(r, 20))
     
@@ -609,7 +618,6 @@ async function handleStockClick() {
     }
     
     // Step 1: Flip all drawn cards face up at the waste position (rightmost spot)
-    // Move them to waste position and flip simultaneously
     for (const card of drawnCards) {
       updatePosition(card.id, {
         x: wasteRect.x,
@@ -621,11 +629,7 @@ async function handleStockClick() {
     // Wait for flip animation to complete
     await new Promise(r => setTimeout(r, 280))
     
-    // Step 2: Fan cards to their final positions + shift existing waste cards
-    for (const pos of existingWastePositions) {
-      updatePosition(pos.id, { x: pos.x, y: pos.y, z: pos.z })
-    }
-    
+    // Step 2: Fan new cards to their final positions
     for (const card of drawnCards) {
       const finalPos = finalPositions.find(p => p.id === card.id)
       if (finalPos) {
