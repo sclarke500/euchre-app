@@ -519,6 +519,19 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
     })
   }
 
+  function bootDisconnectedPlayer(playerId: number): void {
+    websocket.send({
+      type: 'boot_disconnected_player',
+      playerId,
+    })
+  }
+
+  // Computed: players who are disconnected (excluding self)
+  const disconnectedPlayers = computed(() => {
+    const myId = myPlayerId.value
+    return players.value.filter(p => p.disconnected && p.isHuman && p.id !== myId)
+  })
+
   function requestStateResync(): void {
     logMultiplayerEvent('euchre-mp', 'request_state_resync', getDebugSnapshot())
     websocket.send({
@@ -592,9 +605,13 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
     playCard,
     discardCard,
     bootPlayer,
+    bootDisconnectedPlayer,
     initialize,
     cleanup,
     requestStateResync,
+
+    // Disconnection
+    disconnectedPlayers,
 
     // Debug
     recentStateSummaries,

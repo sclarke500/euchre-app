@@ -181,6 +181,14 @@
         </template>
       </div>
     </Transition>
+
+    <!-- Disconnected player banner (multiplayer only) -->
+    <DisconnectedPlayerBanner
+      v-if="mode === 'multiplayer' && firstDisconnectedPlayer"
+      :player-name="firstDisconnectedPlayer.name"
+      :can-boot="true"
+      @boot="handleBootDisconnected"
+    />
   </CardTable>
 </template>
 
@@ -194,6 +202,7 @@ import Modal from '@/components/Modal.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatIcon from '@/components/chat/ChatIcon.vue'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
+import DisconnectedPlayerBanner from '@/components/DisconnectedPlayerBanner.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useEuchreGameAdapter } from './useEuchreGameAdapter'
 import { useEuchreDirector } from './useEuchreDirector'
@@ -275,6 +284,19 @@ const timerSettings = computed(() => {
 const humanCount = computed(() => 
   game.players.value.filter(p => p.isHuman).length
 )
+
+// First disconnected player (for banner display)
+const firstDisconnectedPlayer = computed(() => {
+  if (props.mode !== 'multiplayer' || !mpStore) return null
+  const disconnected = mpStore.disconnectedPlayers
+  return disconnected.length > 0 ? disconnected[0] : null
+})
+
+// Boot disconnected player
+function handleBootDisconnected() {
+  if (!mpStore || !firstDisconnectedPlayer.value) return
+  mpStore.bootDisconnectedPlayer(firstDisconnectedPlayer.value.id)
+}
 
 // Map display row (0="Us", 1="Them") to actual team ID based on user's team
 const myTeam = computed(() => game.myTeamId.value)
