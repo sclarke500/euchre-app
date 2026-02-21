@@ -1,3 +1,5 @@
+import { getBaseCardWidth } from '@/composables/useCardSizing'
+
 export interface CardPosition {
   x: number
   y: number
@@ -195,9 +197,12 @@ export class Hand extends CardContainer {
       // Lock arc radius on first fan - keeps spacing constant as cards are played
       // Calculate based on current card count, then reuse for rest of hand
       if (this.lockedArcRadius === null) {
-        // Smaller spacing for flatter fans (less card overlap when nearly parallel)
-        // Curved fans (high angle): more spacing needed, flat fans (low angle): less spacing
-        const targetSpacing = Math.min(72, 33 + this.fanCurve * 5.2) // +30% spread
+        // Arc spacing proportional to base card width
+        // Original formula tuned for 83px base, scale proportionally
+        const baseWidth = getBaseCardWidth()
+        const scaleFactor = baseWidth / 83
+        const baseSpacing = 33 * scaleFactor
+        const targetSpacing = Math.min(72 * scaleFactor, baseSpacing + this.fanCurve * 5.2 * scaleFactor)
         const curveRad = this.fanCurve * Math.PI / 180
         this.lockedArcRadius = targetSpacing / Math.sin(curveRad)
       }
