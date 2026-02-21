@@ -517,18 +517,18 @@ export function useEuchreDirector(
     // Wait for dealer chip to finish animating (500ms CSS transition)
     await sleep(600)
 
-    // Sweep cards to new dealer's deck position (where they'll be dealt from)
-    const deckPos = getDealerDeckPosition(nextDealerSeat, tl)
+    // Sweep cards to new dealer's avatar position (hidden under their icon)
+    const avatarPos = cardController.getAvatarBoardPosition(nextDealerSeat, tl)
 
     await Promise.all(allCards.map((m, i) => {
       const ref = engine.getCardRef(m.card.id)
       if (!ref) return Promise.resolve()
       return ref.moveTo({
-        x: deckPos.x,
-        y: deckPos.y,
+        x: avatarPos.x,
+        y: avatarPos.y,
         rotation: 0,
         zIndex: 10 + i,
-        scale: TRICK_WON_SCALE, // Scale down like a collected deck
+        scale: 0.05, // Tiny, hidden under avatar
       }, 500)
     }))
   }

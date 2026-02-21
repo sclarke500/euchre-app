@@ -1137,5 +1137,6 @@ export function useCardController(
     sweepDeckToDealer,
     getGenericDealPosition,
     getGenericSweepPosition,
+    getAvatarBoardPosition,
   }
 }
