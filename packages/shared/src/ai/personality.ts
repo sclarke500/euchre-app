@@ -194,6 +194,102 @@ const unhingedPhrases: Record<AIChatEvent, PhrasePool> = {
   ],
 }
 
+// Feral phrases - terminally online gen z chaos
+const feralPhrases: Record<AIChatEvent, PhrasePool> = {
+  euchred_opponent: [
+    { text: 'Skill issue.', weight: 2 },
+    { text: 'Diff.', weight: 2 },
+    { text: 'Cope and seethe.' },
+    { text: 'Sent to the shadow realm.' },
+    { text: 'Actual NPC behavior.' },
+    { text: 'Uninstall.' },
+    { text: 'You are a mass of incandescent gas.' },
+    { text: 'Cleared.' },
+    { text: 'Fraudulent.' },
+  ],
+  got_euchred: [
+    { text: 'I\'m literally so cooked.', weight: 2 },
+    { text: 'Actually kill me.', weight: 2 },
+    { text: 'This is not it.' },
+    { text: 'I\'ve lost the will.' },
+    { text: 'Pain. Suffering, even.' },
+    { text: 'Down horrendous rn.' },
+    { text: 'I need to lie down.' },
+    { text: 'My ancestors are disappointed.' },
+  ],
+  won_trick_bower: [
+    { text: 'Ratio\'d.', weight: 2 },
+    { text: 'Built different.' },
+    { text: 'Sending you to the lobby.' },
+    { text: 'Not even close.' },
+    { text: 'Cleared + ratio.' },
+  ],
+  won_trick_big: [
+    { text: 'Mine now.', weight: 2 },
+    { text: 'Snatched.' },
+    { text: 'Yoink.' },
+  ],
+  partner_clutch: [
+    { text: 'Partner is goated.', weight: 2 },
+    { text: 'Actually cracked.' },
+    { text: 'We\'re him.' },
+    { text: 'Based partner.' },
+    { text: 'Certified moment.' },
+  ],
+  called_trump_made: [
+    { text: 'I\'m actually cracked.', weight: 2 },
+    { text: 'Rent free.', weight: 2 },
+    { text: 'Too ez no re.' },
+    { text: 'Different breed.' },
+    { text: 'They doubted.' },
+  ],
+  called_trump_euchred: [
+    { text: 'I\'m so cooked.', weight: 2 },
+    { text: 'Down bad.', weight: 2 },
+    { text: 'Fraudulent behavior from me.' },
+    { text: 'This ain\'t it chief.' },
+    { text: 'I need to log off.' },
+    { text: 'Deleting my account.' },
+  ],
+  alone_success: [
+    { text: 'Your bloodline is weak.', weight: 2 },
+    { text: '1v3 and it wasn\'t close.', weight: 2 },
+    { text: 'Carried.' },
+    { text: 'I am the main character.' },
+    { text: 'Witness me.' },
+    { text: 'Actually goated.' },
+  ],
+  alone_failed: [
+    { text: 'I have been humbled.', weight: 2 },
+    { text: 'Ego check received.' },
+    { text: 'Plot armor failed.' },
+    { text: 'The prophecy was wrong.' },
+    { text: 'I overestimated my power.' },
+  ],
+  stole_deal: [
+    { text: 'Yoink.', weight: 2 },
+    { text: 'Your deal my points ty.' },
+    { text: 'Snatched from the jaws.' },
+    { text: 'Calculated.' },
+  ],
+  game_won: [
+    { text: 'GG go next.', weight: 2 },
+    { text: 'Fraud check passed.', weight: 2 },
+    { text: 'Actual diff.' },
+    { text: 'Clear of you.' },
+    { text: 'You fought well. Not well enough.' },
+    { text: 'gg ez clap.' },
+  ],
+  game_lost: [
+    { text: 'I am in shambles.', weight: 2 },
+    { text: 'Washed.', weight: 2 },
+    { text: 'Existence is pain.' },
+    { text: 'Need to touch grass.' },
+    { text: 'I\'ll be in my room.' },
+    { text: 'Plot armor wasn\'t enough.' },
+  ],
+}
+
 // Trigger probability per event (0-1)
 const triggerChance: Record<AIChatEvent, number> = {
   euchred_opponent: 0.35,
@@ -231,17 +327,19 @@ function pickWeighted(pool: PhrasePool): string {
   return pool[pool.length - 1]?.text ?? ''
 }
 
+export type AIChatMode = 'clean' | 'unhinged' | 'feral'
+
 /**
  * Get an AI chat comment for an event.
  * Returns null if AI decides not to comment (probability + cooldown).
  * 
  * @param event - The game event that occurred
- * @param unhinged - Use unhinged (profanity) mode
+ * @param mode - Chat mode: 'clean', 'unhinged', or 'feral'
  * @param forceTrigger - Skip probability check (for testing)
  */
 export function getAIComment(
   event: AIChatEvent,
-  unhinged: boolean = false,
+  mode: AIChatMode = 'clean',
   forceTrigger: boolean = false
 ): string | null {
   const now = Date.now()
@@ -257,7 +355,12 @@ export function getAIComment(
     return null
   }
   
-  const pool = unhinged ? unhingedPhrases[event] : normalPhrases[event]
+  const pool = mode === 'feral' 
+    ? feralPhrases[event] 
+    : mode === 'unhinged' 
+      ? unhingedPhrases[event] 
+      : normalPhrases[event]
+      
   if (!pool || pool.length === 0) {
     return null
   }

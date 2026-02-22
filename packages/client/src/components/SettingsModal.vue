@@ -119,20 +119,27 @@ function checkForUpdates() {
       <div class="settings-section">
         <h3>AI Chat</h3>
         <p class="section-desc">AI players occasionally trash talk</p>
-        <div class="option-buttons">
+        <div class="option-buttons option-buttons--triple">
           <button
-            :class="['option-btn', { active: !settings.unhingedMode }]"
-            @click="settings.setUnhingedMode(false)"
+            :class="['option-btn', { active: settings.aiChatMode === 'clean' }]"
+            @click="settings.setAIChatMode('clean')"
           >
-            <span class="option-title">Clean</span>
+            <span class="option-title">Clean 🙂</span>
             <span class="option-desc">Family friendly</span>
           </button>
           <button
-            :class="['option-btn', { active: settings.unhingedMode }]"
-            @click="settings.setUnhingedMode(true)"
+            :class="['option-btn', { active: settings.aiChatMode === 'unhinged' }]"
+            @click="settings.setAIChatMode('unhinged')"
           >
-            <span class="option-title">Unhinged</span>
-            <span class="option-desc">Adults only 🤬</span>
+            <span class="option-title">Unhinged 🤬</span>
+            <span class="option-desc">Adults only</span>
+          </button>
+          <button
+            :class="['option-btn', { active: settings.aiChatMode === 'feral' }]"
+            @click="settings.setAIChatMode('feral')"
+          >
+            <span class="option-title">Feral 💀</span>
+            <span class="option-desc">Terminally online</span>
           </button>
         </div>
       </div>
@@ -230,6 +237,20 @@ function checkForUpdates() {
 .option-buttons {
   display: flex;
   gap: $spacing-sm;
+  
+  &--triple {
+    .option-btn {
+      padding: 10px 8px;
+      
+      .option-title {
+        font-size: 0.85rem;
+      }
+      
+      .option-desc {
+        font-size: 0.7rem;
+      }
+    }
+  }
 }
 
 .option-btn {

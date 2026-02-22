@@ -58,7 +58,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     const player = players.value[playerId]
     if (!player || player.isHuman) return
 
-    const comment = getAIComment(event, settingsStore.unhingedMode)
+    const comment = getAIComment(event, settingsStore.aiChatMode)
     if (!comment) return
 
     // Send to chat store

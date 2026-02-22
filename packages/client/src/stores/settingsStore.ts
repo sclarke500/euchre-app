@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import type { AIChatMode } from '@67cards/shared'
 
 export type AIDifficulty = 'easy' | 'hard'
 export type DealerPassRule = 'canPass' | 'stickTheDealer'
@@ -9,7 +10,7 @@ interface GameSettings {
   aiDifficulty: AIDifficulty
   theme: AppTheme
   // AI personality
-  unhingedMode: boolean
+  aiChatMode: AIChatMode
   // Euchre-specific
   dealerPassRule: DealerPassRule
   // President-specific
@@ -32,7 +33,7 @@ function loadSettings(): GameSettings {
       return {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
         theme: VALID_THEMES.includes(parsed.theme) ? parsed.theme : 'teal',
-        unhingedMode: parsed.unhingedMode === true,
+        aiChatMode: (['clean', 'unhinged', 'feral'].includes(parsed.aiChatMode) ? parsed.aiChatMode : 'clean') as AIChatMode,
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
         presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
         superTwosAndJokers: parsed.superTwosAndJokers === true,
@@ -46,7 +47,7 @@ function loadSettings(): GameSettings {
   return {
     aiDifficulty: 'easy',
     theme: 'teal',
-    unhingedMode: false,
+    aiChatMode: 'clean' as AIChatMode,
     dealerPassRule: 'canPass',
     presidentPlayerCount: 4,
     superTwosAndJokers: false,
@@ -69,7 +70,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const aiDifficulty = ref<AIDifficulty>(initialSettings.aiDifficulty)
   const theme = ref<AppTheme>(initialSettings.theme)
-  const unhingedMode = ref<boolean>(initialSettings.unhingedMode)
+  const aiChatMode = ref<AIChatMode>(initialSettings.aiChatMode)
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
   const presidentPlayerCount = ref<number>(initialSettings.presidentPlayerCount)
   const superTwosAndJokers = ref<boolean>(initialSettings.superTwosAndJokers)
@@ -80,11 +81,11 @@ export const useSettingsStore = defineStore('settings', () => {
   applyTheme(initialSettings.theme)
 
   // Persist settings when they change
-  watch([aiDifficulty, theme, unhingedMode, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, aiChatMode, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       theme: theme.value,
-      unhingedMode: unhingedMode.value,
+      aiChatMode: aiChatMode.value,
       dealerPassRule: dealerPassRule.value,
       presidentPlayerCount: presidentPlayerCount.value,
       superTwosAndJokers: superTwosAndJokers.value,
@@ -103,8 +104,8 @@ export const useSettingsStore = defineStore('settings', () => {
     applyTheme(newTheme)
   }
 
-  function setUnhingedMode(enabled: boolean) {
-    unhingedMode.value = enabled
+  function setAIChatMode(mode: AIChatMode) {
+    aiChatMode.value = mode
   }
 
   function setDealerPassRule(rule: DealerPassRule) {
@@ -137,7 +138,7 @@ export const useSettingsStore = defineStore('settings', () => {
   return {
     aiDifficulty,
     theme,
-    unhingedMode,
+    aiChatMode,
     dealerPassRule,
     presidentPlayerCount,
     superTwosAndJokers,
@@ -145,7 +146,7 @@ export const useSettingsStore = defineStore('settings', () => {
     spadesBlindNil,
     setAIDifficulty,
     setTheme,
-    setUnhingedMode,
+    setAIChatMode,
     setDealerPassRule,
     setPresidentPlayerCount,
     setSuperTwosAndJokers,
