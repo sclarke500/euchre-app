@@ -784,11 +784,12 @@ onUnmounted(() => {
     rgba(55, 58, 70, 0.97) 0%,
     rgba(38, 42, 52, 0.98) 100%
   );
-  border: 1px solid rgba(255, 215, 0, 0.25);
+  border: 2px solid rgba(255, 215, 0, 0.5);
   border-right: none;
   box-shadow: 
     -4px 0 24px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(255, 215, 0, 0.15),
+    0 0 25px rgba(255, 215, 0, 0.4),
+    0 0 50px rgba(255, 215, 0, 0.2),
     inset 1px 1px 0 rgba(255, 255, 255, 0.1);
   animation: panel-glow 2s ease-in-out infinite;
 }
@@ -797,13 +798,15 @@ onUnmounted(() => {
   0%, 100% {
     box-shadow: 
       -4px 0 24px rgba(0, 0, 0, 0.4),
-      0 0 20px rgba(255, 215, 0, 0.15),
+      0 0 25px rgba(255, 215, 0, 0.4),
+      0 0 50px rgba(255, 215, 0, 0.2),
       inset 1px 1px 0 rgba(255, 255, 255, 0.1);
   }
   50% {
     box-shadow: 
       -4px 0 24px rgba(0, 0, 0, 0.4),
-      0 0 30px rgba(255, 215, 0, 0.25),
+      0 0 35px rgba(255, 215, 0, 0.6),
+      0 0 70px rgba(255, 215, 0, 0.3),
       inset 1px 1px 0 rgba(255, 255, 255, 0.15);
   }
 }
