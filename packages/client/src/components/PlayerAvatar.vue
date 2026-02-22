@@ -166,15 +166,16 @@ const bubblePosition = computed(() => {
     position: relative; // For absolute positioning of info-tags
   }
 
-  // User avatar: frosted glass look
+  // User avatar: frosted glass look with unified glow
   &.is-user .avatar-container {
     padding: 6px 12px 6px 6px;
-    background: rgba(60, 60, 70, 0.65);
+    background: var(--panel-bg);
     border-radius: 30px;
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--panel-border);
     box-shadow: 
       0 4px 16px rgba(0, 0, 0, 0.3),
+      0 0 var(--panel-glow-size) var(--panel-glow-color),
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 

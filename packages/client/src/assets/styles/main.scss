@@ -16,6 +16,13 @@
   --anim-long: 1.2s;
   --anim-pulse: 2s;
   --anim-delay-short: 0.3s;
+  
+  // Unified frosted panel + glow (user avatar, action panel)
+  --panel-bg: rgba(55, 58, 70, 0.85);
+  --panel-border: rgba(255, 215, 0, 0.35);
+  --panel-glow-color: rgba(255, 215, 0, 0.35);
+  --panel-glow-size: 20px;
+  --panel-glow-size-pulse: 30px;
 }
 
 // Global clanker class for AI player names and clanker text
