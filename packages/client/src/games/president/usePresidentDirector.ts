@@ -64,7 +64,7 @@ export function usePresidentDirector(
     userSeatIndex: 0,
     userHandScale: CardScales.userHand,
     opponentHandScale: CardScales.opponentHand, // Same 0.65 as other games
-    userFanSpacing: 18,
+    // userFanSpacing removed - let it calculate dynamically based on table width
     opponentFanSpacing: 10,
     ...cardControllerPresets.president,
     playerIdToSeatIndex: (id) => playerIdToSeatIndex(id),
