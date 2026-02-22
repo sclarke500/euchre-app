@@ -14,6 +14,7 @@
     :layout="playerCount > 5 ? 'wide' : 'normal'"
     game-name="PRESIDENT"
     @card-click="handleCardClick"
+    @layout-changed="handleLayoutChanged"
   >
     <!-- Player rank badges via named slots -->
     <template v-for="(player, i) in game.players.value" :key="i" #[`player-info-${playerIdToSeatIndex(i)}`]>
@@ -439,6 +440,13 @@ const dimmedCardIds = computed(() => {
   }
   return ids
 })
+
+// ── Layout handling ─────────────────────────────────────────────────────
+
+function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
+  director.setTableWidth(layout.tableBounds.width)
+  director.handleLayoutChange()
+}
 
 // ── Card selection ──────────────────────────────────────────────────────
 

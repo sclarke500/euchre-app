@@ -382,7 +382,8 @@ const availableSuits = computed(() => {
 
 // --- Bid actions ---
 
-function handleLayoutChanged() {
+function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
+  director.setTableWidth(layout.tableBounds.width)
   director.handleLayoutChange()
 }
 

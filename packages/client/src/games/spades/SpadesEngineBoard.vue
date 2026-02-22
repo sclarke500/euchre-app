@@ -13,6 +13,7 @@
     layout="normal"
     game-name="SPADES"
     @card-click="handleCardClick"
+    @layout-changed="handleLayoutChanged"
   >
     <!-- Player bid info tags (indexed by seat, not player ID) -->
     <template v-for="seat in [0, 1, 2, 3]" :key="seat" #[`player-info-${seat}`]>
@@ -305,6 +306,8 @@ const {
   currentTurnSeat,
   dimmedCardIds,
   initializeGame,
+  handleLayoutChange,
+  setTableWidth,
 } = useSpadesDirector(adapter, engine, {
   mode: props.mode,
   tableRef,
@@ -329,6 +332,12 @@ const {
   handleBid,
   dismissRoundSummary,
 } = useSpadesBoardUi(adapter, props.mode)
+
+// Handle layout changes (resize/orientation)
+function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
+  setTableWidth(layout.tableBounds.width)
+  handleLayoutChange()
+}
 
 // Handle card click
 function handleCardClick(cardId: string) {

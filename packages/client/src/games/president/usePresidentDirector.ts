@@ -752,6 +752,16 @@ export function usePresidentDirector(
     }
   }
 
+  // ── Layout handling ───────────────────────────────────────────────────
+
+  function handleLayoutChange() {
+    cardController.handleLayoutChange(200)
+  }
+
+  function setTableWidth(width: number) {
+    cardController.setTableWidth(width)
+  }
+
   // ── Public API ────────────────────────────────────────────────────────
 
   return {
@@ -759,6 +769,8 @@ export function usePresidentDirector(
     playerStatuses,
     currentTurnSeat,
     isAnimating,
+    handleLayoutChange,
+    setTableWidth,
     cleanup,
   }
 }

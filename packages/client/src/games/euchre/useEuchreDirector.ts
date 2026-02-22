@@ -1119,6 +1119,10 @@ export function useEuchreDirector(
     await cardController.handleLayoutChange(200)
   }
 
+  function setTableWidth(width: number) {
+    cardController.setTableWidth(width)
+  }
+
   return {
     playerNames,
     playerAvatars,
@@ -1135,6 +1139,7 @@ export function useEuchreDirector(
     handleDealerDiscard,
     hideOpponentHands,
     handleLayoutChange,
+    setTableWidth,
     cleanup,
   }
 }

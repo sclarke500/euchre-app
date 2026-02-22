@@ -294,6 +294,14 @@ export function useSpadesDirector(
     engine.reset()
   })
 
+  function handleLayoutChange() {
+    cardController.handleLayoutChange(200)
+  }
+
+  function setTableWidth(width: number) {
+    cardController.setTableWidth(width)
+  }
+
   return {
     cardController,
     playerIdToSeatIndex,
@@ -305,5 +313,7 @@ export function useSpadesDirector(
     currentTurnSeat,
     dimmedCardIds,
     initializeGame,
+    handleLayoutChange,
+    setTableWidth,
   }
 }
