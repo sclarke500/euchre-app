@@ -64,6 +64,26 @@
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
       <slot />
+      
+      <!-- Debug position dots -->
+      <template v-if="debugPositions && lastLayoutResult">
+        <!-- Avatar positions (red dots) -->
+        <div
+          v-for="(seat, i) in seatData"
+          :key="'debug-avatar-' + i"
+          class="debug-dot debug-dot--avatar"
+          :style="getDebugAvatarStyle(seat, i)"
+          :title="'Avatar ' + i + ': ' + JSON.stringify(getDebugAvatarPos(seat, i))"
+        />
+        <!-- Hand positions (blue dots) -->
+        <div
+          v-for="(seat, i) in seatData"
+          :key="'debug-hand-' + i"
+          class="debug-dot debug-dot--hand"
+          :style="{ left: seat.handPosition.x + 'px', top: seat.handPosition.y + 'px' }"
+          :title="'Hand ' + i + ': ' + JSON.stringify(seat.handPosition)"
+        />
+      </template>
     </div>
   </div>
 </template>
@@ -94,6 +114,7 @@ const props = withDefaults(defineProps<{
   highlightedCardIds?: Set<string>
   avatarOpacities?: number[]
   gameName?: string
+  debugPositions?: boolean
 }>(), {
   layout: 'normal',
   dealerSeat: -1,
@@ -105,6 +126,7 @@ const props = withDefaults(defineProps<{
   avatarOpacities: () => [],
   playerAvatars: () => [],
   gameName: '',
+  debugPositions: false,
 })
 
 const emit = defineEmits<{
@@ -165,6 +187,24 @@ const avatarStyles = computed(() => {
 
 // Chat store for bubble state
 const chatStore = useChatStore()
+
+// Debug helpers for position visualization
+function getDebugAvatarPos(seat: SeatLayout, index: number) {
+  const layout = lastLayoutResult.value
+  if (!layout) return { x: 0, y: 0 }
+  const { tableBounds } = layout
+  switch (seat.side) {
+    case 'left': return { x: tableBounds.left, y: seat.handPosition.y }
+    case 'right': return { x: tableBounds.right, y: seat.handPosition.y }
+    case 'top': return { x: seat.handPosition.x, y: tableBounds.top }
+    default: return { x: seat.handPosition.x, y: tableBounds.bottom }
+  }
+}
+
+function getDebugAvatarStyle(seat: SeatLayout, index: number) {
+  const pos = getDebugAvatarPos(seat, index)
+  return { left: pos.x + 'px', top: pos.y + 'px' }
+}
 
 /**
  * Dealer chip position - top-left of each player's avatar.
@@ -502,4 +542,24 @@ defineExpose({
               bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+// Debug position dots
+.debug-dot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  pointer-events: none;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  
+  &--avatar {
+    background: #ff0000; // Red = avatar position
+  }
+  
+  &--hand {
+    background: #0088ff; // Blue = hand position
+  }
+}
 </style>

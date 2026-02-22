@@ -59,7 +59,7 @@ export function usePresidentDirector(
   // ── Shared card controller ───────────────────────────────────────────────
 
   const cardController = useCardController(engine, boardRef, {
-    layout: 'normal',
+    layout: () => playerCount.value > 5 ? 'wide' : 'normal',
     playerCount: () => playerCount.value,
     userSeatIndex: 0,
     userHandScale: CardScales.userHand,

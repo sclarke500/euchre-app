@@ -52,7 +52,7 @@ export const cardControllerPresets = {
 }
 
 export interface CardControllerConfig {
-  layout?: 'normal' | 'wide'
+  layout?: 'normal' | 'wide' | (() => 'normal' | 'wide')
   playerCount: number | (() => number)
   userSeatIndex?: number | (() => number)
   userHandScale?: number
@@ -113,7 +113,12 @@ export function useCardController(
   boardRef: Ref<HTMLElement | null>,
   config: CardControllerConfig
 ) {
-  const layoutType = config.layout ?? 'normal'
+  const getLayoutType = () => {
+    if (typeof config.layout === 'function') {
+      return config.layout()
+    }
+    return config.layout ?? 'normal'
+  }
   const getPlayerCount = () => {
     if (typeof config.playerCount === 'function') {
       return config.playerCount()
@@ -141,7 +146,7 @@ export function useCardController(
     const board = boardRef.value
     if (!board) return null
 
-    const layout = computeTableLayout(board.offsetWidth, board.offsetHeight, layoutType, getPlayerCount())
+    const layout = computeTableLayout(board.offsetWidth, board.offsetHeight, getLayoutType(), getPlayerCount())
     tableLayout.value = layout
     tableCenter.value = layout.tableCenter
 
@@ -897,7 +902,7 @@ export function useCardController(
     const layout = tableLayout.value ?? computeTableLayout(
       board.offsetWidth,
       board.offsetHeight,
-      config.layout ?? 'normal',
+      getLayoutType(),
       getPlayerCount()
     )
     const userSeatIndex = getUserSeatIndex()
@@ -973,7 +978,7 @@ export function useCardController(
     const layout = tableLayout.value ?? computeTableLayout(
       board.offsetWidth,
       board.offsetHeight,
-      config.layout ?? 'normal',
+      getLayoutType(),
       getPlayerCount()
     )
 
@@ -1167,7 +1172,7 @@ export function useCardController(
     if (!board) return
 
     // Recalculate layout
-    const newLayout = computeTableLayout(board.offsetWidth, board.offsetHeight, layoutType, getPlayerCount())
+    const newLayout = computeTableLayout(board.offsetWidth, board.offsetHeight, getLayoutType(), getPlayerCount())
     tableLayout.value = newLayout
     tableCenter.value = newLayout.tableCenter
 

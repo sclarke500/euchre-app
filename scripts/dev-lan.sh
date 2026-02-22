@@ -1,12 +1,13 @@
 #!/bin/bash
-# Start local dev server accessible on LAN
+# Start local dev server accessible on LAN via Caddy
 # Usage: npm run dev:lan (from repo root)
 
 set -e
 
+cd "$(dirname "$0")/.."
+
 # Get LAN IP (works on Mac)
 get_lan_ip() {
-  # Try common interfaces
   for iface in en0 en1 en2; do
     ip=$(ipconfig getifaddr $iface 2>/dev/null)
     if [ -n "$ip" ]; then
@@ -14,7 +15,6 @@ get_lan_ip() {
       return
     fi
   done
-  # Fallback: parse ifconfig
   ifconfig 2>/dev/null | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}'
 }
 
@@ -28,38 +28,40 @@ fi
 echo "🌐 LAN IP detected: $LAN_IP"
 echo ""
 echo "📱 Access from other devices:"
-echo "   http://$LAN_IP:4200"
+echo "   http://$LAN_IP:8080"
 echo ""
 
-# Create/update .env.local for client
-echo "VITE_WS_URL=ws://$LAN_IP:3001" > packages/client/.env.local
-echo "✅ Created packages/client/.env.local"
+# Kill any existing processes on our ports
+echo "🧹 Cleaning up old processes..."
+pkill -f "@67cards/server" 2>/dev/null || true
+pkill -f "tsx.*index.ts" 2>/dev/null || true
+pkill -f "caddy run" 2>/dev/null || true
+sleep 1
 
-# Create .env for server if missing
-if [ ! -f packages/server/.env ]; then
-  touch packages/server/.env
-  echo "✅ Created packages/server/.env"
-fi
+# Build client first
+echo "📦 Building client..."
+npm run build -w @67cards/client
+
+# Clean up old env files that might interfere
+rm -f packages/client/.env.local
 
 echo ""
 echo "🚀 Starting servers..."
-echo "   Server: http://$LAN_IP:3001"
-echo "   Client: http://$LAN_IP:4200"
+echo "   Caddy (proxy):  http://$LAN_IP:8080"
+echo "   Backend:        localhost:3001 (internal)"
 echo ""
-echo "Press Ctrl+C to stop both servers"
+echo "Press Ctrl+C to stop all servers"
 echo ""
 
-# Start server in background
-cd packages/server
-npm run dev &
+# Start backend in background
+npm run dev -w @67cards/server &
 SERVER_PID=$!
 
 # Give server a moment to start
 sleep 2
 
-# Start client (foreground, with --host for LAN access)
-cd ../client
-npm run dev -- --host
+# Start Caddy (foreground)
+caddy run --config Caddyfile
 
-# When client exits, kill server
+# When Caddy exits, kill backend
 kill $SERVER_PID 2>/dev/null

@@ -114,11 +114,6 @@ export function computeTableLayout(
   }
 
   const tableCenter = { x: tableX, y: tableY }
-  // Different insets for sides vs top/bottom
-  // Left/right players fan vertically, so minimal horizontal inset
-  // Top players fan horizontally, so need vertical inset for card height
-  const sideInset = 15  // Just enough to be inside table
-  const topBottomInset = Math.min(tableW, tableH) * 0.06 + 25
 
   const seatDefs = seatOverrides ?? SEAT_PRESETS[playerCount] ?? SEAT_PRESETS[4]!
 
@@ -126,18 +121,24 @@ export function computeTableLayout(
     let handX: number
     let handY: number
 
+    // Offset from avatar into the table (cards appear "in front of" player)
+    const handOffset = 50
+
     switch (seat.side) {
       case 'left':
-        handX = tableLeft + sideInset
+        // Cards offset to the right (into the table)
+        handX = tableLeft + handOffset
         handY = tableTop + seat.pos * tableH
         break
       case 'right':
-        handX = tableRight - sideInset
+        // Cards offset to the left (into the table)
+        handX = tableRight - handOffset
         handY = tableTop + seat.pos * tableH
         break
       case 'top':
+        // Cards offset downward (into the table)
         handX = tableLeft + seat.pos * tableW
-        handY = tableTop + topBottomInset
+        handY = tableTop + handOffset
         break
       default: // bottom (user) - deal position inside table, then animate down when fanning
         handX = tableX
