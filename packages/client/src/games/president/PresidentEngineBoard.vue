@@ -467,7 +467,7 @@ function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
 }
 
 function startGame() {
-  // DEBUG: 3 second delay to troubleshoot deal animation
+  // Small delay to let layout fully settle before dealing
   setTimeout(() => {
     if (props.mode === 'multiplayer') {
       game.initialize?.()
@@ -475,7 +475,7 @@ function startGame() {
       const settingsStore = useSettingsStore()
       presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
     }
-  }, 3000)
+  }, 100)
 }
 
 // ── Card selection ──────────────────────────────────────────────────────
