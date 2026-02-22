@@ -12,6 +12,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 const CARD_ASPECT_RATIO = 1.4
 
 // Card sizes for each mode
+const SMALL_MOBILE_BASE_WIDTH = 54  // iPhone SE, small phones (height < 400)
 const MOBILE_BASE_WIDTH = 60
 const FULL_BASE_WIDTH = 70
 
@@ -57,6 +58,14 @@ function updateViewport() {
 let listenerAttached = false
 
 /**
+ * Detect small mobile: very small phones like iPhone SE
+ * - height < 400px in landscape (375px on SE)
+ */
+export function isSmallMobile(): boolean {
+  return viewportHeight.value < 400 && viewportWidth.value < 750
+}
+
+/**
  * Detect mobile mode: phones in any orientation
  * - width < 768px (phone portrait)
  * - height < 500px (phone landscape)
@@ -83,10 +92,24 @@ export function getViewportHeight(): number {
  * Get the base card width for current viewport mode
  */
 export function getBaseCardWidth(): number {
+  const smallMobile = isSmallMobile()
   const mobile = isMobile()
-  const baseWidth = mobile ? MOBILE_BASE_WIDTH : FULL_BASE_WIDTH
   
-  console.log(`[CardSizing] ${viewportWidth.value}x${viewportHeight.value} → ${mobile ? 'mobile' : 'full'} → baseWidth: ${baseWidth}px`)
+  let baseWidth: number
+  let mode: string
+  
+  if (smallMobile) {
+    baseWidth = SMALL_MOBILE_BASE_WIDTH
+    mode = 'small-mobile'
+  } else if (mobile) {
+    baseWidth = MOBILE_BASE_WIDTH
+    mode = 'mobile'
+  } else {
+    baseWidth = FULL_BASE_WIDTH
+    mode = 'full'
+  }
+  
+  console.log(`[CardSizing] ${viewportWidth.value}x${viewportHeight.value} → ${mode} → baseWidth: ${baseWidth}px`)
   return baseWidth
 }
 
