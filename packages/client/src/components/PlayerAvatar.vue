@@ -357,13 +357,30 @@ const bubblePosition = computed(() => {
     pointer-events: none;
   }
 
-  // Turn indicator - golden glow on circle
+  // Turn indicator - bright animated glow on circle
   &.is-current-turn .avatar-circle {
-    border-color: rgba(255, 215, 0, 0.7);
+    border-color: #ffd700;
+    border-width: 3px;
     box-shadow:
-      0 0 12px rgba(255, 215, 0, 0.3),
-      0 0 30px rgba(255, 215, 0, 0.15),
-      0 0 50px rgba(255, 215, 0, 0.08);
+      0 0 8px 2px rgba(255, 215, 0, 0.6),
+      0 0 20px 4px rgba(255, 215, 0, 0.4),
+      0 0 40px 8px rgba(255, 215, 0, 0.2);
+    animation: turn-pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes turn-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 8px 2px rgba(255, 215, 0, 0.6),
+        0 0 20px 4px rgba(255, 215, 0, 0.4),
+        0 0 40px 8px rgba(255, 215, 0, 0.2);
+    }
+    50% {
+      box-shadow:
+        0 0 12px 4px rgba(255, 215, 0, 0.8),
+        0 0 28px 8px rgba(255, 215, 0, 0.5),
+        0 0 50px 12px rgba(255, 215, 0, 0.3);
+    }
   }
 
   // Chat bubble positioning (relative to avatar-container)
