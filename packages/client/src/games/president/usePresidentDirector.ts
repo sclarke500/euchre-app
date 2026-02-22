@@ -77,6 +77,9 @@ export function usePresidentDirector(
   const playerNames = computed(() => game.players.value.map(p => p.name))
 
   const currentTurnSeat = computed(() => {
+    // Don't show turn indicator during dealing or animations
+    if (isAnimating.value) return -1
+    if (game.phase.value === PresidentPhase.Dealing) return -1
     const cp = game.currentPlayer.value
     return cp >= 0 ? playerIdToSeatIndex(cp) : -1
   })
