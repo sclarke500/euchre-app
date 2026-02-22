@@ -224,13 +224,13 @@ defineExpose({
     transform: rotate(180deg);
   }
 
-  // Font sizes scale with card (no minimums - fully proportional)
+  // Font sizes scale with card - slightly larger for readability
   .rank {
-    font-size: calc(var(--card-base-width, 83px) * 0.28);
+    font-size: calc(var(--card-base-width, 83px) * 0.32);
   }
 
   .suit {
-    font-size: calc(var(--card-base-width, 83px) * 0.24);
+    font-size: calc(var(--card-base-width, 83px) * 0.28);
   }
 
   &.red { color: #e74c3c; }

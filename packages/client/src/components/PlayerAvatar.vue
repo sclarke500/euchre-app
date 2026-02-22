@@ -346,7 +346,7 @@ const bubblePosition = computed(() => {
     border-radius: 50%;
     background: #fff;
     border: none;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: bold;
     display: flex;
     align-items: center;
