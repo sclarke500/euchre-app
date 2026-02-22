@@ -112,7 +112,7 @@ function handleQuickReact(emoji: string) {
             >
               <div class="message-bubble">
                 <span v-if="msg.seatIndex !== 0" class="message-name">{{ msg.playerName }}</span>
-                <span class="message-text">{{ msg.text }}</span>
+                <span class="message-text">{{ msg.text.trim() }}</span>
               </div>
             </div>
           </div>
@@ -191,7 +191,7 @@ function handleQuickReact(emoji: string) {
       >
         <div class="message-bubble">
           <span v-if="msg.seatIndex !== 0" class="message-name">{{ msg.playerName }}</span>
-          <span class="message-text">{{ msg.text }}</span>
+          <span class="message-text">{{ msg.text.trim() }}</span>
         </div>
       </div>
     </div>

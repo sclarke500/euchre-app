@@ -69,7 +69,7 @@ const tailClass = computed(() => {
       class="chat-bubble"
       :class="[tailClass, { fading: isFading }]"
     >
-      <span class="bubble-text">{{ message.text }}</span>
+      <span class="bubble-text">{{ message.text.trim() }}</span>
     </div>
   </Transition>
 </template>
@@ -79,13 +79,13 @@ const tailClass = computed(() => {
   position: absolute;
   width: max-content;
   max-width: 280px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.98) 0%,
     rgba(248, 248, 248, 0.98) 100%
   );
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 
     0 4px 12px rgba(0, 0, 0, 0.2),
     0 1px 3px rgba(0, 0, 0, 0.1);
@@ -99,9 +99,10 @@ const tailClass = computed(() => {
 }
 
 .bubble-text {
+  display: block;
   color: #1a1a1a;
   font-size: 14px;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 // Speech bubble tails - bigger triangles, flush with bubble
