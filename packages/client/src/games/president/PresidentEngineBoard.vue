@@ -72,69 +72,73 @@
     <!-- Chat input (multiplayer only) -->
     <ChatInput v-if="mode === 'multiplayer'" />
 
-    <!-- User actions — bottom bar -->
-    <UserActions :active="game.isHumanTurn.value || game.isInExchange.value || game.isHumanGivingCards.value" :class="{ 'normal-table': playerCount <= 5 }">
+    <!-- User actions — sliding panel from right -->
+    <Transition name="action-slide">
+      <div v-if="showActionPanel" class="action-panel-container frosted-panel--right">
 
-      <!-- Exchange phase: President/VP selecting cards -->
-      <template v-if="game.isInExchange.value && game.exchangeCanSelect.value">
-        <span class="action-hint">
-          Select {{ game.exchangeCardsNeeded.value }} card{{ game.exchangeCardsNeeded.value !== 1 ? 's' : '' }}
-        </span>
-        <button
-          class="action-btn primary"
-          :disabled="selectedCardIds.size !== game.exchangeCardsNeeded.value"
-          @click="confirmExchange"
-        >
-          Exchange ({{ selectedCardIds.size }}/{{ game.exchangeCardsNeeded.value }})
-        </button>
-      </template>
+        <!-- Exchange phase: President/VP selecting cards -->
+        <template v-if="game.isInExchange.value && game.exchangeCanSelect.value">
+          <span class="action-label">
+            Select {{ game.exchangeCardsNeeded.value }} card{{ game.exchangeCardsNeeded.value !== 1 ? 's' : '' }}
+          </span>
+          <button
+            class="frosted-btn frosted-btn--primary"
+            :disabled="selectedCardIds.size !== game.exchangeCardsNeeded.value"
+            @click="confirmExchange"
+          >
+            Exchange ({{ selectedCardIds.size }}/{{ game.exchangeCardsNeeded.value }})
+          </button>
+        </template>
 
-      <!-- Exchange phase: Scum/ViceScum with pre-selected cards -->
-      <template v-else-if="game.isInExchange.value && !game.exchangeCanSelect.value">
-        <span class="action-hint">
-          Your {{ game.exchangePreSelectedIds.value.length }} best card{{ game.exchangePreSelectedIds.value.length !== 1 ? 's' : '' }}
-        </span>
-        <button
-          class="action-btn primary"
-          @click="confirmExchange"
-        >
-          Exchange
-        </button>
-      </template>
+        <!-- Exchange phase: Scum/ViceScum with pre-selected cards -->
+        <template v-else-if="game.isInExchange.value && !game.exchangeCanSelect.value">
+          <span class="action-label">
+            Your {{ game.exchangePreSelectedIds.value.length }} best card{{ game.exchangePreSelectedIds.value.length !== 1 ? 's' : '' }}
+          </span>
+          <button
+            class="frosted-btn frosted-btn--primary"
+            @click="confirmExchange"
+          >
+            Exchange
+          </button>
+        </template>
 
-      <!-- SP Give-back phase (backwards compat) -->
-      <template v-else-if="game.isHumanGivingCards.value">
-        <span class="action-hint">
-          Select {{ game.cardsToGiveCount.value }} to give back.
-        </span>
-        <button
-          class="action-btn primary"
-          :disabled="selectedCardIds.size !== game.cardsToGiveCount.value"
-          @click="confirmGiveBack"
-        >
-          Give{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size}/${game.cardsToGiveCount.value})` : '' }}
-        </button>
-      </template>
+        <!-- SP Give-back phase (backwards compat) -->
+        <template v-else-if="game.isHumanGivingCards.value">
+          <span class="action-label">
+            Select {{ game.cardsToGiveCount.value }} to give back
+          </span>
+          <button
+            class="frosted-btn frosted-btn--primary"
+            :disabled="selectedCardIds.size !== game.cardsToGiveCount.value"
+            @click="confirmGiveBack"
+          >
+            Give ({{ selectedCardIds.size }}/{{ game.cardsToGiveCount.value }})
+          </button>
+        </template>
 
-      <!-- Playing phase, user's turn -->
-      <template v-else-if="game.isHumanTurn.value">
-        <span v-if="game.currentPile.value.currentRank === null" class="action-hint">Your lead</span>
-        <button
-          class="action-btn primary"
-          :disabled="!canPlaySelection"
-          @click="playSelectedCards"
-        >
-          Play{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size})` : '' }}
-        </button>
-        <button
-          class="action-btn"
-          :disabled="game.currentPile.value.currentRank === null"
-          @click="passTurn"
-        >
-          Pass
-        </button>
-      </template>
-    </UserActions>
+        <!-- Playing phase, user's turn -->
+        <template v-else-if="game.isHumanTurn.value">
+          <button
+            v-if="game.currentPile.value.currentRank !== null"
+            class="frosted-btn frosted-btn--pass"
+            @click="passTurn"
+          >
+            Pass
+          </button>
+          <div v-if="game.currentPile.value.currentRank !== null" class="action-divider"></div>
+          <span v-if="game.currentPile.value.currentRank === null" class="action-label lead-label">Your lead</span>
+          <button
+            class="frosted-btn frosted-btn--primary"
+            :disabled="!canPlaySelection"
+            @click="playSelectedCards"
+          >
+            Play{{ selectedCardIds.size > 0 ? ` (${selectedCardIds.size})` : '' }}
+          </button>
+        </template>
+
+      </div>
+    </Transition>
 
     <!-- Round complete modal -->
     <Modal :show="phase === PresidentPhase.RoundComplete" @close="() => {}">
@@ -244,7 +248,6 @@ import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import Modal from '@/components/Modal.vue'
 import GameHUD from '@/components/GameHUD.vue'
-import UserActions from '@/components/UserActions.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatIcon from '@/components/chat/ChatIcon.vue'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
@@ -289,6 +292,12 @@ const director = usePresidentDirector(game, engine, { boardRef })
 
 const currentTurnSeat = computed(() => director.currentTurnSeat.value)
 const phase = computed(() => game.phase.value)
+
+// Show action panel when user needs to act
+const showActionPanel = computed(() => {
+  if (director.isAnimating.value) return false
+  return game.isHumanTurn.value || game.isInExchange.value || game.isHumanGivingCards.value
+})
 const playerCount = computed(() => game.players.value.length || 4) // Default to 4 for President
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
 const userRankBadge = computed(() => getRankBadge(game.humanPlayer.value?.id ?? 0))
@@ -399,6 +408,7 @@ function getRankBadge(playerId: number): string | null {
     'President': '\u{1F451}',
     'Vice President': '\u{1F396}\u{FE0F}',
     'Citizen': '',
+    'Vice Scum': '\u{1FAA0}',  // 🪠 plunger
     'Scum': '\u{1F4A9}',
   }
   return badges[display] ?? null
@@ -757,21 +767,106 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-// Action button overrides for President
-:deep(.user-actions) {
-  .action-btn {
-    min-width: 100px;
-  }
+// Sliding action panel from right - uses global frosted-panel--right
+.action-panel-container {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 18px 16px;
+  padding-right: max(16px, env(safe-area-inset-right));
+  min-width: 130px;
+  border-radius: 20px 0 0 20px;
   
-  // More padding for normal-sized table (≤5 players)
-  &.normal-table {
-    padding: 24px 20px;
-    
-    .action-btn {
-      min-width: 120px;
-      padding: 14px 24px;
-    }
+  // Unified frosted panel with gold glow (shares vars with user avatar)
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-right: none;
+  box-shadow: 
+    -4px 0 24px rgba(0, 0, 0, 0.4),
+    0 0 var(--panel-glow-size) var(--panel-glow-color),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+  animation: panel-glow 2s ease-in-out infinite;
+}
+
+@keyframes panel-glow {
+  0%, 100% {
+    box-shadow: 
+      -4px 0 24px rgba(0, 0, 0, 0.4),
+      0 0 var(--panel-glow-size) var(--panel-glow-color),
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1);
   }
+  50% {
+    box-shadow: 
+      -4px 0 24px rgba(0, 0, 0, 0.4),
+      0 0 var(--panel-glow-size-pulse) var(--panel-glow-color),
+      inset 1px 1px 0 rgba(255, 255, 255, 0.15);
+  }
+}
+
+// Pass button - neutral, strategic option (not cancel-like)
+.action-panel-container .frosted-btn--pass {
+  background: linear-gradient(
+    180deg,
+    rgba(70, 75, 90, 0.92) 0%,
+    rgba(50, 55, 70, 0.95) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  
+  &:hover:not(:disabled) {
+    background: linear-gradient(
+      180deg,
+      rgba(80, 85, 100, 0.95) 0%,
+      rgba(60, 65, 80, 0.95) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+}
+
+// Visual divider between Pass and action buttons
+.action-panel-container .action-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0.15) 80%,
+    transparent 100%
+  );
+  margin: 2px 0;
+}
+
+.action-panel-container .action-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.action-panel-container .lead-label {
+  color: #ffd700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+// Slide in from right transition
+.action-slide-enter-active {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.action-slide-leave-active {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease;
+}
+
+.action-slide-enter-from,
+.action-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-50%) translateX(100%);
 }
 
 // Rank badges (President 👑, Scum 💩, etc.)

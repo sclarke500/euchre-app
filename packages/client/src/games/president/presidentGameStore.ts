@@ -140,7 +140,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   // Scum gives 2, ViceScum gives 1
   function getScumCardsToGive(player: PresidentPlayer): number {
     if (player.rank === PlayerRank.Scum) return 2
-    if (player.rank === 3) return 1 // ViceScum (rank 3 with cardsToGive > 0)
+    if (player.rank === PlayerRank.ViceScum) return 1
     return 0
   }
 
@@ -269,7 +269,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const humanRank = human.rank
     
     // Check if human is Scum or ViceScum (they need to confirm their pre-selected cards)
-    if (humanRank === PlayerRank.Scum || (humanRank === 3 && human.cardsToGive > 0)) {
+    // But skip if they've already exchanged (check pendingExchanges)
+    const humanAlreadyExchanged = pendingExchanges.value.some(e => e.fromPlayerId === human.id)
+    if (!humanAlreadyExchanged && (humanRank === PlayerRank.Scum || humanRank === PlayerRank.ViceScum)) {
       // Human is Scum/ViceScum - show them their best cards and wait for confirmation
       const cardsToGive = getScumCardsToGive(human)
       const bestCards = chooseCardsToGive(human, cardsToGive)
@@ -389,7 +391,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     if (!human) return
     
     const humanRank = human.rank
-    if (humanRank !== PlayerRank.Scum && humanRank !== 3) return // Only Scum/ViceScum
+    if (humanRank !== PlayerRank.Scum && humanRank !== PlayerRank.ViceScum) return // Only Scum/ViceScum
     
     // Clear the exchange UI state
     isInExchange.value = false

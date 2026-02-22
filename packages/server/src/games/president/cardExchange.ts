@@ -1,5 +1,6 @@
 import {
   PresidentPhase,
+  PlayerRank,
   chooseCardsToGive,
   getLowestCards,
   type PresidentPlayer,
@@ -60,10 +61,10 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
     stagedExchanges.length = 0
     exchangeParticipants.clear()
 
-    const president = deps.players.find(p => p.rank === 1)
-    const scum = deps.players.find(p => p.rank === 4)
-    const vp = deps.players.find(p => p.rank === 2)
-    const viceScum = deps.players.find(p => p.cardsToGive === 1 && p.rank === 3)
+    const president = deps.players.find(p => p.rank === PlayerRank.President)
+    const scum = deps.players.find(p => p.rank === PlayerRank.Scum)
+    const vp = deps.players.find(p => p.rank === PlayerRank.VicePresident)
+    const viceScum = deps.players.find(p => p.rank === PlayerRank.ViceScum)
 
     // Set up President ↔ Scum exchange
     if (president && scum) {
@@ -273,7 +274,7 @@ export function createPresidentCardExchangeController(deps: PresidentCardExchang
    * Finish exchange and start playing.
    */
   function finishExchange(): void {
-    const scum = deps.players.find(p => p.rank === 4)
+    const scum = deps.players.find(p => p.rank === PlayerRank.Scum)
     deps.setCurrentPlayer(scum?.seatIndex ?? 0)
     deps.setPhase(PresidentPhase.Playing)
     stagedExchanges.length = 0

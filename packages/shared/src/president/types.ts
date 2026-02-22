@@ -27,7 +27,8 @@ export enum PlayerRank {
   President = 1,
   VicePresident = 2,
   Citizen = 3,
-  Scum = 4,
+  ViceScum = 4,
+  Scum = 5,
 }
 
 // Play types (how many cards of same rank)

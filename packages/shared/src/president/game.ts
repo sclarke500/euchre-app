@@ -317,7 +317,7 @@ export function assignRanks(state: PresidentGameState): PresidentGameState {
       rank = PlayerRank.Scum
       cardsToGive = 2
     } else if (finishOrder === numPlayers - 1 && numPlayers >= 5) {
-      rank = PlayerRank.Citizen  // Actually Vice-Scum
+      rank = PlayerRank.ViceScum
       cardsToGive = 1
     } else {
       rank = PlayerRank.Citizen
@@ -408,11 +408,8 @@ export function processGiveBackCards(
     toPlayerId = state.players.find(p => p.rank === PlayerRank.Scum)?.id ?? null
     expectedCardCount = 2
   } else if (fromPlayer.rank === PlayerRank.VicePresident) {
-    // Find Vice-Scum (second to last finisher, not Scum)
-    const numPlayers = state.players.length
-    toPlayerId = state.players.find(p =>
-      p.finishOrder === numPlayers - 1 && p.rank !== PlayerRank.Scum
-    )?.id ?? null
+    // Find Vice-Scum
+    toPlayerId = state.players.find(p => p.rank === PlayerRank.ViceScum)?.id ?? null
     expectedCardCount = 1
   }
 
@@ -523,6 +520,7 @@ export function getHumanExchangeInfo(
     [PlayerRank.President]: 'President',
     [PlayerRank.VicePresident]: 'Vice President',
     [PlayerRank.Citizen]: 'Citizen',
+    [PlayerRank.ViceScum]: 'Vice Scum',
     [PlayerRank.Scum]: 'Scum',
   }
 

@@ -13,6 +13,8 @@ export function getRankDisplayName(rank: PlayerRank | null): string {
       return 'Vice President'
     case PlayerRank.Citizen:
       return 'Citizen'
+    case PlayerRank.ViceScum:
+      return 'Vice Scum'
     case PlayerRank.Scum:
       return 'Scum'
     default:
@@ -31,6 +33,8 @@ export function getRankShortName(rank: PlayerRank | null): string {
       return 'VP'
     case PlayerRank.Citizen:
       return 'C'
+    case PlayerRank.ViceScum:
+      return 'VS'
     case PlayerRank.Scum:
       return 'S'
     default:
