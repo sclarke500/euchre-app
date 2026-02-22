@@ -355,6 +355,12 @@ const bubblePosition = computed(() => {
     z-index: 10;
     pointer-events: none;
   }
+  
+  // Opponent trump chip: nudge right 4px, up 2px
+  &:not(.is-user) .trump-chip {
+    top: -6px;
+    right: -8px;
+  }
 
   // Turn indicator - bright animated glow on circle
   &.is-current-turn .avatar-circle {
