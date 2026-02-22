@@ -874,6 +874,11 @@ onUnmounted(() => {
   font-size: 28px;
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  
+  // User's rank badge - smaller, doesn't push name down
+  &.user-rank {
+    font-size: 16px;
+  }
 }
 
 // Action hint text above buttons
