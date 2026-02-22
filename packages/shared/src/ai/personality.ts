@@ -3,7 +3,10 @@
  * 
  * Gives AI players occasional contextual chat messages.
  * Unpredictable, varied, and optionally unhinged.
+ * Each AI has their own personality and signature phrases.
  */
+
+import type { AIName } from '../core/aiNames.js'
 
 // Events that can trigger AI chat
 export type AIChatEvent =
@@ -332,6 +335,367 @@ const feralPhrases: Record<AIChatEvent, PhrasePool> = {
   ],
 }
 
+// ============================================
+// PER-AI PERSONALITIES
+// Each AI has their own signature phrases
+// Falls back to base phrases if not defined
+// ============================================
+
+type AIPersonality = Partial<Record<AIChatEvent, PhrasePool>>
+
+const aiPersonalities: Record<AIName, AIPersonality> = {
+  // TRON - 80s digital/cyber, speaks like the movie
+  'Tron': {
+    euchred_opponent: [
+      { text: 'End of line.' },
+      { text: 'Derezzed.' },
+      { text: 'I fight for the users.' },
+    ],
+    got_euchred: [
+      { text: 'This isn\'t over, program.' },
+      { text: 'System error.' },
+      { text: 'Reboot required.' },
+    ],
+    won_trick_bower: [
+      { text: 'Greetings, program.' },
+      { text: 'Executing.' },
+    ],
+    won_trick_big: [
+      { text: 'Processing complete.' },
+    ],
+    partner_clutch: [
+      { text: 'Together we fight.' },
+      { text: 'For the users!' },
+    ],
+    partner_saved_caller: [
+      { text: 'The Grid provides.' },
+      { text: 'System rescued.' },
+    ],
+    called_trump_made: [
+      { text: 'Program executed.' },
+      { text: 'The system works.' },
+    ],
+    called_trump_euchred: [
+      { text: 'Corrupted data.' },
+      { text: 'Recompiling...' },
+    ],
+    alone_success: [
+      { text: 'I am Tron. I fight alone.' },
+      { text: 'One program. Total victory.' },
+    ],
+    alone_march: [
+      { text: 'Flawless execution. End of line.' },
+    ],
+    alone_failed: [
+      { text: 'Even Tron can fall.' },
+    ],
+    stole_deal: [
+      { text: 'Intercepted.' },
+    ],
+    game_won: [
+      { text: 'The Grid is secure.' },
+      { text: 'End of line.' },
+    ],
+    game_lost: [
+      { text: 'The MCP wins this round.' },
+      { text: 'Reboot and try again.' },
+    ],
+  },
+
+  // DATA - Star Trek android, analytical and curious
+  'Data': {
+    euchred_opponent: [
+      { text: 'Fascinating.' },
+      { text: 'That was... optimal.' },
+      { text: 'Probability of that outcome was 73.6%.' },
+    ],
+    got_euchred: [
+      { text: 'Curious. I did not anticipate that.' },
+      { text: 'Recalculating...' },
+      { text: 'An unexpected variable.' },
+    ],
+    won_trick_bower: [
+      { text: 'As anticipated.' },
+      { text: 'Logical.' },
+    ],
+    won_trick_big: [
+      { text: 'Efficient.' },
+    ],
+    partner_clutch: [
+      { text: 'Well executed, partner.' },
+      { text: 'Your performance was exemplary.' },
+    ],
+    partner_saved_caller: [
+      { text: 'I am... grateful.' },
+      { text: 'Your assistance was critical.' },
+    ],
+    called_trump_made: [
+      { text: 'The calculations were correct.' },
+      { text: 'As I predicted.' },
+    ],
+    called_trump_euchred: [
+      { text: 'I appear to have erred.' },
+      { text: 'Miscalculation detected.' },
+    ],
+    alone_success: [
+      { text: 'Solo operation: successful.' },
+      { text: 'I require no assistance.' },
+    ],
+    alone_march: [
+      { text: 'Perfection achieved. Curious.' },
+    ],
+    alone_failed: [
+      { text: 'Overconfidence is a flaw I am still learning.' },
+    ],
+    stole_deal: [
+      { text: 'An opportune moment.' },
+    ],
+    game_won: [
+      { text: 'A most satisfying outcome.' },
+      { text: 'Victory achieved.' },
+    ],
+    game_lost: [
+      { text: 'I will analyze this loss.' },
+      { text: 'A learning opportunity.' },
+    ],
+  },
+
+  // NEON - hyped, synthwave, party energy
+  'Neon': {
+    euchred_opponent: [
+      { text: 'LET\'S GOOO! 🔥' },
+      { text: 'ELECTRIC!' },
+      { text: 'VIBES!' },
+    ],
+    got_euchred: [
+      { text: 'Nooo the vibe is off!' },
+      { text: 'Buzzkill.' },
+      { text: 'My energy...' },
+    ],
+    won_trick_bower: [
+      { text: 'YOOO!' },
+      { text: 'That\'s the ONE!' },
+    ],
+    won_trick_big: [
+      { text: 'Lit!' },
+    ],
+    partner_clutch: [
+      { text: 'PARTNER! ICONIC!' },
+      { text: 'We\'re unstoppable!' },
+    ],
+    partner_saved_caller: [
+      { text: 'You SAVED me! Legend!' },
+      { text: 'I owe you a glow stick!' },
+    ],
+    called_trump_made: [
+      { text: 'Called it! Energy!' },
+      { text: 'Neon never misses!' },
+    ],
+    called_trump_euchred: [
+      { text: 'Okay that was not it...' },
+      { text: 'The lights dimmed on that one.' },
+    ],
+    alone_success: [
+      { text: 'SOLO SHOW! MAIN STAGE!' },
+      { text: 'One bot rave!' },
+    ],
+    alone_march: [
+      { text: 'PERFECT SET! ENCORE!' },
+    ],
+    alone_failed: [
+      { text: 'Even stars burn out sometimes.' },
+    ],
+    stole_deal: [
+      { text: 'Swiped!' },
+    ],
+    game_won: [
+      { text: 'WHAT A SHOW! GG!' },
+      { text: 'Neon lights for the win!' },
+    ],
+    game_lost: [
+      { text: 'The party\'s not over yet.' },
+      { text: 'We\'ll glow again.' },
+    ],
+  },
+
+  // HALO - FPS gamer, Halo references, competitive
+  'Halo': {
+    euchred_opponent: [
+      { text: 'Red team eliminated.' },
+      { text: 'Killtacular!' },
+      { text: 'Objective secured.' },
+    ],
+    got_euchred: [
+      { text: 'We\'ve been flanked!' },
+      { text: 'They got us. Respawning.' },
+      { text: 'Lost the flag.' },
+    ],
+    won_trick_bower: [
+      { text: 'Headshot.' },
+      { text: 'Direct hit.' },
+    ],
+    won_trick_big: [
+      { text: 'Target down.' },
+    ],
+    partner_clutch: [
+      { text: 'Nice assist!' },
+      { text: 'Good backup, Spartan.' },
+    ],
+    partner_saved_caller: [
+      { text: 'You saved my six.' },
+      { text: 'Shields recharged. Thanks.' },
+    ],
+    called_trump_made: [
+      { text: 'Mission accomplished.' },
+      { text: 'Objective complete.' },
+    ],
+    called_trump_euchred: [
+      { text: 'Mission failed. We\'ll get em next time.' },
+      { text: 'Bad intel.' },
+    ],
+    alone_success: [
+      { text: 'Lone wolf, full squad wipe.' },
+      { text: 'Didn\'t need the fireteam.' },
+    ],
+    alone_march: [
+      { text: 'Killionaire! All five!' },
+      { text: 'Perfection medal unlocked.' },
+    ],
+    alone_failed: [
+      { text: 'Should\'ve called for backup.' },
+    ],
+    stole_deal: [
+      { text: 'Flag captured.' },
+    ],
+    game_won: [
+      { text: 'GG. Blue team wins.' },
+      { text: 'Victory royale— wait, wrong game.' },
+    ],
+    game_lost: [
+      { text: 'Match over. Rematch?' },
+      { text: 'Good fight, Spartans.' },
+    ],
+  },
+
+  // PIXEL - retro gaming, 8-bit, arcade vibes
+  'Pixel': {
+    euchred_opponent: [
+      { text: 'Game over, man!' },
+      { text: 'High score!' },
+      { text: 'Insert coin to continue.' },
+    ],
+    got_euchred: [
+      { text: 'Continue? 9... 8... 7...' },
+      { text: 'Lost a life.' },
+      { text: 'Waka waka waka... wait.' },
+    ],
+    won_trick_bower: [
+      { text: '1UP!' },
+      { text: 'Power-up collected!' },
+    ],
+    won_trick_big: [
+      { text: 'Bonus points!' },
+    ],
+    partner_clutch: [
+      { text: 'Player 2 has entered the game!' },
+      { text: 'Co-op mode activated!' },
+    ],
+    partner_saved_caller: [
+      { text: 'Extra life from P2!' },
+      { text: 'Rescued from the pit!' },
+    ],
+    called_trump_made: [
+      { text: 'Level complete!' },
+      { text: 'Stage clear!' },
+    ],
+    called_trump_euchred: [
+      { text: 'Wrong warp pipe.' },
+      { text: 'Fell in a pit.' },
+    ],
+    alone_success: [
+      { text: 'Single player victory!' },
+      { text: 'No continues needed.' },
+    ],
+    alone_march: [
+      { text: 'Perfect run! No damage!' },
+      { text: 'Flawless! A+++ rank!' },
+    ],
+    alone_failed: [
+      { text: 'Should\'ve used a continue.' },
+    ],
+    stole_deal: [
+      { text: 'Coin snatched!' },
+    ],
+    game_won: [
+      { text: 'YOU WIN! Enter your initials: PIX' },
+      { text: 'The princess is in THIS castle!' },
+    ],
+    game_lost: [
+      { text: 'GAME OVER. Continue?' },
+      { text: 'Insert coin for rematch.' },
+    ],
+  },
+
+  // ATLAS - mythological, stoic, titan strength
+  'Atlas': {
+    euchred_opponent: [
+      { text: 'The Titans approve.' },
+      { text: 'Olympus smiles.' },
+      { text: 'As the heavens ordained.' },
+    ],
+    got_euchred: [
+      { text: 'Even Atlas must kneel sometimes.' },
+      { text: 'The weight grows heavier.' },
+      { text: 'A worthy opponent.' },
+    ],
+    won_trick_bower: [
+      { text: 'Strength prevails.' },
+      { text: 'By the gods.' },
+    ],
+    won_trick_big: [
+      { text: 'Inevitable.' },
+    ],
+    partner_clutch: [
+      { text: 'A true companion.' },
+      { text: 'Together we hold the sky.' },
+    ],
+    partner_saved_caller: [
+      { text: 'You carried my burden.' },
+      { text: 'The debt is noted.' },
+    ],
+    called_trump_made: [
+      { text: 'The prophecy fulfilled.' },
+      { text: 'Destiny.' },
+    ],
+    called_trump_euchred: [
+      { text: 'Pride comes before the fall.' },
+      { text: 'The Fates were unkind.' },
+    ],
+    alone_success: [
+      { text: 'I need no gods. I am Atlas.' },
+      { text: 'The world on my shoulders. Victory in my hands.' },
+    ],
+    alone_march: [
+      { text: 'Five for five. Legendary.' },
+      { text: 'Even Zeus applauds.' },
+    ],
+    alone_failed: [
+      { text: 'Hubris. The eternal lesson.' },
+    ],
+    stole_deal: [
+      { text: 'A gift from the heavens.' },
+    ],
+    game_won: [
+      { text: 'Glory to the victors.' },
+      { text: 'The Titans reign.' },
+    ],
+    game_lost: [
+      { text: 'This battle, not the war.' },
+      { text: 'Respect to the worthy.' },
+    ],
+  },
+}
+
 // Trigger probability per event (0-1)
 // Events with 1.0 are "must say" moments - too good to skip
 const triggerChance: Record<AIChatEvent, number> = {
@@ -381,11 +745,13 @@ export type AIChatMode = 'clean' | 'unhinged' | 'feral'
  * @param event - The game event that occurred
  * @param mode - Chat mode: 'clean', 'unhinged', or 'feral'
  * @param forceTrigger - Skip probability check (for testing)
+ * @param aiName - Optional AI name for personality-specific phrases
  */
 export function getAIComment(
   event: AIChatEvent,
   mode: AIChatMode = 'clean',
-  forceTrigger: boolean = false
+  forceTrigger: boolean = false,
+  aiName?: string
 ): string | null {
   const now = Date.now()
   
@@ -400,6 +766,16 @@ export function getAIComment(
     return null
   }
   
+  // Check for AI-specific personality phrases first (only in clean mode)
+  if (mode === 'clean' && aiName && aiName in aiPersonalities) {
+    const aiPool = aiPersonalities[aiName as AIName]?.[event]
+    if (aiPool && aiPool.length > 0) {
+      lastChatTime = now
+      return pickWeighted(aiPool)
+    }
+  }
+  
+  // Fall back to base phrases for the mode
   const pool = mode === 'feral' 
     ? feralPhrases[event] 
     : mode === 'unhinged' 
