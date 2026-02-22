@@ -16,6 +16,18 @@ const SMALL_MOBILE_BASE_WIDTH = 54  // iPhone SE, small phones (height < 400)
 const MOBILE_BASE_WIDTH = 60
 const FULL_BASE_WIDTH = 70
 
+// Context multipliers for small mobile (iPhone SE, very cramped)
+const SmallMobileScales = {
+  userHand: 1.3,        // Smaller than regular mobile
+  opponentHand: 0.6,    // Tighter
+  playArea: 0.75,       // Slightly smaller
+  deck: 0.75,           // Deal stack
+  tricksWon: 0.45,      // Won trick piles
+  sweep: 0.55,          // Cards being swept
+  mini: 0.25,           // Very small
+  hidden: 0.05,         // Collapsed at avatar
+} as const
+
 // Context multipliers for mobile (need differentiation due to small screen)
 const MobileScales = {
   userHand: 1.5,        // Player's hand - largest for readability/tapping
@@ -117,13 +129,17 @@ export function getBaseCardWidth(): number {
  * Get scales for current mode
  */
 export function getScales() {
-  return isMobile() ? MobileScales : FullScales
+  if (isSmallMobile()) return SmallMobileScales
+  if (isMobile()) return MobileScales
+  return FullScales
 }
 
 // Dynamic scales based on viewport mode
 export const CardScales = new Proxy({} as typeof MobileScales, {
   get(_, prop: keyof typeof MobileScales) {
-    return isMobile() ? MobileScales[prop] : FullScales[prop]
+    if (isSmallMobile()) return SmallMobileScales[prop]
+    if (isMobile()) return MobileScales[prop]
+    return FullScales[prop]
   }
 })
 
