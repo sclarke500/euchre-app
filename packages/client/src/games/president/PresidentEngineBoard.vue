@@ -453,9 +453,26 @@ const dimmedCardIds = computed(() => {
 
 // ── Layout handling ─────────────────────────────────────────────────────
 
+const tableReady = ref(false)
+
 function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
   director.setTableWidth(layout.tableBounds.width)
   director.handleLayoutChange()
+  
+  // Start game after first layout (table is ready)
+  if (!tableReady.value) {
+    tableReady.value = true
+    startGame()
+  }
+}
+
+function startGame() {
+  if (props.mode === 'multiplayer') {
+    game.initialize?.()
+  } else {
+    const settingsStore = useSettingsStore()
+    presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
+  }
 }
 
 // ── Card selection ──────────────────────────────────────────────────────
@@ -673,13 +690,7 @@ function buildBugReportPayload() {
 // ── Mount ───────────────────────────────────────────────────────────────
 
 onMounted(async () => {
-  // Initialize game - multiplayer connects to server, single-player starts new game
-  if (props.mode === 'multiplayer') {
-    game.initialize?.()
-  } else {
-    const settingsStore = useSettingsStore()
-    presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
-  }
+  // Game start is deferred to handleLayoutChanged (waits for table to be ready)
   await nextTick()
   if (tableRef.value) {
     boardRef.value = tableRef.value.boardRef

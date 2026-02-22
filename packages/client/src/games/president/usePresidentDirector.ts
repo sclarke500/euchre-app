@@ -151,9 +151,6 @@ export function usePresidentDirector(
 
   // ── Deal animation ────────────────────────────────────────────────────
 
-  // Flag to block layout changes during dealing
-  let blockLayoutChange = false
-
   async function animateDeal() {
     if (!boardRef.value || isAnimating.value) return
     isAnimating.value = true
@@ -166,9 +163,6 @@ export function usePresidentDirector(
       return { hand: player?.hand ?? [] }
     })
 
-    // Block layout changes during deal to prevent deck position being overridden
-    blockLayoutChange = true
-    
     // Move deck to generic position before dealing (no dealer in President)
     const deck = engine.getDeck()
     const dealPos = cardController.getGenericDealPosition()
@@ -189,7 +183,6 @@ export function usePresidentDirector(
 
     engine.refreshCards()
     isAnimating.value = false
-    blockLayoutChange = false
 
     // Signal the store that dealing visuals are done — game can now advance
     game.dealAnimationComplete()
@@ -769,7 +762,6 @@ export function usePresidentDirector(
   // ── Layout handling ───────────────────────────────────────────────────
 
   function handleLayoutChange() {
-    if (blockLayoutChange) return // Don't reposition during deal
     cardController.handleLayoutChange(200)
   }
 
