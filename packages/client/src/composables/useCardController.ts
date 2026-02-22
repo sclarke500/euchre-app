@@ -304,21 +304,34 @@ export function useCardController(
       const minSpacing = Math.round(baseWidth * 0.20) // Min ~20% of card width
       
       let fanSpacing: number
+      let spacingSource: string
       if (config.userFanSpacing !== undefined) {
         // Explicit override
         fanSpacing = config.userFanSpacing
+        spacingSource = 'explicit'
       } else if (config.tableWidth && cardCount > 1) {
         // Table-based: span table width with padding, clamped to max
         const padding = scaledCardWidth * 0.5 // Half card padding on each side
         const availableWidth = config.tableWidth - padding * 2 - scaledCardWidth
         const tableBasedSpacing = availableWidth / (cardCount - 1)
         fanSpacing = Math.max(minSpacing, Math.min(maxSpacing, tableBasedSpacing))
+        spacingSource = `table (raw=${Math.round(tableBasedSpacing)}, clamped)`
       } else {
         // Fallback: viewport-based calculation
         const baseFanSpacing = Math.round(baseWidth * 0.40)
         const maxFanWidth = getViewportWidth() * 0.55
         fanSpacing = Math.min(baseFanSpacing, maxFanWidth / Math.max(1, cardCount))
+        spacingSource = 'viewport-fallback'
       }
+      console.log('[CardController] fanSpacing:', {
+        cardCount,
+        baseWidth,
+        tableWidth: config.tableWidth,
+        minSpacing,
+        maxSpacing,
+        fanSpacing: Math.round(fanSpacing),
+        source: spacingSource,
+      })
       userHand.fanSpacing = fanSpacing
       // Dynamic curve: fewer cards = more curve, more cards = less curve
       // 5 cards: ~8°, 8 cards: ~2.5°, 13 cards: ~1.5° (nearly flat for big hands)
