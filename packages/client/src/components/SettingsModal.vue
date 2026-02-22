@@ -116,6 +116,27 @@ function checkForUpdates() {
         </div>
       </div>
 
+      <div class="settings-section">
+        <h3>AI Chat</h3>
+        <p class="section-desc">AI players occasionally trash talk</p>
+        <div class="option-buttons">
+          <button
+            :class="['option-btn', { active: !settings.unhingedMode }]"
+            @click="settings.setUnhingedMode(false)"
+          >
+            <span class="option-title">Clean</span>
+            <span class="option-desc">Family friendly</span>
+          </button>
+          <button
+            :class="['option-btn', { active: settings.unhingedMode }]"
+            @click="settings.setUnhingedMode(true)"
+          >
+            <span class="option-title">Unhinged</span>
+            <span class="option-desc">Adults only 🤬</span>
+          </button>
+        </div>
+      </div>
+
       <div class="game-section">
         <div class="game-header">Euchre</div>
         <div class="settings-section">

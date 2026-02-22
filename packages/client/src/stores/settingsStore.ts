@@ -8,6 +8,8 @@ export type AppTheme = 'teal' | 'navy' | 'slate' | 'green' | 'purple'
 interface GameSettings {
   aiDifficulty: AIDifficulty
   theme: AppTheme
+  // AI personality
+  unhingedMode: boolean
   // Euchre-specific
   dealerPassRule: DealerPassRule
   // President-specific
@@ -30,6 +32,7 @@ function loadSettings(): GameSettings {
       return {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
         theme: VALID_THEMES.includes(parsed.theme) ? parsed.theme : 'teal',
+        unhingedMode: parsed.unhingedMode === true,
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
         presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
         superTwosAndJokers: parsed.superTwosAndJokers === true,
@@ -43,6 +46,7 @@ function loadSettings(): GameSettings {
   return {
     aiDifficulty: 'easy',
     theme: 'teal',
+    unhingedMode: false,
     dealerPassRule: 'canPass',
     presidentPlayerCount: 4,
     superTwosAndJokers: false,
@@ -65,6 +69,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const aiDifficulty = ref<AIDifficulty>(initialSettings.aiDifficulty)
   const theme = ref<AppTheme>(initialSettings.theme)
+  const unhingedMode = ref<boolean>(initialSettings.unhingedMode)
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
   const presidentPlayerCount = ref<number>(initialSettings.presidentPlayerCount)
   const superTwosAndJokers = ref<boolean>(initialSettings.superTwosAndJokers)
@@ -75,10 +80,11 @@ export const useSettingsStore = defineStore('settings', () => {
   applyTheme(initialSettings.theme)
 
   // Persist settings when they change
-  watch([aiDifficulty, theme, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, unhingedMode, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       theme: theme.value,
+      unhingedMode: unhingedMode.value,
       dealerPassRule: dealerPassRule.value,
       presidentPlayerCount: presidentPlayerCount.value,
       superTwosAndJokers: superTwosAndJokers.value,
@@ -95,6 +101,10 @@ export const useSettingsStore = defineStore('settings', () => {
   function setTheme(newTheme: AppTheme) {
     theme.value = newTheme
     applyTheme(newTheme)
+  }
+
+  function setUnhingedMode(enabled: boolean) {
+    unhingedMode.value = enabled
   }
 
   function setDealerPassRule(rule: DealerPassRule) {
@@ -127,6 +137,7 @@ export const useSettingsStore = defineStore('settings', () => {
   return {
     aiDifficulty,
     theme,
+    unhingedMode,
     dealerPassRule,
     presidentPlayerCount,
     superTwosAndJokers,
@@ -134,6 +145,7 @@ export const useSettingsStore = defineStore('settings', () => {
     spadesBlindNil,
     setAIDifficulty,
     setTheme,
+    setUnhingedMode,
     setDealerPassRule,
     setPresidentPlayerCount,
     setSuperTwosAndJokers,

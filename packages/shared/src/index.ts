@@ -3,6 +3,9 @@
 // Utilities
 export { createGameTimer, type GameTimer, GameTimings } from './utils/timer.js'
 
+// AI Personality
+export { getAIComment, resetAIChatCooldown, type AIChatEvent } from './ai/personality.js'
+
 // Multiplayer protocol and table/lobby types
 export * from './multiplayer/index.js'
 
