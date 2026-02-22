@@ -473,12 +473,32 @@ export const useEuchreGameStore = defineStore('game', () => {
       // Alone attempt - success or fail
       const caller = players.value[currentRound.value.trump.calledBy]
       if (caller && !caller.isHuman) {
-        maybeAIChat(caller.id, roundScore.wasMarch ? 'alone_success' : 'alone_failed')
+        // alone_march for perfect 5/5, alone_success for 3-4, alone_failed for euchre (handled above)
+        maybeAIChat(caller.id, roundScore.wasMarch ? 'alone_march' : 'alone_success')
       }
     } else if (madeIt) {
-      // Normal made trump
-      const caller = players.value[currentRound.value.trump.calledBy]
-      if (caller && !caller.isHuman) {
+      // Count tricks per player to detect "partner saved caller" situation
+      const callerId = currentRound.value.trump.calledBy
+      const partnerId = (callerId + 2) % 4  // Partner is across
+      const tricks = currentRound.value.tricks
+      
+      const callerTricks = tricks.filter(t => t.winnerId === callerId).length
+      const partnerTricks = tricks.filter(t => t.winnerId === partnerId).length
+      
+      const caller = players.value[callerId]
+      const partner = players.value[partnerId]
+      
+      // Partner saved caller: caller got 0, partner got 3+
+      if (callerTricks === 0 && partnerTricks >= 3) {
+        // The one who got carried should acknowledge it
+        if (caller && !caller.isHuman) {
+          maybeAIChat(caller.id, 'partner_saved_caller')
+        }
+        // Or the partner who saved can brag
+        else if (partner && !partner.isHuman) {
+          maybeAIChat(partner.id, 'partner_clutch')
+        }
+      } else if (caller && !caller.isHuman) {
         maybeAIChat(caller.id, 'called_trump_made')
       }
     }

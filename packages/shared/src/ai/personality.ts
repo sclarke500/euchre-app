@@ -12,9 +12,11 @@ export type AIChatEvent =
   | 'won_trick_bower'       // Won trick with right or left bower
   | 'won_trick_big'         // Won trick with ace of trump or similar
   | 'partner_clutch'        // Partner made a great play
+  | 'partner_saved_caller'  // Partner saved caller who made 0 tricks
   | 'called_trump_made'     // Called trump and made it
   | 'called_trump_euchred'  // Called trump and got euchred (self-blame)
   | 'alone_success'         // Went alone and made it
+  | 'alone_march'           // Went alone and got all 5 (rare!)
   | 'alone_failed'          // Went alone and failed
   | 'stole_deal'            // Ordered up / called when opponents dealt
   | 'game_won'              // Won the game
@@ -64,6 +66,13 @@ const normalPhrases: Record<AIChatEvent, PhrasePool> = {
     { text: 'That works.' },
     { text: 'Big brain move.' },
   ],
+  partner_saved_caller: [
+    { text: 'Saved me there, partner.', weight: 2 },
+    { text: 'Owe you one.' },
+    { text: 'I\'ll do better next time.' },
+    { text: 'Carried.' },
+    { text: 'Thanks for picking up my slack.' },
+  ],
   called_trump_made: [
     { text: 'Called it.', weight: 2 },
     { text: 'Easy money.' },
@@ -83,6 +92,12 @@ const normalPhrases: Record<AIChatEvent, PhrasePool> = {
     { text: 'Too clean.' },
     { text: 'Didn\'t need ya.' },
     { text: 'Four points baby.' },
+  ],
+  alone_march: [
+    { text: 'Perfect game.', weight: 2 },
+    { text: 'Flawless.' },
+    { text: 'All five. You\'re welcome.' },
+    { text: 'That\'s how it\'s done.' },
   ],
   alone_failed: [
     { text: 'Welp...', weight: 2 },
@@ -147,6 +162,13 @@ const unhingedPhrases: Record<AIChatEvent, PhrasePool> = {
     { text: 'That\'s my partner!' },
     { text: 'Big dick energy.' },
   ],
+  partner_saved_caller: [
+    { text: 'Holy shit, you saved my ass.', weight: 2 },
+    { text: 'I owe you a beer.' },
+    { text: 'Carried my sorry ass.' },
+    { text: 'I was useless and you knew it.' },
+    { text: 'MVP right there.' },
+  ],
   called_trump_made: [
     { text: 'Called it bitches.', weight: 2 },
     { text: 'Never fucking doubted.' },
@@ -166,6 +188,12 @@ const unhingedPhrases: Record<AIChatEvent, PhrasePool> = {
     { text: 'Solo king.' },
     { text: 'Four points, fuck you very much.' },
     { text: 'Bow down.' },
+  ],
+  alone_march: [
+    { text: 'Five for five. Flawless fucking victory.', weight: 2 },
+    { text: 'Perfection. Witness it.' },
+    { text: 'All five tricks, zero help needed.' },
+    { text: 'Get absolutely fucked.' },
   ],
   alone_failed: [
     { text: 'Shit...', weight: 2 },
@@ -236,6 +264,13 @@ const feralPhrases: Record<AIChatEvent, PhrasePool> = {
     { text: 'Based partner.' },
     { text: 'Certified moment.' },
   ],
+  partner_saved_caller: [
+    { text: 'I was the impostor and you still carried.', weight: 2 },
+    { text: 'I contributed nothing. Legend.' },
+    { text: 'Partner diff saved me.' },
+    { text: 'I was a liability and you knew.' },
+    { text: 'Backpacked successfully.' },
+  ],
   called_trump_made: [
     { text: 'I\'m actually cracked.', weight: 2 },
     { text: 'Rent free.', weight: 2 },
@@ -258,6 +293,13 @@ const feralPhrases: Record<AIChatEvent, PhrasePool> = {
     { text: 'I am the main character.' },
     { text: 'Witness me.' },
     { text: 'Actually goated.' },
+  ],
+  alone_march: [
+    { text: '5/5. I am inevitable.', weight: 2 },
+    { text: 'Speedrun any%.', weight: 2 },
+    { text: 'Flawless. No notes.' },
+    { text: 'They couldn\'t even take one.' },
+    { text: 'Historical dominance.' },
   ],
   alone_failed: [
     { text: 'I have been humbled.', weight: 2 },
@@ -291,15 +333,18 @@ const feralPhrases: Record<AIChatEvent, PhrasePool> = {
 }
 
 // Trigger probability per event (0-1)
+// Events with 1.0 are "must say" moments - too good to skip
 const triggerChance: Record<AIChatEvent, number> = {
   euchred_opponent: 0.35,
   got_euchred: 0.30,
   won_trick_bower: 0.20,
   won_trick_big: 0.15,
   partner_clutch: 0.25,
+  partner_saved_caller: 1.0,   // MUST SAY - partner carried hard
   called_trump_made: 0.20,
   called_trump_euchred: 0.40,
   alone_success: 0.50,
+  alone_march: 1.0,            // MUST SAY - perfect alone hand is legendary
   alone_failed: 0.45,
   stole_deal: 0.25,
   game_won: 0.60,
