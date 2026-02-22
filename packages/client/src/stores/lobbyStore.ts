@@ -12,8 +12,8 @@ import { websocket } from '@/services/websocket'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useChatStore } from '@/stores/chatStore'
 
-// Use env var, or auto-detect from current host (works for LAN access)
-const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3001`
+// Use env var, or auto-detect from current page origin (works behind reverse proxy)
+const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`
 
 // Storage keys
 const STORAGE_KEYS = {

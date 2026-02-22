@@ -1,0 +1,19 @@
+# Static files + WebSocket proxy
+# Access everything on port 8080
+
+:8080 {
+    # WebSocket connections go to backend
+    @websocket {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    reverse_proxy @websocket localhost:3001
+
+    # Serve static files from build output
+    root * ./packages/client/dist
+    
+    # SPA fallback - serve index.html for client-side routes
+    try_files {path} /index.html
+    
+    file_server
+}

@@ -148,12 +148,12 @@
 
     <!-- Leave confirmation -->
     <Modal :show="showLeaveConfirm" aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
-      <div class="game-over-panel dialog-panel">
-        <div class="game-over-title dialog-title">Leave Game?</div>
-        <div class="panel-message dialog-text">You'll forfeit the current game.</div>
-        <div class="game-over-actions dialog-actions">
-          <button class="action-btn dialog-btn dialog-btn--muted" @click="showLeaveConfirm = false">Cancel</button>
-          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="confirmLeave">Leave</button>
+      <div class="game-dialog">
+        <div class="game-dialog__title">Leave Game?</div>
+        <div class="game-dialog__text">You'll forfeit the current game.</div>
+        <div class="game-dialog__actions">
+          <button class="game-dialog__btn game-dialog__btn--secondary" @click="showLeaveConfirm = false">Cancel</button>
+          <button class="game-dialog__btn game-dialog__btn--primary" @click="confirmLeave">Leave</button>
         </div>
       </div>
     </Modal>

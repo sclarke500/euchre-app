@@ -185,13 +185,13 @@
     </Modal>
 
     <!-- Leave confirmation modal -->
-    <Modal :show="showLeaveConfirm" @close="showLeaveConfirm = false">
-      <div class="round-modal dialog-panel">
-        <h3 class="dialog-title">Leave Game?</h3>
-        <p class="dialog-text">Are you sure you want to leave?</p>
-        <div class="modal-buttons dialog-actions">
-          <button class="modal-btn dialog-btn dialog-btn--muted" @click="showLeaveConfirm = false">Cancel</button>
-          <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="$emit('leave-game')">Leave</button>
+    <Modal :show="showLeaveConfirm" aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
+      <div class="game-dialog">
+        <div class="game-dialog__title">Leave Game?</div>
+        <div class="game-dialog__text">You'll forfeit the current game.</div>
+        <div class="game-dialog__actions">
+          <button class="game-dialog__btn game-dialog__btn--secondary" @click="showLeaveConfirm = false">Cancel</button>
+          <button class="game-dialog__btn game-dialog__btn--primary" @click="$emit('leave-game')">Leave</button>
         </div>
       </div>
     </Modal>
