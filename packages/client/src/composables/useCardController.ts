@@ -1171,8 +1171,15 @@ export function useCardController(
     tableLayout.value = newLayout
     tableCenter.value = newLayout.tableCenter
 
-    // Note: deck position is NOT updated here - it's set by setupTable or game-specific logic
-    // This prevents overriding the deck position during deal animations
+    // Update deck position if it's on the table (not off-screen like President's deal position)
+    // This allows kitty/deck to reposition on orientation change while preserving off-screen deal origins
+    const deck = engine.getDeck()
+    if (deck) {
+      const isOffScreen = deck.position.x < 0 || deck.position.y < 0
+      if (!isOffScreen) {
+        deck.position = { x: newLayout.tableCenter.x, y: newLayout.tableCenter.y }
+      }
+    }
 
     // Update hand positions from layout seats
     const hands = engine.getHands()
