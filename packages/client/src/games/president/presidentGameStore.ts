@@ -501,25 +501,13 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
   async function pass() {
     const hadCards = currentPile.value.currentRank !== null
-    const prevPlayer = currentPlayer.value
     const state = processPass(gameState.value, currentPlayer.value)
-
-    console.log('[President] pass:', {
-      prevPlayer,
-      newPlayer: state.currentPlayer,
-      consecutivePasses: state.consecutivePasses,
-      activePlayers: state.players.filter(p => p.finishOrder === null).length,
-      lastPlayerId: state.lastPlayerId,
-      pileCleared: state.currentPile.currentRank === null,
-    })
 
     // Update state
     currentPile.value = state.currentPile
     currentPlayer.value = state.currentPlayer
     consecutivePasses.value = state.consecutivePasses
     lastPlayedCards.value = null
-    
-    console.log('[President] pass: after state update, currentPlayer =', currentPlayer.value)
 
     // Pile was cleared (everyone passed) — wait for sweep animation
     if (hadCards && state.currentPile.currentRank === null) {
@@ -552,13 +540,6 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const player = players.value[currentPlayer.value]
     if (!player) return
 
-    console.log('[President] processAITurn:', {
-      currentPlayer: currentPlayer.value,
-      playerName: player.name,
-      isHuman: player.isHuman,
-      finishOrder: player.finishOrder,
-    })
-
     // Skip if player is finished (applies to both human and AI)
     if (player.finishOrder !== null) {
       currentPlayer.value = getNextActivePlayer(gameState.value, currentPlayer.value)
@@ -568,7 +549,6 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // Human player - wait for input
     if (player.isHuman) {
-      console.log('[President] processAITurn: waiting for human input')
       return
     }
 

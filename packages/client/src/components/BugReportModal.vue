@@ -83,7 +83,7 @@ function getFullPayload() {
     timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent,
     screenSize: `${window.innerWidth}x${window.innerHeight}`,
-    consoleLogs: getRecentLogs(50),
+    consoleLogs: getRecentLogs(15),
   }
 }
 
