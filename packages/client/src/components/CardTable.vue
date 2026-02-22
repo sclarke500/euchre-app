@@ -425,20 +425,20 @@ defineExpose({
     user-select: none;
     
     .watermark-logo {
-      width: 50px;
-      height: 50px;
+      width: 80px;
+      height: 80px;
       object-fit: contain;
       opacity: 0.18;
     }
     
     .watermark-name {
       font-family: 'Rock Salt', cursive;
-      font-size: 14px;
+      font-size: 1rem;
       font-weight: 400;
       color: white;
       text-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 1px 1px 2px rgba(0, 0, 0, 0.5);
       letter-spacing: 0.08em;
-      margin-top: -8px;
+      margin-top: -14px;
       -webkit-text-stroke: 0.5px white;
       opacity: 0.18;
     }
