@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { getPlatformInfo } from '@/utils/platform'
 import SettingsModal from './SettingsModal.vue'
 import ProfileModal from './ProfileModal.vue'
+
+const route = useRoute()
+const router = useRouter()
 
 export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 
@@ -46,6 +50,9 @@ const showIOSSafariWarning = ref(false)
 // 67 wobble animation on load
 const isWobbling = ref(true)
 
+// Pending redirect after nickname is set
+const pendingRedirect = ref<string | null>(null)
+
 onMounted(() => {
   // Stop wobble after animation completes
   setTimeout(() => {
@@ -58,6 +65,18 @@ onMounted(() => {
     updateScrollState()
     carouselRef.value?.addEventListener('scroll', updateScrollState)
   })
+
+  // Check if redirected here because nickname was needed
+  if (route.query.needsNickname === 'true') {
+    pendingRedirect.value = route.query.redirect as string || null
+    showProfile.value = true
+    highlightNickname.value = true
+    setTimeout(() => {
+      highlightNickname.value = false
+    }, 600)
+    // Clean up URL
+    router.replace({ path: '/', query: {} })
+  }
 
   const platform = getPlatformInfo()
 
@@ -109,6 +128,15 @@ const highlightNickname = ref(false)
 
 const canEnterMultiplayer = computed(() => {
   return lobbyStore.nickname.trim().length >= 2
+})
+
+// Handle redirect after profile modal closes (if user came from lobby without nickname)
+watch(showProfile, (isOpen) => {
+  if (!isOpen && pendingRedirect.value && canEnterMultiplayer.value) {
+    const redirect = pendingRedirect.value
+    pendingRedirect.value = null
+    router.push(redirect)
+  }
 })
 
 function handleMultiplayer() {

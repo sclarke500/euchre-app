@@ -58,12 +58,24 @@ class WebSocketService {
 
   connect(url: string): Promise<void> {
     this.url = url
+    console.log('WebSocket connecting to:', url)
 
     return new Promise((resolve, reject) => {
+      // Connection timeout (10 seconds)
+      const timeout = setTimeout(() => {
+        console.error('WebSocket connection timeout')
+        if (this.ws) {
+          this.ws.close()
+          this.ws = null
+        }
+        reject(new Error('Connection timeout'))
+      }, 10000)
+
       try {
         this.ws = new WebSocket(url)
 
         this.ws.onopen = () => {
+          clearTimeout(timeout)
           console.log('WebSocket connected')
           const wasReconnect = this.wasConnected
           this.reconnectAttempts = 0
@@ -88,15 +100,18 @@ class WebSocketService {
         }
 
         this.ws.onclose = (event) => {
+          clearTimeout(timeout)
           console.log('WebSocket closed:', event.code, event.reason)
           this.attemptReconnect()
         }
 
         this.ws.onerror = (error) => {
+          clearTimeout(timeout)
           console.error('WebSocket error:', error)
           reject(error)
         }
       } catch (error) {
+        clearTimeout(timeout)
         reject(error)
       }
     })

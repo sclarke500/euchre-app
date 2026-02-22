@@ -33,8 +33,8 @@ export function createWebSocketServer(options: WebSocketTransportOptions): Trans
   const httpServer = createServer(app)
   const wss = new WebSocketServer({ server: httpServer })
   
-  httpServer.listen(port, () => {
-    console.log(`HTTP + WebSocket server listening on port ${port}`)
+  httpServer.listen(port, '0.0.0.0', () => {
+    console.log(`HTTP + WebSocket server listening on port ${port} (all interfaces)`)
   })
 
   wss.on('connection', (ws: WebSocket) => {

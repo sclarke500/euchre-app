@@ -1,5 +1,11 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
+// Check if user has a nickname set
+function hasNickname(): boolean {
+  const nickname = localStorage.getItem('odusNickname')
+  return !!nickname && nickname.trim().length >= 2
+}
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -17,6 +23,14 @@ const routes: RouteRecordRaw[] = [
     name: 'lobby',
     component: () => import('@/views/LobbyView.vue'),
     props: true,
+    beforeEnter: (to, _from, next) => {
+      if (!hasNickname()) {
+        // Redirect to home with a query param to show multiplayer intent
+        next({ path: '/', query: { needsNickname: 'true', redirect: to.fullPath } })
+      } else {
+        next()
+      }
+    },
   },
   {
     path: '/game/:gameType/:gameId',
