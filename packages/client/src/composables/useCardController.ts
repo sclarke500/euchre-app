@@ -245,9 +245,9 @@ export function useCardController(
     }
 
     // Add extra cards first (they'll be at bottom of deck, remaining after dealing)
+    // Add in forward order so last card (turn-up) ends up at highest index (highest z-index)
     const extraCards = options.extraDeckCards ?? []
-    for (let i = extraCards.length - 1; i >= 0; i--) {
-      const card = extraCards[i]!
+    for (const card of extraCards) {
       engine.addCardToDeck({ id: card.id, suit: card.suit, rank: card.rank }, false)
     }
 
