@@ -22,6 +22,20 @@ const emit = defineEmits<{
 
 const lobbyStore = useLobbyStore()
 const showCreateOptions = ref(false)
+const showConnectingBanner = ref(false)
+let connectingTimeout: ReturnType<typeof setTimeout> | null = null
+
+// Show "Connecting..." banner only after 1 second delay
+watch(() => lobbyStore.isConnecting, (isConnecting) => {
+  if (isConnecting) {
+    connectingTimeout = setTimeout(() => {
+      showConnectingBanner.value = true
+    }, 1000)
+  } else {
+    if (connectingTimeout) clearTimeout(connectingTimeout)
+    showConnectingBanner.value = false
+  }
+}, { immediate: true })
 
 // Create table options - load from localStorage with defaults
 const STORAGE_KEYS = {
@@ -51,6 +65,7 @@ onUnmounted(() => {
   if (lobbyStore.isAtTable && !lobbyStore.gameId) {
     lobbyStore.leaveTable()
   }
+  if (connectingTimeout) clearTimeout(connectingTimeout)
 })
 
 function handleCreateTable() {
@@ -196,7 +211,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
     </Modal>
 
     <!-- Connection status -->
-    <div v-if="lobbyStore.isConnecting" class="status-banner connecting">
+    <div v-if="showConnectingBanner" class="status-banner connecting">
       Connecting to server...
     </div>
     <div v-else-if="lobbyStore.connectionError" class="status-banner error">
@@ -315,8 +330,8 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   font-size: 0.875rem;
 
   &.connecting {
-    background: rgba(217, 119, 6, 0.15);
-    color: var(--color-warning);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.5);
   }
 
   &.error {
