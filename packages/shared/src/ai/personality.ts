@@ -333,29 +333,27 @@ const feralPhrases: Record<AIChatEvent, PhrasePool> = {
 }
 
 // Trigger probability per event (0-1)
-// TESTING MODE: All cranked to 0.95 for faster testing
-// TODO: Restore original values after testing
+// Events with 1.0 are "must say" moments - too good to skip
 const triggerChance: Record<AIChatEvent, number> = {
-  euchred_opponent: 0.95,
-  got_euchred: 0.95,
-  won_trick_bower: 0.95,
-  won_trick_big: 0.95,
-  partner_clutch: 0.95,
-  partner_saved_caller: 1.0,
-  called_trump_made: 0.95,
-  called_trump_euchred: 0.95,
-  alone_success: 0.95,
-  alone_march: 1.0,
-  alone_failed: 0.95,
-  stole_deal: 0.95,
-  game_won: 0.95,
-  game_lost: 0.95,
+  euchred_opponent: 0.35,
+  got_euchred: 0.30,
+  won_trick_bower: 0.20,
+  won_trick_big: 0.15,
+  partner_clutch: 0.25,
+  partner_saved_caller: 1.0,   // MUST SAY - partner carried hard
+  called_trump_made: 0.20,
+  called_trump_euchred: 0.40,
+  alone_success: 0.50,
+  alone_march: 1.0,            // MUST SAY - perfect alone hand is legendary
+  alone_failed: 0.45,
+  stole_deal: 0.25,
+  game_won: 0.60,
+  game_lost: 0.50,
 }
 
 // Cooldown tracking (prevents spam)
-// TESTING MODE: 500ms cooldown (was 3000)
 let lastChatTime = 0
-const MIN_CHAT_GAP_MS = 500
+const MIN_CHAT_GAP_MS = 3000
 
 /**
  * Pick a weighted random phrase from a pool
