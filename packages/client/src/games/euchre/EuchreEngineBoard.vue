@@ -132,20 +132,23 @@
       <div v-if="showActionPanel" class="action-panel-container frosted-panel--right">
         <!-- Round 1: Pass or Order Up -->
         <template v-if="showBidding && game.biddingRound.value === 1">
+          <button class="frosted-btn frosted-btn--pass" @click="handlePass">Pass</button>
+          <div class="action-divider"></div>
           <button class="frosted-btn frosted-btn--primary" @click="handleOrderUp">
             {{ isUserDealer ? 'Pick Up' : 'Order Up' }}
           </button>
-          <button class="frosted-btn" @click="handlePass">Pass</button>
           <label class="action-checkbox">
             <input type="checkbox" v-model="goAlone" />
-            Alone
+            Go Alone
           </label>
         </template>
 
         <!-- Round 2: Pass or Call Suit -->
         <template v-else-if="showBidding && game.biddingRound.value === 2">
           <span v-if="mustCall" class="stick-dealer-label">Stick the Dealer!</span>
-          <span class="action-label">{{ mustCall ? 'Pick trump' : 'Trump?' }}</span>
+          <button v-if="!mustCall" class="frosted-btn frosted-btn--pass" @click="handlePass">Pass</button>
+          <div v-if="!mustCall" class="action-divider"></div>
+          <span class="action-label">{{ mustCall ? 'Pick trump' : 'Call trump' }}</span>
           <div class="suit-buttons">
             <button
               v-for="suit in availableSuits"
@@ -157,10 +160,9 @@
               {{ suit.symbol }}
             </button>
           </div>
-          <button v-if="!mustCall" class="frosted-btn" @click="handlePass">Pass</button>
           <label class="action-checkbox">
             <input type="checkbox" v-model="goAlone" />
-            Alone
+            Go Alone
           </label>
         </template>
 
@@ -770,11 +772,44 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 12px;
-  padding: 16px 14px;
-  padding-right: max(14px, env(safe-area-inset-right));
-  min-width: 120px;
+  gap: 14px;
+  padding: 18px 16px;
+  padding-right: max(16px, env(safe-area-inset-right));
+  min-width: 130px;
   border-radius: 20px 0 0 20px;
+}
+
+// Pass button - neutral, strategic option (not cancel-like)
+.action-panel-container .frosted-btn--pass {
+  background: linear-gradient(
+    180deg,
+    rgba(70, 75, 90, 0.92) 0%,
+    rgba(50, 55, 70, 0.95) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  
+  &:hover:not(:disabled) {
+    background: linear-gradient(
+      180deg,
+      rgba(80, 85, 100, 0.95) 0%,
+      rgba(60, 65, 80, 0.95) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+}
+
+// Visual divider between Pass and action buttons
+.action-panel-container .action-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0.15) 80%,
+    transparent 100%
+  );
+  margin: 2px 0;
 }
 
 .action-panel-container .suit-buttons {
@@ -800,14 +835,20 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
   cursor: pointer;
   user-select: none;
+  margin-top: -4px; // Tuck closer to the action button above
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
 
   input {
     accent-color: #2a8a6a;
+    width: 16px;
+    height: 16px;
   }
 }
 
