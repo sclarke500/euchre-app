@@ -317,7 +317,7 @@ watch(
     const oldUs = displayedScores.value[0]
     const oldThem = displayedScores.value[1]
     
-    // Delay update to sync with sweep animation (~800ms after trick complete)
+    // Delay update to sync with sweep animation (~500ms after round complete)
     setTimeout(() => {
       if (newUs !== oldUs) {
         usScoreAnimating.value = true
@@ -329,7 +329,7 @@ watch(
         displayedScores.value[1] = newThem
         setTimeout(() => { themScoreAnimating.value = false }, 400)
       }
-    }, 800)
+    }, 500)
   },
   { immediate: true }
 )

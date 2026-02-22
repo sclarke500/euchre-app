@@ -470,7 +470,7 @@ export class EuchreGame {
         this.completeRound()
       }, GameTimings.roundPauseMs)
     } else {
-      // Start next trick
+      // Start next trick - shorter pause than round end
       setTimeout(() => {
         if (!this.currentRound || completedTrick.winnerId === null) return
 
@@ -479,7 +479,7 @@ export class EuchreGame {
         this.phase = GamePhase.Playing
         this.broadcastState()
         this.processCurrentTurn()
-      }, GameTimings.roundPauseMs)
+      }, GameTimings.trickPauseMs)
     }
   }
 

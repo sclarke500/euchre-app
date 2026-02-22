@@ -7,6 +7,8 @@ export const GameTimings = {
   aiThinkMs: 1000,
   /** Short pause between phases (pile clear, continue play) */
   phasePauseMs: 500,
+  /** Pause after trick complete (view cards before sweep) */
+  trickPauseMs: 600,
   /** Longer pause between rounds */
   roundPauseMs: 1500,
 } as const

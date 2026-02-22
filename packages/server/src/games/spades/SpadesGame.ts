@@ -373,14 +373,14 @@ export class SpadesGame {
       if (this.completedTricks.length === 13) {
         setTimeout(() => this.completeRound(), GameTimings.roundPauseMs)
       } else {
-        // Continue playing
+        // Continue playing - shorter pause than round end
         setTimeout(() => {
           this.currentTrick = Spades.createSpadesTrick()
           this.currentPlayer = winnerId
           this.phase = SpadesPhase.Playing
           this.broadcastState()
           this.scheduleAITurn()
-        }, GameTimings.roundPauseMs)
+        }, GameTimings.trickPauseMs)
       }
     } else {
       this.currentPlayer = (this.currentPlayer + 1) % 4
