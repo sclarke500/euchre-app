@@ -510,6 +510,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       consecutivePasses: state.consecutivePasses,
       activePlayers: state.players.filter(p => p.finishOrder === null).length,
       lastPlayerId: state.lastPlayerId,
+      pileCleared: state.currentPile.currentRank === null,
     })
 
     // Update state
@@ -517,6 +518,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     currentPlayer.value = state.currentPlayer
     consecutivePasses.value = state.consecutivePasses
     lastPlayedCards.value = null
+    
+    console.log('[President] pass: after state update, currentPlayer =', currentPlayer.value)
 
     // Pile was cleared (everyone passed) — wait for sweep animation
     if (hadCards && state.currentPile.currentRank === null) {
