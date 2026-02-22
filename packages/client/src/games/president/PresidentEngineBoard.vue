@@ -453,29 +453,9 @@ const dimmedCardIds = computed(() => {
 
 // ── Layout handling ─────────────────────────────────────────────────────
 
-const tableReady = ref(false)
-
 function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
   director.setTableWidth(layout.tableBounds.width)
   director.handleLayoutChange()
-  
-  // Start game after first layout (table is ready)
-  if (!tableReady.value) {
-    tableReady.value = true
-    startGame()
-  }
-}
-
-function startGame() {
-  // Small delay to let layout fully settle before dealing
-  setTimeout(() => {
-    if (props.mode === 'multiplayer') {
-      game.initialize?.()
-    } else {
-      const settingsStore = useSettingsStore()
-      presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
-    }
-  }, 100)
 }
 
 // ── Card selection ──────────────────────────────────────────────────────
@@ -693,7 +673,14 @@ function buildBugReportPayload() {
 // ── Mount ───────────────────────────────────────────────────────────────
 
 onMounted(async () => {
-  // Game start is deferred to handleLayoutChanged (waits for table to be ready)
+  // Initialize game - multiplayer connects to server, single-player starts new game
+  // (Same pattern as Euchre - start immediately, don't wait for layout-changed)
+  if (props.mode === 'multiplayer') {
+    game.initialize?.()
+  } else {
+    const settingsStore = useSettingsStore()
+    presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
+  }
   await nextTick()
   if (tableRef.value) {
     boardRef.value = tableRef.value.boardRef

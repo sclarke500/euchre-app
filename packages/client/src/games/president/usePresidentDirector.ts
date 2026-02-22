@@ -765,6 +765,8 @@ export function usePresidentDirector(
   // ── Layout handling ───────────────────────────────────────────────────
 
   function handleLayoutChange() {
+    // Don't reposition during animations (prevents deck moving during deal)
+    if (isAnimating.value) return
     cardController.handleLayoutChange(200)
   }
 
