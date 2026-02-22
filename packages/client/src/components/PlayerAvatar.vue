@@ -3,6 +3,7 @@
     class="player-avatar" 
     :class="[
       positionClass,
+      statusClass,
       { 
         'is-current-turn': props.isCurrentTurn,
         'is-user': props.isUser
@@ -119,6 +120,17 @@ const hasAvatar = computed(() => !!resolvedAvatarUrl.value)
 const positionClass = computed(() => `position-${props.position}`)
 
 const positionStyle = computed(() => props.customStyle ?? {})
+
+// Status type for color coding: 'pass' = neutral, 'action' = green (order up, pick it up, etc.)
+const statusClass = computed(() => {
+  if (!props.status) return ''
+  const lower = props.status.toLowerCase()
+  if (lower.includes('pass')) return 'status-pass'
+  if (lower.includes('order') || lower.includes('pick') || lower.includes('call') || lower.includes('alone')) {
+    return 'status-action'
+  }
+  return ''
+})
 
 // Map avatar position to bubble tail direction
 // Side players: bubble above (out of table area)
@@ -290,22 +302,49 @@ const bubblePosition = computed(() => {
     position: absolute;
     top: 100%;
     left: 50%;
-    transform: translateX(-50%);
-    margin-top: 4px;
-    font-size: 11px;
-    color: var(--color-warning);
-    background: var(--color-dark-surface);
-    padding: 3px 8px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
+    transform: translateX(-50%) scale(0.8);
+    margin-top: 8px;
+    font-size: 13px;
+    color: #fff;
+    background: linear-gradient(180deg, rgba(70, 75, 90, 0.95) 0%, rgba(50, 55, 65, 0.98) 100%);
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-weight: 700;
     white-space: nowrap;
     opacity: 0;
-    transition: opacity var(--anim-slow, 0.3s) ease;
     pointer-events: none;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    // Speech bubble tail pointing up to avatar
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-bottom-color: rgba(70, 75, 90, 0.95);
+    }
 
     &.visible {
       opacity: 1;
+      transform: translateX(-50%) scale(1);
     }
+  }
+  
+  // Color-coded status messages
+  &.status-pass .player-status {
+    background: linear-gradient(180deg, rgba(80, 85, 95, 0.95) 0%, rgba(60, 65, 75, 0.98) 100%);
+    &::before { border-bottom-color: rgba(80, 85, 95, 0.95); }
+  }
+  
+  &.status-action .player-status {
+    background: linear-gradient(180deg, rgba(40, 120, 80, 0.95) 0%, rgba(30, 95, 60, 0.98) 100%);
+    border-color: rgba(100, 200, 140, 0.3);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 15px rgba(80, 200, 120, 0.2);
+    &::before { border-bottom-color: rgba(40, 120, 80, 0.95); }
   }
 
   // Info tags - for user, flows above name inside pill
