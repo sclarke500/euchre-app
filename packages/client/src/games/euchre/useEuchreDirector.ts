@@ -1116,7 +1116,26 @@ export function useEuchreDirector(
    */
   async function handleLayoutChange(): Promise<void> {
     if (isAnimating.value) return  // Don't reposition during animations
+    
+    // Debug: log turn-up card state before layout change
+    const turnUpCard = game.turnUpCard.value
+    const deck = engine.getDeck()
+    if (turnUpCard && deck) {
+      const managed = deck.cards.find(m => m.card.id === turnUpCard.id)
+      const ref = managed?.ref
+      const pos = ref?.getPosition()
+      console.log('[LayoutChange] Turn-up before:', turnUpCard.id, 'flipY:', pos?.flipY, 'faceUp:', managed?.faceUp)
+    }
+    
     await cardController.handleLayoutChange(200)
+    
+    // Debug: log turn-up card state after layout change
+    if (turnUpCard && deck) {
+      const managed = deck.cards.find(m => m.card.id === turnUpCard.id)
+      const ref = managed?.ref
+      const pos = ref?.getPosition()
+      console.log('[LayoutChange] Turn-up after:', turnUpCard.id, 'flipY:', pos?.flipY, 'faceUp:', managed?.faceUp)
+    }
   }
 
   return {
