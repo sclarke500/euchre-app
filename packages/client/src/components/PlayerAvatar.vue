@@ -298,35 +298,27 @@ const bubblePosition = computed(() => {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
+  // Status pill - clean badge style, no tail (distinct from chat bubbles)
   .player-status {
     position: absolute;
     top: 100%;
     left: 50%;
     transform: translateX(-50%) scale(0.8);
-    margin-top: 8px;
-    font-size: 13px;
+    margin-top: 6px;
+    font-size: 12px;
     color: #fff;
     background: linear-gradient(180deg, rgba(70, 75, 90, 0.95) 0%, rgba(50, 55, 65, 0.98) 100%);
-    padding: 6px 12px;
-    border-radius: 12px;
+    padding: 5px 14px;
+    border-radius: 20px;
     font-weight: 700;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-
-    // Speech bubble tail pointing up to avatar
-    &::before {
-      content: '';
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      border: 6px solid transparent;
-      border-bottom-color: rgba(70, 75, 90, 0.95);
-    }
 
     &.visible {
       opacity: 1;
@@ -336,15 +328,13 @@ const bubblePosition = computed(() => {
   
   // Color-coded status messages
   &.status-pass .player-status {
-    background: linear-gradient(180deg, rgba(80, 85, 95, 0.95) 0%, rgba(60, 65, 75, 0.98) 100%);
-    &::before { border-bottom-color: rgba(80, 85, 95, 0.95); }
+    background: linear-gradient(180deg, rgba(75, 80, 95, 0.95) 0%, rgba(55, 60, 75, 0.98) 100%);
   }
   
   &.status-action .player-status {
-    background: linear-gradient(180deg, rgba(40, 120, 80, 0.95) 0%, rgba(30, 95, 60, 0.98) 100%);
-    border-color: rgba(100, 200, 140, 0.3);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 15px rgba(80, 200, 120, 0.2);
-    &::before { border-bottom-color: rgba(40, 120, 80, 0.95); }
+    background: linear-gradient(180deg, rgba(40, 115, 75, 0.95) 0%, rgba(28, 90, 55, 0.98) 100%);
+    border-color: rgba(80, 180, 120, 0.25);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(60, 180, 100, 0.2);
   }
 
   // Info tags - for user, flows above name inside pill
