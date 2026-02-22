@@ -201,6 +201,7 @@ const bubblePosition = computed(() => {
     margin-top: 0;
     margin-left: -4px;
     align-items: flex-start;
+    position: relative; // For absolute positioned badges (President rank)
   }
 
   &.is-user .player-name {

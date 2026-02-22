@@ -300,7 +300,7 @@ export function useCardController(
       // Fan spacing calculation
       const baseWidth = getBaseCardWidth()
       const scaledCardWidth = baseWidth * targetScale
-      const maxSpacing = Math.round(baseWidth * 0.45) // Max ~45% of card width
+      const maxSpacing = Math.round(baseWidth * 0.65) // Max ~65% of card width
       const minSpacing = Math.round(baseWidth * 0.20) // Min ~20% of card width
       
       let fanSpacing: number
