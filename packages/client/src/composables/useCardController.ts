@@ -867,7 +867,12 @@ export function useCardController(
    * Used when there's no specific dealer (e.g., President).
    */
   function getGenericDealPosition(): { x: number; y: number } {
-    return { x: -100, y: -100 }
+    // Top-right corner of table, slightly inset
+    const layout = tableLayout.value
+    if (layout) {
+      return { x: layout.tableBounds.right - 50, y: layout.tableBounds.top + 30 }
+    }
+    return { x: -100, y: -100 } // Fallback off-screen
   }
 
   /**

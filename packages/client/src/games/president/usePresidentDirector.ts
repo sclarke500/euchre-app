@@ -163,6 +163,13 @@ export function usePresidentDirector(
       return { hand: player?.hand ?? [] }
     })
 
+    // Move deck to top-right before dealing (no dealer in President)
+    const deck = engine.getDeck()
+    const dealPos = cardController.getGenericDealPosition()
+    if (deck) {
+      deck.position = dealPos
+    }
+
     // Use shared cardController for deal animation
     await cardController.dealFromPlayers(playerViews, {
       revealUserHand: true,
