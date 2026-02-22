@@ -298,7 +298,11 @@ const showActionPanel = computed(() => {
   if (director.isAnimating.value) return false
   return game.isHumanTurn.value || game.isInExchange.value || game.isHumanGivingCards.value
 })
-const playerCount = computed(() => game.players.value.length || 4) // Default to 4 for President
+// Get player count from settings when players array is empty (before game starts)
+const settingsStore = useSettingsStore()
+const playerCount = computed(() => 
+  game.players.value.length || settingsStore.presidentPlayerCount || 4
+)
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
 const userRankBadge = computed(() => getRankBadge(game.humanPlayer.value?.id ?? 0))
 
@@ -678,7 +682,6 @@ onMounted(async () => {
   if (props.mode === 'multiplayer') {
     game.initialize?.()
   } else {
-    const settingsStore = useSettingsStore()
     presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
   }
   await nextTick()
