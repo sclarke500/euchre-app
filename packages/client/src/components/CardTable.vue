@@ -425,22 +425,24 @@ defineExpose({
     user-select: none;
     
     .watermark-logo {
-      width: 60px;
-      height: 60px;
+      // Scale with table: ~15% of table height
+      width: min(80px, 15vh);
+      height: min(80px, 15vh);
       object-fit: contain;
-      opacity: 0.15;
+      opacity: 0.18;
     }
     
     .watermark-name {
       font-family: 'Rock Salt', cursive;
-      font-size: 0.9rem;
+      // Scale with viewport, cap at reasonable size
+      font-size: clamp(0.7rem, 2vh, 1rem);
       font-weight: 400;
       color: white;
-      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5), 1px 1px 2px rgba(0, 0, 0, 0.4);
-      letter-spacing: 0.06em;
-      margin-top: -10px;
-      -webkit-text-stroke: 0.3px white;
-      opacity: 0.15;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 1px 1px 2px rgba(0, 0, 0, 0.5);
+      letter-spacing: 0.08em;
+      margin-top: -12px;
+      -webkit-text-stroke: 0.5px white;
+      opacity: 0.18;
     }
   }
 
