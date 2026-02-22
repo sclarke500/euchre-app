@@ -24,13 +24,13 @@
       <div class="score-row">
         <span class="score-label">Us</span>
         <span class="score-value" :class="{ 'score-updated': usScoreAnimating }">
-          {{ displayedScores[0] }}
+          {{ displayedUsScore }}
         </span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
         <span class="score-value" :class="{ 'score-updated': themScoreAnimating }">
-          {{ displayedScores[1] }}
+          {{ displayedThemScore }}
         </span>
       </div>
     </div>
@@ -306,27 +306,28 @@ function teamScore(displayRow: number): number {
 }
 
 // Delayed score display - updates after sweep animation
-const displayedScores = ref([0, 0])
+const displayedUsScore = ref(0)
+const displayedThemScore = ref(0)
 const usScoreAnimating = ref(false)
 const themScoreAnimating = ref(false)
 
 // Watch actual scores and update displayed scores with delay + animation
 watch(
-  () => [teamScore(0), teamScore(1)],
+  () => [teamScore(0), teamScore(1)] as [number, number],
   ([newUs, newThem]) => {
-    const oldUs = displayedScores.value[0]
-    const oldThem = displayedScores.value[1]
+    const oldUs = displayedUsScore.value
+    const oldThem = displayedThemScore.value
     
     // Delay update to sync with sweep animation (~500ms after round complete)
     setTimeout(() => {
       if (newUs !== oldUs) {
         usScoreAnimating.value = true
-        displayedScores.value[0] = newUs
+        displayedUsScore.value = newUs
         setTimeout(() => { usScoreAnimating.value = false }, 400)
       }
       if (newThem !== oldThem) {
         themScoreAnimating.value = true
-        displayedScores.value[1] = newThem
+        displayedThemScore.value = newThem
         setTimeout(() => { themScoreAnimating.value = false }, 400)
       }
     }, 500)
