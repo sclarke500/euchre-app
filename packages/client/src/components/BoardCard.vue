@@ -224,13 +224,21 @@ defineExpose({
     transform: rotate(180deg);
   }
 
-  // Font sizes scale with card (no minimums - fully proportional)
+  // Font sizes scale with card - slightly larger on mobile for visibility
   .rank {
     font-size: calc(var(--card-base-width, 83px) * 0.28);
+    
+    :global(.mobile-mode) & {
+      font-size: calc(var(--card-base-width, 83px) * 0.32);
+    }
   }
 
   .suit {
     font-size: calc(var(--card-base-width, 83px) * 0.24);
+    
+    :global(.mobile-mode) & {
+      font-size: calc(var(--card-base-width, 83px) * 0.28);
+    }
   }
 
   &.red { color: #e74c3c; }
@@ -246,6 +254,10 @@ defineExpose({
 
   .suit-large {
     font-size: calc(var(--card-base-width, 83px) * 0.45);
+    
+    :global(.mobile-mode) & {
+      font-size: calc(var(--card-base-width, 83px) * 0.52);
+    }
   }
 
   &.red { color: #e74c3c; }

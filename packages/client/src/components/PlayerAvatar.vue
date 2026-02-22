@@ -335,26 +335,27 @@ const bubblePosition = computed(() => {
   }
   
   // Trump indicator chip - positioned at top-right of avatar circle
+  // Sized to match dealer chip (28px) with minimal border, suit color shows through
   .trump-chip {
     position: absolute;
     top: -4px;
     right: -4px;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
-    border: 2px solid #ddd;
-    font-size: 14px;
+    background: rgba(40, 40, 50, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 18px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 
-      0 2px 6px rgba(0, 0, 0, 0.4),
-      inset 0 1px 2px rgba(255, 255, 255, 0.8),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+      0 2px 6px rgba(0, 0, 0, 0.5),
+      inset 0 1px 2px rgba(255, 255, 255, 0.1);
     z-index: 10;
     pointer-events: none;
+    // Suit color applied via inline style
   }
 
   // Turn indicator - bright animated glow on circle
