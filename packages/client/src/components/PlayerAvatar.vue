@@ -316,8 +316,6 @@ const bubblePosition = computed(() => {
     pointer-events: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     &.visible {
