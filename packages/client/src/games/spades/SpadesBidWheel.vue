@@ -128,33 +128,46 @@ onMounted(() => {
   gap: 12px;
   padding: 14px 12px;
   padding-right: max(12px, env(safe-area-inset-right));
-  background: linear-gradient(
-    135deg,
-    rgba(35, 40, 50, 0.85) 0%,
-    rgba(20, 22, 30, 0.9) 100%
-  );
+  background: var(--panel-bg);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  border-radius: 16px 0 0 16px;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 20px 0 0 20px;
+  border: 1px solid var(--panel-border);
   border-right: none;
   box-shadow: 
-    -4px 0 30px rgba(0, 0, 0, 0.5),
-    -2px 0 20px rgba(212, 175, 55, 0.15),
-    inset 1px 0 0 rgba(212, 175, 55, 0.2);
+    -4px 0 24px rgba(0, 0, 0, 0.4),
+    0 0 var(--panel-glow-size) var(--panel-glow-color),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+  animation: panel-glow 2s ease-in-out infinite;
 }
 
-// Shiny overlay effect - sits on top
+@keyframes panel-glow {
+  0%, 100% {
+    box-shadow: 
+      -4px 0 24px rgba(0, 0, 0, 0.4),
+      0 0 var(--panel-glow-size) var(--panel-glow-color),
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      -4px 0 24px rgba(0, 0, 0, 0.4),
+      0 0 var(--panel-glow-size-pulse) var(--panel-glow-color),
+      inset 1px 1px 0 rgba(255, 255, 255, 0.15);
+  }
+}
+
+// Subtle shiny highlight at top
 .shiny-overlay {
   position: absolute;
-  inset: 0;
-  border-radius: 20px 0 0 20px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  border-radius: 20px 0 0 0;
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    rgba(255, 255, 255, 0.15) 25%,
-    rgba(255, 255, 255, 0.05) 50%,
-    transparent 70%
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 100%
   );
   pointer-events: none;
   z-index: 10;

@@ -294,11 +294,11 @@ export function useCardController(
 
       userHand.position = { x: targetX, y: targetY }
       userHand.scale = targetScale
-      // Fan spacing: base is 36% of card width, but tightens for more cards
-      // Max total fan width is ~40% of viewport width
+      // Fan spacing: base is 40% of card width, but tightens for more cards
+      // Max total fan width is ~55% of viewport width (generous for 13-card hands)
       const baseWidth = getBaseCardWidth()
-      const baseFanSpacing = Math.round(baseWidth * 0.36)
-      const maxFanWidth = getViewportWidth() * 0.4
+      const baseFanSpacing = Math.round(baseWidth * 0.40)
+      const maxFanWidth = getViewportWidth() * 0.55
       userHand.fanSpacing = config.userFanSpacing ?? Math.min(baseFanSpacing, maxFanWidth / Math.max(1, cardCount))
       // Dynamic curve: fewer cards = more curve, more cards = less curve
       // 5 cards: ~8°, 8 cards: ~2.5°, 13 cards: ~1.5° (nearly flat for big hands)
