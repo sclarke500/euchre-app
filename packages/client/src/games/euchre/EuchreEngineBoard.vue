@@ -23,18 +23,15 @@
     <div class="scoreboard">
       <div class="score-row">
         <span class="score-label">Us</span>
-        <span class="score-value">{{ teamScore(0) }}</span>
-        <span class="score-tricks">{{ game.tricksTaken.value[myTeam] }}</span>
+        <span class="score-value" :class="{ 'score-updated': usScoreAnimating }">
+          {{ displayedScores[0] }}
+        </span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
-        <span class="score-value">{{ teamScore(1) }}</span>
-        <span class="score-tricks">{{ game.tricksTaken.value[opponentTeam] }}</span>
-      </div>
-      <div class="score-header">
-        <span></span>
-        <span>Pts</span>
-        <span>Trk</span>
+        <span class="score-value" :class="{ 'score-updated': themScoreAnimating }">
+          {{ displayedScores[1] }}
+        </span>
       </div>
     </div>
 
@@ -307,6 +304,35 @@ function teamScore(displayRow: number): number {
   const teamId = displayRow === 0 ? myTeam.value : opponentTeam.value
   return game.scores.value.find((s: TeamScore) => s.teamId === teamId)?.score ?? 0
 }
+
+// Delayed score display - updates after sweep animation
+const displayedScores = ref([0, 0])
+const usScoreAnimating = ref(false)
+const themScoreAnimating = ref(false)
+
+// Watch actual scores and update displayed scores with delay + animation
+watch(
+  () => [teamScore(0), teamScore(1)],
+  ([newUs, newThem]) => {
+    const oldUs = displayedScores.value[0]
+    const oldThem = displayedScores.value[1]
+    
+    // Delay update to sync with sweep animation (~800ms after trick complete)
+    setTimeout(() => {
+      if (newUs !== oldUs) {
+        usScoreAnimating.value = true
+        displayedScores.value[0] = newUs
+        setTimeout(() => { usScoreAnimating.value = false }, 400)
+      }
+      if (newThem !== oldThem) {
+        themScoreAnimating.value = true
+        displayedScores.value[1] = newThem
+        setTimeout(() => { themScoreAnimating.value = false }, 400)
+      }
+    }, 800)
+  },
+  { immediate: true }
+)
 
 // Show bidding buttons when it's the user's turn during bidding
 // In multiplayer, gate on !isAnimating so the deal animation finishes first
@@ -583,67 +609,50 @@ onUnmounted(() => {
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
-  border-radius: 7px;
-  padding: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
   backdrop-filter: blur(8px);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  gap: 2px;
   color: #ccc;
-  width: 120px;
-
-  .score-header {
-    display: grid;
-    grid-template-columns: 1fr 31px 31px;
-    gap: 0;
-    padding: 2px 7px;
-    font-size: 10px;
-    font-weight: 600;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    order: -1;
-
-    span {
-      text-align: center;
-
-      &:first-child {
-        text-align: left;
-      }
-    }
-  }
 
   .score-row {
-    display: grid;
-    grid-template-columns: 1fr 31px 31px;
-    gap: 0;
-    padding: 4px 7px;
+    display: flex;
     align-items: center;
-
-    &:last-of-type {
-      border-bottom: none;
-    }
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .score-label {
     font-weight: 600;
-    font-size: 12px;
+    font-size: 13px;
+    color: #aaa;
   }
 
   .score-value {
-    text-align: center;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 22px;
     color: #fff;
-  }
+    min-width: 28px;
+    text-align: right;
+    position: relative;
+    overflow: hidden;
 
-  .score-tricks {
-    text-align: center;
-    font-weight: 600;
-    font-size: 16px;
-    color: #aaa;
+    &.score-updated {
+      animation: scoreSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  }
+}
+
+@keyframes scoreSlideIn {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 
