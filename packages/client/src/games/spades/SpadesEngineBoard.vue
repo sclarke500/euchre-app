@@ -28,28 +28,17 @@
       </div>
     </template>
 
-    <!-- Scoreboard (points and bags with column headers) -->
+    <!-- Scoreboard (simplified - bags implied in ones digit) -->
     <div class="scoreboard spades-scoreboard">
       <div class="score-row">
         <span class="score-label">Us</span>
         <span class="score-value">{{ scores[0]?.score ?? 0 }}</span>
-        <span class="score-bags">
-          {{ scores[0]?.bags ?? 0 }}<span v-if="(handBags[0] ?? 0) > 0" class="hand-bags">+{{ handBags[0] }}</span>
-        </span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
         <span class="score-value">{{ scores[1]?.score ?? 0 }}</span>
-        <span class="score-bags">
-          {{ scores[1]?.bags ?? 0 }}<span v-if="(handBags[1] ?? 0) > 0" class="hand-bags">+{{ handBags[1] }}</span>
-        </span>
       </div>
-      <div class="score-header">
-        <span></span>
-        <span>Pts</span>
-        <span>Bags</span>
-      </div>
-      <div v-if="store.spadesBroken" class="spades-broken-row">
+      <div v-if="store.spadesBroken" class="spades-broken-indicator">
         ♠ Broken
       </div>
     </div>
@@ -483,58 +472,41 @@ function handlePlayAgain() {
   color: #ccc;
 }
 
+// Simplified scoreboard (matches Euchre style - bags implied in ones digit)
 .spades-scoreboard {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  width: 120px;
+  gap: 4px;
+  padding: 8px 12px;
   
   .score-row {
-    display: grid;
-    grid-template-columns: 34px 1fr 1fr;
-    gap: 2px;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    padding: 4px 7px;
+    gap: 16px;
   }
   
   .score-label {
     font-weight: 600;
-    font-size: 12px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
   }
   
   .score-value {
     font-weight: 700;
-    font-size: 14px;
+    font-size: 22px;
     color: #fff;
-    text-align: center;
+    min-width: 28px;
+    text-align: right;
   }
   
-  .score-bags {
-    font-size: 13px;
-    color: #f39c12;
-    text-align: center;
-  }
-  
-  .hand-bags {
+  .spades-broken-indicator {
     font-size: 11px;
-    color: #e74c3c;
-    margin-left: 1px;
-  }
-  
-  .score-header {
-    display: grid;
-    grid-template-columns: 34px 1fr 1fr;
-    gap: 2px;
-    padding: 2px 7px;
-    background: rgba(255, 255, 255, 0.05);
-    border-top: 1px solid rgba(255,255,255,0.1);
-    font-size: 10px;
-    color: #888;
+    color: rgba(255, 255, 255, 0.6);
     text-align: center;
-    
-    span:first-child {
-      text-align: left;
-    }
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 2px;
   }
 }
 
@@ -697,16 +669,6 @@ function handlePlayAgain() {
       background: rgba(200, 80, 80, 0.9);
     }
   }
-}
-
-// Spades broken indicator inside scoreboard
-.spades-broken-row {
-  text-align: center;
-  color: #3498db;
-  font-size: 10px;
-  font-weight: bold;
-  padding: 3px 6px;
-  border-top: 1px solid $surface-600;
 }
 
 .round-indicator {
