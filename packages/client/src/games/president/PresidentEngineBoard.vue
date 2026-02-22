@@ -467,12 +467,15 @@ function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
 }
 
 function startGame() {
-  if (props.mode === 'multiplayer') {
-    game.initialize?.()
-  } else {
-    const settingsStore = useSettingsStore()
-    presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
-  }
+  // DEBUG: 3 second delay to troubleshoot deal animation
+  setTimeout(() => {
+    if (props.mode === 'multiplayer') {
+      game.initialize?.()
+    } else {
+      const settingsStore = useSettingsStore()
+      presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
+    }
+  }, 3000)
 }
 
 // ── Card selection ──────────────────────────────────────────────────────
