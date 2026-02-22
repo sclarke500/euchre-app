@@ -163,6 +163,9 @@ export function usePresidentDirector(
       return { hand: player?.hand ?? [] }
     })
 
+    // Ensure layout is settled before dealing (prevents layout-changed from overriding deck position)
+    await cardController.handleLayoutChange(0)
+    
     // Move deck to generic position before dealing (no dealer in President)
     const deck = engine.getDeck()
     const dealPos = cardController.getGenericDealPosition()
