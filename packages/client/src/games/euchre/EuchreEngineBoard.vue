@@ -777,6 +777,35 @@ onUnmounted(() => {
   padding-right: max(16px, env(safe-area-inset-right));
   min-width: 130px;
   border-radius: 20px 0 0 20px;
+  
+  // Brighter backdrop + gold glow to draw attention
+  background: linear-gradient(
+    180deg,
+    rgba(55, 58, 70, 0.97) 0%,
+    rgba(38, 42, 52, 0.98) 100%
+  );
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-right: none;
+  box-shadow: 
+    -4px 0 24px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(255, 215, 0, 0.15),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+  animation: panel-glow 2s ease-in-out infinite;
+}
+
+@keyframes panel-glow {
+  0%, 100% {
+    box-shadow: 
+      -4px 0 24px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba(255, 215, 0, 0.15),
+      inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      -4px 0 24px rgba(0, 0, 0, 0.4),
+      0 0 30px rgba(255, 215, 0, 0.25),
+      inset 1px 1px 0 rgba(255, 255, 255, 0.15);
+  }
 }
 
 // Pass button - neutral, strategic option (not cancel-like)
