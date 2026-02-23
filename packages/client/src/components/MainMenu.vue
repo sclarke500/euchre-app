@@ -319,14 +319,14 @@ const gameTitle = computed(() => {
       </div>
 
       <button class="multiplayer-btn" @click="handleMultiplayer">
+        <span class="mp-icon">👥</span>
+        <span class="mp-text">Play with Friends</span>
         <span v-if="isPortrait" class="rotate-badge mp" title="Requires landscape">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 4v6h6" />
             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
           </svg>
         </span>
-        <span class="mp-icon">👥</span>
-        <span class="mp-text">Play with Friends</span>
       </button>
 
       <!-- Landscape legend (portrait only) -->
@@ -794,27 +794,23 @@ const gameTitle = computed(() => {
   position: absolute;
   top: 6px;
   right: 6px;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 6px;
   line-height: 0;
   
   svg {
     width: 18px;
     height: 18px;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.7);
   }
   
   &.mp {
     position: relative;
     top: auto;
     right: auto;
-    margin-right: $spacing-xs;
-    background: rgba(0, 0, 0, 0.3);
+    margin-left: $spacing-sm;
     
     svg {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
     }
   }
 }
