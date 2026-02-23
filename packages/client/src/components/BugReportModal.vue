@@ -74,7 +74,7 @@ watch(() => props.show, (isOpen) => {
   }
 })
 
-function getFullPayload() {
+function getFullPayload(logCount: number = 50) {
   return {
     ...props.buildPayload(),
     gameType: props.gameType,
@@ -83,7 +83,7 @@ function getFullPayload() {
     timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent,
     screenSize: `${window.innerWidth}x${window.innerHeight}`,
-    consoleLogs: getRecentLogs(25),
+    consoleLogs: getRecentLogs(logCount),
   }
 }
 
@@ -92,7 +92,7 @@ async function handleSend() {
   sending.value = true
   
   try {
-    const payload = getFullPayload()
+    const payload = getFullPayload(50) // More logs for GitHub issues
     await sendBugReport({
       ...payload,
       reportType: 'user',
@@ -110,7 +110,7 @@ async function handleSend() {
 
 async function handleCopy() {
   try {
-    const payload = getFullPayload()
+    const payload = getFullPayload(15) // Fewer logs for clipboard (Telegram paste limits)
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
     toast.show('Copied to clipboard!', 'success')
   } catch (err) {
