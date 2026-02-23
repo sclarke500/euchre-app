@@ -60,10 +60,10 @@ onMounted(async () => {
     }
   }
   
-  // If we don't have an active game matching this ID, redirect to menu
-  // (Reconnect logic is complex and has timing issues - cleaner to just restart)
-  if (lobbyStore.gameId !== props.gameId) {
-    console.log('[GameView] Direct URL access without active game, redirecting to menu')
+  // If we had to reconnect WebSocket (page reload scenario) and don't have an active game, redirect
+  // Normal navigation from lobby will have gameId already set
+  if (!lobbyStore.gameId) {
+    console.log('[GameView] No active game in store, redirecting to menu')
     router.replace('/play')
     return
   }
