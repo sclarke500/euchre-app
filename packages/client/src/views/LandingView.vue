@@ -4,6 +4,12 @@ import { ref, onMounted } from 'vue'
 import { getPlatformInfo } from '@/utils/platform'
 import AppLogo from '@/components/AppLogo.vue'
 
+// Game screenshots
+import screenshotEuchre from '@/assets/screenshots/euchre.png'
+import screenshotSpades from '@/assets/screenshots/spades.png'
+import screenshotPresident from '@/assets/screenshots/president.png'
+import screenshotKlondike from '@/assets/screenshots/klondike.png'
+
 const router = useRouter()
 
 // Platform detection for install instructions
@@ -34,6 +40,7 @@ const games = [
     description: 'The classic Midwest trick-taking game. Call trump, go alone, euchre your opponents.',
     players: '4 players',
     type: 'Trick-taking',
+    screenshot: screenshotEuchre,
   },
   {
     id: 'spades',
@@ -41,6 +48,7 @@ const games = [
     description: 'Bid your hand, make your tricks. A timeless partnership game.',
     players: '4 players',
     type: 'Trick-taking',
+    screenshot: screenshotSpades,
   },
   {
     id: 'president',
@@ -48,6 +56,7 @@ const games = [
     description: 'Race to shed your cards first. Climb from Scum to President.',
     players: '4-5 players',
     type: 'Shedding',
+    screenshot: screenshotPresident,
   },
   {
     id: 'klondike',
@@ -55,6 +64,7 @@ const games = [
     description: 'The solitaire classic. Build foundation piles from Ace to King.',
     players: '1 player',
     type: 'Solitaire',
+    screenshot: screenshotKlondike,
   },
 ]
 
@@ -102,9 +112,8 @@ const features = [
       <h2>The Games</h2>
       <div class="game-grid">
         <article v-for="game in games" :key="game.id" class="game-card">
-          <!-- TODO: Game screenshot/artwork -->
-          <div class="game-image-placeholder">
-            <span>{{ game.name }}</span>
+          <div class="game-image">
+            <img :src="game.screenshot" :alt="`${game.name} screenshot`" />
           </div>
           <div class="game-info">
             <h3>{{ game.name }}</h3>
@@ -445,15 +454,22 @@ section {
   }
 }
 
-.game-image-placeholder {
-  height: 160px;
+.game-image {
+  height: 180px;
+  overflow: hidden;
   background: linear-gradient(135deg, rgba($brand-green, 0.3), rgba($brand-green-dark, 0.5));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  opacity: 0.5;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease;
+  }
+  
+  .game-card:hover & img {
+    transform: scale(1.05);
+  }
 }
 
 .game-info {
