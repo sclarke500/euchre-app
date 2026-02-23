@@ -18,12 +18,26 @@
   --anim-pulse: 2s;
   --anim-delay-short: 0.3s;
   
+  // Gold glow colors (used by action panel, avatars, highlights)
+  --glow-gold: #D4AF37;
+  --glow-gold-rgb: 212, 175, 55;
+  
   // Unified frosted panel + glow (user avatar, action panel)
   --panel-bg: rgba(55, 58, 70, 0.9);
-  --panel-border: rgba(255, 215, 0, 0.4);
-  --panel-glow-color: rgba(255, 215, 0, 0.3);
+  --panel-border: rgba(var(--glow-gold-rgb), 0.4);
+  --panel-glow-color: rgba(var(--glow-gold-rgb), 0.3);
   --panel-glow-size: 10px;
   --panel-glow-size-pulse: 16px;
+}
+
+// Shared gold glow pulse animation
+@keyframes gold-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 var(--panel-glow-size) var(--panel-glow-color);
+  }
+  50% {
+    box-shadow: 0 0 var(--panel-glow-size-pulse) var(--panel-glow-color);
+  }
 }
 
 // Global clanker class for AI player names and clanker text

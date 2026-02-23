@@ -245,12 +245,9 @@ function getAvatarName(avatar: string): string {
   }
   
   &.selected {
-    border-color: #D4AF37;
-    box-shadow: 
-      0 0 12px rgba(#D4AF37, 0.7),
-      0 0 24px rgba(#D4AF37, 0.5),
-      0 0 36px rgba(#D4AF37, 0.3);
-    animation: avatar-pulse 2s ease-in-out infinite;
+    border-color: var(--glow-gold);
+    box-shadow: 0 0 var(--panel-glow-size) var(--panel-glow-color);
+    animation: gold-glow-pulse 2s ease-in-out infinite;
   }
   
   &.no-avatar {
@@ -264,21 +261,6 @@ function getAvatarName(avatar: string): string {
       font-weight: bold;
       color: white;
     }
-  }
-}
-
-@keyframes avatar-pulse {
-  0%, 100% {
-    box-shadow: 
-      0 0 12px rgba(#D4AF37, 0.7),
-      0 0 24px rgba(#D4AF37, 0.5),
-      0 0 36px rgba(#D4AF37, 0.3);
-  }
-  50% {
-    box-shadow: 
-      0 0 18px rgba(#D4AF37, 0.8),
-      0 0 32px rgba(#D4AF37, 0.6),
-      0 0 48px rgba(#D4AF37, 0.4);
   }
 }
 
