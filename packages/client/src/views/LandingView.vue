@@ -84,11 +84,6 @@ const features = [
     title: 'Install as App',
     description: 'Add to your home screen for a native app experience. Works offline too.',
   },
-  {
-    icon: '🚫',
-    title: 'No Ads, No BS',
-    description: 'Just cards. No pop-ups, no pay-to-win, no account required.',
-  },
 ]
 </script>
 
