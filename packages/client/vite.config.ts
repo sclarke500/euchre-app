@@ -29,7 +29,7 @@ export default defineConfig({
         name: 'Card Games',
         short_name: 'Card Games',
         description: 'Classic card games — Euchre, Spades, President, and more',
-        start_url: '/',
+        start_url: '/play',
         scope: '/',
         theme_color: '#181820',
         background_color: '#181820',
