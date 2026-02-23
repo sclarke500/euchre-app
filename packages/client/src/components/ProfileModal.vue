@@ -245,8 +245,11 @@ function getAvatarName(avatar: string): string {
   }
   
   &.selected {
-    border-color: $brand-green;
-    box-shadow: 0 0 0 2px rgba($brand-green, 0.5);
+    border-color: #D4AF37;
+    box-shadow: 
+      0 0 10px rgba(#D4AF37, 0.5),
+      0 0 20px rgba(#D4AF37, 0.3);
+    animation: avatar-pulse 2s ease-in-out infinite;
   }
   
   &.no-avatar {
@@ -260,6 +263,19 @@ function getAvatarName(avatar: string): string {
       font-weight: bold;
       color: white;
     }
+  }
+}
+
+@keyframes avatar-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px rgba(#D4AF37, 0.5),
+      0 0 20px rgba(#D4AF37, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 16px rgba(#D4AF37, 0.6),
+      0 0 28px rgba(#D4AF37, 0.4);
   }
 }
 
