@@ -5,7 +5,6 @@ import { EuchreEngineBoard } from '@/games/euchre'
 import { PresidentEngineBoard } from '@/games/president'
 import { SpadesEngineBoard } from '@/games/spades'
 import { KlondikeGameBoard } from '@/games/klondike'
-import ScaledContainer from '@/components/ScaledContainer.vue'
 
 const props = defineProps<{
   game: string
@@ -29,7 +28,7 @@ function leaveGame() {
 </script>
 
 <template>
-  <ScaledContainer v-if="isValidGame">
+  <div v-if="isValidGame" class="play-view">
     <EuchreEngineBoard
       v-if="game === 'euchre'"
       mode="singleplayer"
@@ -49,5 +48,12 @@ function leaveGame() {
       v-else-if="game === 'klondike'"
       @leave-game="leaveGame"
     />
-  </ScaledContainer>
+  </div>
 </template>
+
+<style scoped>
+.play-view {
+  width: 100%;
+  height: 100%;
+}
+</style>

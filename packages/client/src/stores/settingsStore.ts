@@ -11,6 +11,7 @@ interface GameSettings {
   theme: AppTheme
   // AI personality
   aiChatMode: AIChatMode
+  botChatEnabled: boolean
   // Euchre-specific
   dealerPassRule: DealerPassRule
   // President-specific
@@ -34,6 +35,7 @@ function loadSettings(): GameSettings {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
         theme: VALID_THEMES.includes(parsed.theme) ? parsed.theme : 'teal',
         aiChatMode: (['clean', 'unhinged', 'feral'].includes(parsed.aiChatMode) ? parsed.aiChatMode : 'clean') as AIChatMode,
+        botChatEnabled: parsed.botChatEnabled !== false, // default true
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
         presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
         superTwosAndJokers: parsed.superTwosAndJokers === true,
@@ -48,6 +50,7 @@ function loadSettings(): GameSettings {
     aiDifficulty: 'easy',
     theme: 'teal',
     aiChatMode: 'clean' as AIChatMode,
+    botChatEnabled: true,
     dealerPassRule: 'canPass',
     presidentPlayerCount: 4,
     superTwosAndJokers: false,
@@ -71,6 +74,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const aiDifficulty = ref<AIDifficulty>(initialSettings.aiDifficulty)
   const theme = ref<AppTheme>(initialSettings.theme)
   const aiChatMode = ref<AIChatMode>(initialSettings.aiChatMode)
+  const botChatEnabled = ref<boolean>(initialSettings.botChatEnabled)
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
   const presidentPlayerCount = ref<number>(initialSettings.presidentPlayerCount)
   const superTwosAndJokers = ref<boolean>(initialSettings.superTwosAndJokers)
@@ -81,11 +85,12 @@ export const useSettingsStore = defineStore('settings', () => {
   applyTheme(initialSettings.theme)
 
   // Persist settings when they change
-  watch([aiDifficulty, theme, aiChatMode, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, aiChatMode, botChatEnabled, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       theme: theme.value,
       aiChatMode: aiChatMode.value,
+      botChatEnabled: botChatEnabled.value,
       dealerPassRule: dealerPassRule.value,
       presidentPlayerCount: presidentPlayerCount.value,
       superTwosAndJokers: superTwosAndJokers.value,
@@ -106,6 +111,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setAIChatMode(mode: AIChatMode) {
     aiChatMode.value = mode
+  }
+
+  function setBotChatEnabled(enabled: boolean) {
+    botChatEnabled.value = enabled
   }
 
   function setDealerPassRule(rule: DealerPassRule) {
@@ -139,6 +148,7 @@ export const useSettingsStore = defineStore('settings', () => {
     aiDifficulty,
     theme,
     aiChatMode,
+    botChatEnabled,
     dealerPassRule,
     presidentPlayerCount,
     superTwosAndJokers,
@@ -147,6 +157,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setAIDifficulty,
     setTheme,
     setAIChatMode,
+    setBotChatEnabled,
     setDealerPassRule,
     setPresidentPlayerCount,
     setSuperTwosAndJokers,

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ChatPanel from './chat/ChatPanel.vue'
 import ChatIcon from './chat/ChatIcon.vue'
+import { isFullMode } from '@/utils/deviceMode'
 
 const props = withDefaults(defineProps<{
   showChat: boolean
@@ -29,8 +30,8 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateViewport)
 })
 
-// Wide mode: >= 1350px, chat becomes sidebar
-const isWideMode = computed(() => viewportWidth.value >= 1350)
+// Wide mode: >= 1350px, chat becomes sidebar (only in full mode)
+const isWideMode = computed(() => isFullMode() && viewportWidth.value >= 1350)
 const chatMode = computed(() => isWideMode.value ? 'sidebar' : 'overlay')
 
 // Chat visibility

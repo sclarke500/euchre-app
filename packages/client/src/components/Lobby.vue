@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useLobbyStore } from '@/stores/lobbyStore'
-import { useSettingsStore } from '@/stores/settingsStore'
 import TableCard from '@/components/TableCard.vue'
-import Modal from '@/components/Modal.vue'
-import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
-import PresidentOptions from '@/games/president/PresidentOptions.vue'
-import SpadesOptions from '@/games/spades/SpadesOptions.vue'
-import type { GameType } from '@67cards/shared'
 
 const props = defineProps<{
   initialTableCode?: string
 }>()
 
-const settings = useSettingsStore()
+const router = useRouter()
 
 const emit = defineEmits<{
   back: []
@@ -21,7 +16,6 @@ const emit = defineEmits<{
 }>()
 
 const lobbyStore = useLobbyStore()
-const showCreateOptions = ref(false)
 const showConnectingBanner = ref(false)
 let connectingTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -36,17 +30,6 @@ watch(() => lobbyStore.isConnecting, (isConnecting) => {
     showConnectingBanner.value = false
   }
 }, { immediate: true })
-
-// Create table options - load from localStorage with defaults
-const STORAGE_KEYS = {
-  chatEnabled: 'createTable.chatEnabled',
-  isPrivate: 'createTable.isPrivate',
-  bootInactive: 'createTable.bootInactive',
-}
-
-const chatEnabled = ref(localStorage.getItem(STORAGE_KEYS.chatEnabled) !== 'false')
-const isPrivate = ref(localStorage.getItem(STORAGE_KEYS.isPrivate) === 'true')
-const bootInactive = ref(localStorage.getItem(STORAGE_KEYS.bootInactive) !== 'false')
 
 const sortedTables = computed(() => {
   return [...lobbyStore.tables].sort((a, b) => b.createdAt - a.createdAt)
@@ -68,20 +51,6 @@ onUnmounted(() => {
   if (connectingTimeout) clearTimeout(connectingTimeout)
 })
 
-function handleCreateTable() {
-  // Save preferences to localStorage
-  localStorage.setItem(STORAGE_KEYS.chatEnabled, String(chatEnabled.value))
-  localStorage.setItem(STORAGE_KEYS.isPrivate, String(isPrivate.value))
-  localStorage.setItem(STORAGE_KEYS.bootInactive, String(bootInactive.value))
-  
-  lobbyStore.createTable(undefined, {
-    chatEnabled: chatEnabled.value,
-    isPrivate: isPrivate.value,
-    bootInactive: bootInactive.value,
-  })
-  showCreateOptions.value = false
-}
-
 function handleBack() {
   if (lobbyStore.isAtTable) {
     lobbyStore.leaveTable()
@@ -95,12 +64,8 @@ function handleStartGame() {
   lobbyStore.startGame()
 }
 
-function toggleCreateOptions() {
-  showCreateOptions.value = !showCreateOptions.value
-}
-
-function selectGameType(gameType: GameType) {
-  lobbyStore.setGameType(gameType)
+function navigateToCreateGame() {
+  router.push('/lobby/create')
 }
 
 // Watch for game start
@@ -124,7 +89,7 @@ const checkGameStart = computed(() => lobbyStore.gameId)
         <button
           v-if="!lobbyStore.isAtTable"
           class="create-btn"
-          @click="toggleCreateOptions"
+          @click="navigateToCreateGame"
         >
           Create Table
         </button>
@@ -137,78 +102,6 @@ const checkGameStart = computed(() => lobbyStore.gameId)
         </button>
       </div>
     </header>
-
-    <!-- Create Table Options -->
-    <Modal
-      :show="showCreateOptions && !lobbyStore.isAtTable"
-      aria-label="Create table"
-      @close="showCreateOptions = false"
-    >
-      <div class="modal-light">
-        <div class="modal-header">
-          <h3>Create Table</h3>
-        </div>
-        <div class="modal-body">
-          <div class="game-selector">
-            <button
-              v-for="game in ['euchre', 'president', 'spades'] as const"
-              :key="game"
-              :class="['game-pill', { active: lobbyStore.selectedGameType === game }]"
-              @click="selectGameType(game)"
-            >
-              {{ game.charAt(0).toUpperCase() + game.slice(1) }}
-            </button>
-          </div>
-
-          <div class="bot-difficulty-row">
-            <span class="difficulty-label">Bot Difficulty</span>
-            <div class="difficulty-selector">
-              <button
-                :class="['difficulty-pill', { active: settings.aiDifficulty === 'easy' }]"
-                @click="settings.setAIDifficulty('easy')"
-              >
-                Easy
-              </button>
-              <button
-                :class="['difficulty-pill', { active: settings.aiDifficulty === 'hard' }]"
-                @click="settings.setAIDifficulty('hard')"
-              >
-                Hard
-              </button>
-            </div>
-          </div>
-
-          <div class="game-options-section">
-            <EuchreOptions v-if="lobbyStore.selectedGameType === 'euchre'" />
-            <PresidentOptions v-else-if="lobbyStore.selectedGameType === 'president'" />
-            <SpadesOptions v-else-if="lobbyStore.selectedGameType === 'spades'" />
-          </div>
-
-          <div class="table-options-section">
-            <label class="toggle-option">
-              <input v-model="chatEnabled" type="checkbox" />
-              <span class="toggle-label">Chat enabled</span>
-            </label>
-            
-            <label class="toggle-option">
-              <input v-model="isPrivate" type="checkbox" />
-              <span class="toggle-label">Private game</span>
-              <span class="toggle-hint">Shows 🔒 in lobby - for playing with friends</span>
-            </label>
-            
-            <label class="toggle-option">
-              <input v-model="bootInactive" type="checkbox" />
-              <span class="toggle-label">Boot inactive players</span>
-              <span class="toggle-hint">Show turn timer and allow kicking AFK players</span>
-            </label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="showCreateOptions = false">Cancel</button>
-          <button class="btn-primary" @click="handleCreateTable">Create</button>
-        </div>
-      </div>
-    </Modal>
 
     <!-- Connection status -->
     <div v-if="showConnectingBanner" class="status-banner connecting">

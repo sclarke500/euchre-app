@@ -1,160 +1,151 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { isMobile, lockViewport, unlockViewport } from '@/composables/useCardSizing'
+/**
+ * ScaledContainer - 16:9 aspect ratio container with transform scaling
+ * 
+ * In FULL mode (tablet/desktop):
+ * - Creates a fixed-size container at canonical dimensions (1120x630)
+ * - Uses CSS transform: scale() to fit the viewport
+ * - Everything inside scales proportionally
+ * 
+ * In MOBILE mode:
+ * - Passes through without constraint
+ * - Uses full screen space
+ */
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { isFullMode } from '@/utils/deviceMode'
 
-const props = withDefaults(defineProps<{
-  // Base dimensions the content is designed for
-  baseWidth?: number
-  baseHeight?: number
-  // Max width before we stop scaling up
-  maxWidth?: number
-  // Padding around the container
-  padding?: number
-}>(), {
-  baseWidth: 1280,
-  baseHeight: 720,
-  maxWidth: 1600,
-  padding: 24,
+// Canonical dimensions for 16:9 aspect ratio
+// This is the "design size" - everything is laid out at this size then scaled
+const CANONICAL_WIDTH = 1120
+const CANONICAL_HEIGHT = 630
+
+// No padding - container runs edge-to-edge
+const VIEWPORT_PADDING = 0
+
+const wrapperRef = ref<HTMLElement | null>(null)
+const containerRef = ref<HTMLElement | null>(null)
+const scale = ref(1)
+const wrapperWidth = ref(0)
+const wrapperHeight = ref(0)
+
+const shouldScale = computed(() => {
+  const result = isFullMode()
+  console.log('[ScaledContainer] shouldScale:', result)
+  return result
 })
 
-const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280)
-const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 720)
-
-function updateViewport() {
-  viewportWidth.value = window.innerWidth
-  viewportHeight.value = window.innerHeight
+function calculateScale() {
+  if (!shouldScale.value || !wrapperRef.value) {
+    scale.value = 1
+    return
+  }
+  
+  // Measure actual wrapper element size (not window)
+  wrapperWidth.value = wrapperRef.value.offsetWidth
+  wrapperHeight.value = wrapperRef.value.offsetHeight
+  
+  console.log(`[ScaledContainer] wrapper: ${wrapperWidth.value}×${wrapperHeight.value}`)
+  
+  // Scale to fit (use smaller scale to maintain aspect ratio)
+  const scaleX = wrapperWidth.value / CANONICAL_WIDTH
+  const scaleY = wrapperHeight.value / CANONICAL_HEIGHT
+  
+  // Use smaller scale to ensure it fits - no cap, can scale up
+  scale.value = Math.min(scaleX, scaleY)
+  console.log(`[ScaledContainer] scale: ${scale.value.toFixed(3)} (scaleX=${scaleX.toFixed(3)}, scaleY=${scaleY.toFixed(3)})`)
 }
 
-// Determine scaling mode IMMEDIATELY (before children render)
-// Use actual window dimensions, not the reactive refs
-const actualWidth = typeof window !== 'undefined' ? window.innerWidth : 1280
-const actualHeight = typeof window !== 'undefined' ? window.innerHeight : 720
-const shouldScale = !(actualWidth < 768 || actualHeight < 500) // Same logic as isMobile()
-
-// If scaling, lock viewport BEFORE children mount
-// This is synchronous, so children will see locked dimensions when they mount
-if (shouldScale) {
-  lockViewport(props.baseWidth, props.baseHeight)
+function handleResize() {
+  calculateScale()
 }
-
-// Track if we've been initialized (for conditional rendering)
-const isReady = ref(shouldScale ? true : false)
 
 onMounted(() => {
-  window.addEventListener('resize', updateViewport)
-  updateViewport()
-  
-  // For mobile mode, mark ready after mount
-  if (!shouldScale) {
-    isReady.value = true
-  }
+  // Wait a tick for layout to settle
+  requestAnimationFrame(() => {
+    calculateScale()
+  })
+  window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateViewport)
-  // Unlock viewport when leaving scaled container
-  if (shouldScale) {
-    unlockViewport()
+  window.removeEventListener('resize', handleResize)
+})
+
+// Recalculate when mode changes (shouldn't happen, but safety)
+watch(shouldScale, () => {
+  calculateScale()
+})
+
+// Calculate style with centering offset
+const scaledStyle = computed(() => {
+  const scaledW = CANONICAL_WIDTH * scale.value
+  const scaledH = CANONICAL_HEIGHT * scale.value
+  
+  // Center the scaled content within wrapper
+  const offsetX = Math.max(0, (wrapperWidth.value - scaledW) / 2)
+  const offsetY = Math.max(0, (wrapperHeight.value - scaledH) / 2)
+  
+  return {
+    width: `${CANONICAL_WIDTH}px`,
+    height: `${CANONICAL_HEIGHT}px`,
+    transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale.value})`,
   }
 })
 
-// Calculate the scale factor to fit container in viewport
-const scale = computed(() => {
-  if (!shouldScale) return 1
-  
-  const availableWidth = Math.min(viewportWidth.value - props.padding * 2, props.maxWidth)
-  const availableHeight = viewportHeight.value - props.padding * 2
-  
-  const scaleX = availableWidth / props.baseWidth
-  const scaleY = availableHeight / props.baseHeight
-  
-  // Use the smaller scale to ensure it fits
-  return Math.min(scaleX, scaleY, 1.25) // Cap at 1.25x to avoid over-scaling
-})
+// Expose dimensions for child components that need to know the "virtual" viewport
+const containerWidth = computed(() => shouldScale.value ? CANONICAL_WIDTH : (wrapperRef.value?.offsetWidth ?? window.innerWidth))
+const containerHeight = computed(() => shouldScale.value ? CANONICAL_HEIGHT : (wrapperRef.value?.offsetHeight ?? window.innerHeight))
 
-// Actual rendered dimensions
-const containerWidth = computed(() => props.baseWidth * scale.value)
-const containerHeight = computed(() => props.baseHeight * scale.value)
+defineExpose({
+  width: containerWidth,
+  height: containerHeight,
+  scale,
+})
 </script>
 
 <template>
-  <div class="scaled-wrapper" :class="{ 'mobile-mode': !shouldScale }">
-    <!-- Background area (scaled mode only) -->
-    <div v-if="shouldScale" class="background-area">
-      <div class="background-pattern"></div>
-    </div>
-    
-    <!-- Scaled game container -->
-    <div 
-      v-if="shouldScale && isReady"
+  <div ref="wrapperRef" class="scaled-container-wrapper" :class="{ 'is-scaling': shouldScale }">
+    <div
+      v-if="shouldScale"
+      ref="containerRef"
       class="scaled-container"
-      :style="{
-        width: baseWidth + 'px',
-        height: baseHeight + 'px',
-        transform: `scale(${scale})`,
-      }"
+      :style="scaledStyle"
     >
       <slot />
     </div>
     
-    <!-- Mobile: no scaling, just render content -->
-    <div v-else-if="!shouldScale && isReady" class="mobile-container">
+    <!-- Mobile: no scaling, full viewport -->
+    <div v-else class="passthrough-container">
       <slot />
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.scaled-wrapper {
+.scaled-container-wrapper {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
   overflow: hidden;
+  position: relative;
   
-  &.mobile-mode {
-    // On mobile, just fill the space
-    .mobile-container {
-      width: 100%;
-      height: 100%;
-    }
-  }
-}
-
-.background-area {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  
-  .background-pattern {
-    width: 100%;
-    height: 100%;
-    background: 
-      // Subtle vignette
-      radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.4) 100%),
-      // Robot image very faded
-      url('@/assets/menu-background.jpg');
-    background-size: cover;
-    background-position: center;
-    filter: brightness(0.3) saturate(0.5);
+  &.is-scaling {
+    background: #0a0a0f; // Dark background if container doesn't fill (letterboxing)
   }
 }
 
 .scaled-container {
-  position: relative;
-  z-index: 1;
-  transform-origin: center center;
-  border-radius: 16px;
+  // Transform from top-left corner, positioned at top-left
+  // This avoids flexbox layout issues with transformed elements
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
   overflow: hidden;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: #0f0f18; // Game area background
 }
 
-.mobile-container {
-  position: relative;
-  z-index: 1;
+.passthrough-container {
+  width: 100%;
+  height: 100%;
 }
 </style>

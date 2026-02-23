@@ -340,13 +340,8 @@ defineExpose({
   width: 100%;
   height: 100%;
   color: #fff;
-  
-  // Constrain table size on large screens, center it
-  :global(.full-mode) & {
-    max-width: 1050px;
-    max-height: 700px;
-    margin: auto;
-  }
+  // Table fills the ScaledContainer - no longer needs max constraints
+  // (ScaledContainer handles the fixed 16:9 sizing)
 }
 
 .board {

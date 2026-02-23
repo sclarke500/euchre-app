@@ -4,9 +4,13 @@ import App from './App.vue'
 import router from './router'
 import './assets/styles/main.scss'
 import { installConsoleCapture } from './utils/consoleCapture'
+import { initDeviceMode } from './utils/deviceMode'
 
 // Install console capture early (before any logging)
 installConsoleCapture()
+
+// Initialize device mode (sets global CSS classes and card sizing vars)
+initDeviceMode()
 
 // Log build version
 const buildDate = new Date(__BUILD_TIME__)

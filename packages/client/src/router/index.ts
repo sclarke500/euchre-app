@@ -24,6 +24,18 @@ const routes: RouteRecordRaw[] = [
     props: true,
   },
   {
+    path: '/lobby/create',
+    name: 'create-game',
+    component: () => import('@/views/CreateGameView.vue'),
+    beforeEnter: (to, _from, next) => {
+      if (!hasNickname()) {
+        next({ path: '/play', query: { needsNickname: 'true', redirect: to.fullPath } })
+      } else {
+        next()
+      }
+    },
+  },
+  {
     path: '/lobby/:code?',
     name: 'lobby',
     component: () => import('@/views/LobbyView.vue'),

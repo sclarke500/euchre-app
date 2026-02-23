@@ -3,18 +3,32 @@
  * 
  * Two modes: Mobile (phones) vs Full (iPad/desktop)
  * Mobile: width < 768px OR height < 500px (catches phone portrait + landscape)
- * Full: everything else, table capped at 1050x700
+ * Full: everything else - uses 16:9 scaled container
+ * 
+ * Detection is done once on app init via deviceMode.ts
+ * This module provides reactive access and context-specific scales.
  */
 
 import { ref, computed, onMounted, watch } from 'vue'
+import {
+  isMobile as deviceIsMobile,
+  isSmallMobile as deviceIsSmallMobile,
+  isFullMode as deviceIsFullMode,
+  getCardWidth as getDeviceCardWidth,
+  getCardHeight as getDeviceCardHeight,
+} from '@/utils/deviceMode'
 
 // Standard playing card aspect ratio
 const CARD_ASPECT_RATIO = 1.4
 
-// Card sizes for each mode
+// Card sizes for each mode (kept for reference, actual values from deviceMode)
 const SMALL_MOBILE_BASE_WIDTH = 54  // iPhone SE, small phones (height < 400)
 const MOBILE_BASE_WIDTH = 60
 const FULL_BASE_WIDTH = 70
+
+// Canonical dimensions for full mode (16:9 scaled container)
+const CANONICAL_WIDTH = 1120
+const CANONICAL_HEIGHT = 630
 
 // Context multipliers for small mobile (iPhone SE, very cramped)
 const SmallMobileScales = {
@@ -42,12 +56,12 @@ const MobileScales = {
 
 // Context multipliers for full mode (more uniform, more room)
 const FullScales = {
-  userHand: 1.0,        // Same size as table cards
-  opponentHand: 0.7,    // Slightly smaller
-  playArea: 1.0,        // Same as user hand
-  deck: 0.8,            // Deal stack
-  tricksWon: 0.5,       // Won trick piles
-  sweep: 0.6,           // Cards being swept
+  userHand: 1.2,        // Larger for easier tapping/visibility
+  opponentHand: 0.8,    // Slightly smaller than play area
+  playArea: 1.0,        // Standard size in play area
+  deck: 1.0,            // Deal stack
+  tricksWon: 0.6,       // Won trick piles
+  sweep: 1.0,           // Cards being swept
   mini: 0.3,            // Very small
   hidden: 0.05,         // Collapsed at avatar
 } as const
@@ -108,59 +122,48 @@ let listenerAttached = false
 
 /**
  * Detect small mobile: small phones in landscape
- * - height < 400px in landscape (375px on SE, 390px on Pixel 7)
- * - width < 860px (catches Pixel 7 at 844px)
+ * Uses deviceMode detection (run once at init)
  */
 export function isSmallMobile(): boolean {
-  return viewportHeight.value < 400 && viewportWidth.value < 860
+  return deviceIsSmallMobile()
 }
 
 /**
  * Detect mobile mode: phones in any orientation
- * - width < 768px (phone portrait)
- * - height < 500px (phone landscape)
+ * Uses deviceMode detection (run once at init)
  */
 export function isMobile(): boolean {
-  return viewportWidth.value < 768 || viewportHeight.value < 500
+  return deviceIsMobile()
 }
 
 /**
  * Get current viewport width
+ * In full mode, returns canonical width (1120) for consistent positioning
  */
 export function getViewportWidth(): number {
+  if (deviceIsFullMode()) {
+    return CANONICAL_WIDTH
+  }
   return viewportWidth.value
 }
 
 /**
  * Get current viewport height
+ * In full mode, returns canonical height (630) for consistent positioning
  */
 export function getViewportHeight(): number {
+  if (deviceIsFullMode()) {
+    return CANONICAL_HEIGHT
+  }
   return viewportHeight.value
 }
 
 /**
  * Get the base card width for current viewport mode
+ * Uses deviceMode detection (values set once at init)
  */
 export function getBaseCardWidth(): number {
-  const smallMobile = isSmallMobile()
-  const mobile = isMobile()
-  
-  let baseWidth: number
-  let mode: string
-  
-  if (smallMobile) {
-    baseWidth = SMALL_MOBILE_BASE_WIDTH
-    mode = 'small-mobile'
-  } else if (mobile) {
-    baseWidth = MOBILE_BASE_WIDTH
-    mode = 'mobile'
-  } else {
-    baseWidth = FULL_BASE_WIDTH
-    mode = 'full'
-  }
-  
-  console.log(`[CardSizing] ${viewportWidth.value}x${viewportHeight.value} → ${mode} → baseWidth: ${baseWidth}px`)
-  return baseWidth
+  return getDeviceCardWidth()
 }
 
 /**

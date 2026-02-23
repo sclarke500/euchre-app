@@ -306,7 +306,7 @@ const gameTitle = computed(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgb(20, 25, 35);
+  position: relative; // For settings overlay positioning
   
   // Background: image on left portion, fading to dark
   background: 
@@ -323,9 +323,9 @@ const gameTitle = computed(() => {
       rgba(20, 25, 35, 0.75) 42%,
       rgba(20, 25, 35, 1) 50%
     ),
-    // Robot image - covers left portion
+    // Robot image - covers left portion, fills height
     url('@/assets/menu-background.jpg');
-  background-size: 100% 100%, 100% 100%, 50% auto;
+  background-size: cover, cover, auto 100%;
   background-position: center, center, left center;
   background-repeat: no-repeat;
   background-color: rgb(20, 25, 35);
@@ -440,8 +440,8 @@ const gameTitle = computed(() => {
     padding: $spacing-sm;
   }
 
-  // Portrait mode - flex grow to fill remaining space
-  @media (orientation: portrait) {
+  // Portrait mode (phones only) - flex grow to fill remaining space
+  @media (orientation: portrait) and (max-width: 600px) {
     flex: 1;
     justify-content: flex-start;
     padding: $spacing-md;
@@ -461,7 +461,7 @@ const gameTitle = computed(() => {
       margin-bottom: $spacing-sm;
     }
 
-    @media (orientation: portrait) {
+    @media (orientation: portrait) and (max-width: 600px) {
       font-size: 1.25rem;
       margin-bottom: $spacing-md;
     }
@@ -482,7 +482,7 @@ const gameTitle = computed(() => {
     max-width: 350px;
   }
 
-  @media (orientation: portrait) {
+  @media (orientation: portrait) and (max-width: 600px) {
     max-width: 320px;
   }
 }
@@ -569,7 +569,7 @@ const gameTitle = computed(() => {
     font-size: 1rem;
   }
 
-  @media (orientation: portrait) {
+  @media (orientation: portrait) and (max-width: 600px) {
     padding: $spacing-sm $spacing-lg;
     font-size: 1rem;
   }
@@ -691,7 +691,7 @@ const gameTitle = computed(() => {
     font-size: 0.875rem;
   }
 
-  @media (orientation: portrait) {
+  @media (orientation: portrait) and (max-width: 600px) {
     max-width: 320px;
   }
 

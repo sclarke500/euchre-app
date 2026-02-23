@@ -2,15 +2,23 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppToast from './components/AppToast.vue'
+import ScaledContainer from './components/ScaledContainer.vue'
+import { isMobile } from './utils/deviceMode'
 
 const route = useRoute()
 
-// Routes that require landscape orientation (actual games, not menu)
+// Routes that require landscape orientation on MOBILE (phones only)
+// Tablets/desktop use scaled container which handles portrait fine
 const landscapeRoutes = ['/play/', '/lobby', '/game']  // Note: /play/ requires trailing slash to skip /play menu
 
 // Routes that allow scrolling (landing page, etc.)
 const scrollableRoutes = computed(() => {
   return route.path === '/' || route.name === 'landing'
+})
+
+// Routes that should use the scaled container (everything except landing)
+const useScaledContainer = computed(() => {
+  return route.path !== '/' && route.name !== 'landing'
 })
 
 // Apply scrollable class to html element for landing page
@@ -32,15 +40,18 @@ function updateOrientation() {
 // Track if current view has been initialized in landscape
 const hasInitializedInLandscape = ref(false)
 
-// Check if current route requires landscape
+// Check if current route requires landscape (mobile only - tablets handle portrait via scaled container)
 const requiresLandscape = computed(() => {
+  // Only enforce landscape on mobile devices
+  if (!isMobile()) return false
+  
   const path = route.path
   // Klondike doesn't require landscape
   if (path === '/play/klondike') return false
   return landscapeRoutes.some(r => path.startsWith(r))
 })
 
-// Show landscape blocker when in portrait on landscape-required routes
+// Show landscape blocker when in portrait on landscape-required routes (mobile only)
 const showLandscapeBlocker = computed(() => {
   return requiresLandscape.value && !isLandscape.value
 })
@@ -252,7 +263,13 @@ function dismissOpenInAppPrompt() {
     </Transition>
 
     <!-- Router View - only render when allowed (landscape check) -->
-    <router-view v-if="canRenderView" />
+    <!-- Scaled container for app routes (not landing page) -->
+    <ScaledContainer v-if="canRenderView && useScaledContainer">
+      <router-view />
+    </ScaledContainer>
+    
+    <!-- Landing page without scaling -->
+    <router-view v-else-if="canRenderView" />
   </div>
 </template>
 

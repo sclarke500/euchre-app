@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { EuchreEngineBoard } from '@/games/euchre'
 import { PresidentEngineBoard } from '@/games/president'
 import { SpadesEngineBoard } from '@/games/spades'
 import { useLobbyStore } from '@/stores/lobbyStore'
-import ScaledContainer from '@/components/ScaledContainer.vue'
 
 const props = defineProps<{
   gameType: string
@@ -26,8 +25,20 @@ const isReady = ref(false)
 // Track if user confirmed leaving (to skip prompt on intentional leave)
 const confirmedLeave = ref(false)
 
+// Warn on page refresh/close
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (lobbyStore.gameId && !confirmedLeave.value) {
+    e.preventDefault()
+    e.returnValue = 'Leave game?'
+    return e.returnValue
+  }
+}
+
 // Handle reconnect/validation on mount
 onMounted(async () => {
+  // Add refresh warning
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  
   if (!isValidGameType.value) {
     router.replace('/play')
     return
@@ -49,15 +60,19 @@ onMounted(async () => {
     }
   }
   
-  // If we don't have an active game matching this ID, set game info for reconnect
+  // If we don't have an active game matching this ID, redirect to menu
+  // (Reconnect logic is complex and has timing issues - cleaner to just restart)
   if (lobbyStore.gameId !== props.gameId) {
-    // Store the game info for reconnect attempt
-    lobbyStore.setGameType(props.gameType as ValidGameType)
-    // Set gameId so the board knows which game to request state for
-    // The board's multiplayer store will request_state on initialize()
+    console.log('[GameView] Direct URL access without active game, redirecting to menu')
+    router.replace('/play')
+    return
   }
   
   isReady.value = true
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
 // Navigation guard - prompt before leaving game via back button
@@ -91,7 +106,7 @@ function leaveGame() {
 </script>
 
 <template>
-  <ScaledContainer v-if="isValidGameType && isReady">
+  <div v-if="isValidGameType && isReady" class="game-view">
     <EuchreEngineBoard
       v-if="gameType === 'euchre'"
       mode="multiplayer"
@@ -107,18 +122,23 @@ function leaveGame() {
       mode="multiplayer"
       @leave-game="leaveGame"
     />
-  </ScaledContainer>
+  </div>
   <div v-else-if="!isReady" class="loading-state">
     Connecting...
   </div>
 </template>
 
 <style scoped>
+.game-view {
+  width: 100%;
+  height: 100%;
+}
+
 .loading-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 100%;
   color: #888;
   font-size: 18px;
 }

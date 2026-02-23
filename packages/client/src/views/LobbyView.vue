@@ -13,14 +13,6 @@ const router = useRouter()
 const route = useRoute()
 const lobbyStore = useLobbyStore()
 
-// Set game type from query param if provided
-onMounted(() => {
-  const gameFromQuery = route.query.game as GameType | undefined
-  if (gameFromQuery && ['euchre', 'president', 'spades'].includes(gameFromQuery)) {
-    lobbyStore.setGameType(gameFromQuery)
-  }
-})
-
 // Update URL when user joins/leaves a table (use odusId as the code)
 watch(() => lobbyStore.currentTable?.odusId, (tableId) => {
   if (tableId && route.params.code !== tableId) {

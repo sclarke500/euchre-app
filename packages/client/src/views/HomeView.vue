@@ -9,8 +9,8 @@ function startSinglePlayer(game: GameType) {
 }
 
 function enterMultiplayer(game: GameType) {
-  // Store selected game type, then go to lobby
-  router.push({ name: 'lobby', query: { game } })
+  // Go to lobby (game selection happens in lobby)
+  router.push({ name: 'lobby' })
 }
 </script>
 
