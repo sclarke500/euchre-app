@@ -17,13 +17,13 @@ type ValidGame = typeof validGames[number]
 
 const isValidGame = computed(() => validGames.includes(props.game as ValidGame))
 
-// Redirect invalid games to home
+// Redirect invalid games to menu
 if (!isValidGame.value) {
-  router.replace('/')
+  router.replace('/play')
 }
 
 function leaveGame() {
-  router.push('/')
+  router.push('/play')
 }
 </script>
 

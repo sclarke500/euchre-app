@@ -70,11 +70,12 @@ function updateViewport() {
 let listenerAttached = false
 
 /**
- * Detect small mobile: very small phones like iPhone SE
- * - height < 400px in landscape (375px on SE)
+ * Detect small mobile: small phones in landscape
+ * - height < 400px in landscape (375px on SE, 390px on Pixel 7)
+ * - width < 860px (catches Pixel 7 at 844px)
  */
 export function isSmallMobile(): boolean {
-  return viewportHeight.value < 400 && viewportWidth.value < 750
+  return viewportHeight.value < 400 && viewportWidth.value < 860
 }
 
 /**

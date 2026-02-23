@@ -28,7 +28,7 @@ const confirmedLeave = ref(false)
 // Handle reconnect/validation on mount
 onMounted(async () => {
   if (!isValidGameType.value) {
-    router.replace('/')
+    router.replace('/play')
     return
   }
   

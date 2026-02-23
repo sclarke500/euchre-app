@@ -3,10 +3,9 @@
     <div ref="boardRef" class="board">
       <!-- Table surface -->
       <div ref="tableRef" class="table-surface" :class="layout">
-        <!-- Watermark with game name -->
-        <div v-if="gameName" class="table-watermark">
-          <img src="@/assets/AppLogo.png" alt="" class="watermark-logo" />
-          <span class="watermark-name">{{ gameName }}</span>
+        <!-- Watermark -->
+        <div class="table-watermark">
+          <AppLogo size="sm" />
         </div>
       </div>
       
@@ -92,6 +91,7 @@
 import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
 import BoardCard from './BoardCard.vue'
 import PlayerAvatar, { type AvatarPosition } from './PlayerAvatar.vue'
+import AppLogo from './AppLogo.vue'
 import { useChatStore } from '@/stores/chatStore'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
@@ -451,36 +451,26 @@ defineExpose({
       inset 0 -2px 8px rgba(0, 0, 0, 0.2);
   }
 
-  // Watermark with game name
+  // Watermark - AppLogo in center of table
   .table-watermark {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
     pointer-events: none;
     user-select: none;
+    opacity: 0.15;
     
-    .watermark-logo {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-      opacity: 0.18;
-    }
-    
-    .watermark-name {
-      font-family: 'Rock Salt', cursive;
-      font-size: 1rem;
-      font-weight: 400;
-      color: white;
-      text-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 1px 1px 2px rgba(0, 0, 0, 0.5);
-      letter-spacing: 0.08em;
-      margin-top: -14px;
-      -webkit-text-stroke: 0.5px white;
-      opacity: 0.18;
+    :deep(.app-logo) {
+      margin: 0;
+      
+      .logo-img {
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) brightness(1.2);
+      }
+      
+      .logo-url {
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+      }
     }
   }
 

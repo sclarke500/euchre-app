@@ -6,6 +6,7 @@ import { canMoveToTableau, canMoveToFoundation } from '@67cards/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '@/components/Modal.vue'
+import AppLogo from '@/components/AppLogo.vue'
 import confetti from 'canvas-confetti'
 
 const emit = defineEmits<{
@@ -897,8 +898,7 @@ function doNewGame() {
   <div ref="boardRef" class="klondike-board">
     <!-- Watermark -->
     <div class="table-watermark">
-      <img src="@/assets/AppLogo.png" alt="" class="watermark-logo" />
-      <span class="watermark-name">KLONDIKE</span>
+      <AppLogo size="sm" />
     </div>
 
     <!-- Container slots (measures positions, handles empty slot clicks) -->
@@ -1104,7 +1104,14 @@ function doNewGame() {
 .klondike-board {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
+  // Dark green felt background with radial gradient for depth
+  background: 
+    // Stronger vignette around edges
+    radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(0, 0, 0, 0.45) 100%),
+    // Subtle center highlight
+    radial-gradient(ellipse 60% 50% at 50% 45%, #1a5c3d 0%, transparent 70%),
+    // Darker base felt color
+    #144030;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -1116,37 +1123,27 @@ function doNewGame() {
   --card-height: 70px;
 }
 
-// Watermark
+// Watermark - AppLogo in center
 .table-watermark {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
   pointer-events: none;
   user-select: none;
   z-index: 1;
+  opacity: 0.12;
   
-  .watermark-logo {
-    width: 120px;
-    height: 120px;
-    object-fit: contain;
-    opacity: 0.1;
-  }
-  
-  .watermark-name {
-    font-family: 'Rock Salt', cursive;
-    font-size: 1.1rem;
-    font-weight: 400;
-    color: white;
-    text-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 1px 1px 2px rgba(0, 0, 0, 0.5);
-    letter-spacing: 0.08em;
-    margin-top: -20px;
-    -webkit-text-stroke: 0.5px white;
-    opacity: 0.18;
+  :deep(.app-logo) {
+    margin: 0;
+    
+    .logo-img {
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) brightness(1.2);
+    }
+    
+    .logo-url {
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
   }
 }
 

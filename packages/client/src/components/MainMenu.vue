@@ -5,6 +5,7 @@ import { useLobbyStore } from '@/stores/lobbyStore'
 import { getPlatformInfo } from '@/utils/platform'
 import SettingsModal from './SettingsModal.vue'
 import ProfileModal from './ProfileModal.vue'
+import AppLogo from './AppLogo.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -160,6 +161,10 @@ function handleSinglePlayer() {
   emit('startSinglePlayer', selectedGame.value)
 }
 
+function playGame(game: GameType) {
+  emit('startSinglePlayer', game)
+}
+
 const gameTitle = computed(() => {
   switch (selectedGame.value) {
     case 'euchre': return 'Euchre'
@@ -172,8 +177,9 @@ const gameTitle = computed(() => {
 </script>
 
 <template>
-  <div class="main-menu" :class="{ 'wobble-67': isWobbling }">
-    <button class="settings-btn" @click="showSettings = true">
+  <div class="menu-wrapper">
+    <div class="main-menu">
+      <button class="settings-btn" @click="showSettings = true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3" />
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -184,74 +190,8 @@ const gameTitle = computed(() => {
     <ProfileModal :show="showProfile" @close="showProfile = false" />
 
     <div class="logo-section">
-      <img src="@/assets/AppLogo.png" alt="Euchre Logo" class="logo" />
-      <span class="stamp-text">67CardGames.com</span>
-    </div>
-
-    <div class="content-section">
-      <h1>{{ gameTitle }}</h1>
-
-      <div class="game-carousel-wrapper">
-        <div v-if="canScrollLeft" class="carousel-fade left"></div>
-        <button v-if="canScrollLeft" class="carousel-arrow left" @click="scrollCarousel('left')">
-          ‹
-        </button>
-        
-        <div ref="carouselRef" class="game-carousel">
-          <button
-            :class="['game-card', { active: selectedGame === 'euchre' }]"
-            @click="selectedGame = 'euchre'"
-          >
-            <span class="game-name">Euchre</span>
-            <span class="game-desc">Trick-taking</span>
-          </button>
-          <button
-            :class="['game-card', { active: selectedGame === 'spades' }]"
-            @click="selectedGame = 'spades'"
-          >
-            <span class="game-name">Spades</span>
-            <span class="game-desc">Bid & tricks</span>
-          </button>
-          <button
-            :class="['game-card', { active: selectedGame === 'president' }]"
-            @click="selectedGame = 'president'"
-          >
-            <span class="game-name">President</span>
-            <span class="game-desc">Shedding</span>
-          </button>
-          <button
-            :class="['game-card', { active: selectedGame === 'klondike' }]"
-            @click="selectedGame = 'klondike'"
-          >
-            <span class="game-name">Klondike</span>
-            <span class="game-desc">Solitaire</span>
-          </button>
-        </div>
-        
-        <div v-if="canScrollRight" class="carousel-fade right"></div>
-        <button v-if="canScrollRight" class="carousel-arrow right" @click="scrollCarousel('right')">
-          ›
-        </button>
-      </div>
-
-      <div class="menu-options">
-        <button class="menu-btn single-player" @click="handleSinglePlayer">
-          Single Player
-          <span v-if="selectedGame === 'klondike'" class="btn-subtitle">Classic solitaire</span>
-          <span v-else class="btn-subtitle">Play against AI</span>
-        </button>
-
-        <button
-          class="menu-btn multiplayer"
-          :disabled="selectedGame === 'klondike'"
-          @click="handleMultiplayer"
-        >
-          Multiplayer
-          <span v-if="selectedGame === 'klondike'" class="btn-subtitle">Solitaire is solo!</span>
-          <span v-else class="btn-subtitle">Play with friends online</span>
-        </button>
-      </div>
-
+      <AppLogo size="md" />
+      
       <div :class="['profile-section', { highlight: highlightNickname }]">
         <template v-if="!lobbyStore.hasNickname">
           <button class="profile-btn setup" @click="showProfile = true">
@@ -274,6 +214,34 @@ const gameTitle = computed(() => {
           </button>
         </template>
       </div>
+    </div>
+
+    <div class="content-section">
+      <h2 class="section-title">Pick a Game</h2>
+
+      <div class="game-grid">
+        <button class="game-card" @click="playGame('euchre')">
+          <span class="game-name">Euchre</span>
+          <span class="game-desc">Classic Midwest trick-taking</span>
+        </button>
+        <button class="game-card" @click="playGame('spades')">
+          <span class="game-name">Spades</span>
+          <span class="game-desc">Bid your tricks wisely</span>
+        </button>
+        <button class="game-card" @click="playGame('president')">
+          <span class="game-name">President</span>
+          <span class="game-desc">Race to shed your cards</span>
+        </button>
+        <button class="game-card" @click="playGame('klondike')">
+          <span class="game-name">Klondike</span>
+          <span class="game-desc">Classic solitaire</span>
+        </button>
+      </div>
+
+      <button class="multiplayer-btn" @click="handleMultiplayer">
+        <span class="mp-icon">👥</span>
+        <span class="mp-text">Play with Friends</span>
+      </button>
 
       <!-- Install hints -->
       <div v-if="showIOSInstallHint" class="install-hint">
@@ -285,6 +253,7 @@ const gameTitle = computed(() => {
         <button class="dismiss-btn" @click="dismissInstallHint">×</button>
       </div>
       <!-- Android/Desktop install prompt handled by App.vue -->
+    </div>
     </div>
   </div>
 </template>
@@ -330,18 +299,63 @@ const gameTitle = computed(() => {
   }
 }
 
+// Full-viewport wrapper with background
+.menu-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgb(20, 25, 35);
+  
+  // Background: image on left portion, fading to dark
+  background: 
+    // Dark overlay on left for logo readability
+    linear-gradient(to right,
+      rgba(0, 0, 0, 0.4) 0%,
+      rgba(0, 0, 0, 0.3) 20%,
+      transparent 40%
+    ),
+    // Gradient fade to dark
+    linear-gradient(to right, 
+      transparent 25%,
+      rgba(20, 25, 35, 0.4) 35%,
+      rgba(20, 25, 35, 0.75) 42%,
+      rgba(20, 25, 35, 1) 50%
+    ),
+    // Robot image - covers left portion
+    url('@/assets/menu-background.jpg');
+  background-size: 100% 100%, 100% 100%, 50% auto;
+  background-position: center, center, left center;
+  background-repeat: no-repeat;
+  background-color: rgb(20, 25, 35);
+
+  // Portrait mode (phones only) - stacked layout
+  @media (orientation: portrait) and (max-width: 600px) {
+    align-items: flex-start;
+    background: 
+      linear-gradient(to bottom, 
+        transparent 20%,
+        rgba(20, 25, 35, 0.8) 35%,
+        rgba(20, 25, 35, 1) 45%
+      ),
+      url('@/assets/menu-background.jpg');
+    background-size: 100% 100%, 100% 40%;
+    background-position: center, center top;
+    background-repeat: no-repeat;
+  }
+}
+
 .main-menu {
   width: 100%;
   height: 100%;
   max-width: 900px;
-  margin: 0 auto;
   display: flex;
   flex-direction: row;
-  // Background handled by #app for full-screen coverage
   color: white;
 
-  // Portrait mode - stack vertically
-  @media (orientation: portrait) {
+  // Portrait mode (phones only) - stacked layout
+  @media (orientation: portrait) and (max-width: 600px) {
     flex-direction: column;
     overflow-y: auto;
   }
@@ -351,73 +365,60 @@ const gameTitle = computed(() => {
   flex: 0 0 40%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: $spacing-xl;
-  background: 
-    // Subtle warm glow top-left
-    radial-gradient(circle at 20% 20%, rgba(255, 220, 150, 0.08) 0%, transparent 40%),
-    // Cool accent bottom-right
-    radial-gradient(circle at 80% 90%, rgba(100, 180, 255, 0.06) 0%, transparent 35%),
-    // Green gradient base
-    linear-gradient(160deg, rgba($brand-green, 0.5) 0%, rgba($brand-green-dark, 0.3) 100%);
+  padding-left: $spacing-xl * 1.5;
+  // Transparent - let main-menu background show through
   gap: $spacing-lg;
+
+  // Push profile to bottom
+  .profile-section {
+    margin-top: auto;
+    margin-bottom: $spacing-lg;
+    align-self: flex-start;
+  }
 
   @media (max-height: 500px) {
     padding: $spacing-md;
+    padding-left: $spacing-lg;
     gap: $spacing-sm;
+    
+    .profile-section {
+      margin-bottom: $spacing-sm;
+    }
   }
 
-  // Portrait mode - smaller logo section at top
-  @media (orientation: portrait) {
+  // Portrait mode (phones only) - logo top-left, profile centered at bottom
+  @media (orientation: portrait) and (max-width: 600px) {
     flex: 0 0 auto;
-    padding: $spacing-lg $spacing-md;
-    gap: $spacing-sm;
-  }
-
-  .logo {
-    width: 80%;
-    max-height: 70%;
-    object-fit: contain;
-    object-position: center;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-
-    // Portrait mode - limit logo size
-    @media (orientation: portrait) {
-      width: 50%;
-      max-width: 200px;
-      max-height: 150px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: $spacing-md;
+    padding-bottom: $spacing-lg;
+    gap: $spacing-md;
+    min-height: 220px;
+    
+    // Mid-size logo in portrait
+    :deep(.app-logo) {
+      .logo-img {
+        width: 130px;
+      }
+      .logo-url {
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        margin-top: -5px;
+      }
+    }
+    
+    .profile-section {
+      margin-top: auto;
+      margin-bottom: 0;
+      align-self: center;
     }
   }
 
-  .stamp-text {
-    font-family: 'Courier Prime', monospace;
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: rgba(255, 255, 255, 0.9);
-    letter-spacing: 1px;
-    padding: $spacing-xs $spacing-sm;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    border-radius: 3px;
-    transform: rotate(-3deg);
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.3),
-      2px 2px 4px rgba(0, 0, 0, 0.2);
-    margin-top: calc(-#{$spacing-xl} - 15px);
-
-    @media (max-height: 500px) {
-      font-size: 0.85rem;
-      padding: 2px $spacing-xs;
-      margin-top: calc(-#{$spacing-md} - 10px);
-    }
-
-    // Portrait mode - smaller stamp
-    @media (orientation: portrait) {
-      font-size: 0.9rem;
-      margin-top: calc(-#{$spacing-md} - 8px);
-    }
-  }
 }
 
 .content-section {
@@ -447,110 +448,42 @@ const gameTitle = computed(() => {
     padding-bottom: $spacing-xl;
   }
 
-  h1 {
+  .section-title {
     font-family: 'Rock Salt', cursive;
-    font-size: 4rem;
+    font-size: 1.5rem;
     font-weight: 400;
     margin-bottom: $spacing-lg;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    opacity: 0.9;
 
     @media (max-height: 500px) {
-      font-size: 2rem;
+      font-size: 1.1rem;
       margin-bottom: $spacing-sm;
     }
 
-    // Portrait mode - smaller title
     @media (orientation: portrait) {
-      font-size: 2.5rem;
+      font-size: 1.25rem;
       margin-bottom: $spacing-md;
     }
   }
 }
 
-.game-carousel-wrapper {
-  position: relative;
-  margin-bottom: $spacing-lg;
-  max-width: 100%;
-  overflow: visible; // Allow cards to be fully visible
-
-  @media (max-height: 500px) {
-    margin-bottom: $spacing-sm;
-  }
-
-  @media (orientation: portrait) {
-    margin-bottom: $spacing-md;
-    // Extend to edges for full-width scroll
-    width: calc(100% + #{$spacing-md} * 2);
-    margin-left: -$spacing-md;
-  }
-}
-
-.carousel-fade {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 40px;
-  pointer-events: none;
-  z-index: 2;
-
-  &.left {
-    left: 0;
-    background: linear-gradient(to right, rgba($surface-900, 0.95), transparent);
-  }
-
-  &.right {
-    right: 0;
-    background: linear-gradient(to left, rgba($surface-900, 0.95), transparent);
-  }
-}
-
-.carousel-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.35);
-  }
-
-  &.left {
-    left: 4px;
-  }
-
-  &.right {
-    right: 4px;
-  }
-}
-
-.game-carousel {
-  display: flex;
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: $spacing-md;
-  padding: $spacing-sm $spacing-md;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  margin-bottom: $spacing-xl;
+  width: 100%;
+  max-width: 400px;
 
   @media (max-height: 500px) {
     gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+    max-width: 350px;
+  }
+
+  @media (orientation: portrait) {
+    max-width: 320px;
   }
 }
 
@@ -558,45 +491,40 @@ const gameTitle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: $spacing-md $spacing-lg;
-  min-width: 100px;
+  justify-content: center;
+  padding: $spacing-lg $spacing-md;
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  border-radius: 16px;
   color: white;
   cursor: pointer;
-  scroll-snap-align: center;
   transition: all 0.2s ease;
-  flex-shrink: 0;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
   }
 
-  &.active {
-    background: $text-primary;
-    border-color: $text-primary;
-    color: $brand-green;
-    transform: scale(1.05);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  &:active {
+    transform: scale(0.98);
   }
 
   .game-name {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: bold;
-    white-space: nowrap;
+    margin-bottom: 4px;
   }
 
   .game-desc {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     opacity: 0.7;
-    white-space: nowrap;
+    text-align: center;
   }
 
   @media (max-height: 500px) {
-    padding: $spacing-sm $spacing-md;
-    min-width: 80px;
+    padding: $spacing-md $spacing-sm;
 
     .game-name {
       font-size: 0.85rem;
@@ -604,67 +532,46 @@ const gameTitle = computed(() => {
   }
 }
 
-.menu-options {
+.multiplayer-btn {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-lg;
-  margin-bottom: $spacing-lg;
-
-  @media (max-height: 500px) {
-    flex-direction: row;
-    margin-bottom: $spacing-md;
-  }
-
-  @media (orientation: portrait) {
-    gap: $spacing-md;
-    margin-bottom: $spacing-md;
-    width: 100%;
-    max-width: 320px;
-  }
-}
-
-.menu-btn {
-  padding: $spacing-lg $spacing-xl * 2;
-  font-size: 1.5rem;
-  font-weight: bold;
-  background: $text-primary;
-  color: $brand-green;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  min-width: 280px;
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-xl;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
+  color: white;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  .mp-icon {
+    font-size: 1.3rem;
+  }
+
+  .mp-text {
+    font-weight: 500;
+  }
 
   @media (max-height: 500px) {
-    padding: $spacing-md $spacing-xl;
-    font-size: 1.25rem;
-    min-width: 200px;
+    padding: $spacing-sm $spacing-lg;
+    font-size: 1rem;
   }
 
   @media (orientation: portrait) {
-    padding: $spacing-md $spacing-lg;
-    font-size: 1.25rem;
-    min-width: unset;
-    width: 100%;
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.95);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .btn-subtitle {
-    font-size: 0.875rem;
-    font-weight: normal;
-    opacity: 0.7;
-    margin-top: $spacing-xs;
+    padding: $spacing-sm $spacing-lg;
+    font-size: 1rem;
   }
 }
 
@@ -693,15 +600,23 @@ const gameTitle = computed(() => {
   display: flex;
   align-items: center;
   gap: $spacing-md;
-  padding: $spacing-md $spacing-lg;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 16px;
+  padding: 8px 16px 8px 8px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  border-radius: 30px;
   cursor: pointer;
-  transition: background 0.15s ease;
-  min-width: 200px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   
   &:hover {
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.4),
+      0 0 12px rgba(212, 175, 55, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
   
   &.setup {

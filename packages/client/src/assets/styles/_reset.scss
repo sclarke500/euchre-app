@@ -25,6 +25,21 @@ body {
   background: #181820;
 }
 
+// Scrollable pages (landing, etc.)
+html.scrollable,
+html.scrollable body {
+  position: static;
+  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+}
+
+html.scrollable #app {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;

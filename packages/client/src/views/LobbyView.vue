@@ -60,7 +60,7 @@ watch(
 
 function goBack() {
   lobbyStore.disconnect()
-  router.push('/')
+  router.push('/play')
 }
 </script>
 

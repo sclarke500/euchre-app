@@ -9,6 +9,11 @@ function hasNickname(): boolean {
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
+    name: 'landing',
+    component: () => import('@/views/LandingView.vue'),
+  },
+  {
+    path: '/play',
     name: 'home',
     component: () => import('@/views/HomeView.vue'),
   },
@@ -25,8 +30,8 @@ const routes: RouteRecordRaw[] = [
     props: true,
     beforeEnter: (to, _from, next) => {
       if (!hasNickname()) {
-        // Redirect to home with a query param to show multiplayer intent
-        next({ path: '/', query: { needsNickname: 'true', redirect: to.fullPath } })
+        // Redirect to app menu with a query param to show multiplayer intent
+        next({ path: '/play', query: { needsNickname: 'true', redirect: to.fullPath } })
       } else {
         next()
       }

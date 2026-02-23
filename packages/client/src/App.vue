@@ -5,8 +5,22 @@ import AppToast from './components/AppToast.vue'
 
 const route = useRoute()
 
-// Routes that require landscape orientation
-const landscapeRoutes = ['/play', '/lobby', '/game']
+// Routes that require landscape orientation (actual games, not menu)
+const landscapeRoutes = ['/play/', '/lobby', '/game']  // Note: /play/ requires trailing slash to skip /play menu
+
+// Routes that allow scrolling (landing page, etc.)
+const scrollableRoutes = computed(() => {
+  return route.path === '/' || route.name === 'landing'
+})
+
+// Apply scrollable class to html element for landing page
+watch(scrollableRoutes, (isScrollable) => {
+  if (isScrollable) {
+    document.documentElement.classList.add('scrollable')
+  } else {
+    document.documentElement.classList.remove('scrollable')
+  }
+}, { immediate: true })
 
 // Track landscape orientation
 const isLandscape = ref(true)
@@ -166,7 +180,7 @@ function dismissOpenInAppPrompt() {
 </script>
 
 <template>
-  <div id="app">
+  <div id="app" :class="{ scrollable: scrollableRoutes }">
     <AppToast />
 
     <!-- Portrait orientation overlay -->
@@ -188,9 +202,9 @@ function dismissOpenInAppPrompt() {
       </div>
     </div>
 
-    <!-- Open in installed app prompt -->
+    <!-- Open in installed app prompt (not on landing page) -->
     <Transition name="slide-up">
-      <div v-if="showOpenInAppPrompt" class="install-prompt open-in-app">
+      <div v-if="showOpenInAppPrompt && !scrollableRoutes" class="install-prompt open-in-app">
         <div class="install-content">
           <div class="install-icon app-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -211,9 +225,9 @@ function dismissOpenInAppPrompt() {
       </div>
     </Transition>
 
-    <!-- Add to Home Screen prompt -->
+    <!-- Add to Home Screen prompt (not on landing page) -->
     <Transition name="slide-up">
-      <div v-if="showInstallPrompt" class="install-prompt">
+      <div v-if="showInstallPrompt && !scrollableRoutes" class="install-prompt">
         <div class="install-content">
           <div class="install-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -248,6 +262,8 @@ function dismissOpenInAppPrompt() {
   height: 100%;
   overflow: hidden;
   background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
+
+  // Scrollable class handled by html.scrollable in _reset.scss
 }
 
 .rotate-device-overlay {
