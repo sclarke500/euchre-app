@@ -8,7 +8,7 @@
       <template v-if="showFaceUp">
         <div class="corner top-left" :class="colorClass">
           <span class="rank">{{ displayRank }}</span>
-          <span class="suit">{{ suitSymbol }}</span>
+          <span v-if="card.rank !== 'Joker'" class="suit">{{ suitSymbol }}</span>
         </div>
         <div class="center" :class="colorClass">
           <img v-if="card.rank === 'Joker'" :src="jokerLogo" alt="Joker" class="joker-logo" />
@@ -16,7 +16,7 @@
         </div>
         <div class="corner bottom-right" :class="colorClass">
           <span class="rank">{{ displayRank }}</span>
-          <span class="suit">{{ suitSymbol }}</span>
+          <span v-if="card.rank !== 'Joker'" class="suit">{{ suitSymbol }}</span>
         </div>
       </template>
       <template v-else>
@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { CardPosition, EngineCard } from './cardContainers'
-import jokerLogo from '@/assets/logo-jester-67-dark.png'
+import jokerLogo from '@/assets/joker-67-color.png'
 
 const props = defineProps<{
   card: EngineCard
@@ -255,7 +255,7 @@ defineExpose({
   }
   
   .joker-logo {
-    width: calc(var(--card-base-width, 83px) * 0.65);
+    width: calc(var(--card-base-width, 83px) * 0.85);
     height: auto;
     object-fit: contain;
   }
