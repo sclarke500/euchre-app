@@ -4,8 +4,18 @@ import { useRoute } from 'vue-router'
 import AppToast from './components/AppToast.vue'
 import ScaledContainer from './components/ScaledContainer.vue'
 import { isMobile } from './utils/deviceMode'
+import {
+  usePWAInstall,
+  initPWAInstall,
+  shouldShowInstallPrompt,
+  shouldShowOpenInAppPrompt,
+  triggerInstall,
+  dismissInstallPrompt as dismissInstall,
+  dismissOpenInAppPrompt as dismissOpenInApp,
+} from './composables/usePWAInstall'
 
 const route = useRoute()
+const { isStandalone, isIOS, canInstallNatively } = usePWAInstall()
 
 // Routes that require landscape orientation on MOBILE (phones only)
 // Tablets/desktop use scaled container which handles portrait fine
@@ -79,87 +89,39 @@ watch(() => route.path, (newPath, oldPath) => {
   }
 })
 
-// PWA install prompt
-const deferredPrompt = ref<Event | null>(null)
+// PWA install prompt state
 const showInstallPrompt = ref(false)
 const showOpenInAppPrompt = ref(false)
-const isIOS = ref(false)
-const isStandalone = ref(false)
-const isAppInstalled = ref(false)
-
-// Capture beforeinstallprompt immediately
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    deferredPrompt.value = e
-    console.log('PWA: beforeinstallprompt captured')
-  })
-}
 
 onMounted(async () => {
   updateOrientation()
   window.addEventListener('resize', updateOrientation)
   
-  // Check if running as installed PWA
-  isStandalone.value = window.matchMedia('(display-mode: standalone)').matches
-    || (window.navigator as any).standalone === true
-
-  if (isStandalone.value) {
-    localStorage.setItem('pwa-installed', 'true')
-    console.log('PWA: Running in standalone mode')
-    return
-  }
-
-  isIOS.value = /iPad|iPhone|iPod/.test(navigator.userAgent)
-  console.log('PWA: iOS detected:', isIOS.value)
-
-  const wasInstalled = localStorage.getItem('pwa-installed') === 'true'
-
-  if ('getInstalledRelatedApps' in navigator) {
-    try {
-      const relatedApps = await (navigator as any).getInstalledRelatedApps()
-      if (relatedApps.length > 0) {
-        isAppInstalled.value = true
-        console.log('PWA: App detected as installed via getInstalledRelatedApps')
-      }
-    } catch {
-      // API not supported or failed
-    }
-  }
-
-  if (wasInstalled || isAppInstalled.value) {
-    const openDismissed = localStorage.getItem('pwa-open-dismissed')
-    const openDismissedTime = openDismissed ? parseInt(openDismissed, 10) : 0
-    const hoursSinceDismissed = (Date.now() - openDismissedTime) / (1000 * 60 * 60)
-
-    if (hoursSinceDismissed > 24) {
-      showOpenInAppPrompt.value = true
-    }
-    return
-  }
-
-  const dismissed = localStorage.getItem('pwa-install-dismissed')
-  const dismissedTime = dismissed ? parseInt(dismissed, 10) : 0
-  const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
-
-  console.log('PWA: Days since dismissed:', daysSinceDismissed, 'Has deferred prompt:', !!deferredPrompt.value)
-
-  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  // Initialize PWA detection
+  await initPWAInstall()
   
-  if (daysSinceDismissed > 7 && isMobile) {
+  // Don't prompt if already standalone
+  if (isStandalone.value) return
+  
+  // Check for "open in app" prompt
+  if (shouldShowOpenInAppPrompt()) {
+    showOpenInAppPrompt.value = true
+    return
+  }
+  
+  // Check for install prompt (with delay)
+  if (shouldShowInstallPrompt()) {
     setTimeout(() => {
-      if (deferredPrompt.value) {
-        console.log('PWA: Showing install prompt (Android/Chrome)')
-        showInstallPrompt.value = true
-      } else if (isIOS.value) {
-        console.log('PWA: Showing install instructions (iOS)')
-        showInstallPrompt.value = true
-      } else {
-        console.log('PWA: No prompt available - Chrome requires 2+ visits with 5min between')
+      // Re-check in case something changed
+      if (shouldShowInstallPrompt()) {
+        if (canInstallNatively.value || isIOS.value) {
+          console.log('PWA: Showing install prompt')
+          showInstallPrompt.value = true
+        } else {
+          console.log('PWA: No prompt available - Chrome requires 2+ visits with 5min between')
+        }
       }
     }, 2000)
-  } else if (!isMobile) {
-    console.log('PWA: Skipping install prompt on desktop')
   }
 })
 
@@ -168,25 +130,20 @@ onUnmounted(() => {
 })
 
 async function installPWA() {
-  if (deferredPrompt.value) {
-    const prompt = deferredPrompt.value as any
-    prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    if (outcome === 'accepted') {
-      showInstallPrompt.value = false
-    }
-    deferredPrompt.value = null
+  const result = await triggerInstall()
+  if (result === 'accepted') {
+    showInstallPrompt.value = false
   }
 }
 
 function dismissInstallPrompt() {
   showInstallPrompt.value = false
-  localStorage.setItem('pwa-install-dismissed', Date.now().toString())
+  dismissInstall()
 }
 
 function dismissOpenInAppPrompt() {
   showOpenInAppPrompt.value = false
-  localStorage.setItem('pwa-open-dismissed', Date.now().toString())
+  dismissOpenInApp()
 }
 </script>
 
