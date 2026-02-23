@@ -128,7 +128,7 @@ function getAvatarName(avatar: string): string {
   padding: $spacing-lg;
   display: flex;
   flex-direction: column;
-  max-width: 500px;
+  max-width: 700px;
   margin: 0 auto;
 }
 
@@ -168,11 +168,18 @@ function getAvatarName(avatar: string): string {
 .body {
   flex: 1;
   overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-xl;
+  align-content: start;
+  
+  // Stack on mobile portrait
+  @media (max-width: 600px) and (orientation: portrait) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .section {
-  margin-bottom: $spacing-xl;
-  
   h2 {
     font-size: 0.9rem;
     font-weight: 600;
