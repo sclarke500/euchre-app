@@ -39,7 +39,6 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 0;
-  margin: 20px;
   
   &.wobbling {
     animation: wobble-67 0.5s ease-in-out 4;
