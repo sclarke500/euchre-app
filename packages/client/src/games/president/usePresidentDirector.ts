@@ -665,9 +665,9 @@ export function usePresidentDirector(
       if (phase !== PresidentPhase.Setup && lastAnimatedPhase.value === null) {
         setupTable()
         await nextTick()
-        if (phase === PresidentPhase.Dealing) {
-          await animateDeal()
-        }
+        // Always deal if we haven't dealt yet, regardless of current phase.
+        // This handles joining mid-game or racing past the Dealing phase.
+        await animateDeal()
         lastAnimatedPhase.value = phase
       }
     })
