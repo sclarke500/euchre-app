@@ -5,6 +5,7 @@ import { EuchreEngineBoard } from '@/games/euchre'
 import { PresidentEngineBoard } from '@/games/president'
 import { SpadesEngineBoard } from '@/games/spades'
 import { useLobbyStore } from '@/stores/lobbyStore'
+import ScaledContainer from '@/components/ScaledContainer.vue'
 
 const props = defineProps<{
   gameType: string
@@ -90,7 +91,7 @@ function leaveGame() {
 </script>
 
 <template>
-  <template v-if="isValidGameType && isReady">
+  <ScaledContainer v-if="isValidGameType && isReady">
     <EuchreEngineBoard
       v-if="gameType === 'euchre'"
       mode="multiplayer"
@@ -106,7 +107,7 @@ function leaveGame() {
       mode="multiplayer"
       @leave-game="leaveGame"
     />
-  </template>
+  </ScaledContainer>
   <div v-else-if="!isReady" class="loading-state">
     Connecting...
   </div>

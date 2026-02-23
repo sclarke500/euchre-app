@@ -56,7 +56,13 @@ const FullScales = {
 const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
 const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 768)
 
+// Lock state for ScaledContainer - when locked, viewport doesn't respond to resize
+let viewportLocked = false
+
 function updateViewport() {
+  // Don't update if viewport is locked (we're in scaled container mode)
+  if (viewportLocked) return
+  
   viewportWidth.value = window.innerWidth
   viewportHeight.value = window.innerHeight
   
@@ -65,6 +71,37 @@ function updateViewport() {
     document.documentElement.classList.toggle('mobile-mode', isMobile())
     document.documentElement.classList.toggle('full-mode', !isMobile())
   }
+}
+
+/**
+ * Lock viewport to fixed dimensions (for ScaledContainer)
+ * When locked, resize events are ignored and dimensions stay fixed
+ */
+export function lockViewport(width: number, height: number) {
+  viewportLocked = true
+  viewportWidth.value = width
+  viewportHeight.value = height
+  
+  // Update CSS classes for the locked dimensions
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('mobile-mode', isMobile())
+    document.documentElement.classList.toggle('full-mode', !isMobile())
+  }
+}
+
+/**
+ * Unlock viewport to respond to window resize again
+ */
+export function unlockViewport() {
+  viewportLocked = false
+  updateViewport()
+}
+
+/**
+ * Check if viewport is currently locked
+ */
+export function isViewportLocked(): boolean {
+  return viewportLocked
 }
 
 let listenerAttached = false

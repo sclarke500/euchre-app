@@ -5,7 +5,7 @@
       <div ref="tableRef" class="table-surface" :class="layout">
         <!-- Watermark -->
         <div class="table-watermark">
-          <AppLogo size="sm" />
+          <img src="@/assets/logo-jester-67-dark.png" alt="" class="watermark-img" />
         </div>
       </div>
       
@@ -91,7 +91,6 @@
 import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
 import BoardCard from './BoardCard.vue'
 import PlayerAvatar, { type AvatarPosition } from './PlayerAvatar.vue'
-import AppLogo from './AppLogo.vue'
 import { useChatStore } from '@/stores/chatStore'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
@@ -451,7 +450,7 @@ defineExpose({
       inset 0 -2px 8px rgba(0, 0, 0, 0.2);
   }
 
-  // Watermark - AppLogo in center of table
+  // Watermark - jester logo in center of table
   .table-watermark {
     position: absolute;
     top: 50%;
@@ -459,18 +458,11 @@ defineExpose({
     transform: translate(-50%, -50%);
     pointer-events: none;
     user-select: none;
-    opacity: 0.15;
     
-    :deep(.app-logo) {
-      margin: 0;
-      
-      .logo-img {
-        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) brightness(1.2);
-      }
-      
-      .logo-url {
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-      }
+    .watermark-img {
+      width: 120px;
+      height: auto;
+      opacity: 0.2;
     }
   }
 

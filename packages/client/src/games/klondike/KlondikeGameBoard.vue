@@ -6,7 +6,6 @@ import { canMoveToTableau, canMoveToFoundation } from '@67cards/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '@/components/Modal.vue'
-import AppLogo from '@/components/AppLogo.vue'
 import confetti from 'canvas-confetti'
 
 const emit = defineEmits<{
@@ -898,7 +897,7 @@ function doNewGame() {
   <div ref="boardRef" class="klondike-board">
     <!-- Watermark -->
     <div class="table-watermark">
-      <AppLogo size="sm" />
+      <img src="@/assets/logo-jester-67-dark.png" alt="" class="watermark-img" />
     </div>
 
     <!-- Container slots (measures positions, handles empty slot clicks) -->
@@ -1123,7 +1122,7 @@ function doNewGame() {
   --card-height: 70px;
 }
 
-// Watermark - AppLogo in center
+// Watermark - jester logo in center
 .table-watermark {
   position: absolute;
   top: 50%;
@@ -1132,18 +1131,11 @@ function doNewGame() {
   pointer-events: none;
   user-select: none;
   z-index: 1;
-  opacity: 0.12;
   
-  :deep(.app-logo) {
-    margin: 0;
-    
-    .logo-img {
-      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) brightness(1.2);
-    }
-    
-    .logo-url {
-      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-    }
+  .watermark-img {
+    width: 140px;
+    height: auto;
+    opacity: 0.15;
   }
 }
 
