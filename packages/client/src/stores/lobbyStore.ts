@@ -338,6 +338,10 @@ export const useLobbyStore = defineStore('lobby', () => {
     })
   }
 
+  function setGameId(id: string | null): void {
+    gameId.value = id
+  }
+
   function leaveGame(): void {
     websocket.send({
       type: 'leave_game',
@@ -393,6 +397,7 @@ export const useLobbyStore = defineStore('lobby', () => {
     joinTable,
     leaveTable,
     startGame,
+    setGameId,
     leaveGame,
     restartGame,
     setGameType,

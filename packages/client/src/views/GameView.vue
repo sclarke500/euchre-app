@@ -44,7 +44,7 @@ onMounted(async () => {
     return
   }
   
-  // Ensure WebSocket is connected (handles direct URL navigation)
+  // Ensure WebSocket is connected
   if (!lobbyStore.isConnected) {
     console.log('[GameView] WebSocket not connected, connecting...')
     await lobbyStore.connect()
@@ -60,12 +60,10 @@ onMounted(async () => {
     }
   }
   
-  // If we had to reconnect WebSocket (page reload scenario) and don't have an active game, redirect
-  // Normal navigation from lobby will have gameId already set
-  if (!lobbyStore.gameId) {
-    console.log('[GameView] No active game in store, redirecting to menu')
-    router.replace('/play')
-    return
+  // Set the gameId from route if not already set (coming from lobby navigation)
+  if (!lobbyStore.gameId && props.gameId) {
+    console.log('[GameView] Setting gameId from route:', props.gameId)
+    lobbyStore.setGameId(props.gameId)
   }
   
   isReady.value = true
