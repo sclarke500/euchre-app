@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { getPlatformInfo } from '@/utils/platform'
+import { isMobile } from '@/utils/deviceMode'
 import SettingsModal from './SettingsModal.vue'
 import ProfileModal from './ProfileModal.vue'
 import AppLogo from './AppLogo.vue'
@@ -14,6 +15,22 @@ export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 
 const showSettings = ref(false)
 const showProfile = ref(false)
+const showRotatePrompt = ref(false)
+const pendingGame = ref<GameType | 'multiplayer' | null>(null)
+
+// Track portrait orientation (only matters on mobile)
+const isPortrait = ref(false)
+
+function updateOrientation() {
+  isPortrait.value = isMobile() && window.innerHeight > window.innerWidth
+}
+
+// Games that require landscape
+const landscapeGames: GameType[] = ['euchre', 'spades', 'president']
+
+function needsLandscape(game: GameType): boolean {
+  return landscapeGames.includes(game)
+}
 
 // Carousel scroll state
 const carouselRef = ref<HTMLElement | null>(null)
@@ -60,6 +77,10 @@ onMounted(() => {
     isWobbling.value = false
   }, 2000) // 4 cycles × 0.5s = 2s
 
+  // Track orientation
+  updateOrientation()
+  window.addEventListener('resize', updateOrientation)
+
   // Set up carousel scroll tracking
   nextTick(() => {
     scrollToSelectedGame()
@@ -98,6 +119,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   carouselRef.value?.removeEventListener('scroll', updateScrollState)
+  window.removeEventListener('resize', updateOrientation)
 })
 
 function dismissInstallHint() {
@@ -141,6 +163,13 @@ watch(showProfile, (isOpen) => {
 })
 
 function handleMultiplayer() {
+  // Multiplayer always needs landscape on mobile
+  if (isPortrait.value) {
+    pendingGame.value = 'multiplayer'
+    showRotatePrompt.value = true
+    return
+  }
+  
   if (!canEnterMultiplayer.value) {
     showProfile.value = true
     highlightNickname.value = true
@@ -162,7 +191,34 @@ function handleSinglePlayer() {
 }
 
 function playGame(game: GameType) {
+  if (isPortrait.value && needsLandscape(game)) {
+    pendingGame.value = game
+    showRotatePrompt.value = true
+    return
+  }
   emit('startSinglePlayer', game)
+}
+
+function confirmRotateAndPlay() {
+  showRotatePrompt.value = false
+  if (pendingGame.value === 'multiplayer') {
+    // Actually handle multiplayer
+    if (!canEnterMultiplayer.value) {
+      showProfile.value = true
+      highlightNickname.value = true
+      setTimeout(() => highlightNickname.value = false, 600)
+    } else {
+      emit('enterMultiplayer', selectedGame.value)
+    }
+  } else if (pendingGame.value) {
+    emit('startSinglePlayer', pendingGame.value)
+  }
+  pendingGame.value = null
+}
+
+function cancelRotatePrompt() {
+  showRotatePrompt.value = false
+  pendingGame.value = null
 }
 
 const gameTitle = computed(() => {
@@ -221,14 +277,44 @@ const gameTitle = computed(() => {
 
       <div class="game-grid">
         <button class="game-card" @click="playGame('euchre')">
+          <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="2" width="16" height="20" rx="2" />
+              <path d="M12 18h.01" />
+            </svg>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+          </span>
           <span class="game-name">Euchre</span>
           <span class="game-desc">Classic Midwest trick-taking</span>
         </button>
         <button class="game-card" @click="playGame('spades')">
+          <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="2" width="16" height="20" rx="2" />
+              <path d="M12 18h.01" />
+            </svg>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+          </span>
           <span class="game-name">Spades</span>
           <span class="game-desc">Bid your tricks wisely</span>
         </button>
         <button class="game-card" @click="playGame('president')">
+          <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="2" width="16" height="20" rx="2" />
+              <path d="M12 18h.01" />
+            </svg>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+          </span>
           <span class="game-name">President</span>
           <span class="game-desc">Race to shed your cards</span>
         </button>
@@ -239,9 +325,43 @@ const gameTitle = computed(() => {
       </div>
 
       <button class="multiplayer-btn" @click="handleMultiplayer">
+        <span v-if="isPortrait" class="rotate-badge mp" title="Requires landscape">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="2" width="16" height="20" rx="2" />
+            <path d="M12 18h.01" />
+          </svg>
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M1 4v6h6" />
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          </svg>
+        </span>
         <span class="mp-icon">👥</span>
         <span class="mp-text">Play with Friends</span>
       </button>
+      
+      <!-- Rotate prompt modal -->
+      <Transition name="fade">
+        <div v-if="showRotatePrompt" class="rotate-prompt-overlay" @click.self="cancelRotatePrompt">
+          <div class="rotate-prompt">
+            <div class="rotate-prompt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="2" width="16" height="20" rx="2" />
+                <path d="M12 18h.01" />
+              </svg>
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6" />
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+              </svg>
+            </div>
+            <h3>Rotate to Landscape</h3>
+            <p>This game plays best in landscape mode</p>
+            <div class="rotate-prompt-buttons">
+              <button class="cancel-btn" @click="cancelRotatePrompt">Cancel</button>
+              <button class="continue-btn" @click="confirmRotateAndPlay">Continue Anyway</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
       <!-- Install hints -->
       <div v-if="showIOSInstallHint" class="install-hint">
@@ -488,6 +608,7 @@ const gameTitle = computed(() => {
 }
 
 .game-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -671,6 +792,141 @@ const gameTitle = computed(() => {
 .profile-hint {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
+}
+
+// Rotate badge on game cards
+.rotate-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  
+  svg {
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .arrow {
+    width: 12px;
+    height: 12px;
+    color: $secondary-color;
+  }
+  
+  &.mp {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-right: $spacing-xs;
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+// Rotate prompt modal
+.rotate-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+}
+
+.rotate-prompt {
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
+  border-radius: 16px;
+  padding: $spacing-xl;
+  text-align: center;
+  max-width: 320px;
+  color: white;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  
+  h3 {
+    font-size: 1.25rem;
+    margin-bottom: $spacing-xs;
+  }
+  
+  p {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.rotate-prompt-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+  
+  svg {
+    width: 48px;
+    height: 48px;
+    color: white;
+    opacity: 0.9;
+  }
+  
+  .arrow {
+    width: 32px;
+    height: 32px;
+    color: $secondary-color;
+    animation: rotateHint 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes rotateHint {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(20deg); }
+}
+
+.rotate-prompt-buttons {
+  display: flex;
+  gap: $spacing-sm;
+  
+  button {
+    flex: 1;
+    padding: $spacing-sm $spacing-md;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  
+  .cancel-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+  
+  .continue-btn {
+    background: $brand-green;
+    color: white;
+    
+    &:hover {
+      background: $brand-green-light;
+    }
+  }
+}
+
+// Fade transition
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .install-hint {
