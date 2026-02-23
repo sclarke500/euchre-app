@@ -121,7 +121,7 @@ const features = [
 
     <!-- Features Section -->
     <section class="features">
-      <h2>Why 6|7 Card Games?</h2>
+      <h2>Why 67 Card Games?</h2>
       <div class="feature-grid">
         <div v-for="feature in features" :key="feature.title" class="feature-card">
           <span class="feature-icon">{{ feature.icon }}</span>
@@ -135,7 +135,7 @@ const features = [
     <section class="install">
       <h2>Install the App</h2>
       <p class="install-intro">
-        Add 6|7 Card Games to your home screen for the best experience.
+        Add 67 Card Games to your home screen for the best experience.
         It's free, fast, and works offline.
       </p>
 
