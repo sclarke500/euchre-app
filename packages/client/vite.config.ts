@@ -26,8 +26,8 @@ export default defineConfig({
       includeAssets: ['favicon-32x32.png', 'favicon-16x16.png', 'apple-touch-icon.png', 'cards/**/*.svg'],
       manifest: {
         id: '/67-card-games',
-        name: '6|7 Card Games',
-        short_name: '6|7 Cards',
+        name: 'Card Games',
+        short_name: 'Card Games',
         description: 'Classic card games — Euchre, Spades, President, and more',
         start_url: '/',
         scope: '/',
