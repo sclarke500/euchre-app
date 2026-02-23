@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSettingsStore, type AIDifficulty } from '@/stores/settingsStore'
 import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
 import PresidentOptions from '@/games/president/PresidentOptions.vue'
 import SpadesOptions from '@/games/spades/SpadesOptions.vue'
+import BugReportModal from '@/components/BugReportModal.vue'
 import { usePWAInstall, triggerInstall } from '@/composables/usePWAInstall'
+
+const route = useRoute()
 
 defineProps<{
   show: boolean
@@ -22,6 +26,17 @@ const showInstallOption = computed(() => !isStandalone.value)
 
 // Show install instructions modal
 const showInstallInstructions = ref(false)
+
+// Bug report modal
+const showBugReport = ref(false)
+
+function buildBugPayload() {
+  return {
+    context: 'settings',
+    route: route.fullPath,
+    deviceType: deviceType.value,
+  }
+}
 
 // Format build time for display
 const buildInfo = computed(() => {
@@ -174,9 +189,14 @@ function checkForUpdates() {
                   <span class="about-label">Build</span>
                   <span class="about-value">{{ buildInfo }}</span>
                 </div>
-                <button class="update-btn" @click="checkForUpdates">
-                  Check for Updates
-                </button>
+                <div class="about-buttons">
+                  <button class="about-btn" @click="checkForUpdates">
+                    Check for Updates
+                  </button>
+                  <button class="about-btn bug-btn" @click="showBugReport = true">
+                    🐛 Report Bug
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -232,6 +252,15 @@ function checkForUpdates() {
           </div>
         </div>
       </Transition>
+      
+      <!-- Bug Report Modal -->
+      <BugReportModal
+        :show="showBugReport"
+        game-type="general"
+        mode="singleplayer"
+        :build-payload="buildBugPayload"
+        @close="showBugReport = false"
+      />
     </div>
   </Transition>
 </template>
@@ -423,17 +452,31 @@ function checkForUpdates() {
   }
 }
 
-.update-btn {
+.about-buttons {
+  display: flex;
+  gap: $spacing-sm;
   margin-top: $spacing-md;
+}
+
+.about-btn {
+  flex: 1;
   padding: $spacing-sm $spacing-md;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: white;
   font-weight: 500;
-  width: 100%;
+  font-size: 0.85rem;
   
   &:hover {
     background: rgba(255, 255, 255, 0.2);
+  }
+  
+  &.bug-btn {
+    background: rgba(255, 100, 100, 0.15);
+    
+    &:hover {
+      background: rgba(255, 100, 100, 0.25);
+    }
   }
 }
 
