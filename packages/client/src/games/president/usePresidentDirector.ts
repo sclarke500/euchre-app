@@ -8,7 +8,7 @@
  */
 
 import { watch, nextTick, computed, ref, type Ref } from 'vue'
-import { PresidentPhase, sortHandByRank } from '@67cards/shared'
+import { PresidentPhase, PlayerRank, sortHandByRank } from '@67cards/shared'
 import type { StandardCard, PendingExchange, ServerMessage } from '@67cards/shared'
 import type { PresidentGameAdapter } from './usePresidentGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
@@ -626,8 +626,27 @@ export function usePresidentDirector(
         if (wasInExchange || isInExchange) {
           const myHand = game.humanPlayer.value?.hand
           if (myHand && myHand.length > 0) {
+            // Determine exchange partner seat for card animation direction
+            // President (1) ↔ Scum (5), VicePresident (2) ↔ ViceScum (4)
+            const myRank = game.humanPlayer.value?.rank
+            let recipientSeat: number | undefined
+            if (myRank === PlayerRank.President || myRank === PlayerRank.VicePresident) {
+              // Giving cards to lower-ranked player
+              const targetRank = myRank === PlayerRank.President ? PlayerRank.Scum : PlayerRank.ViceScum
+              const recipient = game.players.value.find(p => p.rank === targetRank)
+              if (recipient) {
+                recipientSeat = playerIdToSeatIndex(recipient.id)
+              }
+            } else if (myRank === PlayerRank.Scum || myRank === PlayerRank.ViceScum) {
+              // Giving cards to higher-ranked player  
+              const targetRank = myRank === PlayerRank.Scum ? PlayerRank.President : PlayerRank.VicePresident
+              const recipient = game.players.value.find(p => p.rank === targetRank)
+              if (recipient) {
+                recipientSeat = playerIdToSeatIndex(recipient.id)
+              }
+            }
             // Use slower animation for exchange (EXCHANGE_MS = 900ms)
-            await cardController.syncUserHandWithState(myHand, sortHandByRank, undefined, EXCHANGE_MS)
+            await cardController.syncUserHandWithState(myHand, sortHandByRank, recipientSeat, EXCHANGE_MS)
             // Add pause after exchange animation so user can see their new cards
             if (wasInExchange && newPhase === PresidentPhase.Playing) {
               await sleep(1200)
