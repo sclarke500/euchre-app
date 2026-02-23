@@ -60,13 +60,17 @@ const cardStyle = computed(() => {
   const flipProgress = Math.abs(Math.cos(flipY * Math.PI / 180))
   const dur = `${animationDuration.value}ms`
   const ease = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+  // Hide cards completely when scaled very small (hidden at avatar)
+  const isHidden = scale < 0.1
   return {
     left: `${position.value.x}px`,
     top: `${position.value.y}px`,
     transform: `translate(-50%, -50%) rotate(${position.value.rotation}deg) scale(${scale * flipProgress}, ${scale})`,
     zIndex: position.value.zIndex,
+    opacity: isHidden ? 0 : 1,
     // Transition left/top/transform only — z-index must apply instantly
     // so cards moving to the pile render above existing pile cards immediately
+    // Opacity transitions instantly to avoid flickering during deal
     transition: isAnimating.value
       ? `left ${dur} ${ease}, top ${dur} ${ease}, transform ${dur} ${ease}`
       : 'none',
