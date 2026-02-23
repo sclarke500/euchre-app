@@ -141,7 +141,7 @@
     </Transition>
 
     <!-- Round complete modal -->
-    <Modal :show="phase === PresidentPhase.RoundComplete" @close="() => {}">
+    <Modal :show="game.showRoundSummary.value" @close="() => {}">
       <div class="round-modal dialog-panel">
         <h3 class="dialog-title">Round {{ game.roundNumber.value }} Complete!</h3>
         <div class="rankings">
@@ -155,7 +155,9 @@
             <span class="title">{{ game.getPlayerRankDisplay(playerId) }}</span>
           </div>
         </div>
-        <p v-if="!game.gameOver.value" class="next-round-msg dialog-text">Next round starting...</p>
+        <div class="modal-buttons dialog-actions">
+          <button class="modal-btn dialog-btn dialog-btn--primary" @click="game.dismissRoundSummary()">Continue</button>
+        </div>
       </div>
     </Modal>
 

@@ -17,6 +17,7 @@ import { CardScales } from '@/composables/useCardSizing'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import type { CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
+import { isMobile } from '@/utils/deviceMode'
 
 // ── Animation timing ─────────────────────────────────────────────────────────
 
@@ -116,9 +117,11 @@ export function usePresidentDirector(
     if (!tl) return { x: 0, y: 0, rotation: 0, zIndex: 500 }
 
     const center = tl.tableCenter
+    // Mobile: lower the center pile by 15px
+    const mobileYOffset = isMobile() ? 15 : 0
     // Each play group offset slightly from center
     const groupOffsetX = (playIndex % 3 - 1) * 12
-    const groupOffsetY = -playIndex * 2
+    const groupOffsetY = -playIndex * 2 + mobileYOffset
     // Cards within a play spread horizontally
     const middleIdx = (totalInPlay - 1) / 2
     const cardSpread = (cardInPlayIndex - middleIdx) * 22

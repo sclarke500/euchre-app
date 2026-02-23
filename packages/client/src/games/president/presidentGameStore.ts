@@ -68,6 +68,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   // Track if we're waiting for user to acknowledge exchange
   const waitingForExchangeAck = ref(false)
 
+  // Round summary modal (user must click Continue)
+  const showRoundSummary = ref(false)
+
   // Computed
   const gameState = computed<PresidentGameState>(() => ({
     gameType: 'president',
@@ -529,11 +532,14 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       gameOver.value = true
       phase.value = PresidentPhase.GameOver
     } else {
-      // Start next round after delay (startRound handles roundNumber increment via shared)
-      timer.schedule('next-round', 3000, () => {
-        startRound()
-      })
+      // Show summary modal - user must click Continue to proceed
+      showRoundSummary.value = true
     }
+  }
+
+  function dismissRoundSummary() {
+    showRoundSummary.value = false
+    startRound()
   }
 
   function processAITurn() {
@@ -589,6 +595,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     lastPlayedCards,
     exchangeInfo,
     waitingForExchangeAck,
+    showRoundSummary,
     gameState,
     rules,
     awaitingGiveBack,
@@ -616,6 +623,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     confirmScumExchange,
     getPlayerRankDisplay,
     acknowledgeExchange,
+    dismissRoundSummary,
     dealAnimationComplete,
     setPlayAnimationCallback,
     setPileClearedCallback,

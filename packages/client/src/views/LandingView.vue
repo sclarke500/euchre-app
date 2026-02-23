@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { getPlatformInfo } from '@/utils/platform'
 import AppLogo from '@/components/AppLogo.vue'
+import ArrowIcon from '@/components/icons/ArrowIcon.vue'
 
 // Game screenshots
 import screenshotEuchre from '@/assets/screenshots/euchre.png'
@@ -54,7 +55,7 @@ const games = [
     id: 'president',
     name: 'President',
     description: 'Race to shed your cards first. Climb from Scum to President.',
-    players: '4-5 players',
+    players: '4+ (even like 6, 7) players',
     type: 'Shedding',
     screenshot: screenshotPresident,
   },
@@ -96,7 +97,7 @@ const features = [
         <p class="hero-tagline">Classic card games, modern experience</p>
         <button class="cta-btn" @click="goToApp">
           Play Now
-          <span class="cta-arrow">→</span>
+          <ArrowIcon class="cta-arrow" />
         </button>
       </div>
       <!-- TODO: Hero background/banner image -->
@@ -197,7 +198,7 @@ const features = [
       <h2>Ready to play?</h2>
       <button class="cta-btn" @click="goToApp">
         Let's Go
-        <span class="cta-arrow">→</span>
+        <ArrowIcon class="cta-arrow" />
       </button>
     </section>
 

@@ -1,4 +1,4 @@
-import { computed, ref, toRef, type ComputedRef, type Ref } from 'vue'
+import { computed, ref, toRef, watch, type ComputedRef, type Ref } from 'vue'
 import { usePresidentGameStore } from './presidentGameStore'
 import { usePresidentMultiplayerStore } from './presidentMultiplayerStore'
 import type {
@@ -43,6 +43,7 @@ export interface PresidentGameAdapter {
   gameOver: ComputedRef<boolean>
   finishedPlayers: ComputedRef<number[]>
   timedOutPlayer: ComputedRef<number | null>
+  showRoundSummary: Ref<boolean>  // Round summary modal visibility
   disconnectedPlayers?: ComputedRef<Array<{ id: number; name: string; isHuman?: boolean }>>
   gameLost: Ref<boolean>  // True when server says game is unrecoverable
 
@@ -53,6 +54,7 @@ export interface PresidentGameAdapter {
   giveCardsBack: (cards: StandardCard[]) => void  // President/VP selecting cards to give (SP)
   confirmExchange: (cards: StandardCard[]) => void  // Confirm exchange (MP - all roles)
   getPlayerRankDisplay: (playerId: number) => string
+  dismissRoundSummary: () => void  // Dismiss round summary modal (starts next round in SP)
   dealAnimationComplete: () => void  // Signal store that deal animation is done
   bootPlayer?: (playerId: number) => void
   bootDisconnectedPlayer?: (playerId: number) => void
@@ -109,6 +111,7 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     gameOver: computed(() => store.gameOver),
     finishedPlayers: computed(() => store.finishedPlayers),
     timedOutPlayer: computed(() => null), // No timeout in single-player
+    showRoundSummary: toRef(store, 'showRoundSummary'),
     gameLost: ref(false), // Never happens in single-player
 
     // Actions
@@ -125,6 +128,7 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
       }
     },
     getPlayerRankDisplay: (playerId: number) => store.getPlayerRankDisplay(playerId),
+    dismissRoundSummary: () => store.dismissRoundSummary(),
     dealAnimationComplete: () => store.dealAnimationComplete(),
     setPlayAnimationCallback: (cb) => store.setPlayAnimationCallback(cb),
     setPileClearedCallback: (cb) => store.setPileClearedCallback(cb),
@@ -137,6 +141,16 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
 
 function useMultiplayerAdapter(): PresidentGameAdapter {
   const store = usePresidentMultiplayerStore()
+  
+  // Local ref for round summary modal - server controls game flow
+  const showRoundSummary = ref(false)
+
+  // Show round summary when phase becomes RoundComplete
+  watch(() => store.phase, (newPhase) => {
+    if (newPhase === Phase.RoundComplete) {
+      showRoundSummary.value = true
+    }
+  })
 
   // Convert multiplayer player format to PresidentPlayer format
   // For other players, we don't have their actual cards, only handSize
@@ -202,6 +216,7 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     gameOver: computed(() => store.gameOver),
     finishedPlayers: computed(() => store.finishedPlayers),
     timedOutPlayer: computed(() => store.timedOutPlayer),
+    showRoundSummary,
     gameLost: toRef(store, 'gameLost'),
     disconnectedPlayers: computed(() => store.disconnectedPlayers ?? []),
 
@@ -233,6 +248,7 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
       }
       return rankNames[player.rank] || ''
     },
+    dismissRoundSummary: () => { showRoundSummary.value = false },
     dealAnimationComplete: () => {}, // No-op for multiplayer (server controls timing)
     bootPlayer: (playerId: number) => store.bootPlayer(playerId),
     bootDisconnectedPlayer: (playerId: number) => store.bootDisconnectedPlayer(playerId),
