@@ -685,7 +685,12 @@ export class SpadesGame {
     this.start()
   }
 
+  /**
+   * Cleanup all timers and resources before game deletion.
+   * Must be called before removing the game from the registry.
+   */
   cleanup(): void {
     this.clearTurnTimer()
+    console.log(`SpadesGame ${this.id} cleanup: cleared all timers`)
   }
 }

@@ -664,7 +664,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
         }
       }
 
-      // Clean up old game
+      // Clean up old game (clear timers first)
+      runtimeEntry.runtime.cleanup?.()
       presidentGames.delete(oldGameId)
       unregisterRuntime(oldGameId)
 
@@ -745,6 +746,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
         }
       }
 
+      // Clean up old game (clear timers first)
+      runtimeEntry.runtime.cleanup?.()
       spadesGames.delete(oldGameId)
       unregisterRuntime(oldGameId)
 
@@ -860,7 +863,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       }
     }
 
-    // Clean up old game
+    // Clean up old game (clear timers first)
+    runtimeEntry.runtime.cleanup?.()
     games.delete(oldGameId)
     unregisterRuntime(oldGameId)
 

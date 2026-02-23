@@ -27,6 +27,8 @@ export interface GameRuntime {
   markPlayerDisconnected?(playerIndex: number): boolean
   markPlayerReconnected?(playerIndex: number): boolean
   bootDisconnectedPlayer?(playerIndex: number): boolean
+  // Cleanup method to clear all timers/intervals before game deletion
+  cleanup?(): void
 }
 
 export interface RuntimeWithType {

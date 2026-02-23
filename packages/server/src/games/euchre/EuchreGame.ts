@@ -658,6 +658,15 @@ export class EuchreGame {
   }
 
   /**
+   * Cleanup all timers and resources before game deletion.
+   * Must be called before removing the game from the registry.
+   */
+  cleanup(): void {
+    this.clearTurnReminderTimeout()
+    console.log(`EuchreGame ${this.id} cleanup: cleared all timers`)
+  }
+
+  /**
    * Replace a human player with AI. Used for both voluntary leaves and boots.
    */
   replaceWithAI(playerIndex: number): boolean {
