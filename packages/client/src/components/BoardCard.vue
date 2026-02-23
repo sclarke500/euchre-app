@@ -11,7 +11,8 @@
           <span class="suit">{{ suitSymbol }}</span>
         </div>
         <div class="center" :class="colorClass">
-          <span class="suit-large">{{ card.rank === 'Joker' ? '🃏' : suitSymbol }}</span>
+          <img v-if="card.rank === 'Joker'" :src="jokerLogo" alt="Joker" class="joker-logo" />
+          <span v-else class="suit-large">{{ suitSymbol }}</span>
         </div>
         <div class="corner bottom-right" :class="colorClass">
           <span class="rank">{{ displayRank }}</span>
@@ -30,6 +31,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { CardPosition, EngineCard } from './cardContainers'
+import jokerLogo from '@/assets/logo-jester-67-dark.png'
 
 const props = defineProps<{
   card: EngineCard
@@ -250,6 +252,12 @@ defineExpose({
 
   .suit-large {
     font-size: calc(var(--card-base-width, 83px) * 0.45);
+  }
+  
+  .joker-logo {
+    width: calc(var(--card-base-width, 83px) * 0.65);
+    height: auto;
+    object-fit: contain;
   }
 
   &.red { color: #e74c3c; }
