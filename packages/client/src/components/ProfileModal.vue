@@ -245,9 +245,12 @@ function getAvatarName(avatar: string): string {
   }
   
   &.selected {
-    border-color: var(--glow-gold);
-    box-shadow: 0 0 var(--panel-glow-size) var(--panel-glow-color);
-    animation: gold-glow-pulse 2s ease-in-out infinite;
+    border-color: #ffd700;
+    box-shadow:
+      0 0 8px 2px rgba(255, 215, 0, 0.6),
+      0 0 20px 4px rgba(255, 215, 0, 0.4),
+      0 0 40px 8px rgba(255, 215, 0, 0.2);
+    animation: avatar-select-pulse 1.5s ease-in-out infinite;
   }
   
   &.no-avatar {
@@ -261,6 +264,21 @@ function getAvatarName(avatar: string): string {
       font-weight: bold;
       color: white;
     }
+  }
+}
+
+@keyframes avatar-select-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px 2px rgba(255, 215, 0, 0.6),
+      0 0 20px 4px rgba(255, 215, 0, 0.4),
+      0 0 40px 8px rgba(255, 215, 0, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 12px 4px rgba(255, 215, 0, 0.8),
+      0 0 28px 8px rgba(255, 215, 0, 0.5),
+      0 0 50px 12px rgba(255, 215, 0, 0.3);
   }
 }
 
