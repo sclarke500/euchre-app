@@ -261,6 +261,7 @@ import { usePresidentGameStore } from './presidentGameStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { websocket } from '@/services/websocket'
 import { useLobbyStore } from '@/stores/lobbyStore'
+import confetti from 'canvas-confetti'
 
 const props = withDefaults(defineProps<{
   mode?: 'singleplayer' | 'multiplayer'
@@ -697,6 +698,43 @@ watch(() => game.gameLost.value, (lost) => {
   if (lost) {
     console.warn('[PresidentBoard] Game lost — returning to menu')
     emit('leave-game')
+  }
+})
+
+// Victory confetti when player becomes President (finishes first)
+function celebrateWin() {
+  const duration = 2000
+  const end = Date.now() + duration
+  const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6']
+  
+  ;(function frame() {
+    confetti({
+      particleCount: 5,
+      angle: 60,
+      spread: 70,
+      origin: { x: 0, y: 0.6 },
+      colors,
+      zIndex: 100000,
+    })
+    confetti({
+      particleCount: 5,
+      angle: 120,
+      spread: 70,
+      origin: { x: 1, y: 0.6 },
+      colors,
+      zIndex: 100000,
+    })
+
+    if (Date.now() < end) {
+      requestAnimationFrame(frame)
+    }
+  })()
+}
+
+// Watch for human player becoming President
+watch(() => game.finishedPlayers.value, (finished) => {
+  if (finished.length > 0 && finished[0] === game.humanPlayer.value?.id) {
+    celebrateWin()
   }
 })
 
