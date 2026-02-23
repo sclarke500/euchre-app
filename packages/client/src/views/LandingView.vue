@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { getPlatformInfo } from '@/utils/platform'
+import AppLogo from '@/components/AppLogo.vue'
 
 const router = useRouter()
 
@@ -86,8 +87,7 @@ const features = [
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-content">
-        <img src="@/assets/logo-jester-67.png" alt="6|7 Card Games" class="hero-logo" />
-        <span class="hero-brand">67CardGames.com</span>
+        <AppLogo size="lg" class="hero-logo" />
         <p class="hero-tagline">Classic card games, modern experience</p>
         <button class="cta-btn" @click="goToApp">
           Play Now
@@ -287,12 +287,7 @@ const features = [
     min-height: 75vh;
     
     .hero-logo {
-      width: 180px;
-    }
-    
-    .hero-brand {
-      margin-top: -$spacing-sm;
-      margin-bottom: auto; // Push brand (with logo) to top, leave gap
+      margin-bottom: auto; // Push logo to top, leave gap
     }
     
     .hero-tagline {
@@ -313,31 +308,37 @@ const features = [
   }
 }
 
+// AppLogo in hero - override default sizing
 .hero-logo {
-  width: 280px;
-  max-width: 80vw;
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4));
-  margin-bottom: -15px;
+  margin: 0;
+  
+  :deep(.logo-img) {
+    width: 280px;
+    max-width: 80vw;
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4));
+  }
+  
+  :deep(.logo-url) {
+    font-size: 1.6rem;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  }
 
   @media (max-height: 450px) {
-    width: 180px;
-    margin-bottom: -10px;
+    :deep(.logo-img) {
+      width: 180px;
+    }
+    :deep(.logo-url) {
+      font-size: 1.2rem;
+    }
   }
-}
-
-.hero-brand {
-  font-family: 'Share Tech', sans-serif;
-  font-size: 1.8rem;
-  letter-spacing: 2px;
-  color: white;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-
+  
   @media (max-width: 600px) and (orientation: portrait) {
-    font-size: 1.4rem;
-  }
-
-  @media (max-height: 450px) {
-    font-size: 1.4rem;
+    :deep(.logo-img) {
+      width: 200px;
+    }
+    :deep(.logo-url) {
+      font-size: 1.1rem;
+    }
   }
 }
 
