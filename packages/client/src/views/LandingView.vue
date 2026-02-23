@@ -455,7 +455,7 @@ section {
 }
 
 .game-image {
-  height: 180px;
+  aspect-ratio: 16 / 7; // ~2.28:1, close to screenshot ratio of ~2.23:1
   overflow: hidden;
   background: linear-gradient(135deg, rgba($brand-green, 0.3), rgba($brand-green-dark, 0.5));
   
