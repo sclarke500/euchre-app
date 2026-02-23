@@ -138,9 +138,13 @@ export const useLobbyStore = defineStore('lobby', () => {
 
       case 'game_started':
         // Preserve host status, game type, and seat before currentTable might be cleared
-        wasHostWhenGameStarted.value = currentTable.value?.hostId === odusId.value
-        gameTypeWhenStarted.value = currentTable.value?.gameType ?? 'euchre'
-        seatWhenGameStarted.value = currentSeat.value
+        // On game restart (Play Again), currentTable may be null - preserve existing host status
+        if (currentTable.value) {
+          wasHostWhenGameStarted.value = currentTable.value.hostId === odusId.value
+          gameTypeWhenStarted.value = currentTable.value.gameType ?? 'euchre'
+          seatWhenGameStarted.value = currentSeat.value
+        }
+        // If currentTable is null but we already had host status, keep it (restart case)
         gameId.value = message.gameId
         break
 
