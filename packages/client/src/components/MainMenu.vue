@@ -22,7 +22,13 @@ const pendingGame = ref<GameType | 'multiplayer' | null>(null)
 const isPortrait = ref(false)
 
 function updateOrientation() {
+  const wasPortrait = isPortrait.value
   isPortrait.value = isMobile() && window.innerHeight > window.innerWidth
+  
+  // Auto-advance when rotating to landscape while prompt is showing
+  if (wasPortrait && !isPortrait.value && showRotatePrompt.value && pendingGame.value) {
+    confirmRotateAndPlay()
+  }
 }
 
 // Games that require landscape
@@ -278,13 +284,11 @@ const gameTitle = computed(() => {
       <div class="game-grid">
         <button class="game-card" @click="playGame('euchre')">
           <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="4" y="2" width="16" height="20" rx="2" />
-              <path d="M12 18h.01" />
-            </svg>
-            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M1 4v6h6" />
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            <svg viewBox="0 0 32 32" fill="none">
+              <rect x="6" y="2" width="20" height="28" rx="3" stroke="currentColor" stroke-width="2" />
+              <circle cx="16" cy="26" r="1.5" fill="currentColor" />
+              <path d="M20 10l-4 4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M16 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           </span>
           <span class="game-name">Euchre</span>
@@ -292,13 +296,11 @@ const gameTitle = computed(() => {
         </button>
         <button class="game-card" @click="playGame('spades')">
           <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="4" y="2" width="16" height="20" rx="2" />
-              <path d="M12 18h.01" />
-            </svg>
-            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M1 4v6h6" />
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            <svg viewBox="0 0 32 32" fill="none">
+              <rect x="6" y="2" width="20" height="28" rx="3" stroke="currentColor" stroke-width="2" />
+              <circle cx="16" cy="26" r="1.5" fill="currentColor" />
+              <path d="M20 10l-4 4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M16 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           </span>
           <span class="game-name">Spades</span>
@@ -306,13 +308,11 @@ const gameTitle = computed(() => {
         </button>
         <button class="game-card" @click="playGame('president')">
           <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="4" y="2" width="16" height="20" rx="2" />
-              <path d="M12 18h.01" />
-            </svg>
-            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M1 4v6h6" />
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            <svg viewBox="0 0 32 32" fill="none">
+              <rect x="6" y="2" width="20" height="28" rx="3" stroke="currentColor" stroke-width="2" />
+              <circle cx="16" cy="26" r="1.5" fill="currentColor" />
+              <path d="M20 10l-4 4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M16 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           </span>
           <span class="game-name">President</span>
@@ -326,35 +326,42 @@ const gameTitle = computed(() => {
 
       <button class="multiplayer-btn" @click="handleMultiplayer">
         <span v-if="isPortrait" class="rotate-badge mp" title="Requires landscape">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="4" y="2" width="16" height="20" rx="2" />
-            <path d="M12 18h.01" />
-          </svg>
-          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M1 4v6h6" />
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          <svg viewBox="0 0 32 32" fill="none">
+            <rect x="6" y="2" width="20" height="28" rx="3" stroke="currentColor" stroke-width="2" />
+            <circle cx="16" cy="26" r="1.5" fill="currentColor" />
+            <path d="M20 10l-4 4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M16 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </span>
         <span class="mp-icon">👥</span>
         <span class="mp-text">Play with Friends</span>
       </button>
+
+      <!-- Landscape legend (portrait only) -->
+      <div v-if="isPortrait" class="landscape-legend">
+        <svg viewBox="0 0 32 32" fill="none">
+          <rect x="6" y="2" width="20" height="28" rx="3" stroke="currentColor" stroke-width="2" />
+          <circle cx="16" cy="26" r="1.5" fill="currentColor" />
+          <path d="M20 10l-4 4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M16 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <span>Requires landscape</span>
+      </div>
       
       <!-- Rotate prompt modal -->
       <Transition name="fade">
         <div v-if="showRotatePrompt" class="rotate-prompt-overlay" @click.self="cancelRotatePrompt">
           <div class="rotate-prompt">
             <div class="rotate-prompt-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="4" y="2" width="16" height="20" rx="2" />
-                <path d="M12 18h.01" />
-              </svg>
-              <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 4v6h6" />
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+              <svg viewBox="0 0 32 32" fill="none">
+                <rect x="6" y="2" width="20" height="28" rx="3" stroke="currentColor" stroke-width="2" />
+                <circle cx="16" cy="26" r="1.5" fill="currentColor" />
+                <path d="M20 10l-4 4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M16 14l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
             </div>
             <h3>Rotate to Landscape</h3>
-            <p>This game plays best in landscape mode</p>
+            <p>This game requires landscape mode</p>
             <div class="rotate-prompt-buttons">
               <button class="cancel-btn" @click="cancelRotatePrompt">Cancel</button>
               <button class="continue-btn" @click="confirmRotateAndPlay">Continue Anyway</button>
@@ -799,23 +806,15 @@ const gameTitle = computed(() => {
   position: absolute;
   top: 6px;
   right: 6px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px 5px;
+  padding: 4px;
   background: rgba(0, 0, 0, 0.5);
   border-radius: 6px;
+  line-height: 0;
   
   svg {
-    width: 14px;
-    height: 14px;
-    color: rgba(255, 255, 255, 0.8);
-  }
-  
-  .arrow {
-    width: 12px;
-    height: 12px;
-    color: $secondary-color;
+    width: 18px;
+    height: 18px;
+    color: rgba(255, 255, 255, 0.9);
   }
   
   &.mp {
@@ -824,6 +823,31 @@ const gameTitle = computed(() => {
     right: auto;
     margin-right: $spacing-xs;
     background: rgba(0, 0, 0, 0.3);
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// Landscape legend at bottom
+.landscape-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  margin-top: $spacing-lg;
+  padding: $spacing-sm $spacing-md;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  
+  svg {
+    width: 18px;
+    height: 18px;
+    color: rgba(255, 255, 255, 0.8);
   }
 }
 
@@ -864,27 +888,20 @@ const gameTitle = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: $spacing-xs;
   margin-bottom: $spacing-md;
   
   svg {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    height: 64px;
     color: white;
     opacity: 0.9;
-  }
-  
-  .arrow {
-    width: 32px;
-    height: 32px;
-    color: $secondary-color;
     animation: rotateHint 1.5s ease-in-out infinite;
   }
 }
 
 @keyframes rotateHint {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(20deg); }
+  50% { transform: rotate(-90deg); }
 }
 
 .rotate-prompt-buttons {
