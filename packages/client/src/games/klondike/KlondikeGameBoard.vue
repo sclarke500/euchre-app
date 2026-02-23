@@ -680,42 +680,24 @@ async function handleStockClick() {
     await nextTick()
     await new Promise(r => setTimeout(r, 30))
     
-    // Animate: Slide cards from stock to waste center position and flip simultaneously
-    // Calculate the center landing position for the waste pile
-    const wasteCenterX = wasteRect.x + wasteRect.width / 2 - layout.cardWidth.value / 2
-    const wasteCenterY = wasteRect.y
-    
-    // For multiple cards, stack them slightly offset at the landing position
-    for (let i = 0; i < drawnCards.length; i++) {
-      const card = drawnCards[i]
-      if (!card) continue
-      updatePosition(card.id, {
-        x: wasteCenterX + (i * 2), // Slight horizontal offset for stacking
-        y: wasteCenterY,
-        z: 2000 + i, // Keep drawn stack above existing waste during flip phase
-        faceUp: true, // Flip as they move
-      })
-    }
-    
-    // Wait for slide+flip animation to complete
-    await new Promise(r => setTimeout(r, 320))
-    
-    // Brief pause to let cards "land" before fanning
-    await new Promise(r => setTimeout(r, 150))
-    
-    // Step 2: Fan new cards to their final positions
+    // Single-stage animation: Move, flip, and spread in one motion
+    // Cards go directly from stock to their final fanned positions
     for (const card of drawnCards) {
       const finalPos = finalPositions.find(p => p.id === card.id)
       if (finalPos) {
         updatePosition(card.id, {
           x: finalPos.x,
           y: finalPos.y,
-          z: finalPos.z,
+          z: 2000 + finalPos.z, // Elevated during animation to stay above existing waste
+          faceUp: true, // Flip as they move
         })
       }
     }
+    
+    // Wait for new cards to land before collapsing existing pile
+    await new Promise(r => setTimeout(r, 350))
 
-    // Move existing waste cards in the same fan transition so there is no post-fan snap.
+    // Now collapse existing waste cards to their new positions
     for (const pos of existingWastePositions) {
       updatePosition(pos.id, {
         x: pos.x,
@@ -724,8 +706,16 @@ async function handleStockClick() {
       })
     }
     
-    // Wait for fan animation to complete
-    await new Promise(r => setTimeout(r, 350))
+    // Wait for collapse animation
+    await new Promise(r => setTimeout(r, 200))
+    
+    // Finalize z-indices to proper values
+    for (const card of drawnCards) {
+      const finalPos = finalPositions.find(p => p.id === card.id)
+      if (finalPos) {
+        updatePosition(card.id, { z: finalPos.z })
+      }
+    }
     
       // Reconcile all visible card positions from current state.
       // Ensures newly exposed stock cards are rendered after a draw.
@@ -931,18 +921,6 @@ function doNewGame() {
       @drag-end="handleDragEnd"
     />
     
-    <!-- Prominent auto-complete button in stock area -->
-    <button 
-      v-if="canAutoComplete && !isAutoCompleting && store.stock.length === 0"
-      class="auto-complete-prominent"
-      @click="handleAutoComplete"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-      </svg>
-      <span>Auto Complete</span>
-    </button>
-    
     <!-- Drop zone highlight overlay -->
     <div v-if="activeDropZone" class="drop-zone-highlight" :class="{ valid: activeDropZone.isValid, invalid: !activeDropZone.isValid }">
       <template v-if="activeDropZone.type === 'tableau'">
@@ -1029,7 +1007,7 @@ function doNewGame() {
     <Modal :show="isWon" :dismissOnBackdrop="false" :dismissOnEsc="false">
       <div class="modal-light victory-modal">
         <div class="modal-header">
-          <h3>🎉 You Win!</h3>
+          <h3>You Win!</h3>
         </div>
         <div class="modal-body">
           <div class="victory-stats">

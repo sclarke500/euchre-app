@@ -246,12 +246,13 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     getPlayerRankDisplay: (playerId: number) => {
       const player = store.players.find(p => p.id === playerId)
       if (!player || player.rank === null) return ''
-      // Use the rank display helper from shared
+      // Use the rank display helper from shared (PlayerRank enum values)
       const rankNames: Record<number, string> = {
         1: 'President',
         2: 'Vice President',
         3: 'Citizen',
-        4: 'Scum',
+        4: 'Vice Scum',
+        5: 'Scum',
       }
       return rankNames[player.rank] || ''
     },

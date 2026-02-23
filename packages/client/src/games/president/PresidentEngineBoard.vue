@@ -156,7 +156,7 @@
           </div>
         </div>
         <div class="modal-buttons dialog-actions">
-          <button class="modal-btn dialog-btn dialog-btn--primary" @click="game.dismissRoundSummary()">Continue</button>
+          <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="game.dismissRoundSummary()">Continue</button>
         </div>
       </div>
     </Modal>

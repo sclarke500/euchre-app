@@ -15,11 +15,14 @@ const emit = defineEmits<{
   tableauClick: [index: number]
 }>()
 
+import { isFullMode } from '@/utils/deviceMode'
+
 // Orientation detection
-const isLandscape = ref(window.innerWidth > window.innerHeight)
+// In full mode (16:9 ScaledContainer), always use landscape layout
+const isLandscape = ref(isFullMode() || window.innerWidth > window.innerHeight)
 
 function updateOrientation() {
-  isLandscape.value = window.innerWidth > window.innerHeight
+  isLandscape.value = isFullMode() || window.innerWidth > window.innerHeight
 }
 
 // Refs for measuring
@@ -31,49 +34,41 @@ const tableauRefs = ref<(HTMLElement | null)[]>([null, null, null, null, null, n
 // Foundation slots - no suit symbols (any Ace can go anywhere per standard rules)
 
 // Measure and emit container positions (relative to parent container)
+// Accounts for CSS transform scale by detecting scale factor
 function measureContainers() {
-  // Get parent bounds to convert to relative coordinates
-  const parent = stockRef.value?.closest('.containers-layer')
-  const parentRect = parent?.getBoundingClientRect() || { left: 0, top: 0 }
+  const parent = stockRef.value?.closest('.containers-layer') as HTMLElement | null
+  if (!parent) return
+  
+  // Detect scale factor by comparing getBoundingClientRect to offsetWidth
+  // If parent is scaled, rect.width will be different from offsetWidth
+  const parentRect = parent.getBoundingClientRect()
+  const scale = parent.offsetWidth > 0 ? parentRect.width / parent.offsetWidth : 1
+  
+  // Helper to get position relative to parent, accounting for scale
+  function getRect(el: HTMLElement) {
+    const rect = el.getBoundingClientRect()
+    return {
+      x: (rect.left - parentRect.left) / scale,
+      y: (rect.top - parentRect.top) / scale,
+      width: rect.width / scale,
+      height: rect.height / scale,
+    }
+  }
   
   if (stockRef.value) {
-    const rect = stockRef.value.getBoundingClientRect()
-    emit('containerMeasured', 'stock', null, { 
-      x: rect.left - parentRect.left, 
-      y: rect.top - parentRect.top, 
-      width: rect.width, 
-      height: rect.height 
-    })
+    emit('containerMeasured', 'stock', null, getRect(stockRef.value))
   }
   if (wasteRef.value) {
-    const rect = wasteRef.value.getBoundingClientRect()
-    emit('containerMeasured', 'waste', null, { 
-      x: rect.left - parentRect.left, 
-      y: rect.top - parentRect.top, 
-      width: rect.width, 
-      height: rect.height 
-    })
+    emit('containerMeasured', 'waste', null, getRect(wasteRef.value))
   }
   foundationRefs.value.forEach((el, i) => {
     if (el) {
-      const rect = el.getBoundingClientRect()
-      emit('containerMeasured', 'foundation', i, { 
-        x: rect.left - parentRect.left, 
-        y: rect.top - parentRect.top, 
-        width: rect.width, 
-        height: rect.height 
-      })
+      emit('containerMeasured', 'foundation', i, getRect(el))
     }
   })
   tableauRefs.value.forEach((el, i) => {
     if (el) {
-      const rect = el.getBoundingClientRect()
-      emit('containerMeasured', 'tableau', i, { 
-        x: rect.left - parentRect.left, 
-        y: rect.top - parentRect.top, 
-        width: rect.width, 
-        height: rect.height 
-      })
+      emit('containerMeasured', 'tableau', i, getRect(el))
     }
   })
 }
