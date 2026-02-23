@@ -326,12 +326,12 @@ watch(
       if (newUs !== oldUs) {
         usScoreAnimating.value = true
         displayedUsScore.value = newUs
-        setTimeout(() => { usScoreAnimating.value = false }, 400)
+        setTimeout(() => { usScoreAnimating.value = false }, 800)
       }
       if (newThem !== oldThem) {
         themScoreAnimating.value = true
         displayedThemScore.value = newThem
-        setTimeout(() => { themScoreAnimating.value = false }, 400)
+        setTimeout(() => { themScoreAnimating.value = false }, 800)
       }
     }, 500)
   },
@@ -682,7 +682,7 @@ onUnmounted(() => {
     overflow: hidden;
 
     &.score-updated {
-      animation: scoreSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: scoreSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
   }
 }
