@@ -881,13 +881,11 @@ onUnmounted(() => {
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
   
-  // User's rank badge - protrudes through top border, centered
+  // User's rank badge - displayed above name in pill
   &.user-rank {
-    position: absolute;
-    top: -14px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1;
+    display: block;
+    margin-top: -8px;
+    margin-bottom: -4px;
   }
 }
 

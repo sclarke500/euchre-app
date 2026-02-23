@@ -144,10 +144,17 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
   
   // Local ref for round summary modal - server controls game flow
   const showRoundSummary = ref(false)
+  
+  // Cache finishedPlayers when round completes (server clears it after 3s when new round starts)
+  const cachedFinishedPlayers = ref<number[]>([])
+  const cachedRoundNumber = ref(1)
 
   // Show round summary when phase becomes RoundComplete
   watch(() => store.phase, (newPhase) => {
     if (newPhase === Phase.RoundComplete) {
+      // Cache the data before server clears it
+      cachedFinishedPlayers.value = [...store.finishedPlayers]
+      cachedRoundNumber.value = store.roundNumber
       showRoundSummary.value = true
     }
   })
@@ -212,9 +219,9 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     exchangeCardsNeeded: computed(() => store.exchangeCardsNeeded ?? 0),
     exchangePreSelectedIds: computed(() => store.exchangePreSelectedIds ?? []),
     lastPlayedCards: computed(() => store.lastPlayMade?.cards ?? null),
-    roundNumber: computed(() => store.roundNumber),
+    roundNumber: computed(() => showRoundSummary.value ? cachedRoundNumber.value : store.roundNumber),
     gameOver: computed(() => store.gameOver),
-    finishedPlayers: computed(() => store.finishedPlayers),
+    finishedPlayers: computed(() => showRoundSummary.value ? cachedFinishedPlayers.value : store.finishedPlayers),
     timedOutPlayer: computed(() => store.timedOutPlayer),
     showRoundSummary,
     gameLost: toRef(store, 'gameLost'),
