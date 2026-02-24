@@ -58,6 +58,23 @@ const canonicalHeight = computed(() => {
 const shouldScale = computed(() => true)
 
 /**
+ * Get device orientation using screen.orientation API
+ * More reliable than comparing viewport dimensions during iOS transitions
+ */
+function getDeviceOrientation(): 'portrait' | 'landscape' {
+  // Try screen.orientation API first (most reliable)
+  if (screen.orientation?.type) {
+    return screen.orientation.type.startsWith('portrait') ? 'portrait' : 'landscape'
+  }
+  // Fallback: deprecated window.orientation (still works on iOS)
+  if (typeof window.orientation === 'number') {
+    return (window.orientation === 0 || window.orientation === 180) ? 'portrait' : 'landscape'
+  }
+  // Last resort: compare dimensions
+  return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+}
+
+/**
  * Get viewport dimensions using visualViewport API when available
  * (more reliable on iOS than offsetWidth/offsetHeight during orientation change)
  */
@@ -83,16 +100,44 @@ function getViewportDimensions(): { width: number, height: number } {
   }
 }
 
+/**
+ * Check if viewport dimensions look valid for the given orientation
+ */
+function dimensionsLookValid(width: number, height: number, orientation: 'portrait' | 'landscape'): boolean {
+  // Reject zero/tiny dimensions
+  if (width < 200 || height < 200) return false
+  
+  // Reject square-ish dimensions (mid-transition garbage)
+  const ratio = width / height
+  if (ratio > 0.9 && ratio < 1.1) return false
+  
+  // Check if dimensions match expected orientation
+  const looksPortrait = height > width
+  const looksLandscape = width > height
+  
+  if (orientation === 'portrait' && !looksPortrait) return false
+  if (orientation === 'landscape' && !looksLandscape) return false
+  
+  return true
+}
+
 function calculateScale() {
   const { width: viewportW, height: viewportH } = getViewportDimensions()
+  const deviceOrientation = getDeviceOrientation()
   
   if (viewportW === 0 || viewportH === 0) {
     console.log('[ScaledContainer] Zero dimensions, skipping')
     return
   }
   
-  // Detect orientation (for mobile)
-  isPortrait.value = viewportH > viewportW
+  // Validate dimensions match expected orientation (skip mid-transition garbage)
+  if (isMobile() && !dimensionsLookValid(viewportW, viewportH, deviceOrientation)) {
+    console.log(`[ScaledContainer] Skipping invalid dimensions: ${viewportW}×${viewportH} for ${deviceOrientation}`)
+    return
+  }
+  
+  // Use device orientation (more reliable than comparing dimensions)
+  isPortrait.value = deviceOrientation === 'portrait'
   
   // Apply safe area insets to get usable box
   let usableW = viewportW
@@ -193,21 +238,22 @@ function handleResize() {
 }
 
 function handleOrientationChange() {
-  console.log('[ScaledContainer] Orientation change detected')
+  const targetOrientation = getDeviceOrientation()
+  console.log(`[ScaledContainer] Orientation change detected → ${targetOrientation}`)
   
   // iOS takes a while to update viewport dimensions after orientation change
   // Use multiple delayed recalculations to catch it
-  const delays = [50, 150, 300, 500, 800]
+  const delays = [50, 150, 300, 500, 800, 1200]
   delays.forEach(delay => {
     setTimeout(() => {
       const { width, height } = getViewportDimensions()
-      const wasPortrait = isPortrait.value
-      const nowPortrait = height > width
+      const orientation = getDeviceOrientation()
+      const isValid = dimensionsLookValid(width, height, orientation)
       
-      console.log(`[ScaledContainer] After ${delay}ms: ${width}×${height}, portrait=${nowPortrait}`)
+      console.log(`[ScaledContainer] After ${delay}ms: ${width}×${height}, orientation=${orientation}, valid=${isValid}`)
       
-      // If orientation detection changed, recalculate
-      if (wasPortrait !== nowPortrait || width !== lastViewportW || height !== lastViewportH) {
+      // Only recalculate if dimensions are valid and something changed
+      if (isValid && (width !== lastViewportW || height !== lastViewportH)) {
         calculateScale()
       }
     }, delay)
