@@ -385,7 +385,7 @@ export function useCardController(
             x: stackPos.x,
             y: stackPos.y,
             rotation: 0,
-            zIndex: stackPos.zIndex,
+            zIndex: 240 + i, // Above opponent hands (200+), below user hand (300+)
             scale: CardScales.deck,
           }, CardTimings.move)
         }
@@ -412,7 +412,7 @@ export function useCardController(
               x: topStackPos.x,
               y: topStackPos.y,
               rotation: 0, 
-              zIndex: 150, 
+              zIndex: 250, // Above opponent hands (200+), below user hand (300+)
               scale: CardScales.deck,
               flipY: turnUpFlipY 
             }, CardTimings.flip)
