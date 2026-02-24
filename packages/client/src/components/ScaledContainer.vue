@@ -7,7 +7,8 @@
  * - Scales to fit viewport
  * 
  * In MOBILE mode:
- * - Canonical size: 750×370 (~2:1)
+ * - Landscape: 750×370 (~2:1)
+ * - Portrait: 370×700 (~1:1.9)
  * - Applies device-specific safe area insets
  * - Scales to fit usable box
  * 
@@ -20,8 +21,10 @@ import { getDeviceSafeAreas, type SafeAreaInsets } from '@/utils/deviceSafeAreas
 // Canonical dimensions - design at these sizes
 const DESKTOP_WIDTH = 1120
 const DESKTOP_HEIGHT = 630
-const MOBILE_WIDTH = 750
-const MOBILE_HEIGHT = 370
+const MOBILE_LANDSCAPE_WIDTH = 750
+const MOBILE_LANDSCAPE_HEIGHT = 370
+const MOBILE_PORTRAIT_WIDTH = 370
+const MOBILE_PORTRAIT_HEIGHT = 700
 
 const wrapperRef = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
@@ -30,10 +33,17 @@ const wrapperWidth = ref(0)
 const wrapperHeight = ref(0)
 const safeInsets = ref<SafeAreaInsets>({ top: 0, right: 0, bottom: 0, left: 0 })
 const deviceName = ref('Unknown')
+const isPortrait = ref(false)
 
-// Get canonical dimensions based on mode
-const canonicalWidth = computed(() => isFullMode() ? DESKTOP_WIDTH : MOBILE_WIDTH)
-const canonicalHeight = computed(() => isFullMode() ? DESKTOP_HEIGHT : MOBILE_HEIGHT)
+// Get canonical dimensions based on mode and orientation
+const canonicalWidth = computed(() => {
+  if (isFullMode()) return DESKTOP_WIDTH
+  return isPortrait.value ? MOBILE_PORTRAIT_WIDTH : MOBILE_LANDSCAPE_WIDTH
+})
+const canonicalHeight = computed(() => {
+  if (isFullMode()) return DESKTOP_HEIGHT
+  return isPortrait.value ? MOBILE_PORTRAIT_HEIGHT : MOBILE_LANDSCAPE_HEIGHT
+})
 
 // Always scale now (both mobile and desktop)
 const shouldScale = computed(() => true)
@@ -48,6 +58,9 @@ function calculateScale() {
   const viewportW = wrapperRef.value.offsetWidth
   const viewportH = wrapperRef.value.offsetHeight
   
+  // Detect orientation (for mobile)
+  isPortrait.value = viewportH > viewportW
+  
   // Apply safe area insets to get usable box
   let usableW = viewportW
   let usableH = viewportH
@@ -55,13 +68,30 @@ function calculateScale() {
   if (isMobile()) {
     // Get device-specific safe areas
     const deviceInfo = getDeviceSafeAreas()
-    safeInsets.value = deviceInfo.insets
     deviceName.value = deviceInfo.name
+    
+    // Safe areas are different in portrait vs landscape
+    // In portrait: top has notch/island, bottom has home indicator
+    // In landscape: left/right have notch, bottom has home indicator
+    if (isPortrait.value) {
+      // Portrait: use top/bottom insets
+      // Note: deviceSafeAreas returns landscape values, so we need to swap
+      safeInsets.value = {
+        top: deviceInfo.insets.left, // Notch moves to top in portrait
+        right: 0,
+        bottom: deviceInfo.insets.bottom,
+        left: 0,
+      }
+    } else {
+      // Landscape: use left/right insets as-is
+      safeInsets.value = deviceInfo.insets
+    }
     
     usableW = viewportW - safeInsets.value.left - safeInsets.value.right
     usableH = viewportH - safeInsets.value.top - safeInsets.value.bottom
     
-    console.log(`[ScaledContainer] Device: ${deviceInfo.name}, Viewport: ${viewportW}×${viewportH}, Usable: ${usableW}×${usableH}`)
+    const orient = isPortrait.value ? 'portrait' : 'landscape'
+    console.log(`[ScaledContainer] ${deviceInfo.name} (${orient}), Viewport: ${viewportW}×${viewportH}, Usable: ${usableW}×${usableH}`)
   } else {
     console.log(`[ScaledContainer] Desktop: ${viewportW}×${viewportH}`)
   }
@@ -125,6 +155,7 @@ defineExpose({
   scale,
   deviceName,
   safeInsets,
+  isPortrait,
 })
 </script>
 
