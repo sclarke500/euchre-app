@@ -1058,6 +1058,7 @@ export function useCardController(
     newCards: StandardCard[],
     sorter?: (cards: StandardCard[]) => StandardCard[],
     recipientSeat?: number,
+    senderSeat?: number,
     durationMs: number = CardTimings.move
   ) {
     const userSeatIndex = getUserSeatIndex()
@@ -1127,6 +1128,30 @@ export function useCardController(
       await nextTick()
       // Extra delay to ensure BoardCard onMounted has run and registered refs
       await new Promise(r => setTimeout(r, 50))
+    }
+
+    // Position incoming cards at sender's location before animating
+    if (toAdd.length > 0 && senderSeat !== undefined) {
+      const layout = tableLayout.value
+      if (layout) {
+        const senderPos = getAvatarBoardPosition(senderSeat, layout)
+        for (const card of toAdd) {
+          const ref = engine.getCardRef(card.id)
+          if (ref) {
+            // Start at sender's position, face down, small
+            ref.setPosition({
+              x: senderPos.x,
+              y: senderPos.y,
+              rotation: 0,
+              zIndex: 600,
+              scale: CardScales.mini,
+              flipY: 0,
+            })
+          }
+        }
+        // Let the position update before animating
+        await nextTick()
+      }
     }
 
     // Sort and re-fan

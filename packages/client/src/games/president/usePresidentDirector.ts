@@ -646,7 +646,8 @@ export function usePresidentDirector(
               }
             }
             // Use slower animation for exchange (EXCHANGE_MS = 900ms)
-            await cardController.syncUserHandWithState(myHand, sortHandByRank, recipientSeat, EXCHANGE_MS)
+            // senderSeat is same as recipientSeat - cards come from exchange partner
+            await cardController.syncUserHandWithState(myHand, sortHandByRank, recipientSeat, recipientSeat, EXCHANGE_MS)
             // Add pause after exchange animation so user can see their new cards
             if (wasInExchange && newPhase === PresidentPhase.Playing) {
               await sleep(1200)
