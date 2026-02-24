@@ -191,6 +191,7 @@ function getCardZIndex(pos: CardPosition): number {
   <div class="card-layer">
     <div
       v-for="pos in positions"
+      v-show="!pos.hidden"
       :key="pos.id"
       class="klondike-card-wrapper"
       :class="{ 

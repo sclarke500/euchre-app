@@ -7,6 +7,7 @@ import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '@/components/Modal.vue'
 import confetti from 'canvas-confetti'
+import { isFullMode } from '@/utils/deviceMode'
 
 const emit = defineEmits<{
   leaveGame: []
@@ -632,7 +633,7 @@ async function handleStockClick() {
     // Before changing state, ensure drawn cards are positioned at stock
     const map = cardPositionsRef.value
     
-    // Position the cards that will be drawn at the stock location
+    // Position the cards that will be drawn at the stock location (hidden initially)
     for (const cardId of cardsToDrawIds) {
       const existing = map.get(cardId)
       if (existing) {
@@ -641,6 +642,7 @@ async function handleStockClick() {
           x: stockRect.x,
           y: stockRect.y,
           faceUp: false,
+          hidden: true, // Hide until animation starts
         })
       } else {
         const sourceCard = store.stock.find(c => c.id === cardId)
@@ -652,6 +654,7 @@ async function handleStockClick() {
             z: 100,
             faceUp: false,
             card: sourceCard,
+            hidden: true, // Hide until animation starts
           })
         }
       }
@@ -676,64 +679,87 @@ async function handleStockClick() {
       animatingCardIds.value.add(card.id)
     }
     
-    // Small delay to ensure cards are rendered at stock first
+    // Reveal cards at stock position, then animate
     await nextTick()
-    await new Promise(r => setTimeout(r, 30))
+    for (const card of drawnCards) {
+      const existing = map.get(card.id)
+      if (existing) {
+        map.set(card.id, { ...existing, hidden: false })
+      }
+    }
+    triggerRef(cardPositionsRef)
+    
+    // Brief delay to render at stock before moving
+    await new Promise(r => setTimeout(r, 20))
     
     // Single-stage animation: Move, flip, and spread in one motion
     // Cards go directly from stock to their final fanned positions
+    // Batch all updates to avoid multiple triggerRef calls
     for (const card of drawnCards) {
       const finalPos = finalPositions.find(p => p.id === card.id)
       if (finalPos) {
-        updatePosition(card.id, {
-          x: finalPos.x,
-          y: finalPos.y,
-          z: 2000 + finalPos.z, // Elevated during animation to stay above existing waste
-          faceUp: true, // Flip as they move
-        })
+        const existing = map.get(card.id)
+        if (existing) {
+          map.set(card.id, {
+            ...existing,
+            x: finalPos.x,
+            y: finalPos.y,
+            z: 2000 + finalPos.z, // Elevated during animation
+            faceUp: true, // Flip as they move
+          })
+        }
       }
     }
+    triggerRef(cardPositionsRef) // Single trigger for all drawn cards
     
     // Wait for new cards to land before collapsing existing pile
     await new Promise(r => setTimeout(r, 350))
 
-    // Now collapse existing waste cards to their new positions
+    // Now collapse existing waste cards to their new positions (batched)
     for (const pos of existingWastePositions) {
-      updatePosition(pos.id, {
-        x: pos.x,
-        y: pos.y,
-        z: pos.z,
-      })
+      const existing = map.get(pos.id)
+      if (existing) {
+        map.set(pos.id, { ...existing, x: pos.x, y: pos.y, z: pos.z })
+      }
     }
+    triggerRef(cardPositionsRef) // Single trigger for collapse
     
     // Wait for collapse animation
     await new Promise(r => setTimeout(r, 200))
     
-    // Finalize z-indices to proper values
+    // Finalize z-indices to proper values (batched)
     for (const card of drawnCards) {
       const finalPos = finalPositions.find(p => p.id === card.id)
       if (finalPos) {
-        updatePosition(card.id, { z: finalPos.z })
+        const existing = map.get(card.id)
+        if (existing) {
+          map.set(card.id, { ...existing, z: finalPos.z })
+        }
       }
     }
     
-      // Reconcile all visible card positions from current state.
-      // Ensures newly exposed stock cards are rendered after a draw.
-      const finalIds = new Set(finalPositions.map((p) => p.id))
-      for (const pos of finalPositions) {
+    // Add newly exposed stock cards (they weren't in the map before)
+    // This ensures the stock pile visual stays updated
+    for (const pos of finalPositions) {
+      if (!map.has(pos.id)) {
         map.set(pos.id, pos)
       }
-      for (const id of Array.from(map.keys())) {
-        if (!finalIds.has(id)) {
-          map.delete(id)
-        }
+    }
+    
+    // Remove cards that are no longer in play (drawn and now in waste)
+    const finalIds = new Set(finalPositions.map(p => p.id))
+    for (const id of Array.from(map.keys())) {
+      if (!finalIds.has(id)) {
+        map.delete(id)
       }
-      triggerRef(cardPositionsRef)
+    }
+    
+    triggerRef(cardPositionsRef)
 
-      // Clean up
-      for (const card of drawnCards) {
-        animatingCardIds.value.delete(card.id)
-      }
+    // Clean up animating flags
+    for (const card of drawnCards) {
+      animatingCardIds.value.delete(card.id)
+    }
     } else {
       // Recycle/no-draw path: watcher was paused, so force a sync.
       syncPositionsFromState()
@@ -884,70 +910,18 @@ function doNewGame() {
 </script>
 
 <template>
-  <div ref="boardRef" class="klondike-board">
-    <!-- Watermark -->
-    <div class="table-watermark">
-      <img src="@/assets/logo-jester-67-dark.png" alt="" class="watermark-img" />
-    </div>
-
-    <!-- Container slots (measures positions, handles empty slot clicks) -->
-    <KlondikeContainers
-      ref="containersRef"
-      :state="store.gameState"
-      :class="{ 
-        'drop-zone-active': dragState !== null,
-        'drop-zone-valid': activeDropZone?.isValid 
-      }"
-      @container-measured="handleContainerMeasured"
-      @stock-click="handleStockClick"
-      @waste-click="handleWasteClick"
-      @foundation-click="handleFoundationClick"
-      @tableau-click="handleTableauClick"
-    />
-
-    <!-- All cards in a single layer -->
-    <KlondikeCardLayer
-      :positions="cardPositions"
-      :selection="selection"
-      :card-width="layout.cardWidth.value"
-      :card-height="layout.cardHeight.value"
-      :drag-card-ids="dragCardIds"
-      :drag-offset-x="dragOffset.x"
-      :drag-offset-y="dragOffset.y"
-      :animating-card-ids="animatingCardIds"
-      @card-click="handleCardClick"
-      @drag-start="handleDragStart"
-      @drag-move="handleDragMove"
-      @drag-end="handleDragEnd"
-    />
-    
-    <!-- Drop zone highlight overlay -->
-    <div v-if="activeDropZone" class="drop-zone-highlight" :class="{ valid: activeDropZone.isValid, invalid: !activeDropZone.isValid }">
-      <template v-if="activeDropZone.type === 'tableau'">
-        <div 
-          class="highlight-overlay tableau"
-          :style="getDropZoneStyle(activeDropZone)"
-        ></div>
-      </template>
-      <template v-else>
-        <div 
-          class="highlight-overlay foundation"
-          :style="getDropZoneStyle(activeDropZone)"
-        ></div>
-      </template>
-    </div>
-
-    <!-- Bottom toolbar -->
-    <div class="bottom-toolbar">
+  <div class="klondike-layout">
+    <!-- Menu at top in full mode -->
+    <div v-if="isFullMode()" class="klondike-menu">
       <!-- Left: Back and Rules buttons -->
-      <div class="toolbar-left">
-        <button class="toolbar-btn back" @click="handleLeaveGame" title="Main Menu">
+      <div class="menu-left">
+        <button class="menu-btn back" @click="handleLeaveGame" title="Main Menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5" />
             <path d="M12 19l-7-7 7-7" />
           </svg>
         </button>
-        <button class="toolbar-btn" @click="showRulesModal = true" title="Rules">
+        <button class="menu-btn" @click="showRulesModal = true" title="Rules">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
@@ -957,21 +931,21 @@ function doNewGame() {
       </div>
 
       <!-- Center: Stats -->
-      <div class="toolbar-stats">
+      <div class="menu-stats">
         <span v-if="noMovesAvailable" class="no-moves-indicator">No moves!</span>
         <template v-else>
-          <span class="toolbar-stat">{{ score }}</span>
-          <span class="toolbar-stat-divider">•</span>
-          <span class="toolbar-stat">{{ formattedTime }}</span>
-          <span class="toolbar-stat-divider">•</span>
-          <span class="toolbar-stat">{{ moveCount }} moves</span>
+          <span class="menu-stat">{{ score }}</span>
+          <span class="menu-stat-divider">•</span>
+          <span class="menu-stat">{{ formattedTime }}</span>
+          <span class="menu-stat-divider">•</span>
+          <span class="menu-stat">{{ moveCount }} moves</span>
         </template>
       </div>
 
       <!-- Right: Actions -->
-      <div class="toolbar-actions">
+      <div class="menu-actions">
         <button 
-          class="toolbar-btn" 
+          class="menu-btn" 
           :class="{ disabled: !canUndo }"
           :disabled="!canUndo"
           @click="handleUndo" 
@@ -983,12 +957,133 @@ function doNewGame() {
             <path d="M3 10l4 4" />
           </svg>
         </button>
-        <button v-if="canAutoComplete && !isAutoCompleting" class="toolbar-btn auto" @click="handleAutoComplete" title="Auto">
+        <button v-if="canAutoComplete && !isAutoCompleting" class="menu-btn auto" @click="handleAutoComplete" title="Auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
           </svg>
         </button>
-        <button class="toolbar-btn" @click="confirmNewGame" title="New Game">
+        <button class="menu-btn" @click="confirmNewGame" title="New Game">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v4" />
+            <path d="M12 18v4" />
+            <path d="M4.93 4.93l2.83 2.83" />
+            <path d="M16.24 16.24l2.83 2.83" />
+            <path d="M2 12h4" />
+            <path d="M18 12h4" />
+            <path d="M4.93 19.07l2.83-2.83" />
+            <path d="M16.24 7.76l2.83-2.83" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Game board area -->
+    <div ref="boardRef" class="klondike-board">
+      <!-- Watermark -->
+      <div class="table-watermark">
+        <img src="@/assets/logo-jester-67-dark.png" alt="" class="watermark-img" />
+      </div>
+
+      <!-- Container slots (measures positions, handles empty slot clicks) -->
+      <KlondikeContainers
+        ref="containersRef"
+        :state="store.gameState"
+        :class="{ 
+          'drop-zone-active': dragState !== null,
+          'drop-zone-valid': activeDropZone?.isValid 
+        }"
+        @container-measured="handleContainerMeasured"
+        @stock-click="handleStockClick"
+        @waste-click="handleWasteClick"
+        @foundation-click="handleFoundationClick"
+        @tableau-click="handleTableauClick"
+      />
+
+      <!-- All cards in a single layer -->
+      <KlondikeCardLayer
+        :positions="cardPositions"
+        :selection="selection"
+        :card-width="layout.cardWidth.value"
+        :card-height="layout.cardHeight.value"
+        :drag-card-ids="dragCardIds"
+        :drag-offset-x="dragOffset.x"
+        :drag-offset-y="dragOffset.y"
+        :animating-card-ids="animatingCardIds"
+        @card-click="handleCardClick"
+        @drag-start="handleDragStart"
+        @drag-move="handleDragMove"
+        @drag-end="handleDragEnd"
+      />
+      
+      <!-- Drop zone highlight overlay -->
+      <div v-if="activeDropZone" class="drop-zone-highlight" :class="{ valid: activeDropZone.isValid, invalid: !activeDropZone.isValid }">
+        <template v-if="activeDropZone.type === 'tableau'">
+          <div 
+            class="highlight-overlay tableau"
+            :style="getDropZoneStyle(activeDropZone)"
+          ></div>
+        </template>
+        <template v-else>
+          <div 
+            class="highlight-overlay foundation"
+            :style="getDropZoneStyle(activeDropZone)"
+          ></div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Menu at bottom in mobile mode -->
+    <div v-if="!isFullMode()" class="klondike-menu">
+      <!-- Left: Back and Rules buttons -->
+      <div class="menu-left">
+        <button class="menu-btn back" @click="handleLeaveGame" title="Main Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button class="menu-btn" @click="showRulesModal = true" title="Rules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <path d="M12 17h.01" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Center: Stats -->
+      <div class="menu-stats">
+        <span v-if="noMovesAvailable" class="no-moves-indicator">No moves!</span>
+        <template v-else>
+          <span class="menu-stat">{{ score }}</span>
+          <span class="menu-stat-divider">•</span>
+          <span class="menu-stat">{{ formattedTime }}</span>
+          <span class="menu-stat-divider">•</span>
+          <span class="menu-stat">{{ moveCount }} moves</span>
+        </template>
+      </div>
+
+      <!-- Right: Actions -->
+      <div class="menu-actions">
+        <button 
+          class="menu-btn" 
+          :class="{ disabled: !canUndo }"
+          :disabled="!canUndo"
+          @click="handleUndo" 
+          title="Undo"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 10h10a5 5 0 0 1 5 5v2" />
+            <path d="M3 10l4-4" />
+            <path d="M3 10l4 4" />
+          </svg>
+        </button>
+        <button v-if="canAutoComplete && !isAutoCompleting" class="menu-btn auto" @click="handleAutoComplete" title="Auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </button>
+        <button class="menu-btn" @click="confirmNewGame" title="New Game">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2v4" />
             <path d="M12 18v4" />
@@ -1078,65 +1173,31 @@ function doNewGame() {
 <style scoped lang="scss">
 @use 'sass:color';
 
-.klondike-board {
+// Outer flex container for menu + board
+.klondike-layout {
   width: 100%;
   height: 100%;
-  // Dark green felt background with radial gradient for depth
-  background: 
-    // Stronger vignette around edges
-    radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(0, 0, 0, 0.45) 100%),
-    // Subtle center highlight
-    radial-gradient(ellipse 60% 50% at 50% 45%, #1a5c3d 0%, transparent 70%),
-    // Darker base felt color
-    #144030;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
-  overflow: hidden;
-  position: relative;
-  
-  // Card size CSS variables (set dynamically by calculateCardSize)
-  --card-width: 50px;
-  --card-height: 70px;
 }
 
-// Watermark - jester logo in center
-.table-watermark {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  user-select: none;
-  z-index: 1;
-  
-  .watermark-img {
-    width: 140px;
-    height: auto;
-    opacity: 0.15;
-  }
-}
-
-.bottom-toolbar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+// Menu bar (top in full mode, bottom in mobile)
+.klondike-menu {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 100;
   gap: 8px;
+  flex-shrink: 0;
 }
 
-.toolbar-left {
+.menu-left {
   display: flex;
   gap: 8px;
 }
 
-.toolbar-stats {
+.menu-stats {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1144,11 +1205,11 @@ function doNewGame() {
   font-size: 0.8rem;
 }
 
-.toolbar-stat {
+.menu-stat {
   font-weight: 500;
 }
 
-.toolbar-stat-divider {
+.menu-stat-divider {
   opacity: 0.4;
   font-size: 0.6rem;
 }
@@ -1164,12 +1225,12 @@ function doNewGame() {
   50% { opacity: 0.5; }
 }
 
-.toolbar-actions {
+.menu-actions {
   display: flex;
   gap: 8px;
 }
 
-.toolbar-btn {
+.menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1198,6 +1259,44 @@ function doNewGame() {
   svg {
     width: 20px;
     height: 20px;
+  }
+}
+
+// Game board area - fills remaining space
+.klondike-board {
+  flex: 1;
+  min-height: 0; // Allow shrinking in flex
+  // Dark green felt background with radial gradient for depth
+  background: 
+    // Stronger vignette around edges
+    radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(0, 0, 0, 0.45) 100%),
+    // Subtle center highlight
+    radial-gradient(ellipse 60% 50% at 50% 45%, #1a5c3d 0%, transparent 70%),
+    // Darker base felt color
+    #144030;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+  
+  // Card size CSS variables (set dynamically by calculateCardSize)
+  --card-width: 50px;
+  --card-height: 70px;
+}
+
+// Watermark - jester logo in center
+.table-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  
+  .watermark-img {
+    width: 140px;
+    height: auto;
+    opacity: 0.15;
   }
 }
 

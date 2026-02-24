@@ -15,6 +15,7 @@ export interface CardPosition {
   z: number
   faceUp: boolean
   card: KlondikeCard
+  hidden?: boolean // Suppress rendering during animation setup
 }
 
 // Stacking offsets as ratio of card height
