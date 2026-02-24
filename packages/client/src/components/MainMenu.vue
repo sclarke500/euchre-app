@@ -2,7 +2,6 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLobbyStore } from '@/stores/lobbyStore'
-import { getPlatformInfo } from '@/utils/platform'
 import { isMobile } from '@/utils/deviceMode'
 import SettingsModal from './SettingsModal.vue'
 import ProfileModal from './ProfileModal.vue'
@@ -66,10 +65,7 @@ function scrollToSelectedGame() {
   }
 }
 
-// Platform detection
-const showIOSInstallHint = ref(false)
-const showIOSSafariWarning = ref(false)
-// Note: Android/Desktop install prompt is handled by App.vue
+// Note: All PWA install prompts are handled by App.vue
 
 // 67 wobble animation on load
 const isWobbling = ref(true)
@@ -105,33 +101,12 @@ onMounted(() => {
     // Clean up URL
     router.replace({ path: '/', query: {} })
   }
-
-  const platform = getPlatformInfo()
-
-  if (platform.isStandalone) {
-    // Already running as PWA, no hints needed
-    return
-  }
-
-  if (platform.isIOS) {
-    if (platform.isSafari) {
-      showIOSInstallHint.value = true
-    } else {
-      showIOSSafariWarning.value = true
-    }
-  }
-  // Note: Android/Desktop install prompt is handled by App.vue (fires before mount)
 })
 
 onUnmounted(() => {
   carouselRef.value?.removeEventListener('scroll', updateScrollState)
   window.removeEventListener('resize', updateOrientation)
 })
-
-function dismissInstallHint() {
-  showIOSInstallHint.value = false
-  showIOSSafariWarning.value = false
-}
 
 const emit = defineEmits<{
   startSinglePlayer: [game: GameType]
@@ -358,16 +333,7 @@ const gameTitle = computed(() => {
         </div>
       </Transition>
 
-      <!-- Install hints -->
-      <div v-if="showIOSInstallHint" class="install-hint">
-        <span>For fullscreen: tap <strong>Share</strong> → <strong>Add to Home Screen</strong></span>
-        <button class="dismiss-btn" @click="dismissInstallHint">×</button>
-      </div>
-      <div v-if="showIOSSafariWarning" class="install-hint warning">
-        <span>Open in <strong>Safari</strong> to install as an app</span>
-        <button class="dismiss-btn" @click="dismissInstallHint">×</button>
-      </div>
-      <!-- Android/Desktop install prompt handled by App.vue -->
+      <!-- PWA install prompts handled by App.vue -->
     </div>
     </div>
   </div>
@@ -469,10 +435,12 @@ const gameTitle = computed(() => {
   flex-direction: row;
   color: white;
 
-  // Portrait mode (phones only) - stacked layout
+  // Portrait mode (phones only) - stacked layout with vertical spread
   @media (orientation: portrait) and (max-width: 600px) {
     flex-direction: column;
+    justify-content: space-between;
     overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 }
 
@@ -504,16 +472,15 @@ const gameTitle = computed(() => {
     }
   }
 
-  // Portrait mode (phones only) - logo top-left, profile centered at bottom
+  // Portrait mode (phones only) - logo top-left, profile centered below
   @media (orientation: portrait) and (max-width: 600px) {
     flex: 0 0 auto;
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
     padding: $spacing-md;
-    padding-bottom: $spacing-lg;
+    padding-bottom: 0;
     gap: $spacing-md;
-    min-height: 220px;
     
     // Mid-size logo in portrait
     :deep(.app-logo) {
@@ -528,7 +495,7 @@ const gameTitle = computed(() => {
     }
     
     .profile-section {
-      margin-top: auto;
+      margin-top: $spacing-xl * 2.5;
       margin-bottom: 0;
       align-self: center;
     }
@@ -558,8 +525,9 @@ const gameTitle = computed(() => {
   // Portrait mode (phones only) - flex grow to fill remaining space
   @media (orientation: portrait) and (max-width: 600px) {
     flex: 1;
-    justify-content: flex-start;
+    justify-content: center;
     padding: $spacing-md;
+    padding-top: $spacing-lg;
     padding-bottom: $spacing-xl;
   }
 
@@ -686,8 +654,8 @@ const gameTitle = computed(() => {
   }
 
   @media (orientation: portrait) and (max-width: 600px) {
-    padding: $spacing-sm $spacing-lg;
-    font-size: 1rem;
+    padding: $spacing-md $spacing-xl;
+    font-size: 1.15rem;
   }
 }
 
@@ -821,7 +789,7 @@ const gameTitle = computed(() => {
   align-items: center;
   justify-content: center;
   gap: $spacing-xs;
-  margin-top: $spacing-lg;
+  margin-top: $spacing-xl;
   padding: $spacing-sm $spacing-md;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 20px;
@@ -930,56 +898,4 @@ const gameTitle = computed(() => {
   opacity: 0;
 }
 
-.install-hint {
-  margin-top: $spacing-xl;
-  padding: $spacing-md $spacing-lg;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-  max-width: 400px;
-
-  @media (max-height: 500px) {
-    margin-top: $spacing-md;
-    padding: $spacing-sm $spacing-md;
-    font-size: 0.875rem;
-  }
-
-  @media (orientation: portrait) and (max-width: 600px) {
-    max-width: 320px;
-  }
-
-  &.warning {
-    background: rgba(231, 76, 60, 0.25);
-    border-color: rgba(231, 76, 60, 0.4);
-  }
-
-  strong {
-    font-weight: bold;
-  }
-
-  .install-btn {
-    flex-shrink: 0;
-    margin-left: auto;
-    padding: $spacing-sm $spacing-md;
-    font-size: 1rem;
-    font-weight: bold;
-    background: $secondary-color;
-    color: white;
-    border-radius: 8px;
-  }
-
-  .dismiss-btn {
-    flex-shrink: 0;
-    padding: $spacing-xs $spacing-sm;
-    font-size: 1.25rem;
-    line-height: 1;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border-radius: 6px;
-  }
-}
 </style>

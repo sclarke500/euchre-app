@@ -212,7 +212,8 @@ const features = [
 
 <style scoped lang="scss">
 .landing {
-  min-height: 100vh;
+  min-height: 100vh; /* fallback */
+  min-height: 100dvh; /* dynamic viewport - accounts for browser chrome */
   color: white;
 }
 
@@ -263,7 +264,8 @@ const features = [
   @media (max-height: 450px) {
     min-height: auto;
     max-height: none;
-    height: 100vh;
+    height: 100vh; /* fallback */
+    height: 100dvh;
     justify-content: flex-start;
     align-items: flex-start;
     padding: $spacing-md $spacing-lg;

@@ -36,7 +36,8 @@ html.scrollable body {
 
 html.scrollable #app {
   height: auto;
-  min-height: 100vh;
+  min-height: 100vh; /* fallback for older browsers */
+  min-height: 100dvh; /* dynamic viewport height - accounts for browser chrome */
   overflow: visible;
 }
 

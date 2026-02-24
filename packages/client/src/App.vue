@@ -182,7 +182,7 @@ function dismissOpenInAppPrompt() {
           </div>
           <div class="install-text">
             <strong>Open in App</strong>
-            <span>You have Euchre installed! Open from your home screen for the best experience.</span>
+            <span>You have 67 Cards installed! Open from your home screen for the best experience.</span>
           </div>
           <button class="dismiss-btn" @click="dismissOpenInAppPrompt">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -203,11 +203,12 @@ function dismissOpenInAppPrompt() {
             </svg>
           </div>
           <div class="install-text">
-            <strong>Install Euchre</strong>
+            <span class="install-subtitle">For fullscreen experience</span>
+            <strong>Install 67 Card Games</strong>
             <span v-if="isIOS">
               Tap <svg class="inline-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5l-1.42 1.42-1.59-1.59V16h-2V4.83L9.41 6.41 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V10c0-1.1.9-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .9 2 2z"/></svg> then "Add to Home Screen"
             </span>
-            <span v-else>Add to home screen for the best experience</span>
+            <span v-else>Add to home screen</span>
           </div>
           <button v-if="!isIOS" class="install-btn" @click="installPWA">Install</button>
           <button class="dismiss-btn" @click="dismissInstallPrompt">
@@ -353,13 +354,22 @@ function dismissOpenInAppPrompt() {
   font-size: 0.875rem;
   line-height: 1.3;
 
+  .install-subtitle {
+    display: block;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
   strong {
     display: block;
     font-size: 1rem;
     margin-bottom: 2px;
   }
 
-  span {
+  span:not(.install-subtitle) {
     opacity: 0.85;
     font-size: 0.8rem;
   }
