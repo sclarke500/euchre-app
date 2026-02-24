@@ -194,16 +194,36 @@ function handleResize() {
 
 function handleOrientationChange() {
   console.log('[ScaledContainer] Orientation change detected')
-  // Wait a tick for initial layout, then poll for stability
-  setTimeout(() => {
-    calculateScale()
-    pollUntilStable(15, 50) // More attempts for orientation change
-  }, 50)
+  
+  // iOS takes a while to update viewport dimensions after orientation change
+  // Use multiple delayed recalculations to catch it
+  const delays = [50, 150, 300, 500, 800]
+  delays.forEach(delay => {
+    setTimeout(() => {
+      const { width, height } = getViewportDimensions()
+      const wasPortrait = isPortrait.value
+      const nowPortrait = height > width
+      
+      console.log(`[ScaledContainer] After ${delay}ms: ${width}×${height}, portrait=${nowPortrait}`)
+      
+      // If orientation detection changed, recalculate
+      if (wasPortrait !== nowPortrait || width !== lastViewportW || height !== lastViewportH) {
+        calculateScale()
+      }
+    }, delay)
+  })
 }
 
 onMounted(() => {
+  // Initial calculation with small delay to let DOM settle
   requestAnimationFrame(() => {
     calculateScale()
+    
+    // On mobile, do a few more checks in case dimensions are still settling
+    if (isMobile()) {
+      setTimeout(() => calculateScale(), 100)
+      setTimeout(() => calculateScale(), 300)
+    }
   })
   
   // Listen to resize events
