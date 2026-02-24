@@ -27,7 +27,7 @@ export default defineConfig({
       manifest: {
         id: '/67-card-games',
         name: '67 Card Games',
-        short_name: '67 Cards',
+        short_name: '67CardGames',
         description: 'Classic card games — Euchre, Spades, President, and more',
         start_url: '/play',
         scope: '/',
