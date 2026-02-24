@@ -21,7 +21,7 @@ import { getDeviceSafeAreas, type SafeAreaInsets } from '@/utils/deviceSafeAreas
 // Canonical dimensions - design at these sizes
 const DESKTOP_WIDTH = 1120
 const DESKTOP_HEIGHT = 630
-const MOBILE_LANDSCAPE_WIDTH = 750
+const MOBILE_LANDSCAPE_WIDTH = 820
 const MOBILE_LANDSCAPE_HEIGHT = 370
 const MOBILE_PORTRAIT_WIDTH = 370
 const MOBILE_PORTRAIT_HEIGHT = 700
