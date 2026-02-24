@@ -172,6 +172,23 @@ export function formatIssueBody(diag: Record<string, unknown>, reportType: Repor
     }
   }
 
+  // Console logs
+  const consoleLogs = diag.consoleLogs as Array<{ level: string; timestamp: number; args: unknown[] }> | undefined
+  if (consoleLogs && consoleLogs.length > 0) {
+    sections.push(`## Console Logs (last ${consoleLogs.length})`)
+    sections.push('```')
+    consoleLogs.forEach(log => {
+      const time = new Date(log.timestamp).toISOString().substring(11, 23)
+      const level = (log.level ?? 'log').toUpperCase().padEnd(5)
+      const msg = (log.args ?? []).map(a => 
+        typeof a === 'object' ? JSON.stringify(a) : String(a)
+      ).join(' ')
+      sections.push(`[${time}] ${level} ${msg}`)
+    })
+    sections.push('```')
+    sections.push('')
+  }
+
   // Raw state (collapsed)
   if (diag.rawState) {
     sections.push('<details><summary>Full raw game state</summary>')
