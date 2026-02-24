@@ -39,10 +39,9 @@ const safeInsets = ref<SafeAreaInsets>({ top: 0, right: 0, bottom: 0, left: 0 })
 const deviceName = ref('Unknown')
 const isPortrait = ref(false)
 
-// Track last known dimensions for stability detection
+// Track last known dimensions
 let lastViewportW = 0
 let lastViewportH = 0
-let stabilityPollId: number | null = null
 
 // Get canonical dimensions based on mode and orientation
 const canonicalWidth = computed(() => {
@@ -75,25 +74,46 @@ function getDeviceOrientation(): 'portrait' | 'landscape' {
 }
 
 /**
- * Get viewport dimensions using visualViewport API when available
- * (more reliable on iOS than offsetWidth/offsetHeight during orientation change)
+ * Get viewport dimensions
+ * On mobile, derive from screen size + orientation (avoids iOS transition garbage)
+ * On desktop, use actual viewport
  */
 function getViewportDimensions(): { width: number, height: number } {
-  // Try visualViewport first (more reliable on mobile)
+  // On mobile, use screen dimensions + orientation (most reliable)
+  if (isMobile()) {
+    const orientation = getDeviceOrientation()
+    const screenW = window.screen.width
+    const screenH = window.screen.height
+    
+    // screen.width/height are physical dimensions (don't swap on rotation)
+    // Determine which dimension is which based on orientation
+    const isScreenPortrait = screenH > screenW
+    
+    let width: number, height: number
+    if (orientation === 'portrait') {
+      width = isScreenPortrait ? screenW : screenH
+      height = isScreenPortrait ? screenH : screenW
+    } else {
+      width = isScreenPortrait ? screenH : screenW
+      height = isScreenPortrait ? screenW : screenH
+    }
+    
+    return { width, height }
+  }
+  
+  // Desktop: use visualViewport or fallbacks
   if (window.visualViewport) {
     return {
       width: Math.round(window.visualViewport.width),
       height: Math.round(window.visualViewport.height),
     }
   }
-  // Fall back to wrapper element dimensions
   if (wrapperRef.value) {
     return {
       width: wrapperRef.value.offsetWidth,
       height: wrapperRef.value.offsetHeight,
     }
   }
-  // Last resort: window inner dimensions
   return {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -122,21 +142,15 @@ function dimensionsLookValid(width: number, height: number, orientation: 'portra
 }
 
 function calculateScale() {
-  const { width: viewportW, height: viewportH } = getViewportDimensions()
   const deviceOrientation = getDeviceOrientation()
+  const { width: viewportW, height: viewportH } = getViewportDimensions()
   
   if (viewportW === 0 || viewportH === 0) {
     console.log('[ScaledContainer] Zero dimensions, skipping')
     return
   }
   
-  // Validate dimensions match expected orientation (skip mid-transition garbage)
-  if (isMobile() && !dimensionsLookValid(viewportW, viewportH, deviceOrientation)) {
-    console.log(`[ScaledContainer] Skipping invalid dimensions: ${viewportW}×${viewportH} for ${deviceOrientation}`)
-    return
-  }
-  
-  // Use device orientation (more reliable than comparing dimensions)
+  // Use device orientation (derived from screen.orientation API)
   isPortrait.value = deviceOrientation === 'portrait'
   
   // Apply safe area insets to get usable box
@@ -190,74 +204,22 @@ function calculateScale() {
   lastViewportH = viewportH
 }
 
-/**
- * Poll until viewport dimensions stabilize
- * iOS Safari takes 100-500ms to update dimensions after orientation change
- */
-function pollUntilStable(maxAttempts = 10, intervalMs = 50) {
-  let attempts = 0
-  
-  // Clear any existing poll
-  if (stabilityPollId !== null) {
-    clearInterval(stabilityPollId)
-  }
-  
-  stabilityPollId = window.setInterval(() => {
-    attempts++
-    const { width, height } = getViewportDimensions()
-    
-    // Check if dimensions have changed from last calculation
-    const changed = width !== lastViewportW || height !== lastViewportH
-    
-    if (changed) {
-      console.log(`[ScaledContainer] Dimensions changed: ${lastViewportW}×${lastViewportH} → ${width}×${height}`)
-      calculateScale()
-    }
-    
-    // Stop polling after max attempts or if stable for 2 consecutive checks
-    if (attempts >= maxAttempts || !changed) {
-      if (stabilityPollId !== null) {
-        clearInterval(stabilityPollId)
-        stabilityPollId = null
-      }
-      if (attempts >= maxAttempts) {
-        console.log(`[ScaledContainer] Max poll attempts reached`)
-      }
-    }
-  }, intervalMs)
-}
-
 function handleResize() {
-  // Calculate immediately
+  // Calculate immediately - dimensions are derived from screen size on mobile
   calculateScale()
-  
-  // On mobile, poll for stability (iOS orientation change fix)
-  if (isMobile()) {
-    pollUntilStable()
-  }
 }
 
 function handleOrientationChange() {
   const targetOrientation = getDeviceOrientation()
-  console.log(`[ScaledContainer] Orientation change detected → ${targetOrientation}`)
+  console.log(`[ScaledContainer] Orientation change → ${targetOrientation}`)
   
-  // iOS takes a while to update viewport dimensions after orientation change
-  // Use multiple delayed recalculations to catch it
-  const delays = [50, 150, 300, 500, 800, 1200]
-  delays.forEach(delay => {
-    setTimeout(() => {
-      const { width, height } = getViewportDimensions()
-      const orientation = getDeviceOrientation()
-      const isValid = dimensionsLookValid(width, height, orientation)
-      
-      console.log(`[ScaledContainer] After ${delay}ms: ${width}×${height}, orientation=${orientation}, valid=${isValid}`)
-      
-      // Only recalculate if dimensions are valid and something changed
-      if (isValid && (width !== lastViewportW || height !== lastViewportH)) {
-        calculateScale()
-      }
-    }, delay)
-  })
+  // Recalculate immediately - we derive dimensions from screen size + orientation
+  // so we don't need to wait for viewport to settle
+  calculateScale()
+  
+  // But also do a couple follow-ups in case screen.orientation was slow
+  setTimeout(() => calculateScale(), 100)
+  setTimeout(() => calculateScale(), 300)
 }
 
 onMounted(() => {
@@ -290,10 +252,6 @@ onUnmounted(() => {
   
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', handleResize)
-  }
-  
-  if (stabilityPollId !== null) {
-    clearInterval(stabilityPollId)
   }
 })
 
