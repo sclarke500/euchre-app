@@ -1,58 +1,81 @@
 <script setup lang="ts">
 /**
- * ScaledContainer - 16:9 aspect ratio container with transform scaling
+ * ScaledContainer - Unified scaling for all devices
  * 
  * In FULL mode (tablet/desktop):
- * - Creates a fixed-size container at canonical dimensions (1120x630)
- * - Uses CSS transform: scale() to fit the viewport
- * - Everything inside scales proportionally
+ * - Canonical size: 1120×630 (16:9)
+ * - Scales to fit viewport
  * 
  * In MOBILE mode:
- * - Passes through without constraint
- * - Uses full screen space
+ * - Canonical size: 750×370 (~2:1)
+ * - Applies device-specific safe area insets
+ * - Scales to fit usable box
+ * 
+ * Both modes use transform: scale() for consistent rendering
  */
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { isFullMode } from '@/utils/deviceMode'
+import { isFullMode, isMobile } from '@/utils/deviceMode'
+import { getDeviceSafeAreas, type SafeAreaInsets } from '@/utils/deviceSafeAreas'
 
-// Canonical dimensions for 16:9 aspect ratio
-// This is the "design size" - everything is laid out at this size then scaled
-const CANONICAL_WIDTH = 1120
-const CANONICAL_HEIGHT = 630
-
-// No padding - container runs edge-to-edge
-const VIEWPORT_PADDING = 0
+// Canonical dimensions - design at these sizes
+const DESKTOP_WIDTH = 1120
+const DESKTOP_HEIGHT = 630
+const MOBILE_WIDTH = 750
+const MOBILE_HEIGHT = 370
 
 const wrapperRef = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
 const scale = ref(1)
 const wrapperWidth = ref(0)
 const wrapperHeight = ref(0)
+const safeInsets = ref<SafeAreaInsets>({ top: 0, right: 0, bottom: 0, left: 0 })
+const deviceName = ref('Unknown')
 
-const shouldScale = computed(() => {
-  const result = isFullMode()
-  console.log('[ScaledContainer] shouldScale:', result)
-  return result
-})
+// Get canonical dimensions based on mode
+const canonicalWidth = computed(() => isFullMode() ? DESKTOP_WIDTH : MOBILE_WIDTH)
+const canonicalHeight = computed(() => isFullMode() ? DESKTOP_HEIGHT : MOBILE_HEIGHT)
+
+// Always scale now (both mobile and desktop)
+const shouldScale = computed(() => true)
 
 function calculateScale() {
-  if (!shouldScale.value || !wrapperRef.value) {
+  if (!wrapperRef.value) {
     scale.value = 1
     return
   }
   
-  // Measure wrapper size
-  wrapperWidth.value = wrapperRef.value.offsetWidth
-  wrapperHeight.value = wrapperRef.value.offsetHeight
+  // Get viewport size
+  const viewportW = wrapperRef.value.offsetWidth
+  const viewportH = wrapperRef.value.offsetHeight
   
-  console.log(`[ScaledContainer] wrapper: ${wrapperWidth.value}×${wrapperHeight.value}`)
+  // Apply safe area insets to get usable box
+  let usableW = viewportW
+  let usableH = viewportH
   
-  // Scale to fit (use smaller scale to maintain aspect ratio)
-  const scaleX = wrapperWidth.value / CANONICAL_WIDTH
-  const scaleY = wrapperHeight.value / CANONICAL_HEIGHT
+  if (isMobile()) {
+    // Get device-specific safe areas
+    const deviceInfo = getDeviceSafeAreas()
+    safeInsets.value = deviceInfo.insets
+    deviceName.value = deviceInfo.name
+    
+    usableW = viewportW - safeInsets.value.left - safeInsets.value.right
+    usableH = viewportH - safeInsets.value.top - safeInsets.value.bottom
+    
+    console.log(`[ScaledContainer] Device: ${deviceInfo.name}, Viewport: ${viewportW}×${viewportH}, Usable: ${usableW}×${usableH}`)
+  } else {
+    console.log(`[ScaledContainer] Desktop: ${viewportW}×${viewportH}`)
+  }
   
-  // Use smaller scale to ensure it fits - no cap, can scale up
+  wrapperWidth.value = usableW
+  wrapperHeight.value = usableH
+  
+  // Scale to fit usable box
+  const scaleX = usableW / canonicalWidth.value
+  const scaleY = usableH / canonicalHeight.value
+  
+  // Use smaller scale to maintain aspect ratio and fit
   scale.value = Math.min(scaleX, scaleY)
-  console.log(`[ScaledContainer] scale: ${scale.value.toFixed(3)} (scaleX=${scaleX.toFixed(3)}, scaleY=${scaleY.toFixed(3)})`)
+  console.log(`[ScaledContainer] Canonical: ${canonicalWidth.value}×${canonicalHeight.value}, Scale: ${scale.value.toFixed(3)}`)
 }
 
 function handleResize() {
@@ -60,7 +83,6 @@ function handleResize() {
 }
 
 onMounted(() => {
-  // Wait a tick for layout to settle
   requestAnimationFrame(() => {
     calculateScale()
   })
@@ -71,51 +93,48 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 
-// Recalculate when mode changes (shouldn't happen, but safety)
-watch(shouldScale, () => {
-  calculateScale()
-})
-
 // Calculate style with centering offset
 const scaledStyle = computed(() => {
-  const scaledW = CANONICAL_WIDTH * scale.value
-  const scaledH = CANONICAL_HEIGHT * scale.value
+  const scaledW = canonicalWidth.value * scale.value
+  const scaledH = canonicalHeight.value * scale.value
   
-  // Center the scaled content within wrapper
-  const offsetX = Math.max(0, (wrapperWidth.value - scaledW) / 2)
-  const offsetY = Math.max(0, (wrapperHeight.value - scaledH) / 2)
+  // Calculate offset to center within usable box
+  // For mobile, also add safe area offset
+  let offsetX = Math.max(0, (wrapperWidth.value - scaledW) / 2)
+  let offsetY = Math.max(0, (wrapperHeight.value - scaledH) / 2)
+  
+  if (isMobile()) {
+    offsetX += safeInsets.value.left
+    offsetY += safeInsets.value.top
+  }
   
   return {
-    width: `${CANONICAL_WIDTH}px`,
-    height: `${CANONICAL_HEIGHT}px`,
+    width: `${canonicalWidth.value}px`,
+    height: `${canonicalHeight.value}px`,
     transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale.value})`,
   }
 })
 
-// Expose dimensions for child components that need to know the "virtual" viewport
-const containerWidth = computed(() => shouldScale.value ? CANONICAL_WIDTH : (wrapperRef.value?.offsetWidth ?? window.innerWidth))
-const containerHeight = computed(() => shouldScale.value ? CANONICAL_HEIGHT : (wrapperRef.value?.offsetHeight ?? window.innerHeight))
+// Expose dimensions for child components
+const containerWidth = computed(() => canonicalWidth.value)
+const containerHeight = computed(() => canonicalHeight.value)
 
 defineExpose({
   width: containerWidth,
   height: containerHeight,
   scale,
+  deviceName,
+  safeInsets,
 })
 </script>
 
 <template>
-  <div ref="wrapperRef" class="scaled-container-wrapper" :class="{ 'is-scaling': shouldScale }">
+  <div ref="wrapperRef" class="scaled-container-wrapper">
     <div
-      v-if="shouldScale"
       ref="containerRef"
       class="scaled-container"
       :style="scaledStyle"
     >
-      <slot />
-    </div>
-    
-    <!-- Mobile: no scaling, full viewport -->
-    <div v-else class="passthrough-container">
       <slot />
     </div>
   </div>
@@ -127,32 +146,17 @@ defineExpose({
   height: 100%;
   overflow: hidden;
   position: relative;
-  
-  &.is-scaling {
-    background: #0a0a0f; // Dark background if container doesn't fill (letterboxing)
-  }
+  // Dark background shows in letterbox/safe areas
+  background: #0a0a0f;
 }
 
 .scaled-container {
-  // Transform from top-left corner, positioned at top-left
-  // This avoids flexbox layout issues with transformed elements
   position: absolute;
   top: 0;
   left: 0;
   transform-origin: top left;
   overflow: hidden;
-  background: #0f0f18; // Game area background
-}
-
-.passthrough-container {
-  width: 100%;
-  height: 100%;
-  // Safe area padding for mobile (content stays inside notch/home indicator areas)
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  box-sizing: border-box;
-  // Transparent - #app's dark background shows in safe areas
+  // Game area background - will be covered by game content
+  background: #0f0f18;
 }
 </style>
