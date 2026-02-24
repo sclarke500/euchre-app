@@ -103,7 +103,7 @@ function handleRules() {
 .game-hud {
   position: absolute;
   top: 10px;
-  left: max(10px, env(safe-area-inset-left));
+  left: 10px; // ScaledContainer handles safe areas now
   z-index: 600; // Above dealer chip (550), dropdown inside is higher
 }
 

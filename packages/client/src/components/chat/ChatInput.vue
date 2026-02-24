@@ -107,8 +107,8 @@ function handleClickOutside(e: MouseEvent) {
 <style scoped lang="scss">
 .chat-input-container {
   position: absolute;
-  bottom: max(16px, env(safe-area-inset-bottom, 16px));
-  left: max(16px, env(safe-area-inset-left, 16px));
+  bottom: 16px; // ScaledContainer handles safe areas now
+  left: 16px;
   z-index: 400;
 }
 

@@ -127,7 +127,6 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 14px 12px;
-  padding-right: max(12px, env(safe-area-inset-right));
   background: var(--panel-bg);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);

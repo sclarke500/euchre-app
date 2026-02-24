@@ -242,7 +242,7 @@ defineExpose({ reset })
 <style scoped lang="scss">
 .timer-panel {
   position: fixed;
-  left: max(12px, env(safe-area-inset-left));
+  left: 12px; // ScaledContainer handles safe areas now
   bottom: 50%;
   transform: translateY(50%);
   z-index: 600;

@@ -508,7 +508,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 .scoreboard {
   position: fixed;
   top: 8px;
-  right: max(8px, env(safe-area-inset-right));
+  right: 8px; // ScaledContainer handles safe areas now
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
@@ -683,8 +683,8 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 // Timeout controls (multiplayer)
 .timeout-controls {
   position: fixed;
-  bottom: max(16px, env(safe-area-inset-bottom));
-  left: max(16px, env(safe-area-inset-left));
+  bottom: 16px; // ScaledContainer handles safe areas now
+  left: 16px;
   z-index: 600;
   display: flex;
   flex-direction: column;
@@ -812,7 +812,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 .chat-icon-container {
   position: absolute;
   top: 60px;
-  left: max(10px, env(safe-area-inset-left));
+  left: 10px; // ScaledContainer handles safe areas now
   z-index: 500;
 }
 </style>

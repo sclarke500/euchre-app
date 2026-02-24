@@ -26,8 +26,8 @@ const hasContent = computed(() => !!slots.default)
 <style scoped lang="scss">
 .user-actions {
   position: fixed;
-  bottom: max(12px, env(safe-area-inset-bottom));
-  right: max(12px, env(safe-area-inset-right));
+  bottom: 12px; // ScaledContainer handles safe areas now
+  right: 12px;
   z-index: 600;
   // No background - floating buttons only
 
