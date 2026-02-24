@@ -51,7 +51,8 @@ body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  // Let game boards handle safe areas internally for full-bleed backgrounds
+  // Dark background shows in safe area margins
+  background: #0a0a0f;
 }
 
 ul,

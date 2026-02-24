@@ -153,7 +153,6 @@ defineExpose({
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
-  // Background extends to edges (behind notch area)
-  background: #144030; // Card table green - games will overlay their own
+  // Transparent - #app's dark background shows in safe areas
 }
 </style>
