@@ -40,7 +40,7 @@ function calculateScale() {
     return
   }
   
-  // Measure actual wrapper element size (not window)
+  // Measure wrapper size
   wrapperWidth.value = wrapperRef.value.offsetWidth
   wrapperHeight.value = wrapperRef.value.offsetHeight
   
@@ -147,5 +147,13 @@ defineExpose({
 .passthrough-container {
   width: 100%;
   height: 100%;
+  // Safe area padding for mobile (content stays inside notch/home indicator areas)
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+  // Background extends to edges (behind notch area)
+  background: #144030; // Card table green - games will overlay their own
 }
 </style>
