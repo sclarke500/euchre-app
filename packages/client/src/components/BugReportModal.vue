@@ -2,7 +2,7 @@
   <Modal :show="show" @close="$emit('close')">
     <div class="bug-modal">
       <div class="modal-header">
-        <h2>🐛 Bug Report</h2>
+        <h2>Bug Report</h2>
         <button class="close-btn" @click="$emit('close')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12" />
@@ -135,48 +135,90 @@ function handleDownload() {
 </script>
 
 <style scoped lang="scss">
-@use '@/assets/styles/modal-light' as *;
-
 .bug-modal {
-  @include modal-panel;
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
+  border-radius: 16px;
   min-width: 320px;
   max-width: 420px;
   width: 100%;
+  color: white;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
 
 .modal-header {
-  @include modal-header;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
   h2 {
-    @include modal-title;
+    font-size: 1.25rem;
+    font-weight: 600;
     margin: 0;
   }
 }
 
 .close-btn {
-  @include modal-close-btn;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  cursor: pointer;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
 }
 
 .modal-body {
-  @include modal-body;
+  padding: 1.5rem;
 }
 
 .help-text {
-  @include modal-help-text;
   margin: 0 0 1rem 0;
   font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .bug-textarea {
-  @include modal-textarea;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.9375rem;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 100px;
   margin-bottom: 0.75rem;
+  
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: $brand-green;
+    background: rgba(255, 255, 255, 0.15);
+  }
 }
 
 .bug-info {
   display: flex;
   gap: 12px;
   font-size: 0.8rem;
-  color: $modal-text-muted;
+  color: rgba(255, 255, 255, 0.6);
   
   .info-item {
     text-transform: capitalize;
@@ -184,8 +226,13 @@ function handleDownload() {
 }
 
 .modal-footer {
-  @include modal-footer;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 16px 16px;
 }
 
 .secondary-actions {
@@ -194,8 +241,18 @@ function handleDownload() {
 }
 
 .link-btn {
-  @include modal-btn-link;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  
+  &:hover {
+    color: white;
+    text-decoration: underline;
+  }
 }
 
 .primary-actions {
@@ -204,10 +261,37 @@ function handleDownload() {
 }
 
 .btn-primary {
-  @include modal-btn-primary;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: $brand-green;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background: $brand-green-light;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .btn-secondary {
-  @include modal-btn-secondary;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 </style>

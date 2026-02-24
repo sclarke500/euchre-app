@@ -103,67 +103,111 @@ function handleBack() {
       <div class="two-column">
         <!-- Left Column: Game Selection & Options -->
         <div class="column">
-          <div class="game-tabs">
-            <button
-              v-for="game in (['euchre', 'president', 'spades'] as const)"
-              :key="game"
-              :class="['game-tab', { active: selectedGame === game }]"
-              @click="selectGameType(game)"
-            >
-              {{ game.charAt(0).toUpperCase() + game.slice(1) }}
-            </button>
+          <div class="section-card">
+            <h2>Game</h2>
+            <div class="game-tabs">
+              <button
+                v-for="game in (['euchre', 'president', 'spades'] as const)"
+                :key="game"
+                :class="['game-tab', { active: selectedGame === game }]"
+                @click="selectGameType(game)"
+              >
+                {{ game.charAt(0).toUpperCase() + game.slice(1) }}
+              </button>
+            </div>
           </div>
 
-          <div class="game-options-panel">
-            <EuchreOptions v-if="selectedGame === 'euchre'" />
-            <PresidentOptions v-else-if="selectedGame === 'president'" />
-            <SpadesOptions v-else-if="selectedGame === 'spades'" />
+          <div class="section-card">
+            <h2>Game Rules</h2>
+            <div class="game-options-panel">
+              <EuchreOptions v-if="selectedGame === 'euchre'" />
+              <PresidentOptions v-else-if="selectedGame === 'president'" />
+              <SpadesOptions v-else-if="selectedGame === 'spades'" />
+            </div>
           </div>
         </div>
 
         <!-- Right Column: Table Options -->
         <div class="column">
-          <div class="form-section">
+          <div class="section-card">
             <h2>Table Options</h2>
-            <label class="toggle-option">
-              <input v-model="chatEnabled" type="checkbox" />
-              <span class="toggle-label">Chat enabled</span>
-            </label>
             
-            <label class="toggle-option">
-              <input v-model="isPrivate" type="checkbox" />
-              <span class="toggle-label">Private game</span>
-              <span class="toggle-hint">Shows 🔒 in lobby - for playing with friends</span>
-            </label>
+            <div class="option-row">
+              <span class="option-label">Private Game</span>
+              <div class="option-pills">
+                <button
+                  :class="['pill', { active: !isPrivate }]"
+                  @click="isPrivate = false"
+                >
+                  Off
+                </button>
+                <button
+                  :class="['pill', { active: isPrivate }]"
+                  @click="isPrivate = true"
+                >
+                  On
+                </button>
+              </div>
+            </div>
             
-            <label class="toggle-option">
-              <input v-model="bootInactive" type="checkbox" />
-              <span class="toggle-label">Boot inactive players</span>
-              <span class="toggle-hint">Show turn timer and allow kicking AFK players</span>
-            </label>
-          </div>
-
-          <div class="option-row">
-            <span class="option-label">Bot Remarks</span>
-            <div class="option-pills">
-              <button
-                :class="['pill', { active: botRemarks === 'off' }]"
-                @click="botRemarks = 'off'"
-              >
-                Off
-              </button>
-              <button
-                :class="['pill', { active: botRemarks === 'mild' }]"
-                @click="botRemarks = 'mild'"
-              >
-                Mild
-              </button>
-              <button
-                :class="['pill', { active: botRemarks === 'spicy' }]"
-                @click="botRemarks = 'spicy'"
-              >
-                Spicy
-              </button>
+            <div class="option-row">
+              <span class="option-label">Boot Inactive</span>
+              <div class="option-pills">
+                <button
+                  :class="['pill', { active: !bootInactive }]"
+                  @click="bootInactive = false"
+                >
+                  Off
+                </button>
+                <button
+                  :class="['pill', { active: bootInactive }]"
+                  @click="bootInactive = true"
+                >
+                  On
+                </button>
+              </div>
+            </div>
+            
+            <div class="option-row">
+              <span class="option-label">Chat</span>
+              <div class="option-pills">
+                <button
+                  :class="['pill', { active: !chatEnabled }]"
+                  @click="chatEnabled = false"
+                >
+                  Off
+                </button>
+                <button
+                  :class="['pill', { active: chatEnabled }]"
+                  @click="chatEnabled = true"
+                >
+                  On
+                </button>
+              </div>
+            </div>
+            
+            <div class="option-row">
+              <span class="option-label">Bot Remarks</span>
+              <div class="option-pills">
+                <button
+                  :class="['pill', { active: botRemarks === 'off' }]"
+                  @click="botRemarks = 'off'"
+                >
+                  Off
+                </button>
+                <button
+                  :class="['pill', { active: botRemarks === 'mild' }]"
+                  @click="botRemarks = 'mild'"
+                >
+                  Mild
+                </button>
+                <button
+                  :class="['pill', { active: botRemarks === 'spicy' }]"
+                  @click="botRemarks = 'spicy'"
+                >
+                  Spicy
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -184,7 +228,7 @@ function handleBack() {
 .create-game-content {
   width: 100%;
   height: 100%;
-  padding: $spacing-lg;
+  padding: $spacing-xl;
   display: flex;
   flex-direction: column;
 }
@@ -192,9 +236,10 @@ function handleBack() {
 .two-column {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: $spacing-xl;
+  gap: $spacing-xl 48px;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
   
   @media (max-width: 600px) {
     grid-template-columns: 1fr;
@@ -204,7 +249,23 @@ function handleBack() {
 .column {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: $spacing-xl;
+}
+
+.section-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: $spacing-md;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  
+  h2 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #e8dcc8; // Soft warm cream
+    margin-bottom: $spacing-md;
+  }
 }
 
 .game-tabs {
@@ -330,7 +391,7 @@ function handleBack() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-xl;
 
   h1 {
     font-size: 1.25rem;
@@ -367,45 +428,6 @@ function handleBack() {
 
   &:hover {
     background: $brand-green-light;
-  }
-}
-
-.form-section {
-  margin-bottom: $spacing-xl;
-
-  h2 {
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    opacity: 0.7;
-    margin-bottom: $spacing-sm;
-  }
-}
-
-.toggle-option {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm 0;
-  cursor: pointer;
-
-  input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    accent-color: $brand-green;
-  }
-
-  .toggle-label {
-    font-weight: 500;
-  }
-
-  .toggle-hint {
-    flex-basis: 100%;
-    padding-left: 28px;
-    font-size: 0.8rem;
-    opacity: 0.6;
   }
 }
 

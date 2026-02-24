@@ -88,6 +88,24 @@ const dragState = ref<DragState | null>(null)
 const dragOffset = ref({ x: 0, y: 0 })
 const activeDropZone = ref<{ type: 'tableau' | 'foundation'; index: number; isValid: boolean } | null>(null)
 
+// Get scale factor and board offset for coordinate conversion
+// Needed because card positions are in unscaled coords, but pointer events are in viewport coords
+function getBoardTransform(): { scale: number; offsetX: number; offsetY: number } {
+  if (!boardRef.value) return { scale: 1, offsetX: 0, offsetY: 0 }
+  const rect = boardRef.value.getBoundingClientRect()
+  const scale = boardRef.value.offsetWidth > 0 ? rect.width / boardRef.value.offsetWidth : 1
+  return { scale, offsetX: rect.left, offsetY: rect.top }
+}
+
+// Convert viewport coords to board-relative unscaled coords
+function viewportToBoardCoords(viewportX: number, viewportY: number): { x: number; y: number } {
+  const { scale, offsetX, offsetY } = getBoardTransform()
+  return {
+    x: (viewportX - offsetX) / scale,
+    y: (viewportY - offsetY) / scale,
+  }
+}
+
 // Get cards being dragged
 const dragCardIds = computed(() => dragState.value?.cardIds ?? [])
 
@@ -201,11 +219,14 @@ function handleDragStart(cardId: string, x: number, y: number, sourceType: 'tabl
     }
   }
   
+  // Convert viewport pointer position to board-relative unscaled coords
+  const boardCoords = viewportToBoardCoords(x, y)
+  
   dragState.value = {
     cardIds,
     startPositions,
-    offsetX: x - cardPos.x,
-    offsetY: y - cardPos.y,
+    offsetX: boardCoords.x - cardPos.x,
+    offsetY: boardCoords.y - cardPos.y,
     sourceType: sourceColumnIndex !== undefined ? 'tableau' : 'waste',
     sourceColumnIndex,
     sourceCardIndex,
@@ -224,12 +245,15 @@ function handleDragMove(x: number, y: number) {
   const startPos = dragState.value.startPositions.get(firstCardId)
   if (!startPos) return
   
+  // Convert viewport pointer position to board-relative unscaled coords
+  const boardCoords = viewportToBoardCoords(x, y)
+  
   dragOffset.value = {
-    x: x - dragState.value.offsetX - startPos.x,
-    y: y - dragState.value.offsetY - startPos.y,
+    x: boardCoords.x - dragState.value.offsetX - startPos.x,
+    y: boardCoords.y - dragState.value.offsetY - startPos.y,
   }
   
-  // Update active drop zone
+  // Update active drop zone (uses viewport coords for hit testing against getBoundingClientRect)
   activeDropZone.value = findDropZone(x, y)
 }
 
@@ -853,6 +877,13 @@ const canUndo = computed(() => store.canUndo)
 const noMovesAvailable = computed(() => store.noMovesAvailable && !isWon.value)
 const selection = computed(() => store.selection)
 
+// Auto-trigger completion when all cards are face-up
+watch(canAutoComplete, (canComplete) => {
+  if (canComplete && !isAutoCompleting.value && !isAnimating.value) {
+    handleAutoComplete()
+  }
+})
+
 // Victory celebration
 function celebrateWin() {
   const duration = 2000
@@ -957,11 +988,6 @@ function doNewGame() {
             <path d="M3 10l4 4" />
           </svg>
         </button>
-        <button v-if="canAutoComplete && !isAutoCompleting" class="menu-btn auto" @click="handleAutoComplete" title="Auto">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-          </svg>
-        </button>
         <button class="menu-btn" @click="confirmNewGame" title="New Game">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2v4" />
@@ -1015,21 +1041,6 @@ function doNewGame() {
         @drag-end="handleDragEnd"
       />
       
-      <!-- Drop zone highlight overlay -->
-      <div v-if="activeDropZone" class="drop-zone-highlight" :class="{ valid: activeDropZone.isValid, invalid: !activeDropZone.isValid }">
-        <template v-if="activeDropZone.type === 'tableau'">
-          <div 
-            class="highlight-overlay tableau"
-            :style="getDropZoneStyle(activeDropZone)"
-          ></div>
-        </template>
-        <template v-else>
-          <div 
-            class="highlight-overlay foundation"
-            :style="getDropZoneStyle(activeDropZone)"
-          ></div>
-        </template>
-      </div>
     </div>
 
     <!-- Menu at bottom in mobile mode -->
@@ -1076,11 +1087,6 @@ function doNewGame() {
             <path d="M3 10h10a5 5 0 0 1 5 5v2" />
             <path d="M3 10l4-4" />
             <path d="M3 10l4 4" />
-          </svg>
-        </button>
-        <button v-if="canAutoComplete && !isAutoCompleting" class="menu-btn auto" @click="handleAutoComplete" title="Auto">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
           </svg>
         </button>
         <button class="menu-btn" @click="confirmNewGame" title="New Game">

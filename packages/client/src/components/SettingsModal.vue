@@ -101,21 +101,21 @@ function checkForUpdates() {
           <div class="two-column">
             <!-- Left Column: Game Options -->
             <div class="column">
-              <div class="section">
+              <div class="section game-section">
                 <h2>Euchre</h2>
                 <div class="game-options">
                   <EuchreOptions />
                 </div>
               </div>
 
-              <div class="section">
+              <div class="section game-section">
                 <h2>President</h2>
                 <div class="game-options">
                   <PresidentOptions />
                 </div>
               </div>
 
-              <div class="section">
+              <div class="section game-section">
                 <h2>Spades</h2>
                 <div class="game-options">
                   <SpadesOptions />
@@ -125,7 +125,7 @@ function checkForUpdates() {
 
             <!-- Right Column: Bots + About -->
             <div class="column">
-              <div class="section">
+              <div class="section game-section">
                 <h2>Bots</h2>
                 <div class="option-row">
                   <span class="option-label">Difficulty</span>
@@ -170,7 +170,7 @@ function checkForUpdates() {
               </div>
 
               <!-- Install App (only if not running as PWA) -->
-              <div v-if="showInstallOption" class="section">
+              <div v-if="showInstallOption" class="section game-section">
                 <h2>App</h2>
                 <button class="install-app-btn" @click="handleInstallClick">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -183,7 +183,7 @@ function checkForUpdates() {
                 <p class="install-hint">Add to home screen for the best experience</p>
               </div>
 
-              <div class="section about-section">
+              <div class="section game-section">
                 <h2>About</h2>
                 <div class="about-row">
                   <span class="about-label">Build</span>
@@ -194,7 +194,7 @@ function checkForUpdates() {
                     Check for Updates
                   </button>
                   <button class="about-btn bug-btn" @click="showBugReport = true">
-                    🐛 Report Bug
+                    Report Bug
                   </button>
                 </div>
               </div>
@@ -278,7 +278,7 @@ function checkForUpdates() {
 .settings-content {
   width: 100%;
   height: 100%;
-  padding: $spacing-lg;
+  padding: $spacing-xl;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -288,7 +288,7 @@ function checkForUpdates() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-xl;
   flex-shrink: 0;
 
   h1 {
@@ -320,7 +320,7 @@ function checkForUpdates() {
 .two-column {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: $spacing-xl;
+  gap: $spacing-xl 48px;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
@@ -333,7 +333,7 @@ function checkForUpdates() {
 .column {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: $spacing-xl;
 }
 
 .section {
@@ -344,6 +344,20 @@ function checkForUpdates() {
     letter-spacing: 0.05em;
     opacity: 0.7;
     margin-bottom: $spacing-sm;
+  }
+  
+  // Game sections get card treatment
+  &.game-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: $spacing-md;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    
+    h2 {
+      color: #e8dcc8; // Soft warm cream
+      opacity: 1;
+      margin-bottom: $spacing-md;
+    }
   }
 }
 
@@ -432,10 +446,6 @@ function checkForUpdates() {
       box-shadow: none;
     }
   }
-}
-
-.about-section {
-  margin-top: auto;
 }
 
 .about-row {

@@ -55,6 +55,9 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   // AI chat helper - sends a message from an AI player if triggered
   function maybeAIChat(playerId: number, event: AIChatEvent) {
+    // Check if bot chat is enabled
+    if (!settingsStore.botChatEnabled) return
+    
     const player = players.value[playerId]
     if (!player || player.isHuman) return
 

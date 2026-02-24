@@ -24,24 +24,22 @@ watch(() => props.show, (isOpen) => {
   }
 })
 
-const canSave = ref(true)
-watch(editNickname, (name) => {
-  canSave.value = name.trim().length >= 2
-})
+// Auto-save nickname on change (debounced via blur or after typing stops)
+function saveNickname() {
+  const trimmed = editNickname.value.trim()
+  if (trimmed.length >= 2) {
+    lobbyStore.setNickname(trimmed)
+  }
+}
 
+// Auto-save avatar immediately on selection
 function selectAvatar(avatar: string | null) {
   editAvatar.value = avatar
+  lobbyStore.setAvatar(avatar)
 }
 
 function getAvatarUrl(avatar: string): string {
   return `/avatars/users/${avatar}.jpg`
-}
-
-function save() {
-  if (!canSave.value) return
-  lobbyStore.setNickname(editNickname.value)
-  lobbyStore.setAvatar(editAvatar.value)
-  emit('close')
 }
 
 // Get display name for avatar
@@ -65,16 +63,22 @@ function getAvatarName(avatar: string): string {
 
         <div class="body">
           <!-- Nickname input -->
-          <div class="section">
-            <h2>Nickname</h2>
-            <input
-              v-model="editNickname"
-              type="text"
-              placeholder="Enter nickname..."
-              maxlength="20"
-              class="nickname-input"
-            />
-            <p class="hint">Min 2 characters for multiplayer</p>
+          <div class="section nickname-section">
+            <div class="nickname-row">
+              <div class="nickname-label-group">
+                <span class="nickname-label">Nickname</span>
+                <span class="hint">Min 2 characters</span>
+              </div>
+              <input
+                v-model="editNickname"
+                type="text"
+                placeholder="Enter nickname..."
+                maxlength="20"
+                class="nickname-input"
+                @blur="saveNickname"
+                @keyup.enter="saveNickname"
+              />
+            </div>
           </div>
           
           <!-- Avatar selection -->
@@ -103,10 +107,6 @@ function getAvatarName(avatar: string): string {
             </div>
           </div>
         </div>
-        
-        <footer class="footer">
-          <button class="save-btn" :disabled="!canSave" @click="save">Save</button>
-        </footer>
       </div>
     </div>
   </Transition>
@@ -125,11 +125,9 @@ function getAvatarName(avatar: string): string {
 .profile-content {
   width: 100%;
   height: 100%;
-  padding: $spacing-lg;
+  padding: $spacing-xl;
   display: flex;
   flex-direction: column;
-  max-width: 700px;
-  margin: 0 auto;
 }
 
 .header {
@@ -168,15 +166,9 @@ function getAvatarName(avatar: string): string {
 .body {
   flex: 1;
   overflow-y: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: $spacing-xl;
-  align-content: start;
-  
-  // Stack on mobile portrait
-  @media (max-width: 600px) and (orientation: portrait) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .section {
@@ -186,18 +178,57 @@ function getAvatarName(avatar: string): string {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     opacity: 0.7;
-    margin-bottom: $spacing-sm;
+    margin-bottom: $spacing-md;
   }
 }
 
+.nickname-row {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  
+  // Inline on widescreen
+  @media (min-width: 601px), (orientation: landscape) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: $spacing-lg;
+  }
+}
+
+.nickname-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  
+  @media (min-width: 601px), (orientation: landscape) {
+    min-width: 120px;
+    padding-top: $spacing-sm; // Align with input text
+  }
+}
+
+.nickname-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 .nickname-input {
-  width: 100%;
-  padding: $spacing-sm $spacing-md;
+  padding: $spacing-md;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   color: white;
   font-size: 1rem;
+  width: 100%;
+  max-width: 280px;
   
   &::placeholder {
     color: rgba(255, 255, 255, 0.5);
@@ -210,21 +241,14 @@ function getAvatarName(avatar: string): string {
   }
 }
 
-.hint {
-  margin-top: $spacing-xs;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
 .avatar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: $spacing-sm;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: $spacing-md;
 }
 
 .avatar-option {
-  width: 64px;
-  height: 64px;
+  aspect-ratio: 1;
   border-radius: 50%;
   border: 3px solid transparent;
   padding: 0;
@@ -260,7 +284,7 @@ function getAvatarName(avatar: string): string {
     justify-content: center;
     
     .initial {
-      font-size: 1.5rem;
+      font-size: 1.75rem;
       font-weight: bold;
       color: white;
     }
@@ -279,30 +303,6 @@ function getAvatarName(avatar: string): string {
       0 0 7px 2px rgba(255, 215, 0, 0.5),
       0 0 17px 5px rgba(255, 215, 0, 0.3),
       0 0 30px 7px rgba(255, 215, 0, 0.18);
-  }
-}
-
-.footer {
-  flex-shrink: 0;
-  padding-top: $spacing-lg;
-}
-
-.save-btn {
-  width: 100%;
-  padding: $spacing-sm $spacing-lg;
-  background: $brand-green;
-  border-radius: 8px;
-  color: white;
-  font-weight: 600;
-  font-size: 1rem;
-  
-  &:hover:not(:disabled) {
-    background: $brand-green-light;
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 }
 
