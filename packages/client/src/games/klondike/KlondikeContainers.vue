@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { ContainerRect } from './useKlondikeLayout'
 import type { KlondikeState } from '@67cards/shared'
 
@@ -86,14 +86,22 @@ onUnmounted(() => {
 })
 
 function handleResize() {
+  const wasLandscape = isLandscape.value
   updateOrientation()
-  // Re-measure after orientation change settles
-  setTimeout(measureContainers, 100)
+  
+  // If orientation actually changed, the watch will handle remeasure
+  // Otherwise just remeasure after a short delay
+  if (wasLandscape === isLandscape.value) {
+    setTimeout(measureContainers, 100)
+  }
 }
 
-// Re-measure when orientation changes
-watch(isLandscape, () => {
-  setTimeout(measureContainers, 100)
+// Re-measure when orientation changes - need longer delay for DOM to fully switch
+watch(isLandscape, async () => {
+  // Wait for Vue to process the v-if/v-else switch
+  await nextTick()
+  // Additional delay for layout to settle
+  setTimeout(measureContainers, 200)
 })
 
 // Re-measure when state changes (in case layout shifts)

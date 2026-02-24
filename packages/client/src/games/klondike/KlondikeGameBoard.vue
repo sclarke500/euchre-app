@@ -622,13 +622,25 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateCardSize)
 })
 
-// Container measurement handler
+// Container measurement handler with debounced sync
+let containerMeasureTimeout: ReturnType<typeof setTimeout> | null = null
+
 function handleContainerMeasured(
   type: 'stock' | 'waste' | 'foundation' | 'tableau',
   index: number | null,
   rect: ContainerRect
 ) {
   layout.setContainerRect(type, index, rect)
+  
+  // Debounce: after a batch of measurements, sync positions
+  if (containerMeasureTimeout) {
+    clearTimeout(containerMeasureTimeout)
+  }
+  containerMeasureTimeout = setTimeout(() => {
+    if (!isAnimating.value && containersReadyForLayout() && cardPositionsRef.value.size > 0) {
+      syncPositionsFromState()
+    }
+  }, 50)
 }
 
 // Click handlers
