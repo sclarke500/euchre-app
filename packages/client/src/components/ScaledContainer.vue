@@ -13,6 +13,10 @@
  * - Scales to fit usable box
  * 
  * Both modes use transform: scale() for consistent rendering
+ * 
+ * iOS Safari Orientation Fix:
+ * - iOS doesn't update viewport dimensions immediately on orientation change
+ * - We poll until dimensions stabilize (typically 100-500ms)
  */
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { isFullMode, isMobile } from '@/utils/deviceMode'
@@ -35,6 +39,11 @@ const safeInsets = ref<SafeAreaInsets>({ top: 0, right: 0, bottom: 0, left: 0 })
 const deviceName = ref('Unknown')
 const isPortrait = ref(false)
 
+// Track last known dimensions for stability detection
+let lastViewportW = 0
+let lastViewportH = 0
+let stabilityPollId: number | null = null
+
 // Get canonical dimensions based on mode and orientation
 const canonicalWidth = computed(() => {
   if (isFullMode()) return DESKTOP_WIDTH
@@ -48,15 +57,39 @@ const canonicalHeight = computed(() => {
 // Always scale now (both mobile and desktop)
 const shouldScale = computed(() => true)
 
+/**
+ * Get viewport dimensions using visualViewport API when available
+ * (more reliable on iOS than offsetWidth/offsetHeight during orientation change)
+ */
+function getViewportDimensions(): { width: number, height: number } {
+  // Try visualViewport first (more reliable on mobile)
+  if (window.visualViewport) {
+    return {
+      width: Math.round(window.visualViewport.width),
+      height: Math.round(window.visualViewport.height),
+    }
+  }
+  // Fall back to wrapper element dimensions
+  if (wrapperRef.value) {
+    return {
+      width: wrapperRef.value.offsetWidth,
+      height: wrapperRef.value.offsetHeight,
+    }
+  }
+  // Last resort: window inner dimensions
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }
+}
+
 function calculateScale() {
-  if (!wrapperRef.value) {
-    scale.value = 1
+  const { width: viewportW, height: viewportH } = getViewportDimensions()
+  
+  if (viewportW === 0 || viewportH === 0) {
+    console.log('[ScaledContainer] Zero dimensions, skipping')
     return
   }
-  
-  // Get viewport size
-  const viewportW = wrapperRef.value.offsetWidth
-  const viewportH = wrapperRef.value.offsetHeight
   
   // Detect orientation (for mobile)
   isPortrait.value = viewportH > viewportW
@@ -106,21 +139,96 @@ function calculateScale() {
   // Use smaller scale to maintain aspect ratio and fit
   scale.value = Math.min(scaleX, scaleY)
   console.log(`[ScaledContainer] Canonical: ${canonicalWidth.value}×${canonicalHeight.value}, Scale: ${scale.value.toFixed(3)}`)
+  
+  // Update last known dimensions
+  lastViewportW = viewportW
+  lastViewportH = viewportH
+}
+
+/**
+ * Poll until viewport dimensions stabilize
+ * iOS Safari takes 100-500ms to update dimensions after orientation change
+ */
+function pollUntilStable(maxAttempts = 10, intervalMs = 50) {
+  let attempts = 0
+  
+  // Clear any existing poll
+  if (stabilityPollId !== null) {
+    clearInterval(stabilityPollId)
+  }
+  
+  stabilityPollId = window.setInterval(() => {
+    attempts++
+    const { width, height } = getViewportDimensions()
+    
+    // Check if dimensions have changed from last calculation
+    const changed = width !== lastViewportW || height !== lastViewportH
+    
+    if (changed) {
+      console.log(`[ScaledContainer] Dimensions changed: ${lastViewportW}×${lastViewportH} → ${width}×${height}`)
+      calculateScale()
+    }
+    
+    // Stop polling after max attempts or if stable for 2 consecutive checks
+    if (attempts >= maxAttempts || !changed) {
+      if (stabilityPollId !== null) {
+        clearInterval(stabilityPollId)
+        stabilityPollId = null
+      }
+      if (attempts >= maxAttempts) {
+        console.log(`[ScaledContainer] Max poll attempts reached`)
+      }
+    }
+  }, intervalMs)
 }
 
 function handleResize() {
+  // Calculate immediately
   calculateScale()
+  
+  // On mobile, poll for stability (iOS orientation change fix)
+  if (isMobile()) {
+    pollUntilStable()
+  }
+}
+
+function handleOrientationChange() {
+  console.log('[ScaledContainer] Orientation change detected')
+  // Wait a tick for initial layout, then poll for stability
+  setTimeout(() => {
+    calculateScale()
+    pollUntilStable(15, 50) // More attempts for orientation change
+  }, 50)
 }
 
 onMounted(() => {
   requestAnimationFrame(() => {
     calculateScale()
   })
+  
+  // Listen to resize events
   window.addEventListener('resize', handleResize)
+  
+  // Listen to orientation change specifically (iOS)
+  window.addEventListener('orientationchange', handleOrientationChange)
+  
+  // Also listen to visualViewport resize if available (more reliable on mobile)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleResize)
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('orientationchange', handleOrientationChange)
+  
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleResize)
+  }
+  
+  if (stabilityPollId !== null) {
+    clearInterval(stabilityPollId)
+  }
 })
 
 // Calculate style with centering offset
