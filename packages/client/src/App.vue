@@ -43,8 +43,19 @@ watch(scrollableRoutes, (isScrollable) => {
 // Track landscape orientation
 const isLandscape = ref(true)
 
+function checkLandscape(): boolean {
+  // Primary check: viewport dimensions
+  const byDimensions = window.innerWidth > window.innerHeight
+  
+  // Fallback: media query (more reliable on some devices/emulators)
+  const byMediaQuery = window.matchMedia('(orientation: landscape)').matches
+  
+  // Consider landscape if either check passes
+  return byDimensions || byMediaQuery
+}
+
 function updateOrientation() {
-  isLandscape.value = window.innerWidth > window.innerHeight
+  isLandscape.value = checkLandscape()
 }
 
 // Track if current view has been initialized in landscape
