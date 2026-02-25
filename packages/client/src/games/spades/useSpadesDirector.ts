@@ -273,7 +273,9 @@ export function useSpadesDirector(
     await initializeBoard()
 
     game.setPlayAnimationCallback(async ({ card, playerId }: { card: StandardCard; playerId: number }) => {
-      const cardIndex = Math.max(0, game.currentTrick.value.cards.length - 1)
+      // Use engine pile length (like Euchre) - more reliable than game state
+      const trickPile = engine.getPiles().find(p => p.id === 'center')
+      const cardIndex = trickPile?.cards.length ?? 0
       await cardController.playCard(card, playerId, cardIndex)
     })
 
