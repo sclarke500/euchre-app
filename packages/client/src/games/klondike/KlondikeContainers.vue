@@ -19,10 +19,26 @@ import { isFullMode } from '@/utils/deviceMode'
 
 // Orientation detection
 // In full mode (16:9 ScaledContainer), always use landscape layout
-const isLandscape = ref(isFullMode() || window.innerWidth > window.innerHeight)
+/**
+ * Get device orientation using screen.orientation API (reliable on iOS)
+ */
+function getDeviceOrientation(): 'portrait' | 'landscape' {
+  // Try screen.orientation API first (most reliable)
+  if (screen.orientation?.type) {
+    return screen.orientation.type.startsWith('portrait') ? 'portrait' : 'landscape'
+  }
+  // Fallback: deprecated window.orientation (still works on iOS)
+  if (typeof window.orientation === 'number') {
+    return (window.orientation === 0 || window.orientation === 180) ? 'portrait' : 'landscape'
+  }
+  // Last resort: compare dimensions
+  return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+}
+
+const isLandscape = ref(isFullMode() || getDeviceOrientation() === 'landscape')
 
 function updateOrientation() {
-  isLandscape.value = isFullMode() || window.innerWidth > window.innerHeight
+  isLandscape.value = isFullMode() || getDeviceOrientation() === 'landscape'
 }
 
 // Refs for measuring
@@ -79,11 +95,22 @@ onMounted(async () => {
   await new Promise(resolve => setTimeout(resolve, 50))
   measureContainers()
   window.addEventListener('resize', handleResize)
+  window.addEventListener('orientationchange', handleOrientationChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('orientationchange', handleOrientationChange)
 })
+
+function handleOrientationChange() {
+  // iOS needs extra time after orientation change
+  setTimeout(() => {
+    updateOrientation()
+    measureContainers()
+  }, 100)
+  setTimeout(measureContainers, 300)
+}
 
 function handleResize() {
   const wasLandscape = isLandscape.value
