@@ -315,16 +315,23 @@ function chooseLeadCardHard(
   // Estimate opponents' remaining trump
   const estimatedOpponentTrump = tracker.estimateRemainingTrump(myTrumpCount)
 
-  // Strategy 1: If I have more trump than likely remaining, lead trump to drain them
-  if (myTrumpCount >= 2 && myTrumpCount > estimatedOpponentTrump) {
-    // Lead lowest trump to draw them out while conserving high trump
-    return getLowestCard(trumpCards, trump, null)!
+  // Strategy 1: If I have the right bower, LEAD IT to pull out left bower and establish dominance
+  const rightBower = trumpCards.find((c) => c.rank === Rank.Jack && c.suit === trump)
+  if (rightBower) {
+    return rightBower
   }
 
-  // Strategy 2: If I have the right bower, lead it to establish dominance
-  const rightBower = trumpCards.find((c) => c.rank === Rank.Jack && c.suit === trump)
-  if (rightBower && myTrumpCount >= 2) {
-    return rightBower
+  // Strategy 2: If I have left bower (and right is gone), lead it
+  const leftBowerSuit = getSameColorSuit(trump)
+  const leftBower = trumpCards.find((c) => c.rank === Rank.Jack && c.suit === leftBowerSuit)
+  if (leftBower && tracker.isRightBowerPlayed()) {
+    return leftBower
+  }
+
+  // Strategy 3: If I have more trump than likely remaining, lead trump to drain them
+  if (myTrumpCount >= 2 && myTrumpCount > estimatedOpponentTrump) {
+    // Lead highest remaining trump
+    return getHighestCard(trumpCards, trump, null)!
   }
 
   // Strategy 3: Lead safe off-suit aces
