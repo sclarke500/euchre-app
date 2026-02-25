@@ -4,7 +4,7 @@
  */
 export const GameTimings = {
   /** AI "thinking" delay before playing */
-  aiThinkMs: 1000,
+  aiThinkMs: 750,
   /** Short pause between phases (pile clear, continue play) */
   phasePauseMs: 500,
   /** Pause after trick complete (view cards before sweep) */

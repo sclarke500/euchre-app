@@ -410,7 +410,6 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       }
 
       // Continue to next trick
-      await new Promise(r => setTimeout(r, CardTimings.phaseTransition))
       const continueState = Spades.continuePlay(gameState.value)
       applyState(continueState)
       processAITurn()

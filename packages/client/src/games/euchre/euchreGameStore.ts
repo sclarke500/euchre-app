@@ -552,7 +552,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     }
 
     // Brief "thinking" delay for realism
-    await sleep(600)
+    await sleep(CardTimings.aiThink)
     if (!currentRound.value) return
 
     if (phase.value === GamePhase.BiddingRound1) {
