@@ -397,19 +397,19 @@ const gameTitle = computed(() => {
       rgba(0, 0, 0, 0.3) 20%,
       transparent 40%
     ),
-    // Gradient fade to dark
+    // Gradient fade to dark (using unified dark #08080c)
     linear-gradient(to right, 
       transparent 25%,
-      rgba(20, 25, 35, 0.4) 35%,
-      rgba(20, 25, 35, 0.75) 42%,
-      rgba(20, 25, 35, 1) 50%
+      rgba(8, 8, 12, 0.4) 35%,
+      rgba(8, 8, 12, 0.75) 42%,
+      rgba(8, 8, 12, 1) 50%
     ),
     // Robot image - covers left portion, fills height
     url('@/assets/menu-background.jpg');
   background-size: cover, cover, auto 100%;
   background-position: center, center, left center;
   background-repeat: no-repeat;
-  background-color: rgb(20, 25, 35);
+  background-color: #08080c;
 
   // Portrait mode (phones only) - stacked layout
   @media (orientation: portrait) and (max-width: 600px) {
@@ -417,13 +417,14 @@ const gameTitle = computed(() => {
     background: 
       linear-gradient(to bottom, 
         transparent 20%,
-        rgba(20, 25, 35, 0.8) 35%,
-        rgba(20, 25, 35, 1) 45%
+        rgba(8, 8, 12, 0.8) 35%,
+        rgba(8, 8, 12, 1) 45%
       ),
       url('@/assets/menu-background.jpg');
     background-size: 100% 100%, 100% 40%;
     background-position: center, center top;
     background-repeat: no-repeat;
+    background-color: #08080c;
   }
 }
 
