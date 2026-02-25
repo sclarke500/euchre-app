@@ -1,39 +1,42 @@
 <template>
-  <Transition name="wheel-slide">
-    <div v-if="visible" class="bid-wheel-container">
+  <Transition name="panel-slide">
+    <div v-if="visible" class="bid-picker-container">
       <!-- Shiny overlay -->
       <div class="shiny-overlay"></div>
       
-      <div class="bid-wheel">
-        <!-- Scrollable viewport with snap -->
-        <div 
-          class="wheel-viewport" 
-          ref="viewportRef"
-          @scroll="handleScroll"
+      <div class="bid-picker">
+        <!-- Up arrow -->
+        <button 
+          class="arrow-btn up" 
+          @click="increment"
+          :disabled="modelValue >= 13"
         >
-          <!-- Spacer top -->
-          <div class="wheel-spacer"></div>
-          
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+        
+        <!-- Number display with scroll animation -->
+        <div class="bid-display">
           <div 
-            v-for="val in allValues" 
-            :key="val"
-            class="wheel-item"
-            :class="{ selected: val === modelValue }"
-            @click="selectValue(val)"
+            class="bid-value"
+            :class="animationClass"
+            :key="modelValue"
           >
-            {{ val === 0 ? 'Nil' : val }}
+            {{ modelValue === 0 ? 'Nil' : modelValue }}
           </div>
-          
-          <!-- Spacer bottom -->
-          <div class="wheel-spacer"></div>
         </div>
         
-        <!-- Gradient overlays -->
-        <div class="wheel-gradient top"></div>
-        <div class="wheel-gradient bottom"></div>
-        
-        <!-- Selection highlight -->
-        <div class="wheel-highlight"></div>
+        <!-- Down arrow -->
+        <button 
+          class="arrow-btn down" 
+          @click="decrement"
+          :disabled="modelValue <= 0"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
       </div>
       
       <!-- Bid button -->
@@ -45,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps<{
   modelValue: number
@@ -57,66 +60,49 @@ const emit = defineEmits<{
   'bid': []
 }>()
 
-const viewportRef = ref<HTMLElement | null>(null)
+// Track animation direction
+const animationClass = ref('')
+let animationTimeout: number | null = null
 
-// All possible bid values: Nil (shown as 0), then 1-13
-// Note: 0 in the UI means Nil - there is no "0 tricks" normal bid
-const allValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-
-const itemHeight = 44 // px per item
-
-let isScrolling = false
-
-function handleScroll() {
-  if (!viewportRef.value || isScrolling) return
+function triggerAnimation(direction: 'up' | 'down') {
+  // Clear any pending animation
+  if (animationTimeout) {
+    clearTimeout(animationTimeout)
+  }
   
-  const scrollTop = viewportRef.value.scrollTop
-  const index = Math.round(scrollTop / itemHeight)
-  const clampedIndex = Math.max(0, Math.min(13, index))
+  // Set the animation class
+  animationClass.value = direction === 'up' ? 'slide-up' : 'slide-down'
   
-  if (clampedIndex !== props.modelValue) {
-    emit('update:modelValue', clampedIndex)
+  // Clear animation class after animation completes
+  animationTimeout = window.setTimeout(() => {
+    animationClass.value = ''
+  }, 300)
+}
+
+function increment() {
+  if (props.modelValue < 13) {
+    triggerAnimation('up')
+    emit('update:modelValue', props.modelValue + 1)
   }
 }
 
-function scrollToValue(val: number, smooth = true) {
-  if (!viewportRef.value) return
-  isScrolling = true
-  viewportRef.value.scrollTo({
-    top: val * itemHeight,
-    behavior: smooth ? 'smooth' : 'instant'
-  })
-  setTimeout(() => { isScrolling = false }, 150)
+function decrement() {
+  if (props.modelValue > 0) {
+    triggerAnimation('down')
+    emit('update:modelValue', props.modelValue - 1)
+  }
 }
 
-function selectValue(val: number) {
-  emit('update:modelValue', val)
-  scrollToValue(val)
-}
-
-// Scroll to initial value when visible
+// Reset animation when panel becomes visible
 watch(() => props.visible, (visible) => {
   if (visible) {
-    nextTick(() => scrollToValue(props.modelValue, false))
-  }
-})
-
-// Sync scroll position when modelValue changes externally
-watch(() => props.modelValue, (val) => {
-  if (!isScrolling) {
-    scrollToValue(val)
-  }
-})
-
-onMounted(() => {
-  if (props.visible) {
-    nextTick(() => scrollToValue(props.modelValue, false))
+    animationClass.value = ''
   }
 })
 </script>
 
 <style scoped lang="scss">
-.bid-wheel-container {
+.bid-picker-container {
   position: fixed;
   right: 0;
   top: 55%;
@@ -172,97 +158,99 @@ onMounted(() => {
   z-index: 10;
 }
 
-.bid-wheel {
-  position: relative;
-  background: rgba(245, 245, 248, 0.95);
-  border-radius: 14px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
+.bid-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
-.wheel-viewport {
-  width: 54px;
-  height: calc(40px * 5); // Show 5 items
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.wheel-spacer {
-  height: calc(40px * 2); // Two item heights for centering
-  scroll-snap-align: none;
-}
-
-.wheel-item {
-  height: 40px;
+.arrow-btn {
+  width: 48px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.35);
-  scroll-snap-align: center;
-  transition: color 0.15s ease, font-size 0.15s ease;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
   cursor: pointer;
+  transition: all 0.15s ease;
   
-  &:hover:not(.selected) {
-    color: rgba(0, 0, 0, 0.5);
+  svg {
+    width: 24px;
+    height: 24px;
+    color: rgba(255, 255, 255, 0.8);
+    transition: color 0.15s ease;
   }
   
-  &.selected {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a1a2e;
-  }
-}
-
-// Gradient overlays for depth
-.wheel-gradient {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 44px;
-  pointer-events: none;
-  z-index: 2;
-  
-  &.top {
-    top: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(245, 245, 248, 0.95) 0%,
-      rgba(245, 245, 248, 0.7) 50%,
-      transparent 100%
-    );
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
+    
+    svg {
+      color: #fff;
+    }
   }
   
-  &.bottom {
-    bottom: 0;
-    background: linear-gradient(
-      to top,
-      rgba(245, 245, 248, 0.95) 0%,
-      rgba(245, 245, 248, 0.7) 50%,
-      transparent 100%
-    );
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+  
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 }
 
-// Selection highlight bar
-.wheel-highlight {
-  position: absolute;
-  top: 50%;
-  left: 4px;
-  right: 4px;
-  height: 36px;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 6px;
-  pointer-events: none;
-  z-index: 1;
+.bid-display {
+  width: 60px;
+  height: 50px;
+  background: rgba(245, 245, 248, 0.95);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.bid-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+  
+  // Slide up animation (number increasing)
+  &.slide-up {
+    animation: slideFromBottom 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  // Slide down animation (number decreasing)
+  &.slide-down {
+    animation: slideFromTop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+@keyframes slideFromBottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideFromTop {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .bid-button {
@@ -289,16 +277,16 @@ onMounted(() => {
 }
 
 // Slide in from right transition
-.wheel-slide-enter-active {
+.panel-slide-enter-active {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
 }
 
-.wheel-slide-leave-active {
+.panel-slide-leave-active {
   transition: transform 0.25s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s ease;
 }
 
-.wheel-slide-enter-from,
-.wheel-slide-leave-to {
+.panel-slide-enter-from,
+.panel-slide-leave-to {
   opacity: 0;
   transform: translateY(-50%) translateX(100%);
 }
