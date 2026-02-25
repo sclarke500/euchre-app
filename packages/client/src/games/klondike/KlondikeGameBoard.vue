@@ -1413,11 +1413,11 @@ function doNewGame() {
   h2 {
     font-size: 1.25rem;
     margin-bottom: 8px;
-    color: $surface-800;
+    color: #fff;
   }
 
   p {
-    color: $surface-500;
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 20px;
   }
 }
