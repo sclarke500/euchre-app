@@ -767,21 +767,25 @@ export function getAIComment(
     return null
   }
   
-  // Check for AI-specific personality phrases first (only in clean mode)
-  if (mode === 'clean' && aiName && aiName in aiPersonalities) {
-    const aiPool = aiPersonalities[aiName as AIName]?.[event]
-    if (aiPool && aiPool.length > 0) {
-      lastChatTime = now
-      return pickWeighted(aiPool)
-    }
-  }
+  // Build the phrase pool based on mode
+  let pool: PhrasePool = []
   
-  // Fall back to base phrases for the mode
-  const pool = mode === 'feral' 
-    ? feralPhrases[event] 
-    : mode === 'unhinged' 
-      ? unhingedPhrases[event] 
-      : normalPhrases[event]
+  if (mode === 'clean') {
+    // "Clean" mode = MIX of everything EXCEPT normal phrases
+    // Combine: AI personality + unhinged + feral
+    if (aiName && aiName in aiPersonalities) {
+      const aiPool = aiPersonalities[aiName as AIName]?.[event]
+      if (aiPool) pool.push(...aiPool)
+    }
+    const unhingedPool = unhingedPhrases[event]
+    if (unhingedPool) pool.push(...unhingedPool)
+    const feralPool = feralPhrases[event]
+    if (feralPool) pool.push(...feralPool)
+  } else if (mode === 'feral') {
+    pool = feralPhrases[event] ?? []
+  } else if (mode === 'unhinged') {
+    pool = unhingedPhrases[event] ?? []
+  }
       
   if (!pool || pool.length === 0) {
     return null
