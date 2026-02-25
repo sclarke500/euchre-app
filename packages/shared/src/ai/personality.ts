@@ -698,21 +698,22 @@ const aiPersonalities: Record<AIName, AIPersonality> = {
 
 // Trigger probability per event (0-1)
 // Events with 1.0 are "must say" moments - too good to skip
+// Bumped up rates - bots are chatty!
 const triggerChance: Record<AIChatEvent, number> = {
-  euchred_opponent: 0.35,
-  got_euchred: 0.30,
-  won_trick_bower: 0.20,
-  won_trick_big: 0.15,
-  partner_clutch: 0.25,
+  euchred_opponent: 0.70,
+  got_euchred: 0.60,
+  won_trick_bower: 0.45,
+  won_trick_big: 0.35,
+  partner_clutch: 0.55,
   partner_saved_caller: 1.0,   // MUST SAY - partner carried hard
-  called_trump_made: 0.20,
-  called_trump_euchred: 0.40,
-  alone_success: 0.50,
+  called_trump_made: 0.45,
+  called_trump_euchred: 0.70,
+  alone_success: 0.80,
   alone_march: 1.0,            // MUST SAY - perfect alone hand is legendary
-  alone_failed: 0.45,
-  stole_deal: 0.25,
-  game_won: 0.60,
-  game_lost: 0.50,
+  alone_failed: 0.75,
+  stole_deal: 0.50,
+  game_won: 0.85,
+  game_lost: 0.75,
 }
 
 // Cooldown tracking (prevents spam)
