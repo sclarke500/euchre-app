@@ -771,25 +771,13 @@ export function getAIComment(
   let pool: PhrasePool = []
   
   if (mode === 'clean') {
-    // Mild = personality + feral (no profanity)
-    if (aiName && aiName in aiPersonalities) {
-      const aiPool = aiPersonalities[aiName as AIName]?.[event]
-      if (aiPool) pool.push(...aiPool)
-    }
-    const feralPool = feralPhrases[event]
-    if (feralPool) pool.push(...feralPool)
+    // Mild = feral only (gen z chaos, no profanity)
+    pool = feralPhrases[event] ?? []
   } else if (mode === 'unhinged') {
-    // Spicy = personality + feral + unhinged (all three)
-    if (aiName && aiName in aiPersonalities) {
-      const aiPool = aiPersonalities[aiName as AIName]?.[event]
-      if (aiPool) pool.push(...aiPool)
-    }
-    const feralPool = feralPhrases[event]
-    if (feralPool) pool.push(...feralPool)
-    const unhingedPool = unhingedPhrases[event]
-    if (unhingedPool) pool.push(...unhingedPool)
+    // Spicy = unhinged only (profanity and attitude)
+    pool = unhingedPhrases[event] ?? []
   } else if (mode === 'feral') {
-    // Pure feral (legacy, probably unused)
+    // Pure feral (legacy)
     pool = feralPhrases[event] ?? []
   }
       
