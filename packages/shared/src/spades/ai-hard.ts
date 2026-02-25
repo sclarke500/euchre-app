@@ -650,6 +650,44 @@ function followCardHard(
     if (winner) return winner
   }
 
+  // --- Partner bid nil and hasn't played yet — protect them by winning ---
+  if (partnerBidNil) {
+    const pid = partnerId(playerId)
+    const partnerHasPlayed = trick.cards.some(tc => tc.playerId === pid)
+    
+    if (!partnerHasPlayed) {
+      // Partner will play after us — try to protect them
+      // Check if we can trump (void in lead suit and have spades)
+      const canTrump = trick.leadingSuit !== Suit.Spades && 
+        !legalPlays.some(c => c.suit === trick.leadingSuit) &&
+        legalPlays.some(c => c.suit === Suit.Spades)
+      
+      // Get current winning value
+      const winVal = trickWinningValue(trick)
+      // Consider it "dangerous" if winning card is less than 8 (partner might have to beat it)
+      const currentWinCard = trick.cards.reduce((best, tc) => 
+        getSpadesCardValue(tc.card, trick.leadingSuit) > getSpadesCardValue(best.card, trick.leadingSuit) ? tc : best
+      ).card
+      const dangerousLead = currentWinCard.suit !== Suit.Spades && 
+        ['2', '3', '4', '5', '6', '7', '8'].includes(currentWinCard.rank)
+      
+      if (canTrump && dangerousLead) {
+        // Trump to protect partner — use lowest spade that wins
+        const spades = legalPlays.filter(c => c.suit === Suit.Spades)
+        const winningSpades = spades.filter(c => getSpadesCardValue(c, trick.leadingSuit) > winVal)
+        if (winningSpades.length > 0) {
+          return getLowest(winningSpades, Suit.Spades)
+        }
+      }
+      
+      // Even if we can't trump, try to win cheaply to protect partner
+      if (dangerousLead) {
+        const winner = cheapestWinner(legalPlays, trick)
+        if (winner) return winner
+      }
+    }
+  }
+
   // --- Avoid bags: if we don't need tricks and partner is winning, dump low ---
   if (avoidBags && partnerWinning) {
     return getLowest(legalPlays, trick.leadingSuit)
