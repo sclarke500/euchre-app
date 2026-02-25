@@ -315,14 +315,12 @@ defineExpose({
   transform-origin: top left;
   overflow: hidden;
   border-radius: 16px;
-  // Soft green-white ambient glow
+  // Tighter glow - fades before edges
   box-shadow: 
     // Inner white-green glow
-    0 0 60px 15px rgba(200, 230, 210, 0.15),
-    // Mid green glow
-    0 0 100px 30px rgba(30, 96, 69, 0.12),
-    // Outer soft spread
-    0 0 140px 50px rgba(50, 120, 90, 0.08),
+    0 0 40px 8px rgba(200, 230, 210, 0.12),
+    // Mid green glow - tighter
+    0 0 60px 15px rgba(30, 96, 69, 0.10),
     // Inner depth
     inset 0 0 30px rgba(0, 0, 0, 0.25);
 }
