@@ -36,9 +36,10 @@ import {
   chooseCardToPlayHard,
   isPartnerWinningHard,
   createGameTimer,
-  // AI personality
-  getAIComment,
-  type AIChatEvent,
+  // Chat engine
+  processEuchreChat,
+  type EuchreChatState,
+  type ChatMode,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useChatStore } from '@/stores/chatStore'
@@ -53,27 +54,74 @@ export const useEuchreGameStore = defineStore('game', () => {
   const gameTracker = new GameTracker()
   const timer = createGameTimer()
 
-  // AI chat helper - sends a message from an AI player if triggered
-  function maybeAIChat(playerId: number, event: AIChatEvent) {
-    // Check if bot chat is enabled
+  // State snapshot for chat engine
+  let previousChatState: EuchreChatState | null = null
+
+  function getChatStateSnapshot(): EuchreChatState {
+    return {
+      phase: phase.value,
+      scores: scores.value.map(s => ({ teamId: s.teamId, score: s.score })),
+      currentRound: currentRound.value ? {
+        trump: currentRound.value.trump ? {
+          suit: currentRound.value.trump.suit,
+          calledBy: currentRound.value.trump.calledBy,
+        } : null,
+        goingAlone: currentRound.value.goingAlone,
+        dealer: currentRound.value.dealer,
+        tricks: currentRound.value.tricks.map(t => ({
+          winnerId: t.winnerId,
+          cards: t.cards.map(c => ({
+            card: { suit: c.card.suit, rank: c.card.rank },
+            playerId: c.playerId,
+          })),
+        })),
+      } : null,
+      gameOver: gameOver.value,
+      winner: winner.value,
+    }
+  }
+
+  function getPlayersForChat() {
+    return players.value.map(p => ({
+      id: p.id,
+      name: p.name,
+      isHuman: p.isHuman,
+      teamId: p.teamId,
+    }))
+  }
+
+  // Process chat after state changes
+  function processChatAfterStateChange() {
     if (!settingsStore.botChatEnabled) return
+
+    const newState = getChatStateSnapshot()
+    const chatMode: ChatMode = settingsStore.aiChatMode === 'unhinged' ? 'unhinged' : 'clean'
     
-    const player = players.value[playerId]
-    if (!player || player.isHuman) return
+    const chatEvent = processEuchreChat(
+      previousChatState,
+      newState,
+      getPlayersForChat(),
+      chatMode
+    )
 
-    // Pass AI name for personality-specific phrases
-    const comment = getAIComment(event, settingsStore.aiChatMode, false, player.name)
-    if (!comment) return
+    if (chatEvent) {
+      chatStore.receiveMessage({
+        id: `ai-${chatEvent.seatIndex}-${Date.now()}`,
+        odusId: chatEvent.odusId,
+        seatIndex: chatEvent.seatIndex,
+        playerName: chatEvent.playerName,
+        text: chatEvent.text,
+        timestamp: Date.now(),
+      })
+    }
 
-    // Send to chat store
-    chatStore.receiveMessage({
-      id: `ai-${playerId}-${Date.now()}`,
-      odusId: `ai-${playerId}`,
-      seatIndex: playerId, // In SP, playerId === seatIndex
-      playerName: player.name,
-      text: comment,
-      timestamp: Date.now(),
-    })
+    // Update previous state for next comparison
+    previousChatState = newState
+  }
+
+  // Capture state before a potentially chat-worthy change
+  function captureStateForChat() {
+    previousChatState = getChatStateSnapshot()
   }
 
   // State
@@ -439,6 +487,9 @@ export const useEuchreGameStore = defineStore('game', () => {
   function completeRound() {
     if (!currentRound.value || !currentRound.value.trump) return
 
+    // Capture state BEFORE changes for chat engine
+    captureStateForChat()
+
     phase.value = GamePhase.RoundComplete
 
     // Calculate score
@@ -449,84 +500,18 @@ export const useEuchreGameStore = defineStore('game', () => {
     if (scores.value[0]) scores.value[0].score = newScores[0]
     if (scores.value[1]) scores.value[1].score = newScores[1]
 
-    // AI chat for round results
-    const callerTeam = currentRound.value.trump.calledBy % 2
-    const madeIt = roundScore.team0Points > 0 ? callerTeam === 0 : callerTeam === 1
-    const calledAlone = currentRound.value.trump.goingAlone
-
-    // Find an AI player from each team to potentially comment
-    const team0AI = players.value.find(p => !p.isHuman && p.teamId === 0)
-    const team1AI = players.value.find(p => !p.isHuman && p.teamId === 1)
-
-    if (roundScore.wasEuchre) {
-      // Euchre! The defending team is happy
-      const winningTeam = callerTeam === 0 ? 1 : 0
-      const losingTeam = callerTeam
-      if (winningTeam === 0 && team0AI) {
-        maybeAIChat(team0AI.id, 'euchred_opponent')
-      } else if (winningTeam === 1 && team1AI) {
-        maybeAIChat(team1AI.id, 'euchred_opponent')
-      }
-      // Caller team feels bad (if they have an AI)
-      if (losingTeam === 0 && team0AI) {
-        maybeAIChat(team0AI.id, currentRound.value.trump.calledBy === team0AI.id ? 'called_trump_euchred' : 'got_euchred')
-      } else if (losingTeam === 1 && team1AI) {
-        maybeAIChat(team1AI.id, currentRound.value.trump.calledBy === team1AI.id ? 'called_trump_euchred' : 'got_euchred')
-      }
-    } else if (calledAlone) {
-      // Alone attempt - success or fail
-      const caller = players.value[currentRound.value.trump.calledBy]
-      if (caller && !caller.isHuman) {
-        // alone_march for perfect 5/5, alone_success for 3-4, alone_failed for euchre (handled above)
-        maybeAIChat(caller.id, roundScore.wasMarch ? 'alone_march' : 'alone_success')
-      }
-    } else if (madeIt) {
-      // Count tricks per player to detect "partner saved caller" situation
-      const callerId = currentRound.value.trump.calledBy
-      const partnerId = (callerId + 2) % 4  // Partner is across
-      const tricks = currentRound.value.tricks
-      
-      const callerTricks = tricks.filter(t => t.winnerId === callerId).length
-      const partnerTricks = tricks.filter(t => t.winnerId === partnerId).length
-      
-      const caller = players.value[callerId]
-      const partner = players.value[partnerId]
-      
-      // Partner saved caller: caller got 0, partner got 3+
-      if (callerTricks === 0 && partnerTricks >= 3) {
-        // The one who got carried should acknowledge it
-        if (caller && !caller.isHuman) {
-          maybeAIChat(caller.id, 'partner_saved_caller')
-        }
-        // Or the partner who saved can brag
-        else if (partner && !partner.isHuman) {
-          maybeAIChat(partner.id, 'partner_clutch')
-        }
-      } else if (caller && !caller.isHuman) {
-        maybeAIChat(caller.id, 'called_trump_made')
-      }
-    }
-
     // Check for game over
     if (isGameOver(newScores)) {
       winner.value = getWinner(newScores)
       gameOver.value = true
       phase.value = GamePhase.GameOver
       
-      // Game over chat
-      const winningTeam = winner.value
-      if (winningTeam === 0 && team0AI) {
-        maybeAIChat(team0AI.id, 'game_won')
-      } else if (winningTeam === 1 && team1AI) {
-        maybeAIChat(team1AI.id, 'game_won')
-      }
-      // Losing team
-      if (winningTeam === 0 && team1AI) {
-        maybeAIChat(team1AI.id, 'game_lost')
-      } else if (winningTeam === 1 && team0AI) {
-        maybeAIChat(team0AI.id, 'game_lost')
-      }
+      // Process chat after all state changes (including game over)
+      processChatAfterStateChange()
     } else {
+      // Process chat for round complete (not game over)
+      processChatAfterStateChange()
+      
       // Rotate dealer immediately so chip moves during the pause
       currentDealer.value = (currentDealer.value + 1) % 4
       // Then start next round after the pause
