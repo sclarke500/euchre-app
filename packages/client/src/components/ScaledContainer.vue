@@ -305,8 +305,13 @@ defineExpose({
   height: 100%;
   overflow: hidden;
   position: relative;
-  // Dark background shows in letterbox/safe areas
-  background: #0a0a0f;
+  // Radial gradient - lighter center fading to dark edges
+  background: radial-gradient(
+    ellipse at center,
+    #1a1a24 0%,
+    #0f0f14 40%,
+    #08080c 100%
+  );
 }
 
 .scaled-container {
@@ -315,7 +320,14 @@ defineExpose({
   left: 0;
   transform-origin: top left;
   overflow: hidden;
-  // Game area background - will be covered by game content
-  background: #0f0f18;
+  // Subtle border + layered shadows for depth
+  border-radius: 4px;
+  box-shadow: 
+    // Soft outer glow
+    0 0 40px rgba(0, 0, 0, 0.6),
+    // Subtle warm rim light (top-left)
+    -1px -1px 0 rgba(255, 255, 255, 0.05),
+    // Inner vignette
+    inset 0 0 60px rgba(0, 0, 0, 0.2);
 }
 </style>
