@@ -74,19 +74,26 @@ function getDeviceOrientation(): 'portrait' | 'landscape' {
 }
 
 /**
+ * Detect if running on iOS
+ */
+function isIOS(): boolean {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent)
+}
+
+/**
  * Get viewport dimensions
- * On mobile, derive from screen size + orientation (avoids iOS transition garbage)
- * On desktop, use actual viewport
+ * - iOS PWA: derive from screen size + orientation (visualViewport is broken)
+ * - Android/Desktop: use window.innerWidth/Height (works reliably)
  */
 function getViewportDimensions(): { width: number, height: number } {
-  // On mobile, use screen dimensions + orientation (most reliable)
-  if (isMobile()) {
+  // iOS PWA has broken visualViewport during orientation transitions
+  // Derive dimensions from physical screen size + orientation
+  if (isMobile() && isIOS()) {
     const orientation = getDeviceOrientation()
     const screenW = window.screen.width
     const screenH = window.screen.height
     
-    // screen.width/height are physical dimensions (don't swap on rotation)
-    // Determine which dimension is which based on orientation
+    // iOS screen.width/height are physical (don't swap on rotation)
     const isScreenPortrait = screenH > screenW
     
     let width: number, height: number
@@ -98,22 +105,11 @@ function getViewportDimensions(): { width: number, height: number } {
       height = isScreenPortrait ? screenW : screenH
     }
     
+    console.log(`[ScaledContainer] iOS: screen=${screenW}×${screenH}, orientation=${orientation} → ${width}×${height}`)
     return { width, height }
   }
   
-  // Desktop: use visualViewport or fallbacks
-  if (window.visualViewport) {
-    return {
-      width: Math.round(window.visualViewport.width),
-      height: Math.round(window.visualViewport.height),
-    }
-  }
-  if (wrapperRef.value) {
-    return {
-      width: wrapperRef.value.offsetWidth,
-      height: wrapperRef.value.offsetHeight,
-    }
-  }
+  // Android and desktop: window.innerWidth/Height work reliably
   return {
     width: window.innerWidth,
     height: window.innerHeight,
