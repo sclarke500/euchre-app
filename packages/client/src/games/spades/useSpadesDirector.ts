@@ -295,6 +295,11 @@ export function useSpadesDirector(
   })
 
   function handleLayoutChange() {
+    // Skip layout changes during dealing - deck is positioned at dealer
+    if (game.phase.value === SpadesPhase.Dealing || game.phase.value === SpadesPhase.Setup) {
+      console.log('[SpadesDirector] Skipping layout change during deal/setup')
+      return
+    }
     cardController.handleLayoutChange(200)
   }
 
