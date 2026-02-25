@@ -496,7 +496,7 @@ const gameTitle = computed(() => {
     }
     
     .profile-section {
-      margin-top: $spacing-xl * 2.5;
+      margin-top: $spacing-xl * 1.25;
       margin-bottom: 0;
       align-self: center;
     }
@@ -547,7 +547,7 @@ const gameTitle = computed(() => {
 
     @media (orientation: portrait) and (max-width: 600px) {
       font-size: 1.25rem;
-      margin-bottom: $spacing-md;
+      margin-bottom: $spacing-sm;
     }
   }
 }
@@ -568,6 +568,7 @@ const gameTitle = computed(() => {
 
   @media (orientation: portrait) and (max-width: 600px) {
     max-width: 320px;
+    margin-bottom: $spacing-md;
   }
 }
 
@@ -614,6 +615,11 @@ const gameTitle = computed(() => {
     .game-name {
       font-size: 0.85rem;
     }
+  }
+
+  // Portrait: tighter vertical padding
+  @media (orientation: portrait) and (max-width: 600px) {
+    padding: $spacing-md $spacing-md;
   }
 }
 
