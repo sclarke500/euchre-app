@@ -436,11 +436,11 @@ const gameTitle = computed(() => {
   flex-direction: row;
   color: white;
 
-  // Portrait mode (phones only) - stacked layout, NO SCROLL
+  // Portrait mode (phones only) - stacked layout with vertical spread
   @media (orientation: portrait) and (max-width: 600px) {
     flex-direction: column;
-    justify-content: flex-start;
-    overflow: hidden;
+    justify-content: space-between;
+    overflow-y: auto;
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
 }
@@ -473,29 +473,30 @@ const gameTitle = computed(() => {
     }
   }
 
-  // Portrait mode (phones only) - compact logo section
+  // Portrait mode (phones only) - logo top-left, profile centered below
   @media (orientation: portrait) and (max-width: 600px) {
     flex: 0 0 auto;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: $spacing-sm $spacing-md;
-    gap: $spacing-sm;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: $spacing-md;
+    padding-bottom: 0;
+    gap: $spacing-md;
     
-    // Smaller logo in portrait
+    // Mid-size logo in portrait
     :deep(.app-logo) {
       .logo-img {
-        width: 90px;
+        width: 130px;
       }
       .logo-url {
-        font-size: 0.65rem;
-        letter-spacing: 0.5px;
-        margin-top: -3px;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        margin-top: -5px;
       }
     }
     
     .profile-section {
-      margin-top: 0;
+      margin-top: $spacing-xl * 2.5;
       margin-bottom: 0;
       align-self: center;
     }
@@ -526,9 +527,9 @@ const gameTitle = computed(() => {
   @media (orientation: portrait) and (max-width: 600px) {
     flex: 1;
     justify-content: center;
-    padding: $spacing-sm;
-    padding-top: $spacing-sm;
-    padding-bottom: $spacing-md;
+    padding: $spacing-md;
+    padding-top: $spacing-lg;
+    padding-bottom: $spacing-xl;
   }
 
   .section-title {
@@ -545,8 +546,8 @@ const gameTitle = computed(() => {
     }
 
     @media (orientation: portrait) and (max-width: 600px) {
-      font-size: 1.1rem;
-      margin-bottom: $spacing-sm;
+      font-size: 1.25rem;
+      margin-bottom: $spacing-md;
     }
   }
 }
@@ -566,9 +567,7 @@ const gameTitle = computed(() => {
   }
 
   @media (orientation: portrait) and (max-width: 600px) {
-    gap: $spacing-sm;
-    margin-bottom: $spacing-md;
-    max-width: 280px;
+    max-width: 320px;
   }
 }
 
@@ -616,20 +615,6 @@ const gameTitle = computed(() => {
       font-size: 0.85rem;
     }
   }
-
-  @media (orientation: portrait) and (max-width: 600px) {
-    padding: $spacing-md $spacing-sm;
-    border-radius: 12px;
-
-    .game-name {
-      font-size: 1rem;
-      margin-bottom: 2px;
-    }
-
-    .game-desc {
-      font-size: 0.65rem;
-    }
-  }
 }
 
 .multiplayer-btn {
@@ -670,12 +655,8 @@ const gameTitle = computed(() => {
   }
 
   @media (orientation: portrait) and (max-width: 600px) {
-    padding: $spacing-sm $spacing-lg;
-    font-size: 1rem;
-    
-    .mp-icon {
-      font-size: 1.1rem;
-    }
+    padding: $spacing-md $spacing-xl;
+    font-size: 1.15rem;
   }
 }
 
