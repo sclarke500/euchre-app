@@ -1115,8 +1115,9 @@ export function useEuchreDirector(
    * Repositions all card containers and animates cards.
    */
   async function handleLayoutChange(): Promise<void> {
-    if (isAnimating.value) return  // Don't reposition during animations
-    await cardController.handleLayoutChange(200)
+    // With ScaledContainer, board dimensions are fixed (e.g. 1120×630).
+    // Cards are positioned correctly on deal/play — no need to reposition.
+    console.log('[EuchreDirector] Skipping layout change (fixed scaled container)')
   }
 
   function setTableWidth(width: number) {

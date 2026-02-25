@@ -297,12 +297,10 @@ export function useSpadesDirector(
   })
 
   function handleLayoutChange() {
-    // Skip layout changes during dealing - deck is positioned at dealer
-    if (game.phase.value === SpadesPhase.Dealing || game.phase.value === SpadesPhase.Setup) {
-      console.log('[SpadesDirector] Skipping layout change during deal/setup')
-      return
-    }
-    cardController.handleLayoutChange(200)
+    // With ScaledContainer, board dimensions are fixed (e.g. 1120×630).
+    // Cards are positioned correctly on deal/play — no need to reposition.
+    // Skip all layout change handling to avoid messing up trick pile positions.
+    console.log('[SpadesDirector] Skipping layout change (fixed scaled container)')
   }
 
   function setTableWidth(width: number) {
