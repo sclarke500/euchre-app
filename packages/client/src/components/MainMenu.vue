@@ -529,7 +529,7 @@ const gameTitle = computed(() => {
     justify-content: center;
     padding: $spacing-md;
     padding-top: $spacing-lg;
-    padding-bottom: $spacing-xl;
+    padding-bottom: $spacing-sm;
   }
 
   .section-title {
@@ -661,8 +661,13 @@ const gameTitle = computed(() => {
   }
 
   @media (orientation: portrait) and (max-width: 600px) {
-    padding: $spacing-md $spacing-xl;
-    font-size: 1.15rem;
+    padding: $spacing-sm $spacing-lg;
+    font-size: 1rem;
+    margin-top: $spacing-sm;
+    
+    .mp-icon {
+      font-size: 1.1rem;
+    }
   }
 }
 
@@ -796,12 +801,18 @@ const gameTitle = computed(() => {
   align-items: center;
   justify-content: center;
   gap: $spacing-xs;
-  margin-top: $spacing-xl;
-  padding: $spacing-sm $spacing-md;
+  margin-top: $spacing-md;
+  padding: $spacing-xs $spacing-md;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.7);
+  
+  @media (orientation: portrait) and (max-width: 600px) {
+    margin-top: $spacing-sm;
+    padding: $spacing-xs $spacing-sm;
+    font-size: 0.7rem;
+  }
   
   svg {
     width: 18px;
