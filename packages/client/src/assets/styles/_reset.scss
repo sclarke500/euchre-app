@@ -21,8 +21,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  // Match the board surface bg so no colored gaps show behind safe-area insets
-  background: #181820;
+  // Match ScaledContainer outer edge - pure dark, no color tint
+  background: #08080c;
 }
 
 // Scrollable pages (landing, etc.)
@@ -51,8 +51,8 @@ body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  // Dark background shows in safe area margins
-  background: #0a0a0f;
+  // Match ScaledContainer outer edge - pure dark, no color tint
+  background: #08080c;
 }
 
 ul,

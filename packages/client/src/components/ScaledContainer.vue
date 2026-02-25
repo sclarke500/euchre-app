@@ -305,13 +305,7 @@ defineExpose({
   height: 100%;
   overflow: hidden;
   position: relative;
-  // Radial gradient - lighter center fading to dark edges
-  background: radial-gradient(
-    ellipse at center,
-    #1a1a24 0%,
-    #0f0f14 40%,
-    #08080c 100%
-  );
+  background: #08080c;
 }
 
 .scaled-container {
@@ -320,14 +314,16 @@ defineExpose({
   left: 0;
   transform-origin: top left;
   overflow: hidden;
-  // Subtle border + layered shadows for depth
-  border-radius: 4px;
+  border-radius: 16px;
+  // Soft green-white ambient glow
   box-shadow: 
-    // Soft outer glow
-    0 0 40px rgba(0, 0, 0, 0.6),
-    // Subtle warm rim light (top-left)
-    -1px -1px 0 rgba(255, 255, 255, 0.05),
-    // Inner vignette
-    inset 0 0 60px rgba(0, 0, 0, 0.2);
+    // Inner white-green glow
+    0 0 60px 15px rgba(200, 230, 210, 0.15),
+    // Mid green glow
+    0 0 100px 30px rgba(30, 96, 69, 0.12),
+    // Outer soft spread
+    0 0 140px 50px rgba(50, 120, 90, 0.08),
+    // Inner depth
+    inset 0 0 30px rgba(0, 0, 0, 0.25);
 }
 </style>
