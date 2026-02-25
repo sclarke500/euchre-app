@@ -285,6 +285,8 @@ export interface LeftTableMessage {
 export interface GameStartedMessage {
   type: 'game_started'
   gameId: string
+  hostId?: string  // Added to survive table_removed race condition
+  tableId?: string
 }
 
 export interface GameRestartingMessage {

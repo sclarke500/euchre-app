@@ -102,7 +102,8 @@ export const useLobbyStore = defineStore('lobby', () => {
       case 'table_removed':
         removeTable(message.tableId)
         // If our current table was removed, clear it
-        if (currentTable.value?.odusId === message.tableId) {
+        // BUT don't clear if we're already in a game (race condition with game_started)
+        if (currentTable.value?.odusId === message.tableId && !gameId.value) {
           currentTable.value = null
           currentSeat.value = null
         }
@@ -137,14 +138,18 @@ export const useLobbyStore = defineStore('lobby', () => {
         break
 
       case 'game_started':
-        // Preserve host status, game type, and seat before currentTable might be cleared
-        // On game restart (Play Again), currentTable may be null - preserve existing host status
-        if (currentTable.value) {
+        // Use hostId from message if available (survives table_removed race condition)
+        // Fall back to currentTable for backwards compatibility
+        if (message.hostId) {
+          wasHostWhenGameStarted.value = message.hostId === odusId.value
+        } else if (currentTable.value) {
           wasHostWhenGameStarted.value = currentTable.value.hostId === odusId.value
+        }
+        // Preserve game type and seat
+        if (currentTable.value) {
           gameTypeWhenStarted.value = currentTable.value.gameType ?? 'euchre'
           seatWhenGameStarted.value = currentSeat.value
         }
-        // If currentTable is null but we already had host status, keep it (restart case)
         gameId.value = message.gameId
         break
 

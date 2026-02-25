@@ -224,10 +224,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       console.log(`Starting President game ${gameId} at table ${table.name}`)
 
-      // Send game_started to all players
+      // Send game_started to all players (include hostId to survive table_removed race)
       broadcastToGame(gameId, {
         type: 'game_started',
         gameId,
+        hostId: table.hostId,
+        tableId,
       })
 
       // Remove table from lobby
@@ -319,6 +321,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       broadcastToGame(gameId, {
         type: 'game_started',
         gameId,
+        hostId: table.hostId,
+        tableId,
       })
 
       tables.delete(tableId)
@@ -432,10 +436,12 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     console.log(`Starting Euchre game ${gameId} at table ${table.name}`)
 
-    // Send game_started to all players
+    // Send game_started to all players (include hostId to survive table_removed race)
     broadcastToGame(gameId, {
       type: 'game_started',
       gameId,
+      hostId: table.hostId,
+      tableId,
     })
 
     // Remove table from lobby
@@ -671,10 +677,11 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
       console.log(`President game restarted: ${oldGameId} -> ${newGameId}`)
 
-      // Send game_started to all players
+      // Send game_started to all players (include hostId for restart case)
       broadcastToGame(newGameId, {
         type: 'game_started',
         gameId: newGameId,
+        hostId,
       })
 
       // Start the new game
@@ -756,6 +763,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       broadcastToGame(newGameId, {
         type: 'game_started',
         gameId: newGameId,
+        hostId,
       })
 
       newSpadesGame.start()
@@ -870,10 +878,11 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
 
     console.log(`Euchre game restarted: ${oldGameId} -> ${newGameId}`)
 
-    // Send game_started to all players
+    // Send game_started to all players (include hostId for restart case)
     broadcastToGame(newGameId, {
       type: 'game_started',
       gameId: newGameId,
+      hostId,
     })
 
     // Start the new game
