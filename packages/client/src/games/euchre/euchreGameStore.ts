@@ -606,12 +606,16 @@ export const useEuchreGameStore = defineStore('game', () => {
           player.id,
           currentRound.value.trump.suit
         )
+        // Check if THIS AI is going alone (they called trump + goingAlone)
+        const isGoingAlone = currentRound.value.goingAlone && 
+          currentRound.value.trump.calledBy === player.id
         card = chooseCardToPlayHard(
           player,
           currentRound.value.currentTrick,
           currentRound.value.trump.suit,
           partnerWinning,
-          gameTracker
+          gameTracker,
+          isGoingAlone
         )
       } else {
         // Easy AI (basic strategy)

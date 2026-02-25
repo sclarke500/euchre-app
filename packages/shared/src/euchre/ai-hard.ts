@@ -261,7 +261,8 @@ export function chooseCardToPlayHard(
   trick: Trick,
   trump: Suit,
   partnerWinning: boolean,
-  tracker: GameTracker
+  tracker: GameTracker,
+  isGoingAlone: boolean = false
 ): Card {
   const legalPlays = getLegalPlays(player.hand, trick, trump)
 
@@ -278,7 +279,7 @@ export function chooseCardToPlayHard(
 
   // Leading the trick
   if (trick.cards.length === 0) {
-    return chooseLeadCardHard(legalPlays, trump, player.id, tracker)
+    return chooseLeadCardHard(legalPlays, trump, player.id, tracker, isGoingAlone)
   }
 
   // Following in the trick
@@ -292,10 +293,21 @@ function chooseLeadCardHard(
   legalPlays: Card[],
   trump: Suit,
   playerId: number,
-  tracker: GameTracker
+  tracker: GameTracker,
+  isGoingAlone: boolean = false
 ): Card {
   const trumpCards = legalPlays.filter((c) => getEffectiveSuit(c, trump) === trump)
   const nonTrumpCards = legalPlays.filter((c) => getEffectiveSuit(c, trump) !== trump)
+
+  // GOING ALONE: Always lead highest cards to guarantee tricks
+  if (isGoingAlone) {
+    // Lead highest trump if we have any
+    if (trumpCards.length > 0) {
+      return getHighestCard(trumpCards, trump, null)!
+    }
+    // Otherwise lead highest card
+    return getHighestCard(legalPlays, trump, null)!
+  }
 
   // Count my trump
   const myTrumpCount = trumpCards.length

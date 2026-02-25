@@ -80,12 +80,16 @@ export function computeEuchreAIAction({
         player.seatIndex,
         currentRound.trump.suit
       )
+      // Check if THIS AI is going alone (they called trump + goingAlone)
+      const isGoingAlone = currentRound.goingAlone && 
+        currentRound.trump.calledBy === player.seatIndex
       card = chooseCardToPlayHard(
         aiPlayer,
         currentRound.currentTrick,
         currentRound.trump.suit,
         partnerWinning,
-        aiTracker
+        aiTracker,
+        isGoingAlone
       )
     } else {
       const partnerWinning = isPartnerWinning(
