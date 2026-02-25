@@ -203,6 +203,19 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             replacedWithAI: true,
           })
         },
+        onBotChat: (seatIndex: number, playerName: string, text: string) => {
+          broadcastToGame(gameId, {
+            type: 'chat_broadcast',
+            message: {
+              id: `bot-${seatIndex}-${Date.now()}`,
+              odusId: `ai-${seatIndex}`,
+              seatIndex,
+              playerName,
+              text,
+              timestamp: Date.now(),
+            },
+          })
+        },
       }, table.maxPlayers, superTwosMode, table.settings?.aiDifficulty ?? 'easy')
 
       presidentGame.initializePlayers(humanPlayers)
@@ -296,6 +309,19 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             playerId,
             playerName,
             replacedWithAI: true,
+          })
+        },
+        onBotChat: (seatIndex: number, playerName: string, text: string) => {
+          broadcastToGame(gameId, {
+            type: 'chat_broadcast',
+            message: {
+              id: `bot-${seatIndex}-${Date.now()}`,
+              odusId: `ai-${seatIndex}`,
+              seatIndex,
+              playerName,
+              text,
+              timestamp: Date.now(),
+            },
           })
         },
       })
@@ -413,6 +439,19 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
           playerId,
           playerName,
           replacedWithAI: true,
+        })
+      },
+      onBotChat: (seatIndex: number, playerName: string, text: string) => {
+        broadcastToGame(gameId, {
+          type: 'chat_broadcast',
+          message: {
+            id: `bot-${seatIndex}-${Date.now()}`,
+            odusId: `ai-${seatIndex}`,
+            seatIndex,
+            playerName,
+            text,
+            timestamp: Date.now(),
+          },
         })
       },
     })
@@ -652,6 +691,19 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             replacedWithAI: true,
           })
         },
+        onBotChat: (seatIndex: number, playerName: string, text: string) => {
+          broadcastToGame(newGameId, {
+            type: 'chat_broadcast',
+            message: {
+              id: `bot-${seatIndex}-${Date.now()}`,
+              odusId: `ai-${seatIndex}`,
+              seatIndex,
+              playerName,
+              text,
+              timestamp: Date.now(),
+            },
+          })
+        },
       }, humanPlayers.length || 4, previousSettings?.superTwosMode ?? false, previousSettings?.aiDifficulty ?? 'easy')
 
       newPresidentGame.initializePlayers(humanPlayers)
@@ -734,6 +786,19 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             playerId,
             playerName,
             replacedWithAI: true,
+          })
+        },
+        onBotChat: (seatIndex: number, playerName: string, text: string) => {
+          broadcastToGame(newGameId, {
+            type: 'chat_broadcast',
+            message: {
+              id: `bot-${seatIndex}-${Date.now()}`,
+              odusId: `ai-${seatIndex}`,
+              seatIndex,
+              playerName,
+              text,
+              timestamp: Date.now(),
+            },
           })
         },
       })
@@ -851,6 +916,19 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
           playerId,
           playerName,
           replacedWithAI: true,
+        })
+      },
+      onBotChat: (seatIndex: number, playerName: string, text: string) => {
+        broadcastToGame(newGameId, {
+          type: 'chat_broadcast',
+          message: {
+            id: `bot-${seatIndex}-${Date.now()}`,
+            odusId: `ai-${seatIndex}`,
+            seatIndex,
+            playerName,
+            text,
+            timestamp: Date.now(),
+          },
         })
       },
     }, { aiDifficulty: previousSettings?.aiDifficulty })

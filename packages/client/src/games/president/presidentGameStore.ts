@@ -29,14 +29,24 @@ import {
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
   createGameTimer,
+  // Chat engine
+  processPresidentChat,
+  type PresidentChatState,
+  type ChatMode,
 } from '@67cards/shared'
 import { CardTimings } from '@/utils/animationTimings'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useChatStore } from '@/stores/chatStore'
 
 export const usePresidentGameStore = defineStore('presidentGame', () => {
   // Settings
   const settingsStore = useSettingsStore()
+  const chatStore = useChatStore()
   const timer = createGameTimer()
+  
+  // Chat engine state
+  let previousChatState: PresidentChatState | null = null
+  let pileJustCleared = false
 
   // State
   const players = ref<PresidentPlayer[]>([])
@@ -174,6 +184,65 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
   function setExchangeAnimationCallback(cb: typeof exchangeAnimationCallback) {
     exchangeAnimationCallback = cb
+  }
+
+  // Chat engine helpers
+  function getChatStateSnapshot(): PresidentChatState {
+    return {
+      phase: phase.value,
+      currentPlayer: currentPlayer.value,
+      finishedPlayers: [...finishedPlayers.value],
+      consecutivePasses: consecutivePasses.value,
+      lastPlayerId: lastPlayerId.value,
+      pileCleared: pileJustCleared,
+      roundNumber: roundNumber.value,
+      gameOver: gameOver.value,
+      players: players.value.map(p => ({
+        id: p.id,
+        rank: p.rank,
+        cardCount: p.hand.length,
+      })),
+    }
+  }
+
+  function getPlayersForChat() {
+    return players.value.map(p => ({
+      id: p.id,
+      name: p.name,
+      isHuman: p.id === 0,
+    }))
+  }
+
+  function processChatAfterStateChange() {
+    if (!settingsStore.botChatEnabled) return
+    
+    const newState = getChatStateSnapshot()
+    const chatMode: ChatMode = settingsStore.aiChatMode === 'unhinged' ? 'unhinged' : 'clean'
+    
+    const chatEvent = processPresidentChat(
+      previousChatState,
+      newState,
+      getPlayersForChat(),
+      chatMode
+    )
+    
+    if (chatEvent) {
+      chatStore.receiveMessage({
+        id: `ai-${chatEvent.seatIndex}-${Date.now()}`,
+        odusId: chatEvent.odusId,
+        seatIndex: chatEvent.seatIndex,
+        playerName: chatEvent.playerName,
+        text: chatEvent.text,
+        timestamp: Date.now(),
+      })
+    }
+    
+    previousChatState = newState
+    pileJustCleared = false
+  }
+
+  function captureStateForChat() {
+    previousChatState = getChatStateSnapshot()
   }
 
   // Actions
@@ -461,6 +530,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   async function playCards(cards: StandardCard[]) {
     if (cards.length === 0) return
 
+    // Capture state before changes for chat
+    captureStateForChat()
+
     const playingPlayer = currentPlayer.value
     const state = processPlay(gameState.value, playingPlayer, cards)
 
@@ -493,6 +565,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       currentPlayer.value = playingPlayer // Joker player leads again
       consecutivePasses.value = 0
       lastPlayedCards.value = null
+      pileJustCleared = true
+      processChatAfterStateChange()
       if (pileClearedCallback) await pileClearedCallback()
       processAITurn()
       return
@@ -503,6 +577,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
 
   async function pass() {
+    // Capture state before changes for chat
+    captureStateForChat()
+    
     const hadCards = currentPile.value.currentRank !== null
     const state = processPass(gameState.value, currentPlayer.value)
 
@@ -514,6 +591,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // Pile was cleared (everyone passed) — wait for sweep animation
     if (hadCards && state.currentPile.currentRank === null) {
+      pileJustCleared = true
+      processChatAfterStateChange()
       if (pileClearedCallback) await pileClearedCallback()
     }
 
@@ -521,6 +600,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
 
   function handleRoundComplete() {
+    // Capture state before changes for chat
+    captureStateForChat()
+    
     phase.value = PresidentPhase.RoundComplete
 
     // Assign ranks based on finish order
@@ -535,6 +617,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       // Show summary modal - user must click Continue to proceed
       showRoundSummary.value = true
     }
+    
+    // Process chat after round complete (will detect first/last out, game over)
+    processChatAfterStateChange()
   }
 
   function dismissRoundSummary() {

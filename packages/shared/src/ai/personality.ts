@@ -698,27 +698,27 @@ const aiPersonalities: Record<AIName, AIPersonality> = {
 
 // Trigger probability per event (0-1)
 // Events with 1.0 are "must say" moments - too good to skip
-// Bumped up rates - bots are chatty!
+// TESTING MODE: All rates cranked to max for quick testing
 const triggerChance: Record<AIChatEvent, number> = {
-  euchred_opponent: 0.70,
-  got_euchred: 0.60,
-  won_trick_bower: 0.45,
-  won_trick_big: 0.35,
-  partner_clutch: 0.55,
-  partner_saved_caller: 1.0,   // MUST SAY - partner carried hard
-  called_trump_made: 0.45,
-  called_trump_euchred: 0.70,
-  alone_success: 0.80,
-  alone_march: 1.0,            // MUST SAY - perfect alone hand is legendary
-  alone_failed: 0.75,
-  stole_deal: 0.50,
-  game_won: 0.85,
-  game_lost: 0.75,
+  euchred_opponent: 1.0,
+  got_euchred: 1.0,
+  won_trick_bower: 1.0,
+  won_trick_big: 1.0,
+  partner_clutch: 1.0,
+  partner_saved_caller: 1.0,
+  called_trump_made: 1.0,
+  called_trump_euchred: 1.0,
+  alone_success: 1.0,
+  alone_march: 1.0,
+  alone_failed: 1.0,
+  stole_deal: 1.0,
+  game_won: 1.0,
+  game_lost: 1.0,
 }
 
 // Cooldown tracking (prevents spam)
 let lastChatTime = 0
-const MIN_CHAT_GAP_MS = 3000
+const MIN_CHAT_GAP_MS = 500  // TESTING: reduced from 3000
 
 /**
  * Pick a weighted random phrase from a pool

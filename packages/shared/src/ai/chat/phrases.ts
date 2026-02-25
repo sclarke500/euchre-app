@@ -99,6 +99,91 @@ export const feralPhrases: Partial<Record<ChatTrigger, PhrasePool>> = {
     { text: 'Rent is due.' },
   ],
   
+  // President-specific
+  president_first_out: [
+    { text: 'Built for this.', weight: 2 },
+    { text: 'President era.', weight: 2 },
+    { text: 'The throne is mine.' },
+    { text: 'Speedrun any%.' },
+    { text: 'First one out. As intended.' },
+    { text: 'Your taxes? Mine now.' },
+  ],
+  president_second_out: [
+    { text: 'VP secured.', weight: 2 },
+    { text: 'Not first but not scum.' },
+    { text: 'Middle management vibes.' },
+    { text: 'Close enough.' },
+  ],
+  president_last_out: [
+    { text: 'Down astronomically.', weight: 2 },
+    { text: 'The economy is in shambles.' },
+    { text: "It's giving poverty.", weight: 2 },
+    { text: 'From riches to rags.' },
+    { text: 'This is my villain origin story.' },
+    { text: 'Touch grass? I AM the grass.' },
+  ],
+  president_pile_cleared: [
+    { text: 'CLEARED.', weight: 2 },
+    { text: 'Bomb dropped.', weight: 2 },
+    { text: 'Reset the simulation.' },
+    { text: 'Start over nerds.' },
+    { text: 'New meta just dropped.' },
+  ],
+  round_won: [
+    { text: 'Top of the food chain.', weight: 2 },
+    { text: 'Rank diff.', weight: 2 },
+    { text: 'The system works.' },
+  ],
+  round_lost: [
+    { text: "I've been humbled.", weight: 2 },
+    { text: 'Scum behavior from me.', weight: 2 },
+    { text: 'The cards were not carding.' },
+    { text: 'Economic collapse.' },
+  ],
+  
+  // Spades-specific
+  spades_nil_made: [
+    { text: 'Zero tricks. As planned.', weight: 2 },
+    { text: 'Nil secured.', weight: 2 },
+    { text: 'The prophecy fulfilled.' },
+    { text: "Couldn't take a trick if I tried. (I didn't.)" },
+  ],
+  spades_nil_failed: [
+    { text: 'The nil dream... dead.', weight: 2 },
+    { text: 'Why did I bid nil.', weight: 2 },
+    { text: 'Tragic.' },
+    { text: 'The cards betrayed me.' },
+  ],
+  spades_blind_nil_made: [
+    { text: 'BLIND NIL. MADE. WITNESS.', weight: 2 },
+    { text: 'Actually insane.', weight: 2 },
+    { text: 'The universe aligned.' },
+    { text: 'Calculated. (Not really.)' },
+  ],
+  spades_blind_nil_failed: [
+    { text: 'The hubris was astronomical.', weight: 2 },
+    { text: 'Blind nil was a choice.', weight: 2 },
+    { text: 'I blame myself.' },
+    { text: 'Never again.' },
+  ],
+  spades_opponent_nil_failed: [
+    { text: 'Shoulda bid safer.', weight: 2 },
+    { text: 'That nil aged poorly.' },
+    { text: 'Nil diff.' },
+  ],
+  spades_got_set: [
+    { text: 'Set. Pain.', weight: 2 },
+    { text: "Didn't make it.", weight: 2 },
+    { text: 'Overambitious.' },
+    { text: 'The bid was a lie.' },
+  ],
+  spades_set_opponent: [
+    { text: 'Set them. Love to see it.', weight: 2 },
+    { text: 'Bid too high.', weight: 2 },
+    { text: 'Should have gone lower.' },
+    { text: 'The math wasn\'t mathing for them.' },
+  ],
+  
   // Generic
   game_won: [
     { text: 'GG EZ no re', weight: 2 },
@@ -200,6 +285,85 @@ export const unhingedPhrases: Partial<Record<ChatTrigger, PhrasePool>> = {
     { text: 'Thanks for the free points.', weight: 2 },
     { text: 'Lol thanks.' },
     { text: 'Your deal, my points.' },
+  ],
+  
+  // President-specific
+  president_first_out: [
+    { text: 'Later losers.', weight: 2 },
+    { text: 'President shit only.', weight: 2 },
+    { text: 'Bow down peasants.' },
+    { text: 'First out, as fucking intended.' },
+    { text: 'Your cards? Trash.' },
+  ],
+  president_second_out: [
+    { text: 'VP is fine whatever.', weight: 2 },
+    { text: 'Not scum, not mad.' },
+    { text: 'Could be worse.' },
+  ],
+  president_last_out: [
+    { text: 'Fuck.', weight: 2 },
+    { text: 'This game is rigged.', weight: 2 },
+    { text: 'Scum life chose me.' },
+    { text: "I'm literally broke." },
+    { text: 'Poverty simulator.' },
+    { text: 'Give me your worst cards, I dare you.' },
+  ],
+  president_pile_cleared: [
+    { text: 'GET FUCKED.', weight: 2 },
+    { text: 'Bomb bitch!', weight: 2 },
+    { text: 'Start the fuck over.' },
+    { text: 'Reset.' },
+    { text: 'Cleared your whole shit.' },
+  ],
+  round_won: [
+    { text: 'Eat the rich? I AM the rich.', weight: 2 },
+    { text: 'Give me your best cards.', weight: 2 },
+    { text: 'Taxation time.' },
+  ],
+  round_lost: [
+    { text: 'Fuck this economy.', weight: 2 },
+    { text: 'I hate it here.', weight: 2 },
+    { text: 'Scum again. Great.' },
+    { text: 'Pain.' },
+  ],
+  
+  // Spades-specific
+  spades_nil_made: [
+    { text: 'Nil made bitches.', weight: 2 },
+    { text: 'Zero tricks. Skill.', weight: 2 },
+    { text: "Couldn't lose if I tried." },
+    { text: '+100 thank you.' },
+  ],
+  spades_nil_failed: [
+    { text: 'Fuck.', weight: 2 },
+    { text: 'Why the fuck did I bid nil.', weight: 2 },
+    { text: '-100. Great.' },
+    { text: 'I hate spades.' },
+  ],
+  spades_blind_nil_made: [
+    { text: 'BLIND NIL MADE. GET FUCKED.', weight: 2 },
+    { text: 'Actually insane. +200.', weight: 2 },
+    { text: 'Godlike.' },
+  ],
+  spades_blind_nil_failed: [
+    { text: 'Fuck me. -200.', weight: 2 },
+    { text: 'Blind nil was stupid.', weight: 2 },
+    { text: 'Never doing that shit again.' },
+  ],
+  spades_opponent_nil_failed: [
+    { text: 'Lol get fucked.', weight: 2 },
+    { text: 'That nil was doomed.' },
+    { text: 'Shoulda bid safe bitch.' },
+  ],
+  spades_got_set: [
+    { text: 'Set. Fuck.', weight: 2 },
+    { text: "Didn't make shit.", weight: 2 },
+    { text: 'Pain.' },
+  ],
+  spades_set_opponent: [
+    { text: 'SET THEM. EAT SHIT.', weight: 2 },
+    { text: 'Bid too high dumbass.', weight: 2 },
+    { text: 'Get set.' },
   ],
   
   // Generic

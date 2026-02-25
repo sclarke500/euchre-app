@@ -24,6 +24,7 @@ export interface GameEvents {
   onPlayerBooted: (playerId: number, playerName: string) => void
   onPlayerDisconnected?: (playerId: number, playerName: string) => void
   onPlayerReconnected?: (playerId: number, playerName: string) => void
+  onBotChat?: (seatIndex: number, playerName: string, text: string) => void
 }
 
 export interface GameOptions {

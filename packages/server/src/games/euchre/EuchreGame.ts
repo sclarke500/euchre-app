@@ -5,6 +5,8 @@ import type {
   Round,
   TeamScore,
   ClientGameState,
+  EuchreChatState,
+  ChatMode,
 } from '@67cards/shared'
 import {
   GamePhase,
@@ -23,6 +25,7 @@ import {
   processBid,
   chooseDealerDiscard,
   GameTracker,
+  processEuchreChat,
 } from '@67cards/shared'
 import { getRandomAINames, GameTimings } from '@67cards/shared'
 import type { GameEvents, GameOptions, GamePlayer } from './types.js'
@@ -53,6 +56,10 @@ export class EuchreGame {
   private timedOutPlayer: number | null = null // Seat index of player who timed out
   private readonly aiDifficulty: 'easy' | 'hard'
   private readonly aiTracker: GameTracker | null
+  
+  // Chat engine state
+  private previousChatState: EuchreChatState | null = null
+  private chatMode: ChatMode = 'clean'  // TODO: get from game options
 
   constructor(id: string, events: GameEvents, options: GameOptions = {}) {
     this.id = id
@@ -568,6 +575,9 @@ export class EuchreGame {
   }
 
   private broadcastState(): void {
+    // Capture state BEFORE incrementing seq for chat engine
+    const chatStateSnapshot = this.getChatStateSnapshot()
+    
     // Increment state sequence number
     this.stateSeq++
 
@@ -578,6 +588,62 @@ export class EuchreGame {
         this.events.onStateChange(player.odusId, state)
       }
     }
+    
+    // Process bot chat after state broadcast
+    this.processBotChat(chatStateSnapshot)
+  }
+  
+  private getChatStateSnapshot(): EuchreChatState {
+    return {
+      phase: this.phase,
+      scores: this.scores.map(s => ({ teamId: s.teamId, score: s.score })),
+      currentRound: this.currentRound ? {
+        trump: this.currentRound.trump ? {
+          suit: this.currentRound.trump.suit,
+          calledBy: this.currentRound.trump.calledBy,
+        } : null,
+        goingAlone: this.currentRound.goingAlone,
+        dealer: this.currentRound.dealer,
+        tricks: this.currentRound.tricks.map(t => ({
+          winnerId: t.winnerId,
+          cards: t.cards.map(pc => ({
+            card: { suit: pc.card.suit, rank: pc.card.rank },
+            playerId: pc.playerId,
+          })),
+        })),
+      } : null,
+      gameOver: this.gameOver,
+      winner: this.winner,
+    }
+  }
+  
+  private getPlayersForChat() {
+    return this.players.map(p => ({
+      id: p.seatIndex,
+      name: p.name,
+      isHuman: p.isHuman,
+      teamId: p.teamId,
+    }))
+  }
+  
+  private processBotChat(newChatState: EuchreChatState): void {
+    // Only process if we have the event handler
+    if (!this.events.onBotChat) return
+    
+    const chatEvent = processEuchreChat(
+      this.previousChatState,
+      newChatState,
+      this.getPlayersForChat(),
+      this.chatMode,
+      false  // Don't force trigger
+    )
+    
+    if (chatEvent) {
+      this.events.onBotChat(chatEvent.seatIndex, chatEvent.playerName, chatEvent.text)
+    }
+    
+    // Update previous state for next comparison
+    this.previousChatState = newChatState
   }
 
   private notifyPlayerTurn(odusId: string): void {

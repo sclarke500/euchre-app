@@ -48,4 +48,7 @@ export {
   SpadesTracker,
   chooseSpadesCardHard,
   chooseSpadesBidHard,
+  // Chat engine
+  type SpadesChatState,
+  processSpadesChat,
 } from './spades/index.js'

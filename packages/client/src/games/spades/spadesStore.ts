@@ -15,14 +15,24 @@ import {
   chooseSpadesCardHard,
   chooseSpadesBidHard,
   createGameTimer,
+  // Chat engine
+  processSpadesChat,
+  type SpadesChatState,
+  type ChatMode,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useChatStore } from '@/stores/chatStore'
 import { CardTimings } from '@/utils/animationTimings'
 
 export const useSpadesStore = defineStore('spadesGame', () => {
   const settingsStore = useSettingsStore()
+  const chatStore = useChatStore()
   const tracker = new SpadesTracker()
   const timer = createGameTimer()
+  
+  // Chat engine state
+  let previousChatState: SpadesChatState | null = null
+  let chatEventFlags: { nilMade?: { playerId: number; blind: boolean }; nilFailed?: { playerId: number; blind: boolean }; setBid?: { teamId: number } } = {}
 
   // State
   const players = ref<SpadesPlayer[]>([])
@@ -128,6 +138,118 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     trickCompleteCallback = cb
   }
 
+  // Chat engine helpers
+  function getChatStateSnapshot(): SpadesChatState {
+    return {
+      phase: phase.value,
+      scores: scores.value.map(s => ({ teamId: s.teamId, score: s.score, bags: s.bags })),
+      currentPlayer: currentPlayer.value,
+      roundNumber: roundNumber.value,
+      gameOver: gameOver.value,
+      winner: winner.value,
+      spadesBroken: spadesBroken.value,
+      players: players.value.map(p => ({
+        id: p.id,
+        teamId: p.teamId,
+        bid: p.bid,
+        tricksWon: p.tricksWon,
+      })),
+      ...chatEventFlags,
+    }
+  }
+
+  function getPlayersForChat() {
+    return players.value.map(p => ({
+      id: p.id,
+      name: p.name,
+      isHuman: p.isHuman,
+      teamId: p.teamId,
+    }))
+  }
+
+  function processChatAfterStateChange() {
+    console.log('[Spades Chat] processChatAfterStateChange called')
+    console.log('[Spades Chat] botChatEnabled:', settingsStore.botChatEnabled)
+    
+    if (!settingsStore.botChatEnabled) return
+    
+    const newState = getChatStateSnapshot()
+    console.log('[Spades Chat] previousState phase:', previousChatState?.phase)
+    console.log('[Spades Chat] newState phase:', newState.phase)
+    console.log('[Spades Chat] chatEventFlags:', JSON.stringify(chatEventFlags))
+    
+    const chatMode: ChatMode = settingsStore.aiChatMode === 'unhinged' ? 'unhinged' : 'clean'
+    
+    const chatEvent = processSpadesChat(
+      previousChatState,
+      newState,
+      getPlayersForChat(),
+      chatMode
+    )
+    
+    console.log('[Spades Chat] chatEvent:', chatEvent)
+    
+    if (chatEvent) {
+      console.log('[Spades Chat] SENDING MESSAGE:', chatEvent.text, 'from', chatEvent.playerName)
+      chatStore.receiveMessage({
+        id: `ai-${chatEvent.seatIndex}-${Date.now()}`,
+        odusId: chatEvent.odusId,
+        seatIndex: chatEvent.seatIndex,
+        playerName: chatEvent.playerName,
+        text: chatEvent.text,
+        timestamp: Date.now(),
+      })
+    }
+    
+    previousChatState = newState
+    chatEventFlags = {}
+  }
+
+  function captureStateForChat() {
+    previousChatState = getChatStateSnapshot()
+  }
+  
+  // Detect nil/set events at round end by comparing pre and post-scoring state
+  function detectRoundEndChatEvents(preScoreState: SpadesGameState, postScoreState: SpadesGameState) {
+    console.log('[Spades Chat] detectRoundEndChatEvents called')
+    
+    for (const player of preScoreState.players) {
+      if (!player.bid) continue
+      
+      const isNilBid = player.bid.type === SpadesBidType.Nil || player.bid.type === SpadesBidType.BlindNil
+      const isBlind = player.bid.type === SpadesBidType.BlindNil
+      
+      if (isNilBid) {
+        console.log('[Spades Chat] Player', player.id, 'had nil bid, tricks:', player.tricksWon)
+        // Nil: success = 0 tricks, fail = 1+ tricks
+        if (player.tricksWon === 0) {
+          chatEventFlags.nilMade = { playerId: player.id, blind: isBlind }
+        } else {
+          chatEventFlags.nilFailed = { playerId: player.id, blind: isBlind }
+        }
+      }
+    }
+    
+    // Detect set: team bid more than they got
+    for (const team of [0, 1]) {
+      const teamPlayers = preScoreState.players.filter(p => p.teamId === team)
+      const totalBid = teamPlayers.reduce((sum, p) => {
+        if (!p.bid || p.bid.type === SpadesBidType.Nil || p.bid.type === SpadesBidType.BlindNil) return sum
+        return sum + p.bid.count
+      }, 0)
+      const totalTricks = teamPlayers.reduce((sum, p) => sum + p.tricksWon, 0)
+      
+      console.log('[Spades Chat] Team', team, 'bid:', totalBid, 'tricks:', totalTricks)
+      
+      if (totalBid > totalTricks) {
+        chatEventFlags.setBid = { teamId: team }
+        console.log('[Spades Chat] Team', team, 'got SET')
+      }
+    }
+    
+    console.log('[Spades Chat] Final chatEventFlags:', JSON.stringify(chatEventFlags))
+  }
+
   function dealAnimationComplete() {
     timer.cancel('deal-fallback')  // Cancel fallback since animation completed
     if (dealCompleteResolve) {
@@ -231,6 +353,11 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   }
 
   async function executePlayCard(playerId: number, card: StandardCard) {
+    console.log('[Spades Chat] executePlayCard called, completedTricks:', completedTricks.value.length)
+    
+    // Capture state BEFORE applying changes for chat engine
+    captureStateForChat()
+    
     const prevTrickLength = currentTrick.value.cards.length
     const state = Spades.playCard(gameState.value, playerId, card)
     applyState(state)
@@ -240,8 +367,10 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       await playAnimationCallback({ card, playerId })
     }
 
-    // Check if trick complete
-    if (state.phase === SpadesPhase.TrickComplete) {
+    // Check if trick complete OR round complete (13th trick goes straight to round_complete)
+    console.log('[Spades Chat] After playCard - phase:', state.phase, 'completedTricks:', state.completedTricks.length)
+    if (state.phase === SpadesPhase.TrickComplete || state.phase === SpadesPhase.RoundComplete) {
+      console.log('[Spades Chat] TRICK COMPLETE - completedTricks now:', state.completedTricks.length)
       const lastTrick = state.completedTricks[state.completedTricks.length - 1]
 
       // Record completed trick for hard AI tracking
@@ -255,12 +384,18 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
       // Check if round complete
       if (state.completedTricks.length === 13) {
+        console.log('[Spades Chat] ROUND COMPLETE - 13 tricks done')
         // Wait for trick-complete animation to settle before showing modal
         await new Promise(r => setTimeout(r, CardTimings.roundEnd))
 
+        const preScoreState = gameState.value
+        
         // Round is complete - apply final scoring
         const scoredState = Spades.completeRound(gameState.value)
         applyState(scoredState)
+        
+        // Detect nil/set events for chat
+        detectRoundEndChatEvents(preScoreState, scoredState)
         
         if (scoredState.gameOver) {
           phase.value = SpadesPhase.GameOver
@@ -268,6 +403,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
           // Show round summary (UI will call startNextRound when ready)
           phase.value = SpadesPhase.RoundComplete
         }
+        
+        // Process chat after round complete
+        processChatAfterStateChange()
         return
       }
 

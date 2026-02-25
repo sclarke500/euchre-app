@@ -26,8 +26,25 @@ export type EuchreChatTrigger =
   | 'alone_failed'          // Went alone and failed
   | 'stole_deal'            // Ordered up / called when opponents dealt
 
+// President-specific triggers
+export type PresidentChatTrigger =
+  | 'president_first_out'    // Finished first (President!)
+  | 'president_second_out'   // Finished second (VP)
+  | 'president_last_out'     // Finished last (Scum)
+  | 'president_pile_cleared' // Cleared the pile (bomb/quad)
+
+// Spades-specific triggers
+export type SpadesChatTrigger =
+  | 'spades_nil_made'           // Made a nil bid
+  | 'spades_nil_failed'         // Failed a nil bid
+  | 'spades_blind_nil_made'     // Made a blind nil (rare!)
+  | 'spades_blind_nil_failed'   // Failed a blind nil
+  | 'spades_opponent_nil_failed' // Opponent failed their nil (gloat)
+  | 'spades_got_set'            // Got set (didn't make bid)
+  | 'spades_set_opponent'       // Set the opponent
+
 // All chat triggers (union of generic + game-specific)
-export type ChatTrigger = GenericChatTrigger | EuchreChatTrigger
+export type ChatTrigger = GenericChatTrigger | EuchreChatTrigger | PresidentChatTrigger | SpadesChatTrigger
 
 // Chat mode (maps to user setting)
 export type ChatMode = 'clean' | 'unhinged'

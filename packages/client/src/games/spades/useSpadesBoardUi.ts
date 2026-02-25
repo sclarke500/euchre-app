@@ -103,9 +103,11 @@ export function useSpadesBoardUi(adapter: SpadesGameAdapter, mode: 'singleplayer
 
   watch(
     () => adapter.phase.value,
-    async (newPhase) => {
-      if (newPhase === SpadesPhase.RoundComplete) {
-        await new Promise((resolve) => setTimeout(resolve, CardTimings.roundEnd))
+    async (newPhase, oldPhase) => {
+      // Guard: only show modal once per round (prevent double popup)
+      if (newPhase === SpadesPhase.RoundComplete && oldPhase !== SpadesPhase.RoundComplete) {
+        // Delay to let chat bubble appear first
+        await new Promise((resolve) => setTimeout(resolve, CardTimings.roundEnd + 2000))
 
         const usScore = Spades.calculateRoundScore(
           adapter.players.value,

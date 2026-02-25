@@ -3,6 +3,8 @@ import type {
   PlayerRank,
   PlayType,
   StandardCard,
+  PresidentChatState,
+  ChatMode,
 } from '@67cards/shared'
 import {
   PresidentPhase,
@@ -17,6 +19,7 @@ import {
   getRankDisplayName,
   getRandomAINames,
   GameTimings,
+  processPresidentChat,
 } from '@67cards/shared'
 import type { PresidentClientGameState, PresidentClientPlayer } from '@67cards/shared'
 import type { PresidentGameEvents, PresidentGamePlayer } from './types.js'
@@ -54,6 +57,11 @@ export class PresidentGame {
   // AI difficulty
   private readonly aiDifficulty: 'easy' | 'hard'
   private readonly cardExchange: ReturnType<typeof createPresidentCardExchangeController>
+  
+  // Chat engine state
+  private previousChatState: PresidentChatState | null = null
+  private chatMode: ChatMode = 'clean'
+  private pileJustCleared = false  // Track if pile was cleared this turn
 
   constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false, aiDifficulty: 'easy' | 'hard' = 'easy') {
     this.id = id
@@ -459,6 +467,7 @@ export class PresidentGame {
         this.currentPlayer = playerIndex // Joker player leads again
         this.consecutivePasses = 0
         this.events.onPileCleared(playerIndex)
+        this.pileJustCleared = true
         this.broadcastState()
         setTimeout(() => {
           this.processCurrentTurn()
@@ -508,6 +517,7 @@ export class PresidentGame {
 
     if (pileCleared) {
       this.events.onPileCleared(this.currentPlayer)
+      this.pileJustCleared = true
       // Brief pause when pile clears
       this.broadcastState()
       setTimeout(() => {
@@ -654,6 +664,9 @@ export class PresidentGame {
   }
 
   private broadcastState(): void {
+    // Capture state for chat engine before incrementing seq
+    const chatStateSnapshot = this.getChatStateSnapshot()
+    
     // Increment state sequence number
     this.stateSeq++
 
@@ -664,6 +677,56 @@ export class PresidentGame {
         this.events.onStateChange(player.odusId, state)
       }
     }
+    
+    // Process bot chat after state broadcast
+    this.processBotChat(chatStateSnapshot)
+    
+    // Reset pile cleared flag after processing
+    this.pileJustCleared = false
+  }
+  
+  private getChatStateSnapshot(): PresidentChatState {
+    return {
+      phase: this.phase,
+      currentPlayer: this.currentPlayer,
+      finishedPlayers: [...this.finishedPlayers],
+      consecutivePasses: this.consecutivePasses,
+      lastPlayerId: this.lastPlayerId,
+      pileCleared: this.pileJustCleared,
+      roundNumber: this.roundNumber,
+      gameOver: this.gameOver,
+      players: this.players.map(p => ({
+        id: p.seatIndex,
+        rank: p.rank,
+        cardCount: p.hand.length,
+      })),
+    }
+  }
+  
+  private getPlayersForChat() {
+    return this.players.map(p => ({
+      id: p.seatIndex,
+      name: p.name,
+      isHuman: p.isHuman,
+    }))
+  }
+  
+  private processBotChat(newChatState: PresidentChatState): void {
+    if (!this.events.onBotChat) return
+    
+    const chatEvent = processPresidentChat(
+      this.previousChatState,
+      newChatState,
+      this.getPlayersForChat(),
+      this.chatMode,
+      false
+    )
+    
+    if (chatEvent) {
+      this.events.onBotChat(chatEvent.seatIndex, chatEvent.playerName, chatEvent.text)
+    }
+    
+    this.previousChatState = newChatState
   }
 
   private notifyPlayerTurn(odusId: string): void {
