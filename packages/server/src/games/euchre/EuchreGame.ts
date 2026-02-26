@@ -5,7 +5,6 @@ import type {
   Round,
   TeamScore,
   ClientGameState,
-  EuchreChatState,
   ChatMode,
 } from '@67cards/shared'
 import {
@@ -25,7 +24,9 @@ import {
   processBid,
   chooseDealerDiscard,
   GameTracker,
-  processEuchreChat,
+  getEuchreRemark,
+  type EuchreRemarkState,
+  type RemarkMode,
 } from '@67cards/shared'
 import { getRandomAINames, GameTimings } from '@67cards/shared'
 import type { GameEvents, GameOptions, GamePlayer } from './types.js'
@@ -57,8 +58,8 @@ export class EuchreGame {
   private readonly aiDifficulty: 'easy' | 'hard'
   private readonly aiTracker: GameTracker | null
   
-  // Chat engine state
-  private previousChatState: EuchreChatState | null = null
+  // Remarks engine state
+  private previousRemarkState: EuchreRemarkState | null = null
   private chatMode: ChatMode = 'clean'
 
   constructor(id: string, events: GameEvents, options: GameOptions = {}) {
@@ -576,8 +577,8 @@ export class EuchreGame {
   }
 
   private broadcastState(): void {
-    // Capture state BEFORE incrementing seq for chat engine
-    const chatStateSnapshot = this.getChatStateSnapshot()
+    // Capture state BEFORE incrementing seq for remarks engine
+    const remarkStateSnapshot = this.getRemarkStateSnapshot()
     
     // Increment state sequence number
     this.stateSeq++
@@ -590,11 +591,11 @@ export class EuchreGame {
       }
     }
     
-    // Process bot chat after state broadcast
-    this.processBotChat(chatStateSnapshot)
+    // Process bot remarks after state broadcast
+    this.processBotChat(remarkStateSnapshot)
   }
   
-  private getChatStateSnapshot(): EuchreChatState {
+  private getRemarkStateSnapshot(): EuchreRemarkState {
     return {
       phase: this.phase,
       scores: this.scores.map(s => ({ teamId: s.teamId, score: s.score })),
@@ -605,13 +606,6 @@ export class EuchreGame {
         } : null,
         goingAlone: this.currentRound.goingAlone,
         dealer: this.currentRound.dealer,
-        tricks: this.currentRound.tricks.map(t => ({
-          winnerId: t.winnerId,
-          cards: t.cards.map(pc => ({
-            card: { suit: pc.card.suit, rank: pc.card.rank },
-            playerId: pc.playerId,
-          })),
-        })),
       } : null,
       gameOver: this.gameOver,
       winner: this.winner,
@@ -627,24 +621,26 @@ export class EuchreGame {
     }))
   }
   
-  private processBotChat(newChatState: EuchreChatState): void {
+  private processBotChat(newRemarkState: EuchreRemarkState): void {
     // Only process if we have the event handler
     if (!this.events.onBotChat) return
     
-    const chatEvent = processEuchreChat(
-      this.previousChatState,
-      newChatState,
+    // Map ChatMode to RemarkMode
+    const remarkMode: RemarkMode = this.chatMode === 'unhinged' ? 'spicy' : 'mild'
+    
+    const remark = getEuchreRemark(
+      this.previousRemarkState,
+      newRemarkState,
       this.getPlayersForChat(),
-      this.chatMode,
-      false  // Don't force trigger
+      remarkMode
     )
     
-    if (chatEvent) {
-      this.events.onBotChat(chatEvent.seatIndex, chatEvent.playerName, chatEvent.text)
+    if (remark) {
+      this.events.onBotChat(remark.playerId, remark.playerName, remark.text)
     }
     
     // Update previous state for next comparison
-    this.previousChatState = newChatState
+    this.previousRemarkState = newRemarkState
   }
 
   private notifyPlayerTurn(odusId: string): void {

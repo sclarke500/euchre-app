@@ -1,0 +1,60 @@
+import type { BotProfile } from './types.js'
+
+export const pixel: BotProfile = {
+  name: 'Pixel',
+  avatar: 'pixel.jpg',
+  remarks: {
+    positive: {
+      mild: [
+        'GG!',
+        'Level up!',
+        'Achievement unlocked!',
+        'High score!',
+        'Power-up activated!',
+        'Combo!',
+        'Critical hit!',
+        'Perfect run!',
+        'Speedrun strats!',
+        'No damage taken!',
+      ],
+      spicy: [
+        'GET PIXELATED!',
+        'Rekt in 8-bit!',
+        'Game over, scrub!',
+        'Git gud!',
+        'Skill issue!',
+        'Uninstall!',
+        'Noob destroyed!',
+        'Rage quit material!',
+        'First try, baby!',
+        'You\'re NPC energy!',
+      ],
+    },
+    negative: {
+      mild: [
+        'Game over.',
+        'Lost a life.',
+        'Continue?',
+        'Respawning...',
+        'Checkpoint missed.',
+        'Bad RNG.',
+        'Frame perfect fail.',
+        'Input lag.',
+        'Save corrupted.',
+        'Need more coins.',
+      ],
+      spicy: [
+        'BULLSHIT RNG!',
+        'This game is broken!',
+        'Lag!',
+        'Hitbox porn!',
+        'Cheater!',
+        'Bug report!',
+        'Nerf this!',
+        'Pay to win garbage!',
+        'Skill-based matchmaking my ass!',
+        'Throwing my controller!',
+      ],
+    },
+  },
+}

@@ -1,0 +1,60 @@
+import type { BotProfile } from './types.js'
+
+export const atlas: BotProfile = {
+  name: 'Atlas',
+  avatar: 'atlas.jpg',
+  remarks: {
+    positive: {
+      mild: [
+        'Solid.',
+        'Good work.',
+        'We got this.',
+        'Clean.',
+        'That\'s how it\'s done.',
+        'Textbook.',
+        'Nice execution.',
+        'Reliable.',
+        'On point.',
+        'Carried.',
+      ],
+      spicy: [
+        'You\'re welcome.',
+        'On my back, as usual.',
+        'I AM the team.',
+        'Backpack was heavy today.',
+        'Solo carry.',
+        'Diff.',
+        'Too easy.',
+        'Try to keep up.',
+        'Burden lifted.',
+        'Another day, another carry.',
+      ],
+    },
+    negative: {
+      mild: [
+        'Tough one.',
+        'Can\'t win them all.',
+        'We\'ll get it next time.',
+        'Rough break.',
+        'It happens.',
+        'Not our game.',
+        'Learning experience.',
+        'Shake it off.',
+        'Onto the next one.',
+        'Regroup.',
+      ],
+      spicy: [
+        'Uncarryable.',
+        'Dead weight.',
+        'Can only do so much.',
+        'Need better teammates.',
+        'I can\'t 1v4.',
+        'Anchor holding us down.',
+        'Reporting my team.',
+        'Elo hell.',
+        'Hard to win with bots.',
+        'Carried as hard as possible.',
+      ],
+    },
+  },
+}

@@ -36,10 +36,10 @@ import {
   chooseCardToPlayHard,
   isPartnerWinningHard,
   createGameTimer,
-  // Chat engine
-  processEuchreChat,
-  type EuchreChatState,
-  type ChatMode,
+  // Remarks engine
+  getEuchreRemark,
+  type EuchreRemarkState,
+  type RemarkMode,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useChatStore } from '@/stores/chatStore'
@@ -54,10 +54,10 @@ export const useEuchreGameStore = defineStore('game', () => {
   const gameTracker = new GameTracker()
   const timer = createGameTimer()
 
-  // State snapshot for chat engine
-  let previousChatState: EuchreChatState | null = null
+  // State snapshot for remarks engine
+  let previousRemarkState: EuchreRemarkState | null = null
 
-  function getChatStateSnapshot(): EuchreChatState {
+  function getRemarkStateSnapshot(): EuchreRemarkState {
     return {
       phase: phase.value,
       scores: scores.value.map(s => ({ teamId: s.teamId, score: s.score })),
@@ -68,13 +68,6 @@ export const useEuchreGameStore = defineStore('game', () => {
         } : null,
         goingAlone: currentRound.value.goingAlone,
         dealer: currentRound.value.dealer,
-        tricks: currentRound.value.tricks.map(t => ({
-          winnerId: t.winnerId,
-          cards: t.cards.map(c => ({
-            card: { suit: c.card.suit, rank: c.card.rank },
-            playerId: c.playerId,
-          })),
-        })),
       } : null,
       gameOver: gameOver.value,
       winner: winner.value,
@@ -90,38 +83,38 @@ export const useEuchreGameStore = defineStore('game', () => {
     }))
   }
 
-  // Process chat after state changes
+  // Process remarks after state changes
   function processChatAfterStateChange() {
     if (!settingsStore.botChatEnabled) return
 
-    const newState = getChatStateSnapshot()
-    const chatMode: ChatMode = settingsStore.aiChatMode === 'unhinged' ? 'unhinged' : 'clean'
+    const newState = getRemarkStateSnapshot()
+    const remarkMode: RemarkMode = settingsStore.aiChatMode === 'unhinged' ? 'spicy' : 'mild'
     
-    const chatEvent = processEuchreChat(
-      previousChatState,
+    const remark = getEuchreRemark(
+      previousRemarkState,
       newState,
       getPlayersForChat(),
-      chatMode
+      remarkMode
     )
 
-    if (chatEvent) {
+    if (remark) {
       chatStore.receiveMessage({
-        id: `ai-${chatEvent.seatIndex}-${Date.now()}`,
-        odusId: chatEvent.odusId,
-        seatIndex: chatEvent.seatIndex,
-        playerName: chatEvent.playerName,
-        text: chatEvent.text,
+        id: `ai-${remark.playerId}-${Date.now()}`,
+        odusId: `ai-${remark.playerId}`,
+        seatIndex: remark.playerId,
+        playerName: remark.playerName,
+        text: remark.text,
         timestamp: Date.now(),
       })
     }
 
     // Update previous state for next comparison
-    previousChatState = newState
+    previousRemarkState = newState
   }
 
-  // Capture state before a potentially chat-worthy change
+  // Capture state before a potentially remark-worthy change
   function captureStateForChat() {
-    previousChatState = getChatStateSnapshot()
+    previousRemarkState = getRemarkStateSnapshot()
   }
 
   // State

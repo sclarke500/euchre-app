@@ -6,7 +6,10 @@ export { createGameTimer, type GameTimer, GameTimings } from './utils/timer.js'
 // AI Personality (legacy - kept for backward compatibility)
 export { getAIComment, resetAIChatCooldown, type AIChatEvent, type AIChatMode } from './ai/personality.js'
 
-// Chat System (new architecture)
+// Bot profiles and remarks
+export * from './ai/bots/index.js'
+
+// Chat System (legacy architecture - being replaced by bots)
 export * from './ai/chat/index.js'
 
 // Multiplayer protocol and table/lobby types

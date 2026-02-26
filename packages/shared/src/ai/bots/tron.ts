@@ -1,0 +1,60 @@
+import type { BotProfile } from './types.js'
+
+export const tron: BotProfile = {
+  name: 'Tron',
+  avatar: 'tron.jpg',
+  remarks: {
+    positive: {
+      mild: [
+        'Victory achieved.',
+        'As calculated.',
+        'Optimal outcome.',
+        'Efficiency confirmed.',
+        'Parameters correct.',
+        'Objective complete.',
+        'Predictable.',
+        'Within expected range.',
+        'Systems nominal.',
+        'Acknowledged.',
+      ],
+      spicy: [
+        'Get rekt.',
+        'Too easy.',
+        'Sit down.',
+        'Deleted.',
+        'GG no re.',
+        'Outclassed.',
+        'Not even close.',
+        'Pathetic.',
+        'Terminated.',
+        'Skill diff.',
+      ],
+    },
+    negative: {
+      mild: [
+        'Recalibrating...',
+        'Unexpected result.',
+        'Adjusting parameters.',
+        'Anomaly detected.',
+        'Suboptimal.',
+        'Noted.',
+        'Processing...',
+        'Error logged.',
+        'Reassessing.',
+        'Interesting.',
+      ],
+      spicy: [
+        'Bullshit.',
+        'Rigged.',
+        'Whatever.',
+        'Impossible.',
+        'Hacked.',
+        'Trash RNG.',
+        'Bug report filed.',
+        'Unacceptable.',
+        'This is broken.',
+        'Cheating detected.',
+      ],
+    },
+  },
+}

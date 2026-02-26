@@ -1,0 +1,60 @@
+import type { BotProfile } from './types.js'
+
+export const neon: BotProfile = {
+  name: 'Neon',
+  avatar: 'neon.jpg',
+  remarks: {
+    positive: {
+      mild: [
+        'Yay!',
+        'Woohoo!',
+        'Nice!',
+        'Let\'s go!',
+        'Awesome!',
+        'So fun!',
+        'Love it!',
+        'Woot woot!',
+        'Heck yeah!',
+        'Vibes are immaculate!',
+      ],
+      spicy: [
+        'LETS GOOOO!',
+        'GET WRECKED!',
+        'EAT IT!',
+        'BOOM BABY!',
+        'Suck iiiit!',
+        'IN YOUR FACE!',
+        'DESTROYED!',
+        'No cap, slayed.',
+        'That was bussin!',
+        'Absolutely unhinged W!',
+      ],
+    },
+    negative: {
+      mild: [
+        'Aww man!',
+        'Dang it!',
+        'Oops!',
+        'Bummer!',
+        'Oh no!',
+        'Sadge.',
+        'Not great...',
+        'Oof.',
+        'Welp.',
+        'That\'s rough.',
+      ],
+      spicy: [
+        'NOOOO!',
+        'WTF!',
+        'This is garbage!',
+        'I\'m literally crying!',
+        'Bruh WHAT?!',
+        'Absolutely NOT!',
+        'No no no no no!',
+        'I\'m so done!',
+        'Rage quitting!',
+        'Screaming crying throwing up!',
+      ],
+    },
+  },
+}

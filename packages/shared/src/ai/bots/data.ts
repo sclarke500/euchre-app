@@ -1,0 +1,60 @@
+import type { BotProfile } from './types.js'
+
+export const data: BotProfile = {
+  name: 'Data',
+  avatar: 'data.jpg',
+  remarks: {
+    positive: {
+      mild: [
+        'Fascinating.',
+        'A logical outcome.',
+        'The data supports this.',
+        'Probability confirmed.',
+        'Analysis complete.',
+        'Intriguing result.',
+        'As hypothesized.',
+        'Statistically sound.',
+        'Evidence-based victory.',
+        'Empirically verified.',
+      ],
+      spicy: [
+        'Science wins again.',
+        'Read you like a book.',
+        'Calculated destruction.',
+        'Data > your gut.',
+        'Facts over feelings.',
+        'Outsmarted.',
+        'IQ diff.',
+        'Math says sit down.',
+        'Peer reviewed your ass.',
+        'Hypothesis: you suck. Confirmed.',
+      ],
+    },
+    negative: {
+      mild: [
+        'Unexpected variance.',
+        'Recalculating...',
+        'Anomalous data.',
+        'Insufficient sample size.',
+        'Outlier detected.',
+        'Requires further study.',
+        'Hmm, interesting.',
+        'Statistical noise.',
+        'Confounding variable.',
+        'Back to the lab.',
+      ],
+      spicy: [
+        'That\'s statistically impossible.',
+        'The math doesn\'t lie. You cheated.',
+        'Bad RNG is bad.',
+        'Peer review THAT.',
+        'Junk science.',
+        'Data corrupted.',
+        'This study is flawed.',
+        'Unreproducible results.',
+        'I demand a recount.',
+        'Fake news.',
+      ],
+    },
+  },
+}

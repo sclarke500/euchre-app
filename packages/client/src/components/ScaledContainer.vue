@@ -346,22 +346,22 @@ defineExpose({
   height: 300px;
   border-radius: 50%;
   filter: blur(60px);
-  opacity: 0.7;
+  opacity: 0.35;
 }
 
 .orb-1 {
-  background: rgba(100, 255, 150, 0.8); // Green
-  animation: drift1 12s ease-in-out infinite, color1 12s ease-in-out infinite;
+  background: rgba(100, 255, 150, 0.6); // Green
+  animation: drift1 20s ease-in-out infinite, color1 20s ease-in-out infinite;
 }
 
 .orb-2 {
-  background: rgba(100, 180, 255, 0.8); // Blue
-  animation: drift2 15s ease-in-out infinite, color2 15s ease-in-out infinite;
+  background: rgba(100, 180, 255, 0.6); // Blue
+  animation: drift2 25s ease-in-out infinite, color2 25s ease-in-out infinite;
 }
 
 .orb-3 {
-  background: rgba(180, 150, 255, 0.8); // Purple
-  animation: drift3 18s ease-in-out infinite, color3 18s ease-in-out infinite;
+  background: rgba(180, 150, 255, 0.6); // Purple
+  animation: drift3 30s ease-in-out infinite, color3 30s ease-in-out infinite;
 }
 
 .scaled-container {
@@ -389,44 +389,44 @@ defineExpose({
 // Each orb drifts around different parts of the perimeter
 // Container is 1120x630, orbs are 300px, margins position their top-left corner
 @keyframes drift1 {
-  0%, 100% { margin: -80px 0 0 -80px; opacity: 0.7; }   // top-left
-  25% { margin: -80px 0 0 500px; opacity: 0.6; }        // top-center
-  50% { margin: 400px 0 0 850px; opacity: 0.7; }        // bottom-right
-  75% { margin: 200px 0 0 -50px; opacity: 0.5; }        // left-middle
+  0%, 100% { margin: -80px 0 0 -80px; opacity: 0.35; }   // top-left
+  25% { margin: -80px 0 0 500px; opacity: 0.25; }        // top-center
+  50% { margin: 400px 0 0 850px; opacity: 0.35; }        // bottom-right
+  75% { margin: 200px 0 0 -50px; opacity: 0.2; }         // left-middle
 }
 
 @keyframes drift2 {
-  0%, 100% { margin: 150px 0 0 900px; opacity: 0.6; }   // right-middle
-  33% { margin: 450px 0 0 400px; opacity: 0.7; }        // bottom-center
-  66% { margin: -80px 0 0 -50px; opacity: 0.6; }        // top-left
+  0%, 100% { margin: 150px 0 0 900px; opacity: 0.3; }    // right-middle
+  33% { margin: 450px 0 0 400px; opacity: 0.35; }        // bottom-center
+  66% { margin: -80px 0 0 -50px; opacity: 0.25; }        // top-left
 }
 
 @keyframes drift3 {
-  0%, 100% { margin: 400px 0 0 100px; opacity: 0.6; }   // bottom-left
-  30% { margin: -80px 0 0 800px; opacity: 0.5; }        // top-right
-  60% { margin: 200px 0 0 400px; opacity: 0.7; }        // center
-  85% { margin: -60px 0 0 -60px; opacity: 0.6; }        // top-left
+  0%, 100% { margin: 400px 0 0 100px; opacity: 0.3; }    // bottom-left
+  30% { margin: -80px 0 0 800px; opacity: 0.2; }         // top-right
+  60% { margin: 200px 0 0 400px; opacity: 0.35; }        // center
+  85% { margin: -60px 0 0 -60px; opacity: 0.25; }        // top-left
 }
 
 // Color shifts include fading to dark
 @keyframes color1 {
-  0%, 100% { background: rgba(100, 255, 150, 0.8); }
+  0%, 100% { background: rgba(100, 255, 150, 0.5); }
   30% { background: rgba(50, 80, 60, 0.1); } // dark
-  50% { background: rgba(50, 255, 220, 0.8); } // teal
-  80% { background: rgba(100, 255, 150, 0.8); }
+  50% { background: rgba(50, 255, 220, 0.5); } // teal
+  80% { background: rgba(100, 255, 150, 0.5); }
 }
 
 @keyframes color2 {
-  0%, 100% { background: rgba(100, 180, 255, 0.8); }
+  0%, 100% { background: rgba(100, 180, 255, 0.5); }
   25% { background: rgba(40, 60, 80, 0.1); } // dark
-  50% { background: rgba(180, 150, 255, 0.8); } // purple
-  75% { background: rgba(100, 180, 255, 0.8); }
+  50% { background: rgba(180, 150, 255, 0.5); } // purple
+  75% { background: rgba(100, 180, 255, 0.5); }
 }
 
 @keyframes color3 {
-  0%, 100% { background: rgba(180, 150, 255, 0.8); }
-  35% { background: rgba(100, 255, 150, 0.8); } // green
+  0%, 100% { background: rgba(180, 150, 255, 0.5); }
+  35% { background: rgba(100, 255, 150, 0.5); } // green
   55% { background: rgba(50, 50, 60, 0.1); } // dark
-  80% { background: rgba(50, 255, 220, 0.8); } // teal
+  80% { background: rgba(50, 255, 220, 0.5); } // teal
 }
 </style>

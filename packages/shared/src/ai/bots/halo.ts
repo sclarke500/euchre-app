@@ -1,0 +1,60 @@
+import type { BotProfile } from './types.js'
+
+export const halo: BotProfile = {
+  name: 'Halo',
+  avatar: 'halo.jpg',
+  remarks: {
+    positive: {
+      mild: [
+        'Blessed.',
+        'Divine favor.',
+        'The light prevails.',
+        'Grace be upon us.',
+        'Righteous victory.',
+        'As it was written.',
+        'Heavenly.',
+        'A sacred triumph.',
+        'Fortune smiles.',
+        'The path was true.',
+      ],
+      spicy: [
+        'DIVINE PUNISHMENT!',
+        'Smited!',
+        'Bow before me!',
+        'Holy destruction!',
+        'God wills it!',
+        'Kneel, sinner!',
+        'Judgment day!',
+        'Sent to hell!',
+        'Purified!',
+        'Angels weep for you!',
+      ],
+    },
+    negative: {
+      mild: [
+        'A test of faith.',
+        'Darkness momentarily prevails.',
+        'We shall overcome.',
+        'The spirit endures.',
+        'Grace in defeat.',
+        'A trial to learn from.',
+        'Faith tested.',
+        'The light will return.',
+        'Patience is virtue.',
+        'This too shall pass.',
+      ],
+      spicy: [
+        'DAMN IT!',
+        'Why have you forsaken me?!',
+        'Cursed!',
+        'This is heresy!',
+        'The devil\'s work!',
+        'Unholy BS!',
+        'I\'ve been betrayed!',
+        'Hell awaits you!',
+        'Blasphemy!',
+        'Where is your god now?!',
+      ],
+    },
+  },
+}
