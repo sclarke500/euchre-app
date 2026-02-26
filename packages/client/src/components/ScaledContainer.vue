@@ -273,6 +273,28 @@ const scaledStyle = computed(() => {
   }
 })
 
+// Aurora glow positioned behind container (slightly larger, same transform)
+const auroraStyle = computed(() => {
+  const scaledW = canonicalWidth.value * scale.value
+  const scaledH = canonicalHeight.value * scale.value
+  
+  let offsetX = Math.max(0, (wrapperWidth.value - scaledW) / 2)
+  let offsetY = Math.max(0, (wrapperHeight.value - scaledH) / 2)
+  
+  if (isMobile()) {
+    offsetX += safeInsets.value.left
+    offsetY += safeInsets.value.top
+  }
+  
+  // Glow extends 50px beyond container on each side
+  const glowPad = 50
+  return {
+    width: `${canonicalWidth.value + glowPad * 2}px`,
+    height: `${canonicalHeight.value + glowPad * 2}px`,
+    transform: `translate(${offsetX - glowPad * scale.value}px, ${offsetY - glowPad * scale.value}px) scale(${scale.value})`,
+  }
+})
+
 // Expose dimensions for child components
 const containerWidth = computed(() => canonicalWidth.value)
 const containerHeight = computed(() => canonicalHeight.value)
@@ -289,6 +311,11 @@ defineExpose({
 
 <template>
   <div ref="wrapperRef" class="scaled-container-wrapper">
+    <!-- Aurora glow orbs that drift around the container edges -->
+    <div class="aurora-orb orb-1" :style="auroraStyle"></div>
+    <div class="aurora-orb orb-2" :style="auroraStyle"></div>
+    <div class="aurora-orb orb-3" :style="auroraStyle"></div>
+    
     <div
       ref="containerRef"
       class="scaled-container"
@@ -308,6 +335,35 @@ defineExpose({
   background: #08080c;
 }
 
+// Glowing orbs that move around the container
+.aurora-orb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  pointer-events: none;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.7;
+}
+
+.orb-1 {
+  background: rgba(100, 255, 150, 0.8); // Green
+  animation: drift1 12s ease-in-out infinite, color1 12s ease-in-out infinite;
+}
+
+.orb-2 {
+  background: rgba(100, 180, 255, 0.8); // Blue
+  animation: drift2 15s ease-in-out infinite, color2 15s ease-in-out infinite;
+}
+
+.orb-3 {
+  background: rgba(180, 150, 255, 0.8); // Purple
+  animation: drift3 18s ease-in-out infinite, color3 18s ease-in-out infinite;
+}
+
 .scaled-container {
   position: absolute;
   top: 0;
@@ -315,13 +371,62 @@ defineExpose({
   transform-origin: top left;
   overflow: hidden;
   border-radius: 16px;
-  // Tighter glow - fades before edges
+  // Beveled edge effect - light top-left, dark bottom-right
+  border: 2px solid transparent;
+  border-top-color: rgba(255, 255, 255, 0.15);
+  border-left-color: rgba(255, 255, 255, 0.1);
+  border-bottom-color: rgba(0, 0, 0, 0.3);
+  border-right-color: rgba(0, 0, 0, 0.25);
+  // Layered inset shadows for depth
   box-shadow: 
-    // Inner white-green glow
-    0 0 40px 8px rgba(200, 230, 210, 0.12),
-    // Mid green glow - tighter
-    0 0 60px 15px rgba(30, 96, 69, 0.10),
-    // Inner depth
-    inset 0 0 30px rgba(0, 0, 0, 0.25);
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),      // top highlight
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),           // bottom shadow
+    inset 2px 2px 8px rgba(255, 255, 255, 0.05), // inner top-left glow
+    inset -2px -2px 8px rgba(0, 0, 0, 0.15),     // inner bottom-right shadow
+    inset 0 0 30px rgba(0, 0, 0, 0.25);          // overall depth
+}
+
+// Each orb drifts around different parts of the perimeter
+// Container is 1120x630, orbs are 300px, margins position their top-left corner
+@keyframes drift1 {
+  0%, 100% { margin: -80px 0 0 -80px; opacity: 0.7; }   // top-left
+  25% { margin: -80px 0 0 500px; opacity: 0.6; }        // top-center
+  50% { margin: 400px 0 0 850px; opacity: 0.7; }        // bottom-right
+  75% { margin: 200px 0 0 -50px; opacity: 0.5; }        // left-middle
+}
+
+@keyframes drift2 {
+  0%, 100% { margin: 150px 0 0 900px; opacity: 0.6; }   // right-middle
+  33% { margin: 450px 0 0 400px; opacity: 0.7; }        // bottom-center
+  66% { margin: -80px 0 0 -50px; opacity: 0.6; }        // top-left
+}
+
+@keyframes drift3 {
+  0%, 100% { margin: 400px 0 0 100px; opacity: 0.6; }   // bottom-left
+  30% { margin: -80px 0 0 800px; opacity: 0.5; }        // top-right
+  60% { margin: 200px 0 0 400px; opacity: 0.7; }        // center
+  85% { margin: -60px 0 0 -60px; opacity: 0.6; }        // top-left
+}
+
+// Color shifts include fading to dark
+@keyframes color1 {
+  0%, 100% { background: rgba(100, 255, 150, 0.8); }
+  30% { background: rgba(50, 80, 60, 0.1); } // dark
+  50% { background: rgba(50, 255, 220, 0.8); } // teal
+  80% { background: rgba(100, 255, 150, 0.8); }
+}
+
+@keyframes color2 {
+  0%, 100% { background: rgba(100, 180, 255, 0.8); }
+  25% { background: rgba(40, 60, 80, 0.1); } // dark
+  50% { background: rgba(180, 150, 255, 0.8); } // purple
+  75% { background: rgba(100, 180, 255, 0.8); }
+}
+
+@keyframes color3 {
+  0%, 100% { background: rgba(180, 150, 255, 0.8); }
+  35% { background: rgba(100, 255, 150, 0.8); } // green
+  55% { background: rgba(50, 50, 60, 0.1); } // dark
+  80% { background: rgba(50, 255, 220, 0.8); } // teal
 }
 </style>
