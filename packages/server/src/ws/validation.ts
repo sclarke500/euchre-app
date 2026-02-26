@@ -11,6 +11,7 @@ const tableSettingsSchema = z.object({
   chatEnabled: z.boolean().optional(),
   isPrivate: z.boolean().optional(),
   bootInactive: z.boolean().optional(),
+  chatMode: z.enum(['clean', 'unhinged']).optional(),
 }).strict()
 
 const clientMetaShape = {
