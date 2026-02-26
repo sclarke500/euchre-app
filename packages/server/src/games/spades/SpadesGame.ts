@@ -2,7 +2,6 @@ import type {
   SpadesTrick,
   SpadesBid,
   SpadesTeamScore,
-  SpadesChatState,
   ChatMode,
 } from '@67cards/shared'
 import {
@@ -11,7 +10,9 @@ import {
   Spades,
   getRandomAINames,
   GameTimings,
-  processSpadesChat,
+  getSpadesRemark,
+  type SpadesRemarkState,
+  type RemarkMode,
 } from '@67cards/shared'
 import type { SpadesClientGameState } from '@67cards/shared'
 import type { SpadesGameEvents, SpadesGamePlayer } from './types.js'
@@ -50,10 +51,10 @@ export class SpadesGame {
   private readonly TIMEOUT_AFTER_REMINDERS = 4
   private timedOutPlayer: number | null = null
   
-  // Chat engine state
-  private previousChatState: SpadesChatState | null = null
+  // Remarks engine state
+  private previousRemarkState: SpadesRemarkState | null = null
   private chatMode: ChatMode = 'clean'
-  private chatEventFlags: { nilMade?: { playerId: number; blind: boolean }; nilFailed?: { playerId: number; blind: boolean }; setBid?: { teamId: number } } = {}
+  private remarkEventFlags: { nilMade?: { playerId: number }; nilFailed?: { playerId: number }; setBid?: { teamId: number } } = {}
 
   constructor(id: string, events: SpadesGameEvents, options: { chatMode?: 'clean' | 'unhinged' } = {}) {
     this.id = id
@@ -458,13 +459,12 @@ export class SpadesGame {
       if (!player.bid) continue
       
       const isNilBid = player.bid.type === SpadesBidType.Nil || player.bid.type === SpadesBidType.BlindNil
-      const isBlind = player.bid.type === SpadesBidType.BlindNil
       
       if (isNilBid) {
         if (player.tricksWon === 0) {
-          this.chatEventFlags.nilMade = { playerId: player.id, blind: isBlind }
+          this.remarkEventFlags.nilMade = { playerId: player.id }
         } else {
-          this.chatEventFlags.nilFailed = { playerId: player.id, blind: isBlind }
+          this.remarkEventFlags.nilFailed = { playerId: player.id }
         }
       }
     }
@@ -479,7 +479,7 @@ export class SpadesGame {
       const totalTricks = teamPlayers.reduce((sum, p) => sum + p.tricksWon, 0)
       
       if (totalBid > totalTricks) {
-        this.chatEventFlags.setBid = { teamId: team }
+        this.remarkEventFlags.setBid = { teamId: team }
       }
     }
   }
@@ -655,8 +655,8 @@ export class SpadesGame {
   }
 
   private broadcastState(): void {
-    // Capture state for chat engine before incrementing seq
-    const chatStateSnapshot = this.getChatStateSnapshot()
+    // Capture state for remarks engine before incrementing seq
+    const remarkStateSnapshot = this.getRemarkStateSnapshot()
     
     // Increment state sequence once before broadcasting to all players
     this.stateSeq++
@@ -719,29 +719,21 @@ export class SpadesGame {
       timedOutPlayer: this.timedOutPlayer,
     }))
     
-    // Process bot chat after state broadcast
-    this.processBotChat(chatStateSnapshot)
+    // Process bot remarks after state broadcast
+    this.processBotChat(remarkStateSnapshot)
     
-    // Clear chat event flags after processing
-    this.chatEventFlags = {}
+    // Clear remark event flags after processing
+    this.remarkEventFlags = {}
   }
   
-  private getChatStateSnapshot(): SpadesChatState {
+  private getRemarkStateSnapshot(): SpadesRemarkState {
     return {
       phase: this.phase,
-      scores: this.scores.map(s => ({ teamId: s.teamId, score: s.score, bags: s.bags })),
-      currentPlayer: this.currentPlayer,
+      scores: this.scores.map(s => ({ teamId: s.teamId, score: s.score })),
       roundNumber: this.roundNumber,
       gameOver: this.gameOver,
       winner: this.winner,
-      spadesBroken: this.spadesBroken,
-      players: this.players.map(p => ({
-        id: p.seatIndex,
-        teamId: p.teamId,
-        bid: p.bid,
-        tricksWon: p.tricksWon,
-      })),
-      ...this.chatEventFlags,
+      ...this.remarkEventFlags,
     }
   }
   
@@ -754,22 +746,23 @@ export class SpadesGame {
     }))
   }
   
-  private processBotChat(newChatState: SpadesChatState): void {
+  private processBotChat(newRemarkState: SpadesRemarkState): void {
     if (!this.events.onBotChat) return
     
-    const chatEvent = processSpadesChat(
-      this.previousChatState,
-      newChatState,
+    const remarkMode: RemarkMode = this.chatMode === 'unhinged' ? 'spicy' : 'mild'
+    
+    const remark = getSpadesRemark(
+      this.previousRemarkState,
+      newRemarkState,
       this.getPlayersForChat(),
-      this.chatMode,
-      false
+      remarkMode
     )
     
-    if (chatEvent) {
-      this.events.onBotChat(chatEvent.seatIndex, chatEvent.playerName, chatEvent.text)
+    if (remark) {
+      this.events.onBotChat(remark.playerId, remark.playerName, remark.text)
     }
     
-    this.previousChatState = newChatState
+    this.previousRemarkState = newRemarkState
   }
 
   // Public methods for game management

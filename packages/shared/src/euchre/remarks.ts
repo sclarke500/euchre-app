@@ -14,7 +14,7 @@ export type { RemarkMode } from '../ai/bots/index.js'
 // Types
 // ---------------------------------------------------------------------------
 
-export interface Remark {
+export interface EuchreRemark {
   playerId: number
   playerName: string
   text: string
@@ -194,7 +194,7 @@ export function getEuchreRemark(
   newState: EuchreRemarkState,
   players: Player[],
   mode: RemarkMode
-): Remark | null {
+): EuchreRemark | null {
   // Cooldown check
   const now = Date.now()
   if (now - lastRemarkTime < COOLDOWN_MS) return null

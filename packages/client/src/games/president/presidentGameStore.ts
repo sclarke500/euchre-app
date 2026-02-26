@@ -29,10 +29,10 @@ import {
   getRandomAINames,
   DEFAULT_PRESIDENT_RULES,
   createGameTimer,
-  // Chat engine
-  processPresidentChat,
-  type PresidentChatState,
-  type ChatMode,
+  // Remarks engine
+  getPresidentRemark,
+  type PresidentRemarkState,
+  type RemarkMode,
 } from '@67cards/shared'
 import { CardTimings } from '@/utils/animationTimings'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -44,8 +44,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const chatStore = useChatStore()
   const timer = createGameTimer()
   
-  // Chat engine state
-  let previousChatState: PresidentChatState | null = null
+  // Remarks engine state
+  let previousRemarkState: PresidentRemarkState | null = null
   let pileJustCleared = false
 
   // State
@@ -186,13 +186,11 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     exchangeAnimationCallback = cb
   }
 
-  // Chat engine helpers
-  function getChatStateSnapshot(): PresidentChatState {
+  // Remarks engine helpers
+  function getRemarkStateSnapshot(): PresidentRemarkState {
     return {
       phase: phase.value,
-      currentPlayer: currentPlayer.value,
       finishedPlayers: [...finishedPlayers.value],
-      consecutivePasses: consecutivePasses.value,
       lastPlayerId: lastPlayerId.value,
       pileCleared: pileJustCleared,
       roundNumber: roundNumber.value,
@@ -200,7 +198,6 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       players: players.value.map(p => ({
         id: p.id,
         rank: p.rank,
-        cardCount: p.hand.length,
       })),
     }
   }
@@ -216,33 +213,33 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   function processChatAfterStateChange() {
     if (!settingsStore.botChatEnabled) return
     
-    const newState = getChatStateSnapshot()
-    const chatMode: ChatMode = settingsStore.aiChatMode === 'unhinged' ? 'unhinged' : 'clean'
+    const newState = getRemarkStateSnapshot()
+    const remarkMode: RemarkMode = settingsStore.aiChatMode === 'unhinged' ? 'spicy' : 'mild'
     
-    const chatEvent = processPresidentChat(
-      previousChatState,
+    const remark = getPresidentRemark(
+      previousRemarkState,
       newState,
       getPlayersForChat(),
-      chatMode
+      remarkMode
     )
     
-    if (chatEvent) {
+    if (remark) {
       chatStore.receiveMessage({
-        id: `ai-${chatEvent.seatIndex}-${Date.now()}`,
-        odusId: chatEvent.odusId,
-        seatIndex: chatEvent.seatIndex,
-        playerName: chatEvent.playerName,
-        text: chatEvent.text,
+        id: `ai-${remark.playerId}-${Date.now()}`,
+        odusId: `ai-${remark.playerId}`,
+        seatIndex: remark.playerId,
+        playerName: remark.playerName,
+        text: remark.text,
         timestamp: Date.now(),
       })
     }
     
-    previousChatState = newState
+    previousRemarkState = newState
     pileJustCleared = false
   }
 
   function captureStateForChat() {
-    previousChatState = getChatStateSnapshot()
+    previousRemarkState = getRemarkStateSnapshot()
   }
 
   // Actions
