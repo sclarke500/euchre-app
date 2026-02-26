@@ -56,6 +56,7 @@ export interface TableSettings {
   chatEnabled?: boolean // Enable in-game chat (default true)
   isPrivate?: boolean // Private game - won't show in public lobby (default false)
   bootInactive?: boolean // Show turn timer and allow booting inactive players (default true)
+  chatMode?: 'clean' | 'unhinged' // Bot chat mode: clean=feral (mild), unhinged=profanity (spicy)
 }
 
 export interface Table {

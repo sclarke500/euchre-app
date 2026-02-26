@@ -63,12 +63,13 @@ export class PresidentGame {
   private chatMode: ChatMode = 'clean'
   private pileJustCleared = false  // Track if pile was cleared this turn
 
-  constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false, aiDifficulty: 'easy' | 'hard' = 'easy') {
+  constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false, aiDifficulty: 'easy' | 'hard' = 'easy', chatMode: 'clean' | 'unhinged' = 'clean') {
     this.id = id
     this.events = events
     this.maxPlayers = maxPlayers
     this.superTwosMode = superTwosMode
     this.aiDifficulty = aiDifficulty
+    this.chatMode = chatMode
     this.cardExchange = createPresidentCardExchangeController({
       players: this.players,
       getPhase: () => this.phase,

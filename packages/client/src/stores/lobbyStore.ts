@@ -293,11 +293,14 @@ export const useLobbyStore = defineStore('lobby', () => {
 
   function createTable(tableName?: string, extraSettings?: { chatEnabled?: boolean; isPrivate?: boolean; bootInactive?: boolean }): void {
     // Build settings from shared settingsStore - include aiDifficulty for all games
+    // Map aiChatMode to server chatMode: unhinged stays unhinged, everything else is clean (feral)
+    const chatMode = settingsStore.aiChatMode === 'unhinged' ? 'unhinged' : 'clean'
     const settings: TableSettings = {
       aiDifficulty: settingsStore.aiDifficulty,
       chatEnabled: extraSettings?.chatEnabled ?? true,
       isPrivate: extraSettings?.isPrivate ?? false,
       bootInactive: extraSettings?.bootInactive ?? true,
+      chatMode: settingsStore.botChatEnabled ? chatMode : undefined,
       ...(selectedGameType.value === 'president' && { superTwosMode: settingsStore.superTwosAndJokers }),
     }
 

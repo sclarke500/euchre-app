@@ -29,4 +29,5 @@ export interface GameEvents {
 
 export interface GameOptions {
   aiDifficulty?: 'easy' | 'hard'
+  chatMode?: 'clean' | 'unhinged'
 }

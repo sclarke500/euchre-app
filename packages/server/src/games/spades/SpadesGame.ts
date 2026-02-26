@@ -55,9 +55,10 @@ export class SpadesGame {
   private chatMode: ChatMode = 'clean'
   private chatEventFlags: { nilMade?: { playerId: number; blind: boolean }; nilFailed?: { playerId: number; blind: boolean }; setBid?: { teamId: number } } = {}
 
-  constructor(id: string, events: SpadesGameEvents) {
+  constructor(id: string, events: SpadesGameEvents, options: { chatMode?: 'clean' | 'unhinged' } = {}) {
     this.id = id
     this.events = events
+    this.chatMode = options.chatMode ?? 'clean'
   }
 
   getStateSeq(): number {

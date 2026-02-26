@@ -59,13 +59,14 @@ export class EuchreGame {
   
   // Chat engine state
   private previousChatState: EuchreChatState | null = null
-  private chatMode: ChatMode = 'clean'  // TODO: get from game options
+  private chatMode: ChatMode = 'clean'
 
   constructor(id: string, events: GameEvents, options: GameOptions = {}) {
     this.id = id
     this.events = events
     this.aiDifficulty = options.aiDifficulty === 'hard' ? 'hard' : 'easy'
     this.aiTracker = this.aiDifficulty === 'hard' ? new GameTracker() : null
+    this.chatMode = options.chatMode ?? 'clean'
   }
 
   getStateSeq(): number {

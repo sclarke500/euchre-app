@@ -216,7 +216,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             },
           })
         },
-      }, table.maxPlayers, superTwosMode, table.settings?.aiDifficulty ?? 'easy')
+      }, table.maxPlayers, superTwosMode, table.settings?.aiDifficulty ?? 'hard', table.settings?.chatMode ?? 'clean')
 
       presidentGame.initializePlayers(humanPlayers)
       presidentGames.set(gameId, presidentGame)
@@ -324,6 +324,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             },
           })
         },
+      }, {
+        chatMode: table.settings?.chatMode ?? 'clean',
       })
 
       spadesGame.initializePlayers(humanPlayers)
@@ -454,6 +456,9 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
           },
         })
       },
+    }, {
+      aiDifficulty: table.settings?.aiDifficulty ?? 'hard',
+      chatMode: table.settings?.chatMode ?? 'clean',
     })
 
     game.initializePlayers(humanPlayers)
@@ -704,7 +709,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             },
           })
         },
-      }, humanPlayers.length || 4, previousSettings?.superTwosMode ?? false, previousSettings?.aiDifficulty ?? 'easy')
+      }, humanPlayers.length || 4, previousSettings?.superTwosMode ?? false, previousSettings?.aiDifficulty ?? 'hard', previousSettings?.chatMode ?? 'clean')
 
       newPresidentGame.initializePlayers(humanPlayers)
       presidentGames.set(newGameId, newPresidentGame)
@@ -801,6 +806,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
             },
           })
         },
+      }, {
+        chatMode: previousSettings?.chatMode ?? 'clean',
       })
 
       newSpadesGame.initializePlayers(humanPlayers)
@@ -931,7 +938,10 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
           },
         })
       },
-    }, { aiDifficulty: previousSettings?.aiDifficulty })
+    }, {
+      aiDifficulty: previousSettings?.aiDifficulty ?? 'hard',
+      chatMode: previousSettings?.chatMode ?? 'clean',
+    })
 
     newGame.initializePlayers(humanPlayers)
     games.set(newGameId, newGame)
