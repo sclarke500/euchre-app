@@ -227,7 +227,7 @@ const dealerChipStyle = computed(() => {
     const boardHeight = board.offsetHeight
     const chipTop = boardHeight - 50 - 28 // 50px from bottom, minus chip height
     return {
-      left: `${tableBounds.centerX - 88}px`, // Left edge of avatar circle
+      left: `${tableBounds.centerX - 73}px`, // Left edge of avatar circle + 15px right offset
       top: `${chipTop}px`,
       bottom: 'auto',
     }
