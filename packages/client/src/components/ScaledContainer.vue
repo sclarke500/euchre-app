@@ -311,6 +311,13 @@ defineExpose({
 
 <template>
   <div ref="wrapperRef" class="scaled-container-wrapper">
+    <!-- Star field background -->
+    <div class="star-field">
+      <div class="stars stars-small"></div>
+      <div class="stars stars-medium"></div>
+      <div class="stars stars-large"></div>
+    </div>
+    
     <!-- Aurora glow orbs that drift around the container edges -->
     <div class="aurora-orb orb-1" :style="auroraStyle"></div>
     <div class="aurora-orb orb-2" :style="auroraStyle"></div>
@@ -332,7 +339,66 @@ defineExpose({
   height: 100%;
   overflow: hidden;
   position: relative;
-  background: #08080c;
+  background: radial-gradient(ellipse at center, #12121a 0%, #08080c 50%, #050508 100%);
+}
+
+// Star field - layers of different star sizes
+.star-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.stars {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-repeat: repeat;
+}
+
+// Small stars - dense, dim, subtle twinkle
+.stars-small {
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 50px 160px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 200px 50px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 220px 150px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 250px 90px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 280px 180px, rgba(255,255,255,0.6), transparent);
+  background-size: 300px 200px;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+// Medium stars - scattered, brighter
+.stars-medium {
+  background-image:
+    radial-gradient(1.5px 1.5px at 70px 55px, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1.5px 1.5px at 150px 140px, rgba(200,220,255,0.85), transparent),
+    radial-gradient(1.5px 1.5px at 230px 25px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1.5px 1.5px at 310px 110px, rgba(255,230,200,0.85), transparent),
+    radial-gradient(1.5px 1.5px at 380px 75px, rgba(255,255,255,0.9), transparent);
+  background-size: 450px 180px;
+  animation: twinkle 6s ease-in-out infinite reverse;
+}
+
+// Large stars - few, bright, slow twinkle
+.stars-large {
+  background-image:
+    radial-gradient(2px 2px at 100px 80px, rgba(255,255,255,1), transparent),
+    radial-gradient(2.5px 2.5px at 320px 150px, rgba(200,220,255,0.95), transparent),
+    radial-gradient(2px 2px at 500px 60px, rgba(255,240,220,0.9), transparent),
+    radial-gradient(3px 3px at 700px 120px, rgba(255,255,255,1), transparent);
+  background-size: 800px 200px;
+  animation: twinkle 8s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 
 // Glowing orbs that move around the container

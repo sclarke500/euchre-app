@@ -356,28 +356,16 @@ defineExpose({
   --felt-dark: #15483a;      // Edge shadow
   --surface-bg: #151518;
 
-  // Floor effect - lounge with bokeh lights (dialed back)
+  // Transparent background lets aurora and stars show through
+  // Just keep subtle vignette and table shadow for depth
   background:
-    // Bokeh light 1 - top left warm
-    radial-gradient(circle at 8% 15%, rgba(255, 175, 90, 0.2) 0%, rgba(255, 180, 100, 0.06) 5%, transparent 10%),
-    // Bokeh light 2 - top right cool
-    radial-gradient(circle at 92% 12%, rgba(140, 175, 255, 0.17) 0%, rgba(150, 180, 255, 0.05) 4%, transparent 9%),
-    // Bokeh light 3 - bottom left
-    radial-gradient(circle at 5% 85%, rgba(255, 195, 135, 0.16) 0%, rgba(255, 200, 150, 0.05) 4%, transparent 8%),
-    // Bokeh light 4 - bottom right
-    radial-gradient(circle at 95% 88%, rgba(175, 155, 225, 0.15) 0%, rgba(180, 160, 220, 0.05) 4%, transparent 9%),
-    // Extra accent - mid left
-    radial-gradient(circle at 3% 50%, rgba(255, 200, 130, 0.12) 0%, transparent 6%),
-    // Extra accent - mid right  
-    radial-gradient(circle at 97% 55%, rgba(160, 180, 255, 0.1) 0%, transparent 5%),
-    // Table spotlight
-    radial-gradient(ellipse 65% 55% at center 42%, rgba(255, 240, 200, 0.08) 0%, transparent 60%),
-    // Table shadow
-    radial-gradient(ellipse 55% 45% at center 44%, rgba(0, 0, 0, 0.5) 0%, transparent 80%),
-    // Vignette
-    radial-gradient(ellipse 100% 100% at center, transparent 35%, rgba(0, 0, 0, 0.6) 100%),
-    // Base - dark with slight blue tint
-    linear-gradient(180deg, #1a1a24 0%, #141420 50%, #0f0f18 100%);
+    // Table spotlight - subtle warm glow on felt
+    radial-gradient(ellipse 65% 55% at center 42%, rgba(255, 240, 200, 0.06) 0%, transparent 60%),
+    // Table shadow - grounds the felt
+    radial-gradient(ellipse 55% 45% at center 44%, rgba(0, 0, 0, 0.35) 0%, transparent 80%),
+    // Soft vignette
+    radial-gradient(ellipse 100% 100% at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+  // Note: no solid base color - fully transparent to show space behind
 
 }
 
