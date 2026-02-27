@@ -5,10 +5,12 @@ import type { AIChatMode } from '@67cards/shared'
 export type AIDifficulty = 'easy' | 'hard'
 export type DealerPassRule = 'canPass' | 'stickTheDealer'
 export type AppTheme = 'teal' | 'navy' | 'slate' | 'green' | 'purple'
+export type RoomTheme = 'space' | 'games-room' | 'pub' | 'vegas'
 
 interface GameSettings {
   aiDifficulty: AIDifficulty
   theme: AppTheme
+  roomTheme: RoomTheme
   // AI personality
   aiChatMode: AIChatMode
   botChatEnabled: boolean
@@ -25,6 +27,7 @@ interface GameSettings {
 const STORAGE_KEY = 'game-settings'
 
 const VALID_THEMES: AppTheme[] = ['teal', 'navy', 'slate', 'green', 'purple']
+const VALID_ROOM_THEMES: RoomTheme[] = ['space', 'games-room', 'pub', 'vegas']
 
 function loadSettings(): GameSettings {
   try {
@@ -34,6 +37,7 @@ function loadSettings(): GameSettings {
       return {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
         theme: VALID_THEMES.includes(parsed.theme) ? parsed.theme : 'teal',
+        roomTheme: VALID_ROOM_THEMES.includes(parsed.roomTheme) ? parsed.roomTheme : 'space',
         aiChatMode: (['clean', 'unhinged', 'feral'].includes(parsed.aiChatMode) ? parsed.aiChatMode : 'clean') as AIChatMode,
         botChatEnabled: parsed.botChatEnabled !== false, // default true
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
@@ -49,6 +53,7 @@ function loadSettings(): GameSettings {
   return {
     aiDifficulty: 'easy',
     theme: 'teal',
+    roomTheme: 'space',
     aiChatMode: 'clean' as AIChatMode,
     botChatEnabled: true,
     dealerPassRule: 'canPass',
@@ -73,6 +78,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const aiDifficulty = ref<AIDifficulty>(initialSettings.aiDifficulty)
   const theme = ref<AppTheme>(initialSettings.theme)
+  const roomTheme = ref<RoomTheme>(initialSettings.roomTheme)
   const aiChatMode = ref<AIChatMode>(initialSettings.aiChatMode)
   const botChatEnabled = ref<boolean>(initialSettings.botChatEnabled)
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
@@ -85,10 +91,11 @@ export const useSettingsStore = defineStore('settings', () => {
   applyTheme(initialSettings.theme)
 
   // Persist settings when they change
-  watch([aiDifficulty, theme, aiChatMode, botChatEnabled, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, roomTheme, aiChatMode, botChatEnabled, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       theme: theme.value,
+      roomTheme: roomTheme.value,
       aiChatMode: aiChatMode.value,
       botChatEnabled: botChatEnabled.value,
       dealerPassRule: dealerPassRule.value,
@@ -107,6 +114,10 @@ export const useSettingsStore = defineStore('settings', () => {
   function setTheme(newTheme: AppTheme) {
     theme.value = newTheme
     applyTheme(newTheme)
+  }
+
+  function setRoomTheme(newRoomTheme: RoomTheme) {
+    roomTheme.value = newRoomTheme
   }
 
   function setAIChatMode(mode: AIChatMode) {
@@ -147,6 +158,7 @@ export const useSettingsStore = defineStore('settings', () => {
   return {
     aiDifficulty,
     theme,
+    roomTheme,
     aiChatMode,
     botChatEnabled,
     dealerPassRule,
@@ -156,6 +168,7 @@ export const useSettingsStore = defineStore('settings', () => {
     spadesBlindNil,
     setAIDifficulty,
     setTheme,
+    setRoomTheme,
     setAIChatMode,
     setBotChatEnabled,
     setDealerPassRule,

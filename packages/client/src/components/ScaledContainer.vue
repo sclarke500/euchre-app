@@ -21,6 +21,9 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { isFullMode, isMobile } from '@/utils/deviceMode'
 import { getDeviceSafeAreas, type SafeAreaInsets } from '@/utils/deviceSafeAreas'
+import { useSettingsStore } from '@/stores/settingsStore'
+
+const settings = useSettingsStore()
 
 // Canonical dimensions - design at these sizes
 const DESKTOP_WIDTH = 1120
@@ -310,18 +313,20 @@ defineExpose({
 </script>
 
 <template>
-  <div ref="wrapperRef" class="scaled-container-wrapper">
-    <!-- Star field background -->
-    <div class="star-field">
-      <div class="stars stars-small"></div>
-      <div class="stars stars-medium"></div>
-      <div class="stars stars-large"></div>
-    </div>
-    
-    <!-- Aurora glow orbs that drift around the container edges -->
-    <div class="aurora-orb orb-1" :style="auroraStyle"></div>
-    <div class="aurora-orb orb-2" :style="auroraStyle"></div>
-    <div class="aurora-orb orb-3" :style="auroraStyle"></div>
+  <div ref="wrapperRef" class="scaled-container-wrapper" :class="[`theme-${settings.roomTheme}`, { 'is-mobile': isMobile() }]">
+    <!-- Star field background (space theme only) -->
+    <template v-if="settings.roomTheme === 'space'">
+      <div class="star-field">
+        <div class="stars stars-small"></div>
+        <div class="stars stars-medium"></div>
+        <div class="stars stars-large"></div>
+      </div>
+      
+      <!-- Aurora glow orbs (static on mobile for performance) -->
+      <div class="aurora-orb orb-1" :style="auroraStyle"></div>
+      <div class="aurora-orb orb-2" :style="auroraStyle"></div>
+      <div class="aurora-orb orb-3" :style="auroraStyle"></div>
+    </template>
     
     <div
       ref="containerRef"
@@ -452,26 +457,23 @@ defineExpose({
     inset 0 0 30px rgba(0, 0, 0, 0.25);          // overall depth
 }
 
-// Each orb drifts around different parts of the perimeter
+// Orbs drift around bottom-right quadrant - like orbiting a planet
 // Container is 1120x630, orbs are 300px, margins position their top-left corner
 @keyframes drift1 {
-  0%, 100% { margin: -80px 0 0 -80px; opacity: 0.35; }   // top-left
-  25% { margin: -80px 0 0 500px; opacity: 0.25; }        // top-center
-  50% { margin: 400px 0 0 850px; opacity: 0.35; }        // bottom-right
-  75% { margin: 200px 0 0 -50px; opacity: 0.2; }         // left-middle
+  0%, 100% { margin: 420px 0 0 750px; opacity: 0.4; }    // bottom-right
+  33% { margin: 480px 0 0 600px; opacity: 0.3; }         // bottom-center-right
+  66% { margin: 380px 0 0 850px; opacity: 0.35; }        // right edge
 }
 
 @keyframes drift2 {
-  0%, 100% { margin: 150px 0 0 900px; opacity: 0.3; }    // right-middle
-  33% { margin: 450px 0 0 400px; opacity: 0.35; }        // bottom-center
-  66% { margin: -80px 0 0 -50px; opacity: 0.25; }        // top-left
+  0%, 100% { margin: 520px 0 0 850px; opacity: 0.35; }   // bottom-right corner
+  50% { margin: 400px 0 0 700px; opacity: 0.4; }         // center-right
 }
 
 @keyframes drift3 {
-  0%, 100% { margin: 400px 0 0 100px; opacity: 0.3; }    // bottom-left
-  30% { margin: -80px 0 0 800px; opacity: 0.2; }         // top-right
-  60% { margin: 200px 0 0 400px; opacity: 0.35; }        // center
-  85% { margin: -60px 0 0 -60px; opacity: 0.25; }        // top-left
+  0%, 100% { margin: 460px 0 0 900px; opacity: 0.3; }    // right edge
+  40% { margin: 530px 0 0 650px; opacity: 0.35; }        // bottom
+  80% { margin: 380px 0 0 800px; opacity: 0.25; }        // right
 }
 
 // Color shifts include fading to dark
@@ -494,5 +496,98 @@ defineExpose({
   35% { background: rgba(100, 255, 150, 0.5); } // green
   55% { background: rgba(50, 50, 60, 0.1); } // dark
   80% { background: rgba(50, 255, 220, 0.5); } // teal
+}
+
+// Mobile: static aurora orbs (no animation = GPU caches the blur)
+// Positioned bottom-right like orbiting a planet
+.is-mobile {
+  .aurora-orb {
+    animation: none !important;
+  }
+  .orb-1 {
+    margin: 280px 0 0 550px;
+    background: rgba(100, 255, 150, 0.5);
+  }
+  .orb-2 {
+    margin: 350px 0 0 620px;
+    background: rgba(100, 180, 255, 0.5);
+  }
+  .orb-3 {
+    margin: 220px 0 0 500px;
+    background: rgba(180, 150, 255, 0.5);
+  }
+  // Disable star twinkle on mobile too
+  .stars {
+    animation: none !important;
+    opacity: 0.85;
+  }
+}
+
+// ============================================
+// ROOM THEMES
+// ============================================
+
+// Games Room - grey carpet with subtle texture
+.theme-games-room {
+  background: 
+    // Carpet texture noise
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
+    // Subtle vignette
+    radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%),
+    // Base carpet grey
+    linear-gradient(180deg, #3a3a3a 0%, #2d2d2d 50%, #252525 100%);
+}
+
+// Pub - warm hardwood floor with planks (distant perspective)
+.theme-pub {
+  background:
+    // Plank gaps - subtle thin lines between boards
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 34px,
+      rgba(0,0,0,0.25) 34px,
+      rgba(0,0,0,0.35) 35px,
+      rgba(0,0,0,0.25) 36px,
+      transparent 36px
+    ),
+    // Wood grain - fine horizontal streaks
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      rgba(0,0,0,0.015) 1px,
+      transparent 2px,
+      transparent 5px
+    ),
+    // Subtle knots scattered
+    radial-gradient(ellipse 4px 6px at 40px 100px, rgba(0,0,0,0.08), transparent),
+    radial-gradient(ellipse 5px 4px at 200px 250px, rgba(0,0,0,0.06), transparent),
+    radial-gradient(ellipse 3px 5px at 350px 80px, rgba(0,0,0,0.05), transparent),
+    // Plank color variation - alternating tones
+    repeating-linear-gradient(
+      90deg,
+      #5a4030 0px,
+      #4d3528 17px,
+      #5a4030 35px,
+      #4a3020 35px,
+      #563a28 52px,
+      #4a3020 70px
+    ),
+    // Warm vignette
+    radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.5) 100%),
+    // Base wood tone
+    #4a3525;
+}
+
+// Vegas - that iconic gaudy casino carpet
+.theme-vegas {
+  background:
+    // Swirly pattern overlay
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 Q45 15 30 30 Q15 45 30 60 M0 30 Q15 15 30 30 Q45 45 60 30' stroke='%23b8860b' stroke-width='2' fill='none' opacity='0.3'/%3E%3Ccircle cx='30' cy='30' r='8' fill='%23800020' opacity='0.4'/%3E%3Ccircle cx='10' cy='10' r='4' fill='%23006400' opacity='0.3'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23006400' opacity='0.3'/%3E%3Ccircle cx='10' cy='50' r='3' fill='%23b8860b' opacity='0.25'/%3E%3Ccircle cx='50' cy='10' r='3' fill='%23b8860b' opacity='0.25'/%3E%3C/svg%3E"),
+    // Dark vignette
+    radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.6) 100%),
+    // Base deep burgundy/purple
+    linear-gradient(135deg, #1a0a15 0%, #2d1428 25%, #1a0a15 50%, #2d1428 75%, #1a0a15 100%);
+  background-size: 60px 60px, 100% 100%, 100% 100%;
 }
 </style>

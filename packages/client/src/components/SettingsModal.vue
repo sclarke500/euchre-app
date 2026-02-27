@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useSettingsStore, type AIDifficulty } from '@/stores/settingsStore'
+import { useSettingsStore, type AIDifficulty, type RoomTheme } from '@/stores/settingsStore'
+
+const roomThemes: { id: RoomTheme; name: string; icon: string }[] = [
+  { id: 'space', name: 'Space', icon: '🌌' },
+  { id: 'games-room', name: 'Games Room', icon: '🎱' },
+  { id: 'pub', name: 'Pub', icon: '🍺' },
+  { id: 'vegas', name: 'Vegas', icon: '🎰' },
+]
 import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
 import PresidentOptions from '@/games/president/PresidentOptions.vue'
 import SpadesOptions from '@/games/spades/SpadesOptions.vue'
@@ -166,6 +173,21 @@ function checkForUpdates() {
                       Spicy
                     </button>
                   </div>
+                </div>
+              </div>
+
+              <div class="section game-section">
+                <h2>Room</h2>
+                <div class="room-themes">
+                  <button
+                    v-for="theme in roomThemes"
+                    :key="theme.id"
+                    :class="['room-theme-btn', { active: settings.roomTheme === theme.id }]"
+                    @click="settings.setRoomTheme(theme.id)"
+                  >
+                    <span class="theme-icon">{{ theme.icon }}</span>
+                    <span class="theme-name">{{ theme.name }}</span>
+                  </button>
                 </div>
               </div>
 
@@ -518,6 +540,44 @@ function checkForUpdates() {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
+}
+
+// Room theme selector
+.room-themes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-sm;
+}
+
+.room-theme-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: $spacing-sm;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.15s ease;
+  
+  .theme-icon {
+    font-size: 1.5rem;
+  }
+  
+  .theme-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+  }
+  
+  &.active {
+    background: $brand-green;
+    color: white;
+  }
 }
 
 // Install Instructions Modal
