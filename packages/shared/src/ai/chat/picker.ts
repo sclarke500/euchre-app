@@ -11,42 +11,42 @@ let lastChatTime = 0
 const DEFAULT_COOLDOWN_MS = 500  // TESTING: reduced from 3000
 
 // Trigger configuration - probability and priority
-// TESTING: All chances set to 1.0 for quick testing
+// Reduced occurrence (~15% base, big moments higher)
 const triggerConfig: Partial<Record<ChatTrigger, TriggerConfig>> = {
   // Euchre triggers
-  euchred_opponent: { chance: 1.0, priority: 80 },
-  got_euchred: { chance: 1.0, priority: 75 },
-  won_trick_bower: { chance: 1.0, priority: 30 },
-  won_trick_big: { chance: 1.0, priority: 20 },
-  partner_clutch: { chance: 1.0, priority: 40 },
-  partner_saved_caller: { chance: 1.0, priority: 90 },
-  called_trump_made: { chance: 1.0, priority: 50 },
-  called_trump_euchred: { chance: 1.0, priority: 85 },
-  alone_success: { chance: 1.0, priority: 88 },
-  alone_march: { chance: 1.0, priority: 95 },
-  alone_failed: { chance: 1.0, priority: 82 },
-  stole_deal: { chance: 1.0, priority: 45 },
+  euchred_opponent: { chance: 0.35, priority: 80 },
+  got_euchred: { chance: 0.30, priority: 75 },
+  won_trick_bower: { chance: 0.10, priority: 30 },
+  won_trick_big: { chance: 0.08, priority: 20 },
+  partner_clutch: { chance: 0.15, priority: 40 },
+  partner_saved_caller: { chance: 0.40, priority: 90 },
+  called_trump_made: { chance: 0.18, priority: 50 },
+  called_trump_euchred: { chance: 0.35, priority: 85 },
+  alone_success: { chance: 0.40, priority: 88 },
+  alone_march: { chance: 0.50, priority: 95 },
+  alone_failed: { chance: 0.35, priority: 82 },
+  stole_deal: { chance: 0.15, priority: 45 },
   
   // Generic triggers
-  game_won: { chance: 1.0, priority: 70 },
-  game_lost: { chance: 1.0, priority: 65 },
-  round_won: { chance: 1.0, priority: 35 },
-  round_lost: { chance: 1.0, priority: 30 },
+  game_won: { chance: 0.30, priority: 70 },
+  game_lost: { chance: 0.25, priority: 65 },
+  round_won: { chance: 0.12, priority: 35 },
+  round_lost: { chance: 0.10, priority: 30 },
   
-  // President triggers (TESTING: 1.0)
-  president_first_out: { chance: 1.0, priority: 90 },
-  president_second_out: { chance: 1.0, priority: 50 },
-  president_last_out: { chance: 1.0, priority: 85 },
-  president_pile_cleared: { chance: 1.0, priority: 60 },
+  // President triggers
+  president_first_out: { chance: 0.40, priority: 90 },
+  president_second_out: { chance: 0.15, priority: 50 },
+  president_last_out: { chance: 0.35, priority: 85 },
+  president_pile_cleared: { chance: 0.20, priority: 60 },
   
-  // Spades triggers (TESTING: 1.0)
-  spades_nil_made: { chance: 1.0, priority: 85 },
-  spades_nil_failed: { chance: 1.0, priority: 88 },
-  spades_blind_nil_made: { chance: 1.0, priority: 95 },
-  spades_blind_nil_failed: { chance: 1.0, priority: 92 },
-  spades_opponent_nil_failed: { chance: 1.0, priority: 75 },
-  spades_got_set: { chance: 1.0, priority: 80 },
-  spades_set_opponent: { chance: 1.0, priority: 78 },
+  // Spades triggers
+  spades_nil_made: { chance: 0.40, priority: 85 },
+  spades_nil_failed: { chance: 0.45, priority: 88 },
+  spades_blind_nil_made: { chance: 0.50, priority: 95 },
+  spades_blind_nil_failed: { chance: 0.50, priority: 92 },
+  spades_opponent_nil_failed: { chance: 0.30, priority: 75 },
+  spades_got_set: { chance: 0.35, priority: 80 },
+  spades_set_opponent: { chance: 0.30, priority: 78 },
 }
 
 /**

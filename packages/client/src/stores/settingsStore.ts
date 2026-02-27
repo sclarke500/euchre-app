@@ -38,7 +38,7 @@ function loadSettings(): GameSettings {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
         theme: VALID_THEMES.includes(parsed.theme) ? parsed.theme : 'teal',
         roomTheme: VALID_ROOM_THEMES.includes(parsed.roomTheme) ? parsed.roomTheme : 'space',
-        aiChatMode: (['clean', 'unhinged', 'feral'].includes(parsed.aiChatMode) ? parsed.aiChatMode : 'clean') as AIChatMode,
+        aiChatMode: 'unhinged' as AIChatMode,  // Always spicy for now
         botChatEnabled: parsed.botChatEnabled !== false, // default true
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
         presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
@@ -54,7 +54,7 @@ function loadSettings(): GameSettings {
     aiDifficulty: 'easy',
     theme: 'teal',
     roomTheme: 'space',
-    aiChatMode: 'clean' as AIChatMode,
+    aiChatMode: 'unhinged' as AIChatMode,  // Always spicy
     botChatEnabled: true,
     dealerPassRule: 'canPass',
     presidentPlayerCount: 4,

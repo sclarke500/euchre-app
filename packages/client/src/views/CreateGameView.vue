@@ -190,22 +190,16 @@ function handleBack() {
               <span class="option-label">Bot Remarks</span>
               <div class="option-pills">
                 <button
-                  :class="['pill', { active: botRemarks === 'off' }]"
-                  @click="botRemarks = 'off'"
+                  :class="['pill', { active: !settings.botChatEnabled }]"
+                  @click="settings.setBotChatEnabled(false)"
                 >
                   Off
                 </button>
                 <button
-                  :class="['pill', { active: botRemarks === 'mild' }]"
-                  @click="botRemarks = 'mild'"
+                  :class="['pill', { active: settings.botChatEnabled }]"
+                  @click="settings.setBotChatEnabled(true)"
                 >
-                  Mild
-                </button>
-                <button
-                  :class="['pill', { active: botRemarks === 'spicy' }]"
-                  @click="botRemarks = 'spicy'"
-                >
-                  Spicy
+                  On
                 </button>
               </div>
             </div>

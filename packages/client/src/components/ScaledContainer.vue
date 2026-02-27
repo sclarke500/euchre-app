@@ -538,45 +538,39 @@ defineExpose({
     linear-gradient(180deg, #3a3a3a 0%, #2d2d2d 50%, #252525 100%);
 }
 
-// Pub - warm hardwood floor with planks (distant perspective)
+// Pub - warm oak hardwood floor (lighter, warmer than rail)
 .theme-pub {
-  background:
-    // Plank gaps - subtle thin lines between boards
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px,
-      transparent 34px,
-      rgba(0,0,0,0.25) 34px,
-      rgba(0,0,0,0.35) 35px,
-      rgba(0,0,0,0.25) 36px,
-      transparent 36px
-    ),
-    // Wood grain - fine horizontal streaks
-    repeating-linear-gradient(
-      0deg,
-      transparent 0px,
-      rgba(0,0,0,0.015) 1px,
-      transparent 2px,
-      transparent 5px
-    ),
-    // Subtle knots scattered
-    radial-gradient(ellipse 4px 6px at 40px 100px, rgba(0,0,0,0.08), transparent),
-    radial-gradient(ellipse 5px 4px at 200px 250px, rgba(0,0,0,0.06), transparent),
-    radial-gradient(ellipse 3px 5px at 350px 80px, rgba(0,0,0,0.05), transparent),
-    // Plank color variation - alternating tones
-    repeating-linear-gradient(
-      90deg,
-      #5a4030 0px,
-      #4d3528 17px,
-      #5a4030 35px,
-      #4a3020 35px,
-      #563a28 52px,
-      #4a3020 70px
-    ),
-    // Warm vignette
-    radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.5) 100%),
-    // Base wood tone
-    #4a3525;
+  position: relative;
+  overflow: hidden;
+  
+  // Wood plank texture
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('@/assets/textures/hardwood-floor.jpg');
+    background-size: 600px auto;
+    // Slightly darkened for pub ambiance
+    filter: brightness(0.72) saturate(1.15) sepia(0.1);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  // Vignette only - no tint
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  // Ensure content stays above background layers
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 // Vegas - that iconic gaudy casino carpet
