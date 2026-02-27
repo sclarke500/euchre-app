@@ -371,10 +371,10 @@ const bubblePosition = computed(() => {
     pointer-events: none;
   }
   
-  // Opponent trump chip positioning
+  // Opponent trump chip positioning (mobile)
   &:not(.is-user) .trump-chip {
-    top: -10px;
-    right: -13px;
+    top: -6px;
+    right: -8px;
   }
 
   // Turn indicator - bright animated glow on circle
@@ -445,7 +445,7 @@ const bubblePosition = computed(() => {
   &.position-bottom {
     position: fixed;
     // Position so avatar sits just above user's cards
-    bottom: 15px; // At bottom of screen, above cards
+    bottom: 10px; // At bottom of screen, above cards (mobile)
     left: 50%;
     transform: translateX(-50%);
     z-index: 500; // Above table cards, below user hand (~1000+)
@@ -498,6 +498,12 @@ const bubblePosition = computed(() => {
     right: -10px;
   }
   
+  // Opponent trump chip - further out for larger avatar
+  &:not(.is-user) .trump-chip {
+    top: -10px;
+    right: -13px;
+  }
+  
   // Info tags (bid/tricks chips)
   .info-tags {
     gap: 6px;
@@ -507,5 +513,10 @@ const bubblePosition = computed(() => {
       padding: 3px 10px;
     }
   }
+}
+
+// Full mode user avatar position (raised 5px)
+.full-mode .player-avatar.position-bottom {
+  bottom: 15px;
 }
 </style>

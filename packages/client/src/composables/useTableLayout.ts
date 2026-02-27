@@ -123,8 +123,8 @@ export function computeTableLayout(
     let handY: number
 
     // Offset from avatar into the table (cards appear "in front of" player)
-    // Full mode: further in (larger table). Mobile: tighter spacing
-    const handOffset = isFullMode() ? 70 : 50
+    // Full mode: further in (larger table). Mobile: closer to edge
+    const handOffset = isFullMode() ? 70 : 45
 
     switch (seat.side) {
       case 'left':

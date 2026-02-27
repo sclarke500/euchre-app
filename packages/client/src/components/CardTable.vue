@@ -222,18 +222,29 @@ const dealerChipStyle = computed(() => {
   const { tableBounds } = layout
   // Chip offset: full mode has larger avatars (80px vs 48px), adjust position
   const chipOffset = isFullMode() 
-    ? { x: -56, y: -61 } // Full mode: further out for 80px avatar (15px up, 10px left)
-    : { x: -48, y: -53 } // Mobile: for 48px avatar (15px up, 10px left)
+    ? { x: -56, y: -61 } // Full mode: further out for larger avatar
+    : { x: -38, y: -38 } // Mobile: original values for 48px avatar
   
   if (seat.isUser) {
     // User avatar is fixed at bottom of screen
     // Convert to top positioning so CSS transition works (can't animate between top/bottom)
     const boardHeight = board.offsetHeight
-    const chipTop = boardHeight - 85 - 28 // 85px from bottom, minus chip height
-    return {
-      left: `${tableBounds.centerX - 90}px`, // Left of avatar circle
-      top: `${chipTop}px`,
-      bottom: 'auto',
+    if (isFullMode()) {
+      // Full mode: adjusted position for larger avatar
+      const chipTop = boardHeight - 85 - 28
+      return {
+        left: `${tableBounds.centerX - 90}px`,
+        top: `${chipTop}px`,
+        bottom: 'auto',
+      }
+    } else {
+      // Mobile: original position
+      const chipTop = boardHeight - 50 - 28
+      return {
+        left: `${tableBounds.centerX - 73}px`,
+        top: `${chipTop}px`,
+        bottom: 'auto',
+      }
     }
   }
   

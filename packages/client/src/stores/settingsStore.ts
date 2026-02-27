@@ -37,7 +37,7 @@ function loadSettings(): GameSettings {
       return {
         aiDifficulty: parsed.aiDifficulty === 'hard' ? 'hard' : 'easy',
         theme: VALID_THEMES.includes(parsed.theme) ? parsed.theme : 'teal',
-        roomTheme: VALID_ROOM_THEMES.includes(parsed.roomTheme) ? parsed.roomTheme : 'space',
+        roomTheme: VALID_ROOM_THEMES.includes(parsed.roomTheme) ? parsed.roomTheme : 'pub',
         aiChatMode: 'unhinged' as AIChatMode,  // Always spicy for now
         botChatEnabled: parsed.botChatEnabled !== false, // default true
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
@@ -53,7 +53,7 @@ function loadSettings(): GameSettings {
   return {
     aiDifficulty: 'easy',
     theme: 'teal',
-    roomTheme: 'space',
+    roomTheme: 'pub',
     aiChatMode: 'unhinged' as AIChatMode,  // Always spicy
     botChatEnabled: true,
     dealerPassRule: 'canPass',
