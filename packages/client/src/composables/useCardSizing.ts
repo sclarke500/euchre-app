@@ -55,15 +55,16 @@ const MobileScales = {
 } as const
 
 // Context multipliers for full mode (more uniform, more room)
+// Non-user cards scaled to 80% for better visual hierarchy
 const FullScales = {
   userHand: 1.2,        // Larger for easier tapping/visibility
-  opponentHand: 0.8,    // Slightly smaller than play area
-  playArea: 1.0,        // Standard size in play area
-  deck: 1.0,            // Deal stack
-  tricksWon: 0.6,       // Won trick piles
-  sweep: 1.0,           // Cards being swept
-  mini: 0.3,            // Very small
-  hidden: 0.05,         // Collapsed at avatar
+  opponentHand: 0.64,   // 0.8 * 0.8 - smaller than play area
+  playArea: 0.8,        // 80% of previous
+  deck: 0.8,            // 80% of previous
+  tricksWon: 0.48,      // 0.6 * 0.8 - won trick piles
+  sweep: 0.8,           // 80% of previous
+  mini: 0.24,           // 0.3 * 0.8
+  hidden: 0.05,         // Collapsed at avatar (unchanged)
 } as const
 
 // Singleton state - shared across all components

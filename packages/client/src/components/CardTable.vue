@@ -95,6 +95,7 @@ import { useChatStore } from '@/stores/chatStore'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import { useCardSizing } from '@/composables/useCardSizing'
+import { isFullMode } from '@/utils/deviceMode'
 
 const props = withDefaults(defineProps<{
   playerCount: number
@@ -219,15 +220,18 @@ const dealerChipStyle = computed(() => {
   if (!seat) return { display: 'none' }
   
   const { tableBounds } = layout
-  const chipOffset = { x: -38, y: -38 } // Top-left of avatar
+  // Chip offset: full mode has larger avatars (80px vs 48px), adjust position
+  const chipOffset = isFullMode() 
+    ? { x: -56, y: -61 } // Full mode: further out for 80px avatar (15px up, 10px left)
+    : { x: -48, y: -53 } // Mobile: for 48px avatar (15px up, 10px left)
   
   if (seat.isUser) {
     // User avatar is fixed at bottom of screen
     // Convert to top positioning so CSS transition works (can't animate between top/bottom)
     const boardHeight = board.offsetHeight
-    const chipTop = boardHeight - 50 - 28 // 50px from bottom, minus chip height
+    const chipTop = boardHeight - 85 - 28 // 85px from bottom, minus chip height
     return {
-      left: `${tableBounds.centerX - 73}px`, // Left edge of avatar circle + 15px right offset
+      left: `${tableBounds.centerX - 90}px`, // Left of avatar circle
       top: `${chipTop}px`,
       bottom: 'auto',
     }
@@ -526,5 +530,14 @@ defineExpose({
   &--hand {
     background: #0088ff; // Blue = hand position
   }
+}
+</style>
+
+<!-- Unscoped styles for full-mode dealer chip sizing -->
+<style lang="scss">
+.full-mode .dealer-chip-table {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
 }
 </style>

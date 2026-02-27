@@ -696,24 +696,31 @@ export function useCardController(
     let y: number
     let rotation: number
 
+    // Offset toward center for better spacing (full mode only - mobile is tighter)
+    const inwardOffset = isMobile() ? 0 : 20
+    
     switch (playerIdToSeatIndex(playerId)) {
       case 0:
+        // User: also move inward (up into table)
         x = tableBounds.centerX - 60 - trickNumber * gap
-        y = tableBounds.bottom - inset
+        y = tableBounds.bottom - inset - inwardOffset
         rotation = 0
         break
       case 1:
-        x = tableBounds.left + inset
+        // Left player: inward = right
+        x = tableBounds.left + inset + inwardOffset
         y = tableBounds.centerY - 40 - trickNumber * gap
         rotation = 90
         break
       case 2:
+        // Top player: inward = down
         x = tableBounds.centerX + 60 + trickNumber * gap
-        y = tableBounds.top + inset
+        y = tableBounds.top + inset + inwardOffset
         rotation = 0
         break
       case 3:
-        x = tableBounds.right - inset
+        // Right player: inward = left
+        x = tableBounds.right - inset - inwardOffset
         y = tableBounds.centerY + 40 + trickNumber * gap
         rotation = 90
         break
@@ -994,15 +1001,27 @@ export function useCardController(
       if (!hand || hand.cards.length === 0) continue
 
       // Position at each opponent's own avatar (so plays animate from correct spot)
+      // Add offset toward center for better visual spacing (full mode only)
       const avatarPos = getAvatarBoardPosition(seatIndex, layout)
+      const seat = layout.seats[seatIndex]
+      const inward = isMobile() ? 0 : 20
+      let offsetX = 0, offsetY = 0
+      if (seat) {
+        switch (seat.side) {
+          case 'left': offsetX = inward; break   // right (toward center)
+          case 'right': offsetX = -inward; break // left (toward center)
+          case 'top': offsetY = inward; break    // down (toward center)
+        }
+      }
+      const targetPos = { x: avatarPos.x + offsetX, y: avatarPos.y + offsetY }
       
       hiddenSeatIndices.add(seatIndex)
       for (const managed of hand.cards) {
         const ref = engine.getCardRef(managed.card.id)
         if (ref) {
           promises.push(ref.moveTo({
-            x: avatarPos.x,
-            y: avatarPos.y,
+            x: targetPos.x,
+            y: targetPos.y,
             rotation: 0,
             zIndex: 1,  // Below avatars (350+)
             scale: hideScale,

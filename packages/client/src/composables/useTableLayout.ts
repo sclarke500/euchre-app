@@ -1,5 +1,6 @@
 import { ref, computed, type Ref } from 'vue'
 import { Hand } from '@/components/cardContainers'
+import { isFullMode } from '@/utils/deviceMode'
 
 export interface SeatLayout {
   side: 'bottom' | 'left' | 'top' | 'right'
@@ -122,7 +123,8 @@ export function computeTableLayout(
     let handY: number
 
     // Offset from avatar into the table (cards appear "in front of" player)
-    const handOffset = 50
+    // Full mode: further in (larger table). Mobile: tighter spacing
+    const handOffset = isFullMode() ? 70 : 50
 
     switch (seat.side) {
       case 'left':
@@ -142,7 +144,7 @@ export function computeTableLayout(
         break
       default: // bottom (user) - deal position inside table, then animate down when fanning
         handX = tableX
-        handY = tableBottom - 40 // Inside table edge for dealing
+        handY = tableBottom - (isFullMode() ? 60 : 40)
     }
 
     const handPos = { x: handX, y: handY }

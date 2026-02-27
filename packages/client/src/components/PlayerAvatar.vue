@@ -227,12 +227,6 @@ const bubblePosition = computed(() => {
     border-radius: 50%;
     background: linear-gradient(145deg, #4a4a5c, #3a3a4c);
     border: 2px solid #5a5a70;
-    
-    // Larger avatars in full mode (iPad/desktop)
-    :global(.full-mode) & {
-      width: 64px;
-      height: 64px;
-    }
     display: flex;
     align-items: center;
     justify-content: center;
@@ -273,13 +267,6 @@ const bubblePosition = computed(() => {
     padding: 3px 14px;
     font-size: 13px;
     font-weight: 600;
-    
-    // Larger name labels in full mode (iPad/desktop)
-    :global(.full-mode) & {
-      padding: 5px 24px;
-      font-size: 14px;
-      margin: 0 10px;
-    }
     color: #e8e8f0;
     white-space: nowrap;
     background: linear-gradient(180deg, 
@@ -384,10 +371,10 @@ const bubblePosition = computed(() => {
     pointer-events: none;
   }
   
-  // Opponent trump chip: nudge right 4px, up 2px
+  // Opponent trump chip positioning
   &:not(.is-user) .trump-chip {
-    top: -6px;
-    right: -8px;
+    top: -10px;
+    right: -13px;
   }
 
   // Turn indicator - bright animated glow on circle
@@ -458,7 +445,7 @@ const bubblePosition = computed(() => {
   &.position-bottom {
     position: fixed;
     // Position so avatar sits just above user's cards
-    bottom: 10px; // At bottom of screen, above cards
+    bottom: 15px; // At bottom of screen, above cards
     left: 50%;
     transform: translateX(-50%);
     z-index: 500; // Above table cards, below user hand (~1000+)
@@ -483,5 +470,42 @@ const bubblePosition = computed(() => {
 @keyframes pulse {
   0%, 100% { opacity: 0.6; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.05); }
+}
+</style>
+
+<!-- Unscoped styles for full-mode sizing (avatars, chips, labels) -->
+<style lang="scss">
+.full-mode .player-avatar {
+  // Larger avatar circle
+  .avatar-circle {
+    width: 80px;
+    height: 80px;
+  }
+  
+  // Larger name labels
+  .player-name {
+    padding: 5px 20px;
+    font-size: 15px;
+    border-radius: 14px;
+  }
+  
+  // Larger trump chip, adjusted position
+  .trump-chip {
+    width: 36px;
+    height: 36px;
+    font-size: 26px;
+    top: -8px;
+    right: -10px;
+  }
+  
+  // Info tags (bid/tricks chips)
+  .info-tags {
+    gap: 6px;
+    
+    .info-chip {
+      font-size: 13px;
+      padding: 3px 10px;
+    }
+  }
 }
 </style>
