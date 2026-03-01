@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
+import { useLobbyStore } from '@/stores/lobbyStore'
 import { CHAT_MAX_LENGTH } from '@67cards/shared'
 
 const props = withDefaults(defineProps<{
@@ -15,7 +16,13 @@ const emit = defineEmits<{
 }>()
 
 const chatStore = useChatStore()
+const lobbyStore = useLobbyStore()
 const messagesRef = ref<HTMLElement | null>(null)
+
+// Check if a message is from the current user (compare server seat indices)
+function isOwnMessage(seatIndex: number): boolean {
+  return seatIndex === lobbyStore.mySeat
+}
 const inputRef = ref<HTMLInputElement | null>(null)
 const inputText = ref('')
 const showQuickReacts = ref(false)
@@ -108,10 +115,10 @@ function handleQuickReact(emoji: string) {
               v-for="msg in chatStore.messages"
               :key="msg.id"
               class="message-row"
-              :class="{ 'is-own': msg.seatIndex === 0 }"
+              :class="{ 'is-own': isOwnMessage(msg.seatIndex) }"
             >
               <div class="message-bubble">
-                <span v-if="msg.seatIndex !== 0" class="message-name">{{ msg.playerName }}</span>
+                <span v-if="!isOwnMessage(msg.seatIndex)" class="message-name">{{ msg.playerName }}</span>
                 <span class="message-text">{{ msg.text.trim() }}</span>
               </div>
             </div>
@@ -187,10 +194,10 @@ function handleQuickReact(emoji: string) {
         v-for="msg in chatStore.messages"
         :key="msg.id"
         class="message-row"
-        :class="{ 'is-own': msg.seatIndex === 0 }"
+        :class="{ 'is-own': isOwnMessage(msg.seatIndex) }"
       >
         <div class="message-bubble">
-          <span v-if="msg.seatIndex !== 0" class="message-name">{{ msg.playerName }}</span>
+          <span v-if="!isOwnMessage(msg.seatIndex)" class="message-name">{{ msg.playerName }}</span>
           <span class="message-text">{{ msg.text.trim() }}</span>
         </div>
       </div>

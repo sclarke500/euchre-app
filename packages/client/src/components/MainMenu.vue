@@ -134,6 +134,26 @@ const canEnterMultiplayer = computed(() => {
   return lobbyStore.nickname.trim().length >= 2
 })
 
+// Web Share API
+const canShare = computed(() => !!navigator.share)
+
+async function shareApp() {
+  if (!navigator.share) return
+  
+  try {
+    await navigator.share({
+      title: '67 Card Games',
+      text: 'Play classic card games with friends — Euchre, Spades, President & more!',
+      url: 'https://67cardgames.com'
+    })
+  } catch (err) {
+    // User cancelled or share failed — ignore
+    if ((err as Error).name !== 'AbortError') {
+      console.error('Share failed:', err)
+    }
+  }
+}
+
 // Handle redirect after profile modal closes (if user came from lobby without nickname)
 watch(showProfile, (isOpen) => {
   if (!isOpen && pendingRedirect.value && canEnterMultiplayer.value) {
@@ -293,16 +313,22 @@ const gameTitle = computed(() => {
         </button>
       </div>
 
-      <button class="multiplayer-btn" @click="handleMultiplayer">
-        <span class="mp-icon">👥</span>
-        <span class="mp-text">Play with Friends</span>
-        <span v-if="isPortrait" class="rotate-badge mp" title="Requires landscape">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 4v6h6" />
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-          </svg>
-        </span>
-      </button>
+      <div class="action-buttons">
+        <button class="multiplayer-btn" @click="handleMultiplayer">
+          <span class="mp-icon">👥</span>
+          <span class="mp-text">Play with Friends</span>
+          <span v-if="isPortrait" class="rotate-badge mp" title="Requires landscape">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+          </span>
+        </button>
+        <button v-if="canShare" class="share-btn" @click="shareApp">
+          <span class="share-icon">📤</span>
+          <span class="share-text">Share</span>
+        </button>
+      </div>
 
       <!-- Landscape legend (portrait only) -->
       <div v-if="isPortrait" class="landscape-legend">
@@ -623,7 +649,19 @@ const gameTitle = computed(() => {
   }
 }
 
-.multiplayer-btn {
+.action-buttons {
+  display: flex;
+  gap: $spacing-md;
+  align-items: center;
+  justify-content: center;
+  
+  @media (orientation: portrait) and (max-width: 600px) {
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+}
+
+.multiplayer-btn, .share-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -647,14 +685,6 @@ const gameTitle = computed(() => {
     transform: scale(0.98);
   }
 
-  .mp-icon {
-    font-size: 1.3rem;
-  }
-
-  .mp-text {
-    font-weight: 500;
-  }
-
   @media (max-height: 500px) {
     padding: $spacing-sm $spacing-lg;
     font-size: 1rem;
@@ -663,11 +693,34 @@ const gameTitle = computed(() => {
   @media (orientation: portrait) and (max-width: 600px) {
     padding: $spacing-sm $spacing-lg;
     font-size: 1rem;
+  }
+}
+
+.multiplayer-btn {
+  .mp-icon {
+    font-size: 1.3rem;
+  }
+
+  .mp-text {
+    font-weight: 500;
+  }
+
+  @media (orientation: portrait) and (max-width: 600px) {
     margin-top: $spacing-sm;
     
     .mp-icon {
       font-size: 1.1rem;
     }
+  }
+}
+
+.share-btn {
+  .share-icon {
+    font-size: 1.2rem;
+  }
+
+  .share-text {
+    font-weight: 500;
   }
 }
 
