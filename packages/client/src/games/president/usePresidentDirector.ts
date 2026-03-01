@@ -75,7 +75,16 @@ export function usePresidentDirector(
 
   const playerCount = computed(() => game.players.value.length)
 
-  const playerNames = computed(() => game.players.value.map(p => p.name))
+  // Map by seat index (not server player ID) so names align with UI positions.
+  // Seat 0 = user (bottom), then clockwise around the table.
+  const playerNames = computed(() => {
+    const count = playerCount.value
+    if (count === 0) return []
+    return Array.from({ length: count }, (_, seat) => {
+      const pid = seatIndexToPlayerId(seat)
+      return game.players.value[pid]?.name ?? `Player ${pid}`
+    })
+  })
 
   const currentTurnSeat = computed(() => {
     // Don't show turn indicator during dealing or animations

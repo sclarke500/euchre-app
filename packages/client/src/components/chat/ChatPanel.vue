@@ -267,6 +267,8 @@ function handleQuickReact(emoji: string) {
     -webkit-backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
+    // Safe area for Dynamic Island / notch in landscape
+    padding-left: var(--device-safe-left, 0);
   }
   
   // Sidebar mode (inline)

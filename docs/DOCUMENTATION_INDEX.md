@@ -13,6 +13,7 @@
 - `CLAUDE.md` — Session conventions for Claude coding sessions
 - `docs/ROADMAP.md` — Shared multiplayer flow reference, checklists, deferred work
 - `docs/MULTIPLAYER_ARCHITECTURE.md` — Detailed architecture reference
+- `docs/SAFE_AREAS.md` — Notch/Dynamic Island handling strategy
 
 ## Maintenance Rule
 

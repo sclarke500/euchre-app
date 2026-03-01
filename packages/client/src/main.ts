@@ -5,12 +5,16 @@ import router from './router'
 import './assets/styles/main.scss'
 import { installConsoleCapture } from './utils/consoleCapture'
 import { initDeviceMode } from './utils/deviceMode'
+import { applySafeAreaCSSVars } from './utils/deviceSafeAreas'
 
 // Install console capture early (before any logging)
 installConsoleCapture()
 
 // Initialize device mode (sets global CSS classes and card sizing vars)
 initDeviceMode()
+
+// Set safe area CSS vars for overlays outside ScaledContainer
+applySafeAreaCSSVars()
 
 // Log build version
 const buildDate = new Date(__BUILD_TIME__)

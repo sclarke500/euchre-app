@@ -341,12 +341,12 @@ function getCardZIndex(pos: CardPosition): number {
   }
 
   .rank {
-    font-size: calc(var(--card-width) * 0.29);
+    font-size: calc(var(--card-width) * 0.32);
     line-height: 1;
   }
 
   .suit {
-    font-size: calc(var(--card-width) * 0.21);
+    font-size: calc(var(--card-width) * 0.25);
     line-height: 1;
   }
 }
