@@ -9,6 +9,11 @@ const turnStyleOptions: { value: TurnStyleRule; label: string }[] = [
   { value: 'passLockout', label: 'Pass Lockout' },
   { value: 'singleRound', label: 'Single Round' },
 ]
+
+function handleTurnStyleChange(event: Event) {
+  const value = (event.target as HTMLSelectElement).value as TurnStyleRule
+  settings.setPresidentTurnStyle(value)
+}
 </script>
 
 <template>
@@ -28,16 +33,15 @@ const turnStyleOptions: { value: TurnStyleRule; label: string }[] = [
     </div>
     <div class="option-row">
       <span class="option-label">Turn Style</span>
-      <div class="toggle-group">
-        <button
-          v-for="opt in turnStyleOptions"
-          :key="opt.value"
-          :class="['toggle-btn', { active: settings.presidentTurnStyle === opt.value }]"
-          @click="settings.setPresidentTurnStyle(opt.value)"
-        >
+      <select 
+        class="turn-style-select"
+        :value="settings.presidentTurnStyle"
+        @change="handleTurnStyleChange"
+      >
+        <option v-for="opt in turnStyleOptions" :key="opt.value" :value="opt.value">
           {{ opt.label }}
-        </button>
-      </div>
+        </option>
+      </select>
     </div>
     <div class="option-row">
       <span class="option-label">Super 2s & Jokers</span>
@@ -61,4 +65,34 @@ const turnStyleOptions: { value: TurnStyleRule; label: string }[] = [
 
 <style scoped lang="scss">
 @use '@/assets/styles/compact-options';
+
+.turn-style-select {
+  padding: 6px 28px 6px 10px;
+  border-radius: 6px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  
+  &:hover {
+    border-color: var(--color-primary);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.2);
+  }
+  
+  option {
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+}
 </style>
