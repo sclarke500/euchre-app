@@ -1171,6 +1171,8 @@ function doNewGame() {
           <h3>Klondike Rules</h3>
         </div>
         <div class="modal-body">
+          <p class="settings-note">⚙️ Game options available in Settings (from home screen)</p>
+
           <p><strong>Overview:</strong> The classic solitaire! Move all cards to the four foundation piles, sorted by suit from Ace to King.</p>
           
           <p><strong>Setup:</strong> 7 tableau columns with 1-7 cards each (top card face-up). Remaining cards form the stock pile.</p>
