@@ -301,7 +301,10 @@ export const useLobbyStore = defineStore('lobby', () => {
       isPrivate: extraSettings?.isPrivate ?? false,
       bootInactive: extraSettings?.bootInactive ?? true,
       chatMode: settingsStore.botChatEnabled ? chatMode : undefined,
-      ...(selectedGameType.value === 'president' && { superTwosMode: settingsStore.superTwosAndJokers }),
+      ...(selectedGameType.value === 'president' && { 
+        superTwosMode: settingsStore.superTwosAndJokers,
+        turnStyle: settingsStore.presidentTurnStyle,
+      }),
     }
 
     websocket.send({

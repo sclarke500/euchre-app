@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import type { AIChatMode } from '@67cards/shared'
+import type { AIChatMode, TurnStyleRule } from '@67cards/shared'
 
 export type AIDifficulty = 'easy' | 'hard'
 export type DealerPassRule = 'canPass' | 'stickTheDealer'
@@ -19,6 +19,7 @@ interface GameSettings {
   // President-specific
   presidentPlayerCount: number
   superTwosAndJokers: boolean
+  presidentTurnStyle: TurnStyleRule
   // Spades-specific
   spadesWinningScore: number
   spadesBlindNil: boolean
@@ -43,6 +44,7 @@ function loadSettings(): GameSettings {
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
         presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
         superTwosAndJokers: parsed.superTwosAndJokers === true,
+        presidentTurnStyle: ['original', 'passLockout', 'singleRound'].includes(parsed.presidentTurnStyle) ? parsed.presidentTurnStyle : 'original',
         spadesWinningScore: [250, 500, 750].includes(parsed.spadesWinningScore) ? parsed.spadesWinningScore : 500,
         spadesBlindNil: parsed.spadesBlindNil === true,
       }
@@ -59,6 +61,7 @@ function loadSettings(): GameSettings {
     dealerPassRule: 'canPass',
     presidentPlayerCount: 4,
     superTwosAndJokers: false,
+    presidentTurnStyle: 'original' as TurnStyleRule,
     spadesWinningScore: 500,
     spadesBlindNil: false,
   }
@@ -84,6 +87,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
   const presidentPlayerCount = ref<number>(initialSettings.presidentPlayerCount)
   const superTwosAndJokers = ref<boolean>(initialSettings.superTwosAndJokers)
+  const presidentTurnStyle = ref<TurnStyleRule>(initialSettings.presidentTurnStyle)
   const spadesWinningScore = ref<number>(initialSettings.spadesWinningScore)
   const spadesBlindNil = ref<boolean>(initialSettings.spadesBlindNil)
 
@@ -91,7 +95,7 @@ export const useSettingsStore = defineStore('settings', () => {
   applyTheme(initialSettings.theme)
 
   // Persist settings when they change
-  watch([aiDifficulty, theme, roomTheme, aiChatMode, botChatEnabled, dealerPassRule, presidentPlayerCount, superTwosAndJokers, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, roomTheme, aiChatMode, botChatEnabled, dealerPassRule, presidentPlayerCount, superTwosAndJokers, presidentTurnStyle, spadesWinningScore, spadesBlindNil], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       theme: theme.value,
@@ -101,6 +105,7 @@ export const useSettingsStore = defineStore('settings', () => {
       dealerPassRule: dealerPassRule.value,
       presidentPlayerCount: presidentPlayerCount.value,
       superTwosAndJokers: superTwosAndJokers.value,
+      presidentTurnStyle: presidentTurnStyle.value,
       spadesWinningScore: spadesWinningScore.value,
       spadesBlindNil: spadesBlindNil.value,
     }
@@ -140,6 +145,10 @@ export const useSettingsStore = defineStore('settings', () => {
     superTwosAndJokers.value = enabled
   }
 
+  function setPresidentTurnStyle(style: TurnStyleRule) {
+    presidentTurnStyle.value = style
+  }
+
   function setSpadesWinningScore(score: number) {
     if ([250, 500, 750].includes(score)) {
       spadesWinningScore.value = score
@@ -164,6 +173,7 @@ export const useSettingsStore = defineStore('settings', () => {
     dealerPassRule,
     presidentPlayerCount,
     superTwosAndJokers,
+    presidentTurnStyle,
     spadesWinningScore,
     spadesBlindNil,
     setAIDifficulty,
@@ -174,6 +184,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setDealerPassRule,
     setPresidentPlayerCount,
     setSuperTwosAndJokers,
+    setPresidentTurnStyle,
     setSpadesWinningScore,
     setSpadesBlindNil,
     isHardAI,

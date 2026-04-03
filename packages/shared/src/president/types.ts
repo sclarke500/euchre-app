@@ -14,12 +14,20 @@ export enum PresidentPhase {
 
 // President rule variants
 export type WhoLeadsRule = 'president' | 'scum'
+
+// Turn style variants:
+// - 'original': Can rejoin after passing (default, Chinese/Japanese style)
+// - 'passLockout': Pass = locked out until next trick (Australian variant)
+// - 'singleRound': One chance per player per trick (Western variant)
+export type TurnStyleRule = 'original' | 'passLockout' | 'singleRound'
+
+// Legacy alias for backwards compatibility
 export type PlayStyleRule = 'multiLoop' | 'singleRound'
 
 export interface PresidentRules {
   superTwosMode: boolean       // Super 2s & Jokers variant
   whoLeads: WhoLeadsRule       // Who leads after first round (default: president)
-  playStyle: PlayStyleRule     // Multi-loop or single round (default: multiLoop)
+  turnStyle: TurnStyleRule     // Turn style variant (default: original)
 }
 
 // Player rankings (positions)
@@ -74,6 +82,7 @@ export interface PresidentGameState {
   currentPile: PresidentPile
   currentPlayer: number
   consecutivePasses: number     // Passes since last play
+  passedThisTrick: number[]     // Player IDs who passed this trick (for passLockout mode)
   finishedPlayers: number[]     // Player IDs in finish order
   roundNumber: number
   gameOver: boolean

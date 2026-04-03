@@ -215,6 +215,8 @@
         <h3>Spades Rules</h3>
       </div>
       <div class="modal-body">
+        <p class="settings-note">⚙️ Game options available in Settings (from home screen)</p>
+        
         <p><strong>Overview:</strong> 4 players in 2 teams. First team to 500 points wins. Uses full 52-card deck. Spades are always trump.</p>
         
         <p><strong>Card Ranking:</strong> A (high) → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 → 2 (low). Spades beat all other suits.</p>

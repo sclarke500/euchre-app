@@ -55,6 +55,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const currentPlayer = ref(0)
   const consecutivePasses = ref(0)
   const finishedPlayers = ref<number[]>([])
+  const passedThisTrick = ref<number[]>([])
   const roundNumber = ref(1)
   const gameOver = ref(false)
   const lastPlayerId = ref<number | null>(null)
@@ -89,6 +90,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     currentPile: currentPile.value,
     currentPlayer: currentPlayer.value,
     consecutivePasses: consecutivePasses.value,
+    passedThisTrick: passedThisTrick.value,
     finishedPlayers: finishedPlayers.value,
     roundNumber: roundNumber.value,
     gameOver: gameOver.value,
@@ -260,7 +262,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     rules.value = {
       superTwosMode: settingsStore.isSuperTwosAndJokers(),
       whoLeads: 'scum', // Scum leads after card exchange (standard rule)
-      playStyle: 'multiLoop', // TODO: Add to settings
+      turnStyle: settingsStore.presidentTurnStyle,
     }
 
     // Create game with rules
@@ -272,6 +274,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     currentPile.value = state.currentPile
     currentPlayer.value = state.currentPlayer
     consecutivePasses.value = state.consecutivePasses
+    passedThisTrick.value = state.passedThisTrick
     finishedPlayers.value = state.finishedPlayers
     roundNumber.value = state.roundNumber
     gameOver.value = state.gameOver
@@ -294,6 +297,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     players.value = state.players
     currentPile.value = state.currentPile
     consecutivePasses.value = state.consecutivePasses
+    passedThisTrick.value = state.passedThisTrick
     finishedPlayers.value = state.finishedPlayers
     lastPlayerId.value = state.lastPlayerId
     lastPlayedCards.value = null
@@ -561,6 +565,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       currentPile.value = createEmptyPile()
       currentPlayer.value = playingPlayer // Joker player leads again
       consecutivePasses.value = 0
+      passedThisTrick.value = []
       lastPlayedCards.value = null
       pileJustCleared = true
       processChatAfterStateChange()
@@ -584,6 +589,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     currentPile.value = state.currentPile
     currentPlayer.value = state.currentPlayer
     consecutivePasses.value = state.consecutivePasses
+    passedThisTrick.value = state.passedThisTrick
     lastPlayedCards.value = null
 
     // Pile was cleared (everyone passed) — wait for sweep animation

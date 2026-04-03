@@ -51,6 +51,7 @@ export type GameType = 'euchre' | 'president' | 'spades'
 
 export interface TableSettings {
   superTwosMode?: boolean // President only
+  turnStyle?: 'original' | 'passLockout' | 'singleRound' // President only (default 'original')
   maxRounds?: number // President only (default 5)
   aiDifficulty?: 'easy' | 'hard' // All games
   chatEnabled?: boolean // Enable in-game chat (default true)

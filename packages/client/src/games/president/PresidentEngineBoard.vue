@@ -205,7 +205,9 @@
           <h3>President Rules</h3>
         </div>
         <div class="modal-body">
-          <p><strong>Overview:</strong> 4 players. Be the first to empty your hand to become President. Also known as "Scum" or "Asshole".</p>
+          <p class="settings-note">⚙️ Game options available in Settings (from home screen)</p>
+          
+          <p><strong>Overview:</strong> 4-8 players. Be the first to empty your hand to become President. Also known as "Scum" or "Asshole".</p>
           
           <p><strong>Card Ranking:</strong> 2 (high) → A → K → Q → J → 10 → 9 → 8 → 7 → 6 → 5 → 4 → 3 (low). Suits don't matter.</p>
           
@@ -213,7 +215,12 @@
           
           <p><strong>Play:</strong> Play 1 or more cards of the same rank, matching the count (single, pair, triple, quad). Cards must equal or beat the pile's rank. Or pass.</p>
           
-          <p><strong>Clearing:</strong> When everyone passes, pile clears. Last player to play leads the next round. Playing a 2 (or set of 2s) also clears instantly.</p>
+          <p><strong>Turn Styles:</strong></p>
+          <p>• <em>Original</em> — Pass and rejoin when it comes back around</p>
+          <p>• <em>Pass Lockout</em> — Pass = out until next trick</p>
+          <p>• <em>Single Round</em> — One chance per player per trick</p>
+          
+          <p><strong>Clearing:</strong> When everyone passes (or is locked out), pile clears. Last player to play leads the next round. Playing a 2 (or set of 2s) also clears instantly.</p>
           
           <p><strong>Finishing Order:</strong></p>
           <p>• 1st out → President</p>

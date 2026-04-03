@@ -19,7 +19,7 @@ import {
 export const DEFAULT_PRESIDENT_RULES: PresidentRules = {
   superTwosMode: false,
   whoLeads: 'scum',
-  playStyle: 'multiLoop',
+  turnStyle: 'original',
 }
 import {
   createEmptyPile,
@@ -80,6 +80,7 @@ export function createPresidentGame(
     currentPile: createEmptyPile(),
     currentPlayer: 0,
     consecutivePasses: 0,
+    passedThisTrick: [],
     finishedPlayers: [],
     roundNumber: 1,
     gameOver: false,
@@ -112,6 +113,7 @@ export function dealPresidentCards(state: PresidentGameState): PresidentGameStat
     phase: PresidentPhase.Dealing,
     currentPile: createEmptyPile(),
     consecutivePasses: 0,
+    passedThisTrick: [],
     finishedPlayers: [],
     lastPlayerId: null,
     pendingExchanges: [],
@@ -128,24 +130,37 @@ export function getActivePlayers(state: PresidentGameState): PresidentPlayer[] {
 
 /**
  * Get next active player after the given player
+ * In passLockout mode, also skips players who've passed this trick
  */
 export function getNextActivePlayer(
   state: PresidentGameState,
   currentPlayerId: number
 ): number {
   const numPlayers = state.players.length
+  const turnStyle = state.rules.turnStyle || 'original'
+  const passedThisTrick = state.passedThisTrick || []
+  
   let nextId = (currentPlayerId + 1) % numPlayers
+  let iterations = 0
 
-  // Find next player who hasn't finished
-  while (state.players[nextId]!.finishOrder !== null) {
-    nextId = (nextId + 1) % numPlayers
-    // Safety check to avoid infinite loop
-    if (nextId === currentPlayerId) {
-      return currentPlayerId
+  // Find next player who:
+  // 1. Hasn't finished the round
+  // 2. Hasn't passed this trick (in passLockout mode)
+  while (iterations < numPlayers) {
+    const player = state.players[nextId]!
+    const hasFinished = player.finishOrder !== null
+    const hasPassedThisTrick = turnStyle === 'passLockout' && passedThisTrick.includes(nextId)
+    
+    if (!hasFinished && !hasPassedThisTrick) {
+      return nextId
     }
+    
+    nextId = (nextId + 1) % numPlayers
+    iterations++
   }
 
-  return nextId
+  // Fallback: return current player (shouldn't happen)
+  return currentPlayerId
 }
 
 /**
@@ -247,49 +262,56 @@ export function processPass(
   }
 
   const activePlayers = getActivePlayers(state)
+  const turnStyle = state.rules.turnStyle || 'original'
   const newConsecutivePasses = state.consecutivePasses + 1
 
-  // Single round mode: after one pass from each player, round ends
-  if (state.rules.playStyle === 'singleRound') {
-    // In single round, once we've gone around (everyone passed or played once),
-    // the pile clears and last player to play leads
-    if (newConsecutivePasses >= activePlayers.length - 1 && state.lastPlayerId !== null) {
-      // If last player finished, find next active player after them
-      const lastPlayer = state.players[state.lastPlayerId]
-      const newLeader = lastPlayer?.finishOrder !== null
-        ? getNextActivePlayer(state, state.lastPlayerId)
-        : state.lastPlayerId
-      return {
-        ...state,
-        currentPile: createEmptyPile(),
-        currentPlayer: newLeader,
-        consecutivePasses: 0,
-      }
-    }
-  } else {
-    // Multi-loop mode (default): keep going until everyone passes consecutively
-    if (newConsecutivePasses >= activePlayers.length - 1 && state.lastPlayerId !== null) {
-      // If last player finished, find next active player after them
-      const lastPlayer = state.players[state.lastPlayerId]
-      const newLeader = lastPlayer?.finishOrder !== null
-        ? getNextActivePlayer(state, state.lastPlayerId)
-        : state.lastPlayerId
-      return {
-        ...state,
-        currentPile: createEmptyPile(),
-        currentPlayer: newLeader,
-        consecutivePasses: 0,
-      }
+  // For passLockout mode: track who has passed this trick
+  const newPassedThisTrick = turnStyle === 'passLockout' && !state.passedThisTrick.includes(playerId)
+    ? [...state.passedThisTrick, playerId]
+    : state.passedThisTrick
+
+  // Calculate how many players can still play in this trick
+  const playersStillInTrick = turnStyle === 'passLockout'
+    ? activePlayers.filter(p => !newPassedThisTrick.includes(p.id))
+    : activePlayers
+
+  // Check if trick should end (pile clears)
+  const shouldClearPile = (
+    // Original mode: everyone passed consecutively
+    (turnStyle === 'original' && newConsecutivePasses >= activePlayers.length - 1 && state.lastPlayerId !== null) ||
+    // Pass lockout mode: everyone still in trick has passed (only last player remains)
+    (turnStyle === 'passLockout' && playersStillInTrick.length <= 1 && state.lastPlayerId !== null) ||
+    // Single round mode: gone around once
+    (turnStyle === 'singleRound' && newConsecutivePasses >= activePlayers.length - 1 && state.lastPlayerId !== null)
+  )
+
+  if (shouldClearPile) {
+    // If last player finished, find next active player after them
+    const lastPlayer = state.players[state.lastPlayerId!]
+    const newLeader = lastPlayer?.finishOrder !== null
+      ? getNextActivePlayer(state, state.lastPlayerId!)
+      : state.lastPlayerId!
+    return {
+      ...state,
+      currentPile: createEmptyPile(),
+      currentPlayer: newLeader,
+      consecutivePasses: 0,
+      passedThisTrick: [],  // Reset for new trick
     }
   }
 
   // Normal pass - next player's turn
-  const nextPlayer = getNextActivePlayer(state, playerId)
+  // In passLockout mode, getNextActivePlayer will skip players who've passed
+  const nextPlayer = getNextActivePlayer(
+    { ...state, passedThisTrick: newPassedThisTrick },
+    playerId
+  )
 
   return {
     ...state,
     currentPlayer: nextPlayer,
     consecutivePasses: newConsecutivePasses,
+    passedThisTrick: newPassedThisTrick,
   }
 }
 

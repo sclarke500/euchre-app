@@ -6,6 +6,7 @@ const gameTypeSchema = z.enum(['euchre', 'president', 'spades'])
 
 const tableSettingsSchema = z.object({
   superTwosMode: z.boolean().optional(),
+  turnStyle: z.enum(['original', 'passLockout', 'singleRound']).optional(),
   maxRounds: z.number().int().min(1).optional(),
   aiDifficulty: z.enum(['easy', 'hard']).optional(),
   chatEnabled: z.boolean().optional(),

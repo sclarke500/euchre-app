@@ -86,6 +86,8 @@
           <h3>Euchre Rules</h3>
         </div>
         <div class="modal-body">
+          <p class="settings-note">⚙️ Game options available in Settings (from home screen)</p>
+          
           <p><strong>Overview:</strong> 4 players in 2 teams. First team to 10 points wins. Uses 24 cards (9, 10, J, Q, K, A of each suit).</p>
           
           <p><strong>Card Ranking:</strong> In trump suit: Right Bower (Jack of trump) → Left Bower (Jack of same color) → A → K → Q → 10 → 9. Non-trump: A → K → Q → J → 10 → 9.</p>

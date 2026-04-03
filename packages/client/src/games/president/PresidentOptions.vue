@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/stores/settingsStore'
+import type { TurnStyleRule } from '@67cards/shared'
 
 const settings = useSettingsStore()
+
+const turnStyleOptions: { value: TurnStyleRule; label: string }[] = [
+  { value: 'original', label: 'Original' },
+  { value: 'passLockout', label: 'Pass Lockout' },
+  { value: 'singleRound', label: 'Single Round' },
+]
 </script>
 
 <template>
@@ -16,6 +23,19 @@ const settings = useSettingsStore()
           @click="settings.setPresidentPlayerCount(n)"
         >
           {{ n }}
+        </button>
+      </div>
+    </div>
+    <div class="option-row">
+      <span class="option-label">Turn Style</span>
+      <div class="toggle-group">
+        <button
+          v-for="opt in turnStyleOptions"
+          :key="opt.value"
+          :class="['toggle-btn', { active: settings.presidentTurnStyle === opt.value }]"
+          @click="settings.setPresidentTurnStyle(opt.value)"
+        >
+          {{ opt.label }}
         </button>
       </div>
     </div>

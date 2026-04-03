@@ -82,6 +82,7 @@ interface BuildPresidentGameStateParams {
   gameOver: boolean
   lastPlayerId: number | null
   superTwosMode: boolean
+  turnStyle: 'original' | 'passLockout' | 'singleRound'
   awaitingGiveCards: number | null
 }
 
@@ -96,6 +97,7 @@ export function buildPresidentGameState({
   gameOver,
   lastPlayerId,
   superTwosMode,
+  turnStyle,
   awaitingGiveCards,
 }: BuildPresidentGameStateParams): PresidentGameState {
   return {
@@ -114,6 +116,7 @@ export function buildPresidentGameState({
     currentPile,
     currentPlayer,
     consecutivePasses,
+    passedThisTrick: [],
     finishedPlayers,
     roundNumber,
     gameOver,
@@ -121,7 +124,7 @@ export function buildPresidentGameState({
     rules: {
       superTwosMode,
       whoLeads: 'scum',
-      playStyle: 'multiLoop',
+      turnStyle,
     },
     pendingExchanges: [],
     awaitingGiveBack: awaitingGiveCards,

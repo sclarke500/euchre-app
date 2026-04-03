@@ -57,6 +57,7 @@ export class PresidentGame {
   
   // AI difficulty
   private readonly aiDifficulty: 'easy' | 'hard'
+  private readonly turnStyle: 'original' | 'passLockout' | 'singleRound'
   private readonly cardExchange: ReturnType<typeof createPresidentCardExchangeController>
   
   // Remarks engine state
@@ -64,12 +65,13 @@ export class PresidentGame {
   private chatMode: ChatMode = 'clean'
   private pileJustCleared = false  // Track if pile was cleared this turn
 
-  constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false, aiDifficulty: 'easy' | 'hard' = 'easy', chatMode: 'clean' | 'unhinged' = 'clean') {
+  constructor(id: string, events: PresidentGameEvents, maxPlayers: number = 4, superTwosMode: boolean = false, aiDifficulty: 'easy' | 'hard' = 'easy', chatMode: 'clean' | 'unhinged' = 'clean', turnStyle: 'original' | 'passLockout' | 'singleRound' = 'original') {
     this.id = id
     this.events = events
     this.maxPlayers = maxPlayers
     this.superTwosMode = superTwosMode
     this.aiDifficulty = aiDifficulty
+    this.turnStyle = turnStyle
     this.chatMode = chatMode
     this.cardExchange = createPresidentCardExchangeController({
       players: this.players,
@@ -337,6 +339,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
+        turnStyle: this.turnStyle,
         awaitingGiveCards: null,
       })
 
@@ -420,6 +423,7 @@ export class PresidentGame {
       gameOver: this.gameOver,
       lastPlayerId: this.lastPlayerId,
       superTwosMode: this.superTwosMode,
+        turnStyle: this.turnStyle,
       awaitingGiveCards: null,
     })
     const newState = processPlay(gameState, playerIndex, cards)
@@ -497,6 +501,7 @@ export class PresidentGame {
       gameOver: this.gameOver,
       lastPlayerId: this.lastPlayerId,
       superTwosMode: this.superTwosMode,
+        turnStyle: this.turnStyle,
       awaitingGiveCards: null,
     })
     const newState = processPass(gameState, playerIndex)
@@ -547,6 +552,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
+        turnStyle: this.turnStyle,
         awaitingGiveCards: null,
       })
       console.log('Game state built, players finishOrders:', gameState.players.map(p => p.finishOrder))
@@ -620,6 +626,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
+        turnStyle: this.turnStyle,
         awaitingGiveCards: null,
       })
       this.currentPlayer = getNextActivePlayer(gameState, this.currentPlayer)
@@ -648,6 +655,7 @@ export class PresidentGame {
         gameOver: this.gameOver,
         lastPlayerId: this.lastPlayerId,
         superTwosMode: this.superTwosMode,
+        turnStyle: this.turnStyle,
         awaitingGiveCards: null,
       })
       const play = computePresidentAIPlay({
