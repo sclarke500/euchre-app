@@ -16,6 +16,7 @@ interface GameSettings {
   botChatEnabled: boolean
   // Euchre-specific
   dealerPassRule: DealerPassRule
+  canadianLoner: boolean
   // President-specific
   presidentPlayerCount: number
   superTwosAndJokers: boolean
@@ -42,6 +43,7 @@ function loadSettings(): GameSettings {
         aiChatMode: 'unhinged' as AIChatMode,  // Always spicy for now
         botChatEnabled: parsed.botChatEnabled !== false, // default true
         dealerPassRule: parsed.dealerPassRule === 'stickTheDealer' ? 'stickTheDealer' : 'canPass',
+        canadianLoner: parsed.canadianLoner === true,
         presidentPlayerCount: Math.min(Math.max(parsed.presidentPlayerCount || 4, 4), 8),
         superTwosAndJokers: parsed.superTwosAndJokers === true,
         presidentTurnStyle: ['original', 'passLockout', 'singleRound'].includes(parsed.presidentTurnStyle) ? parsed.presidentTurnStyle : 'original',
@@ -59,6 +61,7 @@ function loadSettings(): GameSettings {
     aiChatMode: 'unhinged' as AIChatMode,  // Always spicy
     botChatEnabled: true,
     dealerPassRule: 'canPass',
+    canadianLoner: false,
     presidentPlayerCount: 4,
     superTwosAndJokers: false,
     presidentTurnStyle: 'original' as TurnStyleRule,
@@ -85,6 +88,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const aiChatMode = ref<AIChatMode>(initialSettings.aiChatMode)
   const botChatEnabled = ref<boolean>(initialSettings.botChatEnabled)
   const dealerPassRule = ref<DealerPassRule>(initialSettings.dealerPassRule)
+  const canadianLoner = ref<boolean>(initialSettings.canadianLoner)
   const presidentPlayerCount = ref<number>(initialSettings.presidentPlayerCount)
   const superTwosAndJokers = ref<boolean>(initialSettings.superTwosAndJokers)
   const presidentTurnStyle = ref<TurnStyleRule>(initialSettings.presidentTurnStyle)
@@ -95,7 +99,7 @@ export const useSettingsStore = defineStore('settings', () => {
   applyTheme(initialSettings.theme)
 
   // Persist settings when they change
-  watch([aiDifficulty, theme, roomTheme, aiChatMode, botChatEnabled, dealerPassRule, presidentPlayerCount, superTwosAndJokers, presidentTurnStyle, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, roomTheme, aiChatMode, botChatEnabled, dealerPassRule, canadianLoner, presidentPlayerCount, superTwosAndJokers, presidentTurnStyle, spadesWinningScore, spadesBlindNil], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       theme: theme.value,
@@ -103,6 +107,7 @@ export const useSettingsStore = defineStore('settings', () => {
       aiChatMode: aiChatMode.value,
       botChatEnabled: botChatEnabled.value,
       dealerPassRule: dealerPassRule.value,
+      canadianLoner: canadianLoner.value,
       presidentPlayerCount: presidentPlayerCount.value,
       superTwosAndJokers: superTwosAndJokers.value,
       presidentTurnStyle: presidentTurnStyle.value,
@@ -135,6 +140,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setDealerPassRule(rule: DealerPassRule) {
     dealerPassRule.value = rule
+  }
+
+  function setCanadianLoner(enabled: boolean) {
+    canadianLoner.value = enabled
   }
 
   function setPresidentPlayerCount(count: number) {
@@ -171,6 +180,7 @@ export const useSettingsStore = defineStore('settings', () => {
     aiChatMode,
     botChatEnabled,
     dealerPassRule,
+    canadianLoner,
     presidentPlayerCount,
     superTwosAndJokers,
     presidentTurnStyle,
@@ -182,6 +192,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setAIChatMode,
     setBotChatEnabled,
     setDealerPassRule,
+    setCanadianLoner,
     setPresidentPlayerCount,
     setSuperTwosAndJokers,
     setPresidentTurnStyle,

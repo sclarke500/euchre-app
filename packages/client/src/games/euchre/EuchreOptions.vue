@@ -23,6 +23,23 @@ const settings = useSettingsStore()
         </button>
       </div>
     </div>
+    <div class="option-row">
+      <span class="option-label">Canadian Loner</span>
+      <div class="toggle-group">
+        <button
+          :class="['toggle-btn', { active: !settings.canadianLoner }]"
+          @click="settings.setCanadianLoner(false)"
+        >
+          Off
+        </button>
+        <button
+          :class="['toggle-btn', { active: settings.canadianLoner }]"
+          @click="settings.setCanadianLoner(true)"
+        >
+          On
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 

@@ -98,7 +98,7 @@
           
           <p><strong>Bidding Round 2:</strong> If all pass, players may call any OTHER suit as trump, or pass. Dealer must call if all others pass ("stuck the dealer").</p>
           
-          <p><strong>Going Alone:</strong> The player who calls trump may "go alone" — their partner sits out. Success earns bonus points.</p>
+          <p><strong>Going Alone:</strong> The player who calls trump may "go alone" — their partner sits out. Success earns bonus points. <em>Canadian Loner:</em> If enabled, ordering up your partner forces you to go alone.</p>
           
           <p><strong>Play:</strong> Player left of dealer leads. Must follow suit if able. Highest trump wins, otherwise highest card of led suit. Winner leads next trick.</p>
           
@@ -211,6 +211,7 @@ import { useEuchreDirector } from './useEuchreDirector'
 import { useEuchreMultiplayerStore } from './euchreMultiplayerStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { useEuchreGameStore } from './euchreGameStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { websocket } from '@/services/websocket'
 import confetti from 'canvas-confetti'
 
@@ -231,6 +232,7 @@ const turnTimerRef = ref<InstanceType<typeof TurnTimer> | null>(null)
 // Create engine externally — shared between CardTable and Director
 const engine = useCardTable()
 const game = useEuchreGameAdapter(props.mode)
+const settings = useSettingsStore()
 
 // boardRef is resolved after CardTable mounts
 const boardRef = ref<HTMLElement | null>(null)
@@ -458,8 +460,15 @@ function buildBugReportPayload() {
 function handleOrderUp() {
   const action = isUserDealer.value ? BidAction.PickUp : BidAction.OrderUp
   const label = isUserDealer.value ? 'Pick Up' : 'Order Up'
-  director.setPlayerStatus(0, goAlone.value ? `${label} (Alone)` : label)
-  game.makeBid(action, undefined, goAlone.value)
+  
+  // Canadian Loner: ordering up your partner forces going alone
+  const dealerTeam = game.dealer.value % 2
+  const isOrderingPartner = !isUserDealer.value && dealerTeam === game.myTeamId.value
+  const forcedAlone = settings.canadianLoner && isOrderingPartner
+  const actualGoAlone = goAlone.value || forcedAlone
+  
+  director.setPlayerStatus(0, actualGoAlone ? `${label} (Alone)` : label)
+  game.makeBid(action, undefined, actualGoAlone)
   goAlone.value = false
 }
 
