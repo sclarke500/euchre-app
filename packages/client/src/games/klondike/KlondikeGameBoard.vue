@@ -597,8 +597,10 @@ onMounted(async () => {
   await nextTick()
   updateCardSize()
 
-  // Start the game with saved draw count setting
-  store.startNewGame(settings.klondikeDrawCount)
+  // Start the game with saved draw mode setting
+  const drawCount = settings.klondikeDrawMode === 'single' ? 1 : 3
+  const recycleMode = settings.klondikeDrawMode === 'wrap' ? 'wrap' : 'strict'
+  store.startNewGame(drawCount, recycleMode)
   startTimer()
 
   window.addEventListener('resize', updateCardSize)
@@ -867,7 +869,9 @@ function handleAutoComplete() {
 
 async function handleNewGame() {
   stopTimer()
-  store.startNewGame(settings.klondikeDrawCount)
+  const drawCount = settings.klondikeDrawMode === 'single' ? 1 : 3
+  const recycleMode = settings.klondikeDrawMode === 'wrap' ? 'wrap' : 'strict'
+  store.startNewGame(drawCount, recycleMode)
   startTimer()
   
   // Animate the deal

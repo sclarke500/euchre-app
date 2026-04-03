@@ -96,17 +96,18 @@ export function findValidTableau(
  * 
  * Strict mode (Vegas): Draw up to drawCount. When stock empty, recycle is separate click.
  *   Waste is reversed back to stock, so same cards are accessible each cycle.
+ *   Some cards may never be accessible in draw-3 (locked in middle of 3-card packets).
  * 
- * Wrap mode (traditional): When stock is empty, waste moves to stock WITHOUT reversing.
- *   This shifts which cards are accessible each cycle, allowing access to all cards
- *   by cycling through the deck enough times.
+ * Wrap mode (traditional): When stock runs out mid-draw, recycle waste and CONTINUE
+ *   drawing to complete the group. This shifts the groupings each cycle, eventually
+ *   making ALL cards accessible.
  */
 export function drawCard(state: KlondikeState): MoveResult {
   const newState = cloneState(state)
   const recycleMode = newState.recycleMode || 'strict'
 
   // Helper to draw N cards from stock to waste
-  const drawCardsToWaste = (count: number) => {
+  const drawCardsToWaste = (count: number): number => {
     const actualCount = Math.min(count, newState.stock.length)
     const drawn: KlondikeCard[] = []
     for (let i = 0; i < actualCount; i++) {
@@ -122,37 +123,59 @@ export function drawCard(state: KlondikeState): MoveResult {
     return actualCount
   }
 
-  // Stock empty - need to recycle
-  if (newState.stock.length === 0) {
-    if (newState.waste.length === 0) {
-      return { success: false, state }
-    }
+  // Helper to recycle waste to stock (reversed order)
+  const recycleWasteToStock = () => {
+    newState.stock = [...newState.waste].reverse().map((c) => ({ ...c, faceUp: false }))
+    newState.waste = []
+  }
 
-    if (recycleMode === 'strict') {
-      // Strict: recycle entire waste back to stock (reversed), stop here
-      newState.stock = [...newState.waste].reverse().map((c) => ({ ...c, faceUp: false }))
-      newState.waste = []
+  // === STRICT MODE ===
+  if (recycleMode === 'strict') {
+    // Stock empty: recycle is a separate action
+    if (newState.stock.length === 0) {
+      if (newState.waste.length === 0) {
+        return { success: false, state }
+      }
+      recycleWasteToStock()
       newState.selection = null
       newState.moveCount++
       return { success: true, state: newState, moveType: 'recycle' }
-    } else {
-      // Wrap: rotate waste by 1 position, then move to stock (shifts which cards are accessible)
-      // This ensures ALL cards become accessible by cycling through enough times
-      const rotated = [...newState.waste]
-      if (rotated.length > 1) {
-        rotated.push(rotated.shift()!)
-      }
-      newState.stock = rotated.map((c) => ({ ...c, faceUp: false }))
-      newState.waste = []
-      // Continue to draw below
     }
+
+    // Draw up to drawCount cards
+    drawCardsToWaste(newState.drawCount)
+    newState.selection = null
+    newState.moveCount++
+    return { success: true, state: newState, moveType: 'draw' }
   }
 
-  // Draw cards
-  drawCardsToWaste(newState.drawCount)
+  // === WRAP MODE ===
+  // Draw cards, and if we run out mid-draw, recycle and continue
+  
+  // Nothing to do if both are empty
+  if (newState.stock.length === 0 && newState.waste.length === 0) {
+    return { success: false, state }
+  }
+
+  let remaining = newState.drawCount
+
+  // If stock is empty at start, recycle first
+  if (newState.stock.length === 0) {
+    recycleWasteToStock()
+  }
+
+  // Draw available cards
+  const drawn = drawCardsToWaste(remaining)
+  remaining -= drawn
+
+  // If we still need more cards and have waste to recycle, continue the draw
+  if (remaining > 0 && newState.waste.length > 0) {
+    recycleWasteToStock()
+    drawCardsToWaste(remaining)
+  }
+
   newState.selection = null
   newState.moveCount++
-
   return { success: true, state: newState, moveType: 'draw' }
 }
 

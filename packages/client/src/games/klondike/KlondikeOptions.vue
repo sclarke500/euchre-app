@@ -7,19 +7,25 @@ const settings = useSettingsStore()
 <template>
   <div class="compact-options">
     <div class="option-row">
-      <span class="option-label">Draw Count</span>
+      <span class="option-label">Draw Type</span>
       <div class="toggle-group">
         <button
-          :class="['toggle-btn', { active: settings.klondikeDrawCount === 1 }]"
-          @click="settings.setKlondikeDrawCount(1)"
+          :class="['toggle-btn', { active: settings.klondikeDrawMode === 'single' }]"
+          @click="settings.setKlondikeDrawMode('single')"
         >
-          1
+          Single
         </button>
         <button
-          :class="['toggle-btn', { active: settings.klondikeDrawCount === 3 }]"
-          @click="settings.setKlondikeDrawCount(3)"
+          :class="['toggle-btn', { active: settings.klondikeDrawMode === 'strict' }]"
+          @click="settings.setKlondikeDrawMode('strict')"
         >
-          3
+          3 - Strict
+        </button>
+        <button
+          :class="['toggle-btn', { active: settings.klondikeDrawMode === 'wrap' }]"
+          @click="settings.setKlondikeDrawMode('wrap')"
+        >
+          3 - Wrap
         </button>
       </div>
     </div>

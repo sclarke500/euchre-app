@@ -149,11 +149,22 @@ describe('Klondike Draw - Wrap Mode (Traditional)', () => {
     expect(accessible.has('E')).toBe(true)
   })
 
-  it('with 6 cards draw-3 wrap, all cards accessible', () => {
+  it('with 6 cards draw-3 wrap, same as strict (divisible by drawCount)', () => {
+    // When card count is divisible by drawCount, there are no partial draws,
+    // so wrap mode offers no advantage - same cards are locked as in strict
     const state = createTestState(['A', 'B', 'C', 'D', 'E', 'F'], [], 3, 'wrap')
     const accessible = getAllAccessible(state)
     
-    expect(accessible.size).toBe(6)
+    // Same as strict: F, C, D, A accessible. E, B locked.
+    expect(accessible.size).toBe(4)
+  })
+
+  it('with 7 cards draw-3 wrap, all cards accessible', () => {
+    // 7 % 3 = 1, so there's a partial draw that enables wrap shifting
+    const state = createTestState(['A', 'B', 'C', 'D', 'E', 'F', 'G'], [], 3, 'wrap')
+    const accessible = getAllAccessible(state)
+    
+    expect(accessible.size).toBe(7)
   })
 
   it('auto-recycles when stock has fewer than drawCount', () => {
