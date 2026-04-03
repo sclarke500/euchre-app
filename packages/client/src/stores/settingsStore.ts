@@ -24,6 +24,8 @@ interface GameSettings {
   // Spades-specific
   spadesWinningScore: number
   spadesBlindNil: boolean
+  // Klondike-specific
+  klondikeDrawCount: 1 | 3
 }
 
 const STORAGE_KEY = 'game-settings'
@@ -49,6 +51,7 @@ function loadSettings(): GameSettings {
         presidentTurnStyle: ['original', 'passLockout', 'singleRound'].includes(parsed.presidentTurnStyle) ? parsed.presidentTurnStyle : 'original',
         spadesWinningScore: [250, 500, 750].includes(parsed.spadesWinningScore) ? parsed.spadesWinningScore : 500,
         spadesBlindNil: parsed.spadesBlindNil === true,
+        klondikeDrawCount: parsed.klondikeDrawCount === 1 ? 1 : 3,
       }
     }
   } catch {
@@ -67,6 +70,7 @@ function loadSettings(): GameSettings {
     presidentTurnStyle: 'original' as TurnStyleRule,
     spadesWinningScore: 500,
     spadesBlindNil: false,
+    klondikeDrawCount: 3,
   }
 }
 
@@ -94,12 +98,13 @@ export const useSettingsStore = defineStore('settings', () => {
   const presidentTurnStyle = ref<TurnStyleRule>(initialSettings.presidentTurnStyle)
   const spadesWinningScore = ref<number>(initialSettings.spadesWinningScore)
   const spadesBlindNil = ref<boolean>(initialSettings.spadesBlindNil)
+  const klondikeDrawCount = ref<1 | 3>(initialSettings.klondikeDrawCount)
 
   // Apply theme on load
   applyTheme(initialSettings.theme)
 
   // Persist settings when they change
-  watch([aiDifficulty, theme, roomTheme, aiChatMode, botChatEnabled, dealerPassRule, canadianLoner, presidentPlayerCount, superTwosAndJokers, presidentTurnStyle, spadesWinningScore, spadesBlindNil], () => {
+  watch([aiDifficulty, theme, roomTheme, aiChatMode, botChatEnabled, dealerPassRule, canadianLoner, presidentPlayerCount, superTwosAndJokers, presidentTurnStyle, spadesWinningScore, spadesBlindNil, klondikeDrawCount], () => {
     const settings: GameSettings = {
       aiDifficulty: aiDifficulty.value,
       theme: theme.value,
@@ -113,6 +118,7 @@ export const useSettingsStore = defineStore('settings', () => {
       presidentTurnStyle: presidentTurnStyle.value,
       spadesWinningScore: spadesWinningScore.value,
       spadesBlindNil: spadesBlindNil.value,
+      klondikeDrawCount: klondikeDrawCount.value,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
   }, { deep: true })
@@ -168,6 +174,10 @@ export const useSettingsStore = defineStore('settings', () => {
     spadesBlindNil.value = enabled
   }
 
+  function setKlondikeDrawCount(count: 1 | 3) {
+    klondikeDrawCount.value = count
+  }
+
   // Convenience getters
   const isHardAI = () => aiDifficulty.value === 'hard'
   const isStickTheDealer = () => dealerPassRule.value === 'stickTheDealer'
@@ -186,6 +196,7 @@ export const useSettingsStore = defineStore('settings', () => {
     presidentTurnStyle,
     spadesWinningScore,
     spadesBlindNil,
+    klondikeDrawCount,
     setAIDifficulty,
     setTheme,
     setRoomTheme,
@@ -198,6 +209,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setPresidentTurnStyle,
     setSpadesWinningScore,
     setSpadesBlindNil,
+    setKlondikeDrawCount,
     isHardAI,
     isStickTheDealer,
     isSuperTwosAndJokers,
