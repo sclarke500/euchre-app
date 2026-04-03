@@ -12,6 +12,7 @@ const roomThemes: { id: RoomTheme; name: string; icon: string }[] = [
 import EuchreOptions from '@/games/euchre/EuchreOptions.vue'
 import PresidentOptions from '@/games/president/PresidentOptions.vue'
 import SpadesOptions from '@/games/spades/SpadesOptions.vue'
+import KlondikeOptions from '@/games/klondike/KlondikeOptions.vue'
 import BugReportModal from '@/components/BugReportModal.vue'
 import { usePWAInstall, triggerInstall } from '@/composables/usePWAInstall'
 
@@ -126,6 +127,13 @@ function checkForUpdates() {
                 <h2>Spades</h2>
                 <div class="game-options">
                   <SpadesOptions />
+                </div>
+              </div>
+
+              <div class="section game-section">
+                <h2>Klondike</h2>
+                <div class="game-options">
+                  <KlondikeOptions />
                 </div>
               </div>
             </div>

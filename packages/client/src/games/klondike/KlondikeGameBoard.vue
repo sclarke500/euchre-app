@@ -5,7 +5,6 @@ import { useKlondikeLayout, type ContainerRect, type CardPosition } from './useK
 import { canMoveToTableau, canMoveToFoundation } from '@67cards/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
-import KlondikeOptions from './KlondikeOptions.vue'
 import Modal from '@/components/Modal.vue'
 import confetti from 'canvas-confetti'
 import { isFullMode } from '@/utils/deviceMode'
@@ -1168,15 +1167,6 @@ function doNewGame() {
           <h3>Klondike Rules</h3>
         </div>
         <div class="modal-body">
-          <div class="settings-note">
-            <span class="note-icon">⚙️</span>
-            <span>Settings below apply to your next game</span>
-          </div>
-
-          <KlondikeOptions />
-
-          <div class="rules-divider"></div>
-
           <p><strong>Overview:</strong> The classic solitaire! Move all cards to the four foundation piles, sorted by suit from Ace to King.</p>
           
           <p><strong>Setup:</strong> 7 tableau columns with 1-7 cards each (top card face-up). Remaining cards form the stock pile.</p>
@@ -1489,26 +1479,4 @@ function doNewGame() {
   }
 }
 
-.settings-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(52, 152, 219, 0.15);
-  border: 1px solid rgba(52, 152, 219, 0.3);
-  border-radius: 6px;
-  margin-bottom: 12px;
-  font-size: 0.8rem;
-  color: #5dade2;
-  
-  .note-icon {
-    font-size: 1rem;
-  }
-}
-
-.rules-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 16px 0;
-}
 </style>
