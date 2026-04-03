@@ -6,6 +6,7 @@ import {
   type Selection,
   type TableauColumn,
   type FoundationPile,
+  type RecycleMode,
   createNewGame,
   drawCard,
   selectCard,
@@ -30,6 +31,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
   const isWon = ref(false)
   const isAutoCompleting = ref(false)
   const drawCount = ref<1 | 3>(3)
+  const recycleMode = ref<RecycleMode>('strict')
 
   // History for undo
   const history = ref<string[]>([])
@@ -45,6 +47,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     moveCount: moveCount.value,
     isWon: isWon.value,
     drawCount: drawCount.value,
+    recycleMode: recycleMode.value,
   }))
 
   const wasteTopCard = computed(() =>
@@ -84,6 +87,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     moveCount.value = state.moveCount
     isWon.value = state.isWon
     drawCount.value = state.drawCount
+    recycleMode.value = state.recycleMode
   }
 
   // Actions
@@ -94,9 +98,11 @@ export const useKlondikeStore = defineStore('klondike', () => {
     updateState(previousState, false)
   }
 
-  function startNewGame() {
+  function startNewGame(newDrawCount?: 1 | 3, newRecycleMode?: RecycleMode) {
     history.value = []
-    const state = createNewGame(drawCount.value)
+    if (newDrawCount !== undefined) drawCount.value = newDrawCount
+    if (newRecycleMode !== undefined) recycleMode.value = newRecycleMode
+    const state = createNewGame(drawCount.value, recycleMode.value)
     updateState(state, false)
     isAutoCompleting.value = false
   }
@@ -254,6 +260,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
     isWon,
     isAutoCompleting,
     drawCount,
+    recycleMode,
 
     // Computed
     gameState,

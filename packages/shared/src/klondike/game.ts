@@ -2,7 +2,7 @@
 
 import { createStandardDeck, shuffleDeck } from '../core/deck.js'
 import type { StandardCard } from '../core/types.js'
-import type { KlondikeCard, KlondikeState, TableauColumn, FoundationPile } from './types.js'
+import type { KlondikeCard, KlondikeState, TableauColumn, FoundationPile, RecycleMode } from './types.js'
 
 /**
  * Convert a standard card to a Klondike card with face-up state
@@ -14,8 +14,9 @@ function toKlondikeCard(card: StandardCard, faceUp: boolean): KlondikeCard {
 /**
  * Create a new shuffled Klondike game state
  * @param drawCount - How many cards to draw at once (1 or 3, default 3)
+ * @param recycleMode - 'strict' (Vegas) or 'wrap' (traditional), default 'strict'
  */
-export function createNewGame(drawCount: 1 | 3 = 3): KlondikeState {
+export function createNewGame(drawCount: 1 | 3 = 3, recycleMode: RecycleMode = 'strict'): KlondikeState {
   // Create and shuffle deck
   const deck = shuffleDeck(createStandardDeck())
 
@@ -59,6 +60,7 @@ export function createNewGame(drawCount: 1 | 3 = 3): KlondikeState {
     moveCount: 0,
     isWon: false,
     drawCount,
+    recycleMode,
   }
 }
 
@@ -91,5 +93,6 @@ export function cloneState(state: KlondikeState): KlondikeState {
     moveCount: state.moveCount,
     isWon: state.isWon,
     drawCount: state.drawCount,
+    recycleMode: state.recycleMode,
   }
 }

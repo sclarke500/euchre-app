@@ -29,6 +29,9 @@ export interface Selection {
   cardIndex: number     // index of selected card within source
 }
 
+// Recycle mode for stock pile
+export type RecycleMode = 'strict' | 'wrap'
+
 // Full game state for Klondike
 export interface KlondikeState {
   tableau: TableauColumn[]      // 7 columns
@@ -39,6 +42,7 @@ export interface KlondikeState {
   moveCount: number             // number of moves made
   isWon: boolean                // all cards in foundations
   drawCount: 1 | 3              // how many cards to draw at once (default 3)
+  recycleMode: RecycleMode      // 'strict' = Vegas style, 'wrap' = traditional
 }
 
 // Move types for tracking
