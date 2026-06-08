@@ -34,6 +34,7 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
 
   // Sync tracking
   const lastStateSeq = ref<number>(0)
+  const recoveryState = ref<'unknown' | 'recovering' | 'recovered'>('unknown') // Tracks post-reconnect recovery
 
   // ── Debug history (previous states) ─────────────────────────────────────
 
@@ -218,6 +219,9 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
   function applyMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'game_state':
+        // Mark recovery as complete when fresh game_state arrives
+        recoveryState.value = 'recovered'
+        
         // Clear lastTrickWinnerId when a new round starts (dealing phase)
         if (message.state.phase === GamePhase.Dealing) {
           lastTrickWinnerId.value = null
@@ -541,10 +545,16 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
 
   // Initialize - set up WebSocket listener
   let unsubscribe: (() => void) | null = null
+  let unsubscribeReconnect: (() => void) | null = null
 
   function initialize(): void {
     if (unsubscribe) return
+    recoveryState.value = 'recovering' // Mark that we're waiting for fresh game state
     unsubscribe = websocket.onMessage(handleMessage)
+    // On socket reconnect, lock the board until a fresh game_state arrives
+    unsubscribeReconnect = websocket.onReconnect(() => {
+      recoveryState.value = 'recovering'
+    })
     resyncWatchdog.start()
     logMultiplayerEvent('euchre-mp', 'initialize', getDebugSnapshot())
     requestStateResync()
@@ -555,6 +565,10 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
       unsubscribe()
       unsubscribe = null
     }
+    if (unsubscribeReconnect) {
+      unsubscribeReconnect()
+      unsubscribeReconnect = null
+    }
     resyncWatchdog.stop()
     resyncWatchdog.reset()
     queueController.clear()
@@ -564,6 +578,7 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
     // validCards is computed from isMyTurn and gameState - will be empty after reset
     lastStateSeq.value = 0
     gameLost.value = false
+    recoveryState.value = 'unknown'
     logMultiplayerEvent('euchre-mp', 'cleanup', getDebugSnapshot())
   }
 
@@ -573,6 +588,7 @@ export const useEuchreMultiplayerStore = defineStore('multiplayerGame', () => {
     validActions,
     validCards,
     isMyTurn,
+    recoveryState,
     lastBidAction,
     lastCardPlayed,
     lastTrickWinnerId,

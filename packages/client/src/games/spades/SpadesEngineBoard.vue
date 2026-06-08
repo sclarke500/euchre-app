@@ -344,6 +344,12 @@ function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
 
 // Handle card click
 function handleCardClick(cardId: string) {
+  // Block all clicks while recovering from reconnect
+  if (store.recoveryState !== 'recovered' && store.recoveryState !== undefined) {
+    console.log('[Spades] Blocking card click during recovery state:', store.recoveryState)
+    return
+  }
+  
   if (!store.isHumanPlaying) return
   
   const human = store.humanPlayer

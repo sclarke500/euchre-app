@@ -522,6 +522,12 @@ function handleCardClick(cardId: string) {
   // Block all clicks during animation (prevents accidental discard of turn-up card)
   if (director.isAnimating.value) return
 
+  // Block all clicks while recovering from reconnect
+  if (game.recoveryState?.value !== 'recovered' && game.recoveryState?.value !== undefined) {
+    console.log('[Euchre] Blocking card click during recovery state:', game.recoveryState.value)
+    return
+  }
+
   if (phase === GamePhase.DealerDiscard && isUserDealer.value) {
     director.handleDealerDiscard(cardId)
   } else if (phase === GamePhase.Playing && game.isHumanTurn.value) {

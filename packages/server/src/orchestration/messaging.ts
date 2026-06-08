@@ -20,11 +20,19 @@ export function createMessagingHelpers(
   }
 
   function sendToPlayer(odusId: string, message: ServerMessage): void {
+    // Send to all OPEN sockets for this player.
+    // During reconnect, multiple client entries might exist for the same odusId.
+    // Sending to all ensures the message reaches the active socket(s).
+    let sentCount = 0
     for (const [ws, client] of clients) {
-      if (client.player?.odusId === odusId) {
+      if (client.player?.odusId === odusId && ws.readyState === WebSocket.OPEN) {
         send(ws, message)
-        break
+        sentCount++
       }
+    }
+    // Debug: log if no sockets were found (possible disconnected edge case)
+    if (sentCount === 0) {
+      console.warn(`[Messaging] sendToPlayer: no open sockets found for odusId=${odusId}`)
     }
   }
 

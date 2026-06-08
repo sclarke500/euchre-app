@@ -55,6 +55,7 @@ export interface EuchreGameAdapter {
   myTeamId: ComputedRef<number>
   isHumanTurn: ComputedRef<boolean>
   validPlays: ComputedRef<string[]>
+  recoveryState: ComputedRef<'unknown' | 'recovering' | 'recovered'>
 
   // UI state
   lastBidAction: ComputedRef<{ playerId: number; message: string } | null>
@@ -196,6 +197,7 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
     myTeamId,
     isHumanTurn,
     validPlays,
+    recoveryState: computed(() => 'recovered' as const), // Singleplayer always 'recovered'
     lastBidAction,
     isMultiplayer: false,
 
@@ -303,6 +305,7 @@ function createMultiplayerAdapter(): EuchreGameAdapter {
     myTeamId: computed(() => store.myTeamId),
     isHumanTurn: computed(() => store.isMyTurn),
     validPlays: computed(() => store.validCards),
+    recoveryState: computed(() => store.recoveryState),
     lastBidAction: computed(() => store.lastBidAction),
     isMultiplayer: true,
 

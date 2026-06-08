@@ -33,6 +33,7 @@ export interface SpadesGameAdapter {
   isHumanTurn: ComputedRef<boolean>
   isHumanBidding: ComputedRef<boolean>
   isHumanPlaying: ComputedRef<boolean>
+  recoveryState: ComputedRef<'unknown' | 'recovering' | 'recovered'>
   validPlays: ComputedRef<StandardCard[]>
   timedOutPlayer: ComputedRef<number | null>
   disconnectedPlayers: ComputedRef<Array<{ id: number; name: string; isHuman?: boolean }>>
@@ -108,6 +109,7 @@ function useSpadesSinglePlayerAdapter(): SpadesGameAdapter {
     isHumanTurn: computed(() => !!store.isHumanTurn),
     isHumanBidding: computed(() => !!store.isHumanBidding),
     isHumanPlaying: computed(() => !!store.isHumanPlaying),
+    recoveryState: computed(() => 'recovered' as const), // Singleplayer always 'recovered'
     validPlays: computed(() => store.validPlays),
     timedOutPlayer: computed(() => null),
     disconnectedPlayers: computed(() => []),
@@ -166,6 +168,7 @@ function useSpadesMultiplayerAdapter(): SpadesGameAdapter {
     isHumanTurn: computed(() => store.isHumanTurn),
     isHumanBidding: computed(() => store.isHumanBidding),
     isHumanPlaying: computed(() => store.isHumanPlaying),
+    recoveryState: computed(() => store.recoveryState),
     validPlays: computed(() => store.validPlays),
     timedOutPlayer: computed(() => store.timedOutPlayer),
     disconnectedPlayers: computed(() => store.disconnectedPlayers ?? []),

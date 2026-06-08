@@ -476,6 +476,12 @@ function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
 function handleCardClick(cardId: string) {
   if (director.isAnimating.value) return
 
+  // Block all clicks while recovering from reconnect
+  if (game.recoveryState?.value !== 'recovered' && game.recoveryState?.value !== undefined) {
+    console.log('[President] Blocking card click during recovery state:', game.recoveryState.value)
+    return
+  }
+
   const human = game.humanPlayer.value
   if (!human) return
 

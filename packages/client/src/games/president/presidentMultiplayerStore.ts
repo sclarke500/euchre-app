@@ -46,6 +46,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
   // Sync tracking
   const lastStateSeq = ref<number>(0)
+  const recoveryState = ref<'unknown' | 'recovering' | 'recovered'>('unknown') // Tracks post-reconnect recovery
 
   // Message queue — when enabled, messages are buffered instead of applied
   // immediately. The director's processing loop dequeues and applies them
@@ -137,6 +138,9 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   function applyMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'president_game_state': {
+        // Mark recovery as complete when fresh game_state arrives
+        recoveryState.value = 'recovered'
+        
         // Check if it's our turn based on game state
         const myId = gameState.value?.players?.find(p => p.hand !== undefined)?.id ?? 
                      message.state.players?.find((p: any) => p.hand !== undefined)?.id
@@ -438,10 +442,16 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
 
   // Initialize - set up WebSocket listener
   let unsubscribe: (() => void) | null = null
+  let unsubscribeReconnect: (() => void) | null = null
 
   function initialize(): void {
     if (unsubscribe) return
+    recoveryState.value = 'recovering' // Mark that we're waiting for fresh game state
     unsubscribe = websocket.onMessage(handleMessage)
+    // On socket reconnect, lock the board until a fresh game_state arrives
+    unsubscribeReconnect = websocket.onReconnect(() => {
+      recoveryState.value = 'recovering'
+    })
     resyncWatchdog.start()
     logMultiplayerEvent('president-mp', 'initialize', getDebugSnapshot())
     requestStateResync()
@@ -451,6 +461,10 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     if (unsubscribe) {
       unsubscribe()
       unsubscribe = null
+    }
+    if (unsubscribeReconnect) {
+      unsubscribeReconnect()
+      unsubscribeReconnect = null
     }
     resyncWatchdog.stop()
     resyncWatchdog.reset()
@@ -462,6 +476,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     isInExchange.value = false
     exchangeCanSelect.value = false
     exchangeCardsNeeded.value = 0
+    recoveryState.value = 'unknown'
     exchangePreSelectedIds.value = []
     exchangeRecipientName.value = ''
     lastStateSeq.value = 0
@@ -476,6 +491,7 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
     validActions,
     validPlays,
     isMyTurn,
+    recoveryState,
     exchangeInfo,
     lastPlayMade,
     lastPass,

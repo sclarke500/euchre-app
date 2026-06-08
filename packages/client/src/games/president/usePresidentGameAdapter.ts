@@ -26,6 +26,7 @@ export interface PresidentGameAdapter {
   currentPlayer: ComputedRef<number>
   currentPile: ComputedRef<PresidentPile>
   isHumanTurn: ComputedRef<boolean>
+  recoveryState: ComputedRef<'unknown' | 'recovering' | 'recovered'>
   validPlays: ComputedRef<StandardCard[][]>
   humanPlayer: ComputedRef<PresidentPlayer | undefined>
   superTwosMode: ComputedRef<boolean>  // Convenience accessor for rules.superTwosMode
@@ -95,6 +96,7 @@ function useSingleplayerAdapter(): PresidentGameAdapter {
     currentPlayer: computed(() => store.currentPlayer),
     currentPile: computed(() => store.currentPile),
     isHumanTurn: computed(() => store.isHumanTurn ?? false),
+    recoveryState: computed(() => 'recovered' as const), // Singleplayer always 'recovered'
     validPlays: computed(() => store.validPlays),
     humanPlayer: computed(() => store.humanPlayer),
     superTwosMode: computed(() => store.rules?.superTwosMode ?? false),
@@ -206,6 +208,7 @@ function useMultiplayerAdapter(): PresidentGameAdapter {
     currentPlayer: computed(() => store.currentPlayer),
     currentPile: computed(() => store.currentPile),
     isHumanTurn: computed(() => store.isMyTurn),
+    recoveryState: computed(() => store.recoveryState),
     validPlays,
     humanPlayer,
     superTwosMode: computed(() => store.superTwosMode ?? false),

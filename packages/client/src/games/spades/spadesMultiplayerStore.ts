@@ -23,6 +23,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   const userCardsRevealed = ref(false) // For blind nil - tracks if user has seen their cards this round
 
   const lastStateSeq = ref(0)
+  const recoveryState = ref<'unknown' | 'recovering' | 'recovered'>('unknown') // Tracks post-reconnect recovery
 
   const queueController = createMultiplayerQueueController<ServerMessage>(applyMessage)
   const resyncWatchdog = createMultiplayerResyncWatchdog({
@@ -110,6 +111,9 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   function applyMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'spades_game_state': {
+        // Mark recovery as complete when fresh game_state arrives
+        recoveryState.value = 'recovered'
+        
         // Detect new round - reset blind nil state ONLY when round number increases
         const prevRound = gameState.value?.roundNumber ?? 0
         const newRound = message.state.roundNumber ?? 0
@@ -247,10 +251,16 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   }
 
   let unsubscribe: (() => void) | null = null
+  let unsubscribeReconnect: (() => void) | null = null
 
   function initialize(): void {
     if (unsubscribe) return
+    recoveryState.value = 'recovering' // Mark that we're waiting for fresh game state
     unsubscribe = websocket.onMessage(handleMessage)
+    // On socket reconnect, lock the board until a fresh game_state arrives
+    unsubscribeReconnect = websocket.onReconnect(() => {
+      recoveryState.value = 'recovering'
+    })
     resyncWatchdog.start()
     logMultiplayerEvent('spades-mp', 'initialize', getDebugSnapshot())
     requestStateResync()
@@ -261,6 +271,10 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
       unsubscribe()
       unsubscribe = null
     }
+    if (unsubscribeReconnect) {
+      unsubscribeReconnect()
+      unsubscribeReconnect = null
+    }
     resyncWatchdog.stop()
     resyncWatchdog.reset()
     gameState.value = null
@@ -268,6 +282,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
     validActions.value = []
     validCards.value = []
     gameLost.value = false
+    recoveryState.value = 'unknown'
     lastStateSeq.value = 0
     queueController.clear()
     logMultiplayerEvent('spades-mp', 'cleanup', getDebugSnapshot())
@@ -299,6 +314,7 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
 
     humanPlayer,
     isMyTurn,
+    recoveryState,
     isHumanTurn,
     isHumanBidding,
     isHumanPlaying,

@@ -218,14 +218,10 @@ export const useLobbyStore = defineStore('lobby', () => {
       websocket.onReconnect(() => {
         console.log('Reconnected - re-identifying to server')
         if (hasNickname.value) {
-          // Re-join lobby to re-establish identity
+          // Re-join lobby to re-establish identity and trigger server-side state resend
           joinLobby()
-          
-          // If we were in a game, request state resync
-          if (gameId.value) {
-            console.log('Requesting game state resync after reconnect')
-            websocket.send({ type: 'request_state' })
-          }
+          // NOTE: Server's join_lobby handler calls resendStateToPlayer for any active game,
+          // so no need for ad hoc request_state here
         }
       })
 
