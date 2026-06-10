@@ -167,12 +167,23 @@ function handlePointerCancel(event: PointerEvent) {
   dragStartPos.value = null
 }
 
-// Calculate card transform including drag offset
-function getCardTransform(pos: CardPosition): string {
-  if (isBeingDragged(pos.id) && props.dragOffsetX !== undefined && props.dragOffsetY !== undefined) {
-    return `translate(${pos.x + props.dragOffsetX}px, ${pos.y + props.dragOffsetY}px)`
+// Position cards via left/top rather than transform: translate.
+// The whole board lives inside ScaledContainer's transform: scale(), which is
+// usually > 1. A transform-animated element gets composited to its own GPU texture
+// rasterized at the canonical (pre-scale) size, which the ancestor scale then
+// bitmap-upscales → visible pixelation while moving. Animating left/top repaints at
+// the final (scaled) resolution every frame, so cards stay crisp in motion.
+function getCardLeft(pos: CardPosition): number {
+  if (isBeingDragged(pos.id) && props.dragOffsetX !== undefined) {
+    return pos.x + props.dragOffsetX
   }
-  return `translate(${pos.x}px, ${pos.y}px)`
+  return pos.x
+}
+function getCardTop(pos: CardPosition): number {
+  if (isBeingDragged(pos.id) && props.dragOffsetY !== undefined) {
+    return pos.y + props.dragOffsetY
+  }
+  return pos.y
 }
 
 // Get z-index (dragged and animating cards should be on top)
@@ -198,7 +209,8 @@ function getCardZIndex(pos: CardPosition): number {
         'dragging': isBeingDragged(pos.id)
       }"
       :style="{
-        transform: getCardTransform(pos),
+        left: `${getCardLeft(pos)}px`,
+        top: `${getCardTop(pos)}px`,
         zIndex: getCardZIndex(pos),
         width: `${cardWidth}px`,
         height: `${cardHeight}px`,
@@ -258,18 +270,17 @@ function getCardZIndex(pos: CardPosition): number {
 
 .klondike-card-wrapper {
   position: absolute;
-  left: 0;
-  top: 0;
-  // transform, width, height, z-index set via inline style
+  // left, top, width, height, z-index set via inline style
   pointer-events: auto;
   cursor: pointer;
-  transition-property: transform;
+  // Animate left/top (not transform) so cards repaint crisply at the final
+  // scaled resolution instead of upscaling a cached GPU texture (pixelation).
+  transition-property: left, top;
   transition-duration: 0.3s;
   transition-timing-function: ease-out;
-  will-change: transform;
   touch-action: none; // Prevent browser handling of touch for drag
   user-select: none;
-  
+
   &.dragging {
     transition: none; // Disable transition during drag
     cursor: grabbing;
@@ -282,8 +293,9 @@ function getCardZIndex(pos: CardPosition): number {
 
 .klondike-card {
   border-radius: 6px;
-  backface-visibility: hidden; // Force GPU layer
-  
+  // No backface-visibility/will-change here: forcing a GPU layer makes the card
+  // rasterize at canonical size and get upscaled by ScaledContainer → pixelation.
+
   &.face-up {
     background: white;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);

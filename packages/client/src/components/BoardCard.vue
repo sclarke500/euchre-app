@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import type { CardPosition, EngineCard } from './cardContainers'
 import jokerLogo from '@/assets/joker-67-color.png'
 
@@ -109,17 +109,31 @@ const displayRank = computed(() => {
   return props.card.rank
 })
 
+// Monotonic token identifying the current animation. Each new moveTo()/setPosition()
+// bumps it, which causes any still-running RAF loop to bail on its next frame.
+// Without this, two overlapping moveTo() calls on the same card run concurrent RAF
+// loops that both write position.value every frame and fight each other — the source
+// of cards stuttering/teleporting/landing wrong during fast play, resync, or reconnect.
+let animToken = 0
+
 function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
+  const myToken = ++animToken
   return new Promise((resolve) => {
     const start = { ...position.value }
     const startTime = performance.now()
-    
+
     const animate = (now: number) => {
+      // Superseded by a newer move/setPosition — stop writing and let the latest win.
+      if (myToken !== animToken) {
+        resolve()
+        return
+      }
+
       const elapsed = now - startTime
       const progress = Math.min(elapsed / duration, 1)
       // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3)
-      
+
       position.value = {
         x: start.x + (target.x - start.x) * eased,
         y: start.y + (target.y - start.y) * eased,
@@ -129,7 +143,7 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
         flipY: (start.flipY ?? 0) + ((target.flipY ?? (start.flipY ?? 0)) - (start.flipY ?? 0)) * eased,
         tableSkew: target.tableSkew ?? false, // Snap to target (no interpolation for bool)
       }
-      
+
       if (progress < 1) {
         requestAnimationFrame(animate)
       } else {
@@ -141,6 +155,7 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
 }
 
 function setPosition(pos: CardPosition) {
+  animToken++ // cancel any in-flight move so it doesn't overwrite this snap
   isAnimating.value = false
   position.value = { ...pos }
 }
@@ -153,6 +168,12 @@ const useArcFan = ref(false)
 function setArcFan(enabled: boolean) {
   useArcFan.value = enabled
 }
+
+// Stop any in-flight RAF loop if the card is removed mid-animation
+// (e.g. trick clears or hand empties while a card is still flying).
+onUnmounted(() => {
+  animToken++
+})
 
 defineExpose({
   moveTo,
