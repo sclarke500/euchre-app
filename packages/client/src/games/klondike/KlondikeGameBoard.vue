@@ -5,6 +5,7 @@ import { useKlondikeLayout, type ContainerRect, type CardPosition } from './useK
 import { canMoveToTableau, canMoveToFoundation } from '@67cards/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
+import KlondikeMenuButton from './KlondikeMenuButton.vue'
 import Modal from '@/components/Modal.vue'
 import BugReportModal from '@/components/BugReportModal.vue'
 import confetti from 'canvas-confetti'
@@ -1012,28 +1013,14 @@ function doNewGame() {
   <div class="klondike-layout">
     <!-- Menu at top in full mode -->
     <div v-if="isFullMode()" class="klondike-menu">
-      <!-- Left: Back and Rules buttons -->
+      <!-- Left: ellipsis menu (Back / Rules / Report Bug) -->
       <div class="menu-left">
-        <button class="menu-btn back" @click="handleLeaveGame" title="Main Menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <button class="menu-btn" @click="showRulesModal = true" title="Rules">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <path d="M12 17h.01" />
-          </svg>
-        </button>
-        <button class="menu-btn" @click="showBugReport = true" title="Report Bug">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 9V6a3 3 0 0 1 6 0v3" />
-            <rect x="7" y="9" width="10" height="9" rx="5" />
-            <path d="M3 13h4M17 13h4M4 8l3 2M20 8l-3 2M4 18l3-2M20 18l-3-2" />
-          </svg>
-        </button>
+        <KlondikeMenuButton
+          direction="down"
+          @back="handleLeaveGame"
+          @rules="showRulesModal = true"
+          @bug="showBugReport = true"
+        />
       </div>
 
       <!-- Center: Stats -->
@@ -1120,28 +1107,14 @@ function doNewGame() {
 
     <!-- Menu at bottom in mobile mode -->
     <div v-if="!isFullMode()" class="klondike-menu">
-      <!-- Left: Back and Rules buttons -->
+      <!-- Left: ellipsis menu (Back / Rules / Report Bug) -->
       <div class="menu-left">
-        <button class="menu-btn back" @click="handleLeaveGame" title="Main Menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <button class="menu-btn" @click="showRulesModal = true" title="Rules">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <path d="M12 17h.01" />
-          </svg>
-        </button>
-        <button class="menu-btn" @click="showBugReport = true" title="Report Bug">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 9V6a3 3 0 0 1 6 0v3" />
-            <rect x="7" y="9" width="10" height="9" rx="5" />
-            <path d="M3 13h4M17 13h4M4 8l3 2M20 8l-3 2M4 18l3-2M20 18l-3-2" />
-          </svg>
-        </button>
+        <KlondikeMenuButton
+          direction="up"
+          @back="handleLeaveGame"
+          @rules="showRulesModal = true"
+          @bug="showBugReport = true"
+        />
       </div>
 
       <!-- Center: Stats -->
