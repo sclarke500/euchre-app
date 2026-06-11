@@ -6,6 +6,7 @@ import { canMoveToTableau, canMoveToFoundation } from '@67cards/shared'
 import KlondikeContainers from './KlondikeContainers.vue'
 import KlondikeCardLayer from './KlondikeCardLayer.vue'
 import Modal from '@/components/Modal.vue'
+import BugReportModal from '@/components/BugReportModal.vue'
 import confetti from 'canvas-confetti'
 import { isFullMode } from '@/utils/deviceMode'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -861,6 +862,16 @@ function handleCardClick(cardId: string) {
       return
     }
   }
+
+  // The clicked card matched no pile — it's a stale/phantom render (e.g. a card
+  // left in the positions map at the stock location after a draw/recycle desync).
+  // Such a card silently swallows clicks AND blocks the stock slot beneath it.
+  // Self-heal by rebuilding positions from authoritative state, which removes the
+  // phantom so the next click reaches the real stock/slot.
+  if (!isAnimating.value) {
+    console.warn('[Klondike] Click on card not in any pile — resyncing positions to clear phantom:', cardId)
+    syncPositionsFromState()
+  }
 }
 
 function handleAutoComplete() {
@@ -944,6 +955,44 @@ watch(isWon, (won) => {
 // Modals
 const showNewGameConfirm = ref(false)
 const showRulesModal = ref(false)
+const showBugReport = ref(false)
+
+// Bug report payload — captures game state plus render/state desync info so the
+// "face-down card won't respond / stock unclickable" class of bug is diagnosable.
+function buildBugReportPayload() {
+  const state = store.gameState
+  const stateIds = new Set<string>()
+  state.stock.forEach((c: any) => stateIds.add(c.id))
+  state.waste.forEach((c: any) => stateIds.add(c.id))
+  state.foundations.forEach((f: any) => f.cards.forEach((c: any) => stateIds.add(c.id)))
+  state.tableau.forEach((col: any) => col.cards.forEach((c: any) => stateIds.add(c.id)))
+
+  const renderedIds = Array.from(cardPositionsRef.value.keys())
+  // Phantom: rendered on the board but no longer in any pile (the likely culprit
+  // for an unclickable face-down card sitting over the stock slot).
+  const phantomCardIds = renderedIds.filter(id => !stateIds.has(id))
+  // Missing: in state but not rendered.
+  const missingCardIds = Array.from(stateIds).filter(id => !cardPositionsRef.value.has(id))
+
+  return {
+    mode: 'singleplayer',
+    drawCount: store.drawCount,
+    recycleMode: store.recycleMode,
+    isAnimating: isAnimating.value,
+    isWon: store.isWon,
+    moveCount: store.moveCount,
+    score: score.value,
+    elapsedSeconds: elapsedSeconds.value,
+    selection: store.selection,
+    stock: state.stock.map((c: any) => ({ id: c.id, faceUp: c.faceUp })),
+    waste: state.waste.map((c: any) => ({ id: c.id, faceUp: c.faceUp })),
+    foundations: state.foundations.map((f: any) => f.cards.map((c: any) => c.id)),
+    tableau: state.tableau.map((col: any) => col.cards.map((c: any) => ({ id: c.id, faceUp: c.faceUp }))),
+    renderedCardCount: renderedIds.length,
+    phantomCardIds,
+    missingCardIds,
+  }
+}
 
 function confirmNewGame() {
   showNewGameConfirm.value = true
@@ -976,6 +1025,13 @@ function doNewGame() {
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
             <path d="M12 17h.01" />
+          </svg>
+        </button>
+        <button class="menu-btn" @click="showBugReport = true" title="Report Bug">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 9V6a3 3 0 0 1 6 0v3" />
+            <rect x="7" y="9" width="10" height="9" rx="5" />
+            <path d="M3 13h4M17 13h4M4 8l3 2M20 8l-3 2M4 18l3-2M20 18l-3-2" />
           </svg>
         </button>
       </div>
@@ -1077,6 +1133,13 @@ function doNewGame() {
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
             <path d="M12 17h.01" />
+          </svg>
+        </button>
+        <button class="menu-btn" @click="showBugReport = true" title="Report Bug">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 9V6a3 3 0 0 1 6 0v3" />
+            <rect x="7" y="9" width="10" height="9" rx="5" />
+            <path d="M3 13h4M17 13h4M4 8l3 2M20 8l-3 2M4 18l3-2M20 18l-3-2" />
           </svg>
         </button>
       </div>
@@ -1194,6 +1257,15 @@ function doNewGame() {
         </div>
       </div>
     </Modal>
+
+    <!-- Bug report modal -->
+    <BugReportModal
+      :show="showBugReport"
+      game-type="klondike"
+      mode="singleplayer"
+      :build-payload="buildBugReportPayload"
+      @close="showBugReport = false"
+    />
   </div>
 </template>
 
