@@ -39,3 +39,18 @@ coverage
 
 # Vitest
 __screenshots__/
+
+# Capacitor — the ios/ and android/ native projects ARE committed, but their
+# build artifacts and the synced web bundle are not.
+packages/client/ios/App/Pods/
+packages/client/ios/App/build/
+packages/client/ios/App/output/
+packages/client/ios/App/App/public/
+packages/client/ios/DerivedData/
+packages/client/android/.gradle/
+packages/client/android/build/
+packages/client/android/app/build/
+packages/client/android/app/src/main/assets/public/
+packages/client/android/captures/
+packages/client/android/local.properties
+packages/client/android/.idea/
