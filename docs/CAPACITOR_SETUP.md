@@ -90,6 +90,10 @@ To change the art, replace those PNGs (keep them 1024×1024) and re-run `npm run
 The background colors are baked into the script (`--icon/splashBackgroundColor #181820`);
 edit the `cap:assets` script in `package.json` to change them.
 
+`cap:assets` runs `@capacitor/assets` via `npx` (fetched on demand) rather than as an
+installed dependency — it pulls a deep tree of stale transitive packages, so keeping it
+out of `node_modules` avoids a pile of dev-only `npm audit` advisories.
+
 ## ⚠️ Critical: WebSocket URL for native builds
 
 Multiplayer connects via `VITE_WS_URL`, falling back to `ws://${window.location.host}`
