@@ -6,7 +6,8 @@ shell. No rewrite — the same Vue codebase loads inside a native WebView from b
 assets.
 
 - **App name**: 67 Card Games
-- **Bundle / App ID**: `com.67cards.app`
+- **Bundle / App ID**: `com.sixsevencardgames.app` (reverse-DNS; no segment may start
+  with a digit, so not `com.67cards.app`)
 - **Web assets**: `packages/client/dist` (Vite build output → `webDir` in `capacitor.config.ts`)
 
 This repo already contains the committable scaffold (`capacitor.config.ts`, deps in
