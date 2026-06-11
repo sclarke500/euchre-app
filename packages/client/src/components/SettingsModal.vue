@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useSettingsStore, type AIDifficulty, type RoomTheme } from '@/stores/settingsStore'
 
 const roomThemes: { id: RoomTheme; name: string; icon: string }[] = [
@@ -17,6 +17,7 @@ import BugReportModal from '@/components/BugReportModal.vue'
 import { usePWAInstall, triggerInstall } from '@/composables/usePWAInstall'
 
 const route = useRoute()
+const router = useRouter()
 
 defineProps<{
   show: boolean
@@ -25,6 +26,11 @@ defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+function goToPrivacy() {
+  emit('close')
+  router.push('/privacy')
+}
 
 const settings = useSettingsStore()
 const { isStandalone, isIOS, canInstallNatively, deviceType } = usePWAInstall()
@@ -219,6 +225,9 @@ function checkForUpdates() {
                   </button>
                   <button class="about-btn bug-btn" @click="showBugReport = true">
                     Report Bug
+                  </button>
+                  <button class="about-btn" @click="goToPrivacy">
+                    Privacy Policy
                   </button>
                 </div>
               </div>

@@ -205,7 +205,9 @@ const features = [
     <!-- Footer -->
     <footer class="footer">
       <p>© 2026 67CardGames.com</p>
-      <!-- TODO: Links, socials, contact -->
+      <p class="footer-links">
+        <router-link to="/privacy">Privacy Policy</router-link>
+      </p>
     </footer>
   </div>
 </template>
@@ -639,5 +641,18 @@ section {
   background: rgba(0, 0, 0, 0.3);
   font-size: 0.9rem;
   opacity: 0.7;
+}
+
+.footer-links {
+  margin-top: 0.5rem;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+
+    &:hover {
+      color: #fff;
+    }
+  }
 }
 </style>

@@ -56,6 +56,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/GameView.vue'),
     props: true,
   },
+  {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/views/PrivacyView.vue'),
+  },
   // Catch-all redirect to home
   {
     path: '/:pathMatch(.*)*',
