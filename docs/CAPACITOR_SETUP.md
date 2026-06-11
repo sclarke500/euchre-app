@@ -74,16 +74,28 @@ Multiplayer connects via `VITE_WS_URL`, falling back to `ws://${window.location.
 work in the native app** — the WebView's host is `localhost`, not your server. And
 `ws://` (plaintext) is blocked by iOS App Transport Security.
 
-So a native/production build **must** set a TLS WebSocket URL at build time. Create
-`packages/client/.env.production` (gitignored):
+**The server is already hosted with TLS.** It runs as a separate Render web service at
+`euchre-app.onrender.com` (Express HTTP + WebSocketServer on the same port), and Render
+provisions TLS on `*.onrender.com` — so `wss://euchre-app.onrender.com` works today. The
+hosted PWA at `67cardgames.com` already uses it via a `VITE_WS_URL` build env var set in
+the static-site host's dashboard (not committed). No new server hosting is required.
+
+For the native build, create `packages/client/.env.production` (gitignored):
 
 ```
-VITE_WS_URL=wss://your-server.example.com
+VITE_WS_URL=wss://euchre-app.onrender.com
 ```
 
-This requires the game server to be hosted somewhere terminating TLS (Fly.io, Railway,
-Render, or a VPS behind Caddy/nginx). Hosting the server over `wss://` is the main
-prerequisite before a store-ready build — see the roadmap below.
+Vite loads `.env.production` for `npm run build` and it overrides `.env.local`, so the
+native bundle uses the production server. **Confirm this matches the `VITE_WS_URL` the
+hosted PWA is built with** (check the static site's env vars in the host dashboard) — a
+wrong value means multiplayer silently fails to connect in the app.
+
+**Cold-start caveat:** if the Render service is on the free tier it spins down after
+~15 min idle and cold-starts take ~30–60s. The client has a 10s connection timeout, so
+the first connect after idle may fail and then retry (the reconnect logic added in
+[MULTIPLAYER_RECONNECT_HARDENING.md](MULTIPLAYER_RECONNECT_HARDENING.md) keeps retrying).
+A paid Render instance avoids the spin-down.
 
 ---
 
@@ -92,7 +104,8 @@ prerequisite before a store-ready build — see the roadmap below.
 - **Phase 1 — Runnable shell (this scaffold).** `npm install` + `cap add` → app runs in
   simulator loading bundled `dist/`. ✅ scaffold committed; run the commands above.
 - **Phase 2 — Make it real.**
-  - Host the game server over `wss://`; set `VITE_WS_URL` in `.env.production`.
+  - Set `VITE_WS_URL=wss://euchre-app.onrender.com` in `.env.production` (the server
+    is already hosted on Render with TLS — no new hosting needed).
   - App Store polish (guideline 4.2): splash screen, app icon, status-bar/safe-area
     handling (safe areas already done), optional haptics on card plays.
   - Push notifications (APNs/FCM) for "it's your turn" while backgrounded — hooks into
