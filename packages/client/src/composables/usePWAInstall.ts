@@ -3,6 +3,7 @@
  * Manages install prompt state and device detection for PWA install UX
  */
 import { ref, computed } from 'vue'
+import { isNativeApp } from '@/utils/native'
 
 // Shared state (singleton)
 const deferredPrompt = ref<any>(null)
@@ -52,8 +53,10 @@ export async function initPWAInstall() {
   deviceType.value = detectDeviceType()
   console.log('PWA: Device type:', deviceType.value)
   
-  // Check if running as installed PWA
-  isStandalone.value = window.matchMedia('(display-mode: standalone)').matches
+  // Check if running as installed PWA — or inside the native app, which we treat
+  // as standalone so install/"open in app" prompts never show.
+  isStandalone.value = isNativeApp()
+    || window.matchMedia('(display-mode: standalone)').matches
     || (window.navigator as any).standalone === true
 
   if (isStandalone.value) {

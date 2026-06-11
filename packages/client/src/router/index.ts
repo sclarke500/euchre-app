@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { isNativeApp } from '@/utils/native'
 
 // Check if user has a nickname set
 function hasNickname(): boolean {
@@ -65,6 +66,14 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+// In the native app, skip the marketing landing page and go straight to the
+// game menu. (The web build keeps the landing page at '/'.)
+router.beforeEach((to) => {
+  if (isNativeApp() && to.name === 'landing') {
+    return { name: 'home' }
+  }
 })
 
 export default router

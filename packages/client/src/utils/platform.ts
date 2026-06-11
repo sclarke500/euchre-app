@@ -1,4 +1,5 @@
 // Platform detection utilities
+import { isNativeApp } from '@/utils/native'
 
 export interface PlatformInfo {
   isIOS: boolean
@@ -25,8 +26,10 @@ export function getPlatformInfo(): PlatformInfo {
   // Chrome detection (desktop or iOS)
   const isChrome = /Chrome/.test(ua) || isIOSChrome
 
-  // Check if running as installed PWA (standalone mode)
+  // Check if running as installed PWA (standalone mode) — or in the native app,
+  // which we treat as standalone so iOS install hints/warnings never show.
   const isStandalone =
+    isNativeApp() ||
     window.matchMedia('(display-mode: standalone)').matches ||
     (navigator as unknown as { standalone?: boolean }).standalone === true
 
