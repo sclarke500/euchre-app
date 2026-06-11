@@ -67,6 +67,29 @@ Bundle.
 
 ---
 
+## App icon & splash screen
+
+Generated from source art in `packages/client/assets/` via
+[`@capacitor/assets`](https://github.com/ionic-team/capacitor-assets):
+
+- `assets/icon-only.png` — 1024×1024 full-bleed app icon (dark jester). `@capacitor/assets`
+  flattens this onto the background color when generating iOS icons, so the App-Store
+  no-alpha rule is satisfied even though the source PNG has an alpha channel.
+- `assets/logo.png` / `assets/logo-dark.png` — 1024×1024 transparent logo, centered on
+  the `#181820` theme color to compose the splash screens.
+
+Generate (after `cap add ios`/`android` exist, and whenever the art changes), then sync:
+
+```bash
+cd packages/client
+npm run cap:assets        # writes icons + splashes into ios/ and android/
+npx cap sync
+```
+
+To change the art, replace those PNGs (keep them 1024×1024) and re-run `npm run cap:assets`.
+The background colors are baked into the script (`--icon/splashBackgroundColor #181820`);
+edit the `cap:assets` script in `package.json` to change them.
+
 ## ⚠️ Critical: WebSocket URL for native builds
 
 Multiplayer connects via `VITE_WS_URL`, falling back to `ws://${window.location.host}`
@@ -106,8 +129,9 @@ A paid Render instance avoids the spin-down.
 - **Phase 2 — Make it real.**
   - Set `VITE_WS_URL=wss://euchre-app.onrender.com` in `.env.production` (the server
     is already hosted on Render with TLS — no new hosting needed).
-  - App Store polish (guideline 4.2): splash screen, app icon, status-bar/safe-area
-    handling (safe areas already done), optional haptics on card plays.
+  - App Store polish (guideline 4.2): app icon + splash screen set up (run
+    `npm run cap:assets`); status-bar/safe-area handling (safe areas already done);
+    optional haptics on card plays.
   - Push notifications (APNs/FCM) for "it's your turn" while backgrounded — hooks into
     the existing server-side turn-timer reminders.
 - **Phase 3 — Submit.** Apple Developer account, screenshots, privacy labels (trivial

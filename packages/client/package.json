@@ -11,7 +11,8 @@
     "type-check": "vue-tsc --build",
     "cap:sync": "npm run build && cap sync",
     "cap:ios": "npm run build && cap sync ios && cap open ios",
-    "cap:android": "npm run build && cap sync android && cap open android"
+    "cap:android": "npm run build && cap sync android && cap open android",
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#181820' --iconBackgroundColorDark '#181820' --splashBackgroundColor '#181820' --splashBackgroundColorDark '#181820'"
   },
   "dependencies": {
     "@67cards/shared": "*",
@@ -25,6 +26,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.0.0",
     "@tsconfig/node24": "^24.0.3",
     "@types/canvas-confetti": "^1.9.0",
