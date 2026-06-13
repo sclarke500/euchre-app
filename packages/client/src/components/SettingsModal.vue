@@ -32,6 +32,11 @@ function goToPrivacy() {
   router.push('/privacy')
 }
 
+function goToSupport() {
+  emit('close')
+  router.push('/support')
+}
+
 const settings = useSettingsStore()
 const { isStandalone, isIOS, canInstallNatively, deviceType } = usePWAInstall()
 
@@ -225,6 +230,9 @@ function checkForUpdates() {
                   </button>
                   <button class="about-btn bug-btn" @click="showBugReport = true">
                     Report Bug
+                  </button>
+                  <button class="about-btn" @click="goToSupport">
+                    Support
                   </button>
                   <button class="about-btn" @click="goToPrivacy">
                     Privacy Policy

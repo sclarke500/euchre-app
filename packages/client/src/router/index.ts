@@ -61,6 +61,11 @@ const routes: RouteRecordRaw[] = [
     name: 'privacy',
     component: () => import('@/views/PrivacyView.vue'),
   },
+  {
+    path: '/support',
+    name: 'support',
+    component: () => import('@/views/SupportView.vue'),
+  },
   // Catch-all redirect to home
   {
     path: '/:pathMatch(.*)*',
