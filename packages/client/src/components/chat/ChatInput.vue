@@ -5,6 +5,12 @@ import { CHAT_MAX_LENGTH } from '@67cards/shared'
 
 const chatStore = useChatStore()
 
+// v1.0: free-text chat is disabled to avoid App Store UGC moderation
+// requirements (Guideline 1.2 — needs report/block/filter). Players can still
+// send the fixed preset reactions below, which are not user-generated content.
+// Flip to `true` (and ship report/block/filter) to re-enable open chat.
+const ENABLE_FREE_TEXT_CHAT = false
+
 const inputText = ref('')
 const showQuickReacts = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -56,6 +62,7 @@ function handleClickOutside(e: MouseEvent) {
   <div class="chat-input-container" @click.stop>
     <div class="chat-input-wrapper">
       <input
+        v-if="ENABLE_FREE_TEXT_CHAT"
         ref="inputRef"
         v-model="inputText"
         type="text"
@@ -65,6 +72,7 @@ function handleClickOutside(e: MouseEvent) {
         :disabled="false"
         @keydown.enter.prevent="handleSubmit"
       />
+      <span v-else class="reacts-label">React</span>
       <button
         class="quick-react-btn"
         :class="{ active: showQuickReacts }"
@@ -150,6 +158,14 @@ function handleClickOutside(e: MouseEvent) {
     width: 85px;
     font-size: 13px;
   }
+}
+
+.reacts-label {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  padding-right: 2px;
+  user-select: none;
 }
 
 .quick-react-btn {
