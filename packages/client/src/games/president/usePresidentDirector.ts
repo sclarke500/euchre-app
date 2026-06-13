@@ -796,10 +796,14 @@ export function usePresidentDirector(
 
   // ── Layout handling ───────────────────────────────────────────────────
 
-  function handleLayoutChange() {
-    // With ScaledContainer, board dimensions are fixed (e.g. 1120×630).
-    // Cards are positioned correctly on deal/play — no need to reposition.
-    console.log('[PresidentDirector] Skipping layout change (fixed scaled container)')
+  async function handleLayoutChange() {
+    // The ScaledContainer's canonical size CHANGES with orientation (mobile
+    // portrait 370×700 vs landscape 820×370), so cards must be repositioned when
+    // the viewport/orientation changes — otherwise a board laid out in portrait
+    // (or at a transient load-time size) stays wrong until the next deal. Skip
+    // only while an animation is mid-flight; the trailing resize catches up.
+    if (isAnimating.value) return
+    await cardController.handleLayoutChange()
   }
 
   function setTableWidth(width: number) {

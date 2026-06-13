@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { isMobile } from '@/utils/deviceMode'
+import { isNativeApp } from '@/utils/native'
 import SettingsModal from './SettingsModal.vue'
 import ProfileModal from './ProfileModal.vue'
 import AppLogo from './AppLogo.vue'
@@ -174,8 +175,9 @@ watch(showProfile, (isOpen) => {
 })
 
 function handleMultiplayer() {
-  // Multiplayer always needs landscape on mobile
-  if (isPortrait.value) {
+  // Multiplayer always needs landscape on mobile. In the native app we force
+  // landscape automatically, so skip the "please rotate" prompt and just launch.
+  if (isPortrait.value && !isNativeApp()) {
     pendingGame.value = 'multiplayer'
     showRotatePrompt.value = true
     return
@@ -202,7 +204,8 @@ function handleSinglePlayer() {
 }
 
 function playGame(game: GameType) {
-  if (isPortrait.value && needsLandscape(game)) {
+  // Native app force-rotates to landscape, so skip the rotate prompt there.
+  if (isPortrait.value && !isNativeApp() && needsLandscape(game)) {
     pendingGame.value = game
     showRotatePrompt.value = true
     return

@@ -1115,9 +1115,15 @@ export function useEuchreDirector(
    * Repositions all card containers and animates cards.
    */
   async function handleLayoutChange(): Promise<void> {
-    // With ScaledContainer, board dimensions are fixed (e.g. 1120×630).
-    // Cards are positioned correctly on deal/play — no need to reposition.
-    console.log('[EuchreDirector] Skipping layout change (fixed scaled container)')
+    // The ScaledContainer's canonical size CHANGES with orientation (mobile
+    // portrait 370×700 vs landscape 820×370), so cards must be repositioned when
+    // the viewport/orientation changes. Without this, a board first laid out in
+    // portrait (or at a transient load-time size) stays wrong — kitty off-center,
+    // hand stuck mid-table — until the next deal re-lays it out. Skip only while a
+    // deal/play animation is mid-flight (it positions cards itself); the trailing
+    // resize event will catch up once it settles.
+    if (isAnimating.value) return
+    await cardController.handleLayoutChange()
   }
 
   function setTableWidth(width: number) {
