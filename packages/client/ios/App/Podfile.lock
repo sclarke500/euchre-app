@@ -4,11 +4,14 @@ PODS:
   - CapacitorApp (7.1.2):
     - Capacitor
   - CapacitorCordova (7.6.6)
+  - CapacitorScreenOrientation (7.0.4):
+    - Capacitor
 
 DEPENDENCIES:
   - "Capacitor (from `../../../../node_modules/@capacitor/ios`)"
   - "CapacitorApp (from `../../../../node_modules/@capacitor/app`)"
   - "CapacitorCordova (from `../../../../node_modules/@capacitor/ios`)"
+  - "CapacitorScreenOrientation (from `../../../../node_modules/@capacitor/screen-orientation`)"
 
 EXTERNAL SOURCES:
   Capacitor:
@@ -17,12 +20,15 @@ EXTERNAL SOURCES:
     :path: "../../../../node_modules/@capacitor/app"
   CapacitorCordova:
     :path: "../../../../node_modules/@capacitor/ios"
+  CapacitorScreenOrientation:
+    :path: "../../../../node_modules/@capacitor/screen-orientation"
 
 SPEC CHECKSUMS:
   Capacitor: 961efd309ab0e390a8081b63c561186f61a6714d
   CapacitorApp: f01a913211780e0718dae9750442c3e23f96e106
   CapacitorCordova: 3a4e0027a89a59421c918d19aee9d6ba1c7a3556
+  CapacitorScreenOrientation: a128ea5394d31a12d77f7f6bcb497010945ecda8
 
-PODFILE CHECKSUM: ddb904ae9bf08c32ca6fcbebfcb5178ecff21b10
+PODFILE CHECKSUM: edac27f424f4b94a544630e7e15cde2b378e22eb
 
 COCOAPODS: 1.16.2

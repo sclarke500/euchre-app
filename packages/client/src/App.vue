@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import AppToast from './components/AppToast.vue'
 import ScaledContainer from './components/ScaledContainer.vue'
 import { isMobile } from './utils/deviceMode'
+import { isNativeApp } from './utils/native'
+import { lockLandscape, unlockOrientation } from './utils/orientation'
 import {
   usePWAInstall,
   initPWAInstall,
@@ -73,17 +75,32 @@ const requiresLandscape = computed(() => {
   return landscapeRoutes.some(r => path.startsWith(r))
 })
 
-// Show landscape blocker when in portrait on landscape-required routes (mobile only)
+// Show landscape blocker when in portrait on landscape-required routes (mobile only).
+// In the native app we force landscape instead (see watcher below), so the
+// "rotate your device" overlay is never needed there.
 const showLandscapeBlocker = computed(() => {
-  return requiresLandscape.value && !isLandscape.value
+  return requiresLandscape.value && !isLandscape.value && !isNativeApp()
 })
 
 // Render landscape-required views once initialized in landscape
 const canRenderView = computed(() => {
   if (!requiresLandscape.value) return true
+  // Native app forces landscape via the OS, so render immediately (no
+  // dependence on the JS orientation read, which can lag the rotation).
+  if (isNativeApp()) return true
   if (hasInitializedInLandscape.value) return true
   return isLandscape.value
 })
+
+// Native only: force landscape on landscape-required routes, release elsewhere.
+// No-op on web/PWA (helpers are guarded by isNativeApp()).
+watch(requiresLandscape, (needsLandscape) => {
+  if (needsLandscape) {
+    lockLandscape()
+  } else {
+    unlockOrientation()
+  }
+}, { immediate: true })
 
 // Initialize when in landscape on landscape-required route
 watch([isLandscape, () => route.path], ([landscape, path]) => {
@@ -139,6 +156,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateOrientation)
+  // Release any forced landscape lock (native only).
+  unlockOrientation()
 })
 
 async function installPWA() {

@@ -46,4 +46,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    // Allow @capacitor/screen-orientation to lock orientation (e.g. force
+    // landscape during multiplayer games). Delegates the supported orientations
+    // to the Capacitor bridge view controller, which the plugin updates.
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        if let root = window?.rootViewController as? CAPBridgeViewController {
+            return UIInterfaceOrientationMask(rawValue: root.supportedInterfaceOrientations.rawValue)
+        }
+        return .all
+    }
+
 }

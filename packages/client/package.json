@@ -20,6 +20,7 @@
     "@capacitor/app": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
+    "@capacitor/screen-orientation": "^7.0.4",
     "canvas-confetti": "^1.9.4",
     "pinia": "^3.0.4",
     "vue": "^3.5.26",
