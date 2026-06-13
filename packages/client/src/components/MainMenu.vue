@@ -15,6 +15,13 @@ export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 const showSettings = ref(false)
 const showProfile = ref(false)
 const showRotatePrompt = ref(false)
+
+function goToSupport() {
+  router.push('/support')
+}
+function goToPrivacy() {
+  router.push('/privacy')
+}
 const pendingGame = ref<GameType | 'multiplayer' | null>(null)
 
 // Track portrait orientation (only matters on mobile)
@@ -360,6 +367,13 @@ const gameTitle = computed(() => {
       </Transition>
 
       <!-- PWA install prompts handled by App.vue -->
+
+      <!-- Footer links -->
+      <div class="menu-footer">
+        <a @click="goToSupport">Support</a>
+        <span class="footer-sep">·</span>
+        <a @click="goToPrivacy">Privacy</a>
+      </div>
     </div>
     </div>
   </div>
@@ -376,6 +390,28 @@ const gameTitle = computed(() => {
 .wobble-67 {
   animation: wobble-67 0.5s ease-in-out 2;
   transform-origin: center center;
+}
+
+.menu-footer {
+  margin-top: $spacing-md;
+  text-align: center;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  color: #fff;
+
+  a {
+    color: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  .footer-sep {
+    margin: 0 0.4rem;
+  }
 }
 
 .settings-btn {

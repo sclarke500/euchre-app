@@ -21,14 +21,15 @@ const { isStandalone, isIOS, canInstallNatively } = usePWAInstall()
 // Tablets/desktop use scaled container which handles portrait fine
 const landscapeRoutes = ['/play/', '/lobby', '/game']  // Note: /play/ requires trailing slash to skip /play menu
 
-// Routes that allow scrolling (landing page, etc.)
+// Routes that are full-page, scrolling documents (not the fixed-size game box)
+const SCROLLABLE_ROUTE_NAMES = ['landing', 'privacy', 'support']
 const scrollableRoutes = computed(() => {
-  return route.path === '/' || route.name === 'landing'
+  return route.path === '/' || SCROLLABLE_ROUTE_NAMES.includes(route.name as string)
 })
 
-// Routes that should use the scaled container (everything except landing)
+// Everything else renders inside the scaled container (the game surface)
 const useScaledContainer = computed(() => {
-  return route.path !== '/' && route.name !== 'landing'
+  return !scrollableRoutes.value
 })
 
 // Apply scrollable class to html element for landing page
