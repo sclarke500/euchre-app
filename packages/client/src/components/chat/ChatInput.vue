@@ -2,14 +2,9 @@
 import { ref, computed, nextTick } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
 import { CHAT_MAX_LENGTH } from '@67cards/shared'
+import { ENABLE_FREE_TEXT_CHAT } from '@/config/chat'
 
 const chatStore = useChatStore()
-
-// v1.0: free-text chat is disabled to avoid App Store UGC moderation
-// requirements (Guideline 1.2 — needs report/block/filter). Players can still
-// send the fixed preset reactions below, which are not user-generated content.
-// Flip to `true` (and ship report/block/filter) to re-enable open chat.
-const ENABLE_FREE_TEXT_CHAT = false
 
 const inputText = ref('')
 const showQuickReacts = ref(false)

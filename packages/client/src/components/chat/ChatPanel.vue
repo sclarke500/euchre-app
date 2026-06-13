@@ -3,6 +3,7 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { useChatStore } from '@/stores/chatStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { CHAT_MAX_LENGTH } from '@67cards/shared'
+import { ENABLE_FREE_TEXT_CHAT } from '@/config/chat'
 
 const props = withDefaults(defineProps<{
   show: boolean
@@ -128,6 +129,7 @@ function handleQuickReact(emoji: string) {
           <div class="panel-input-area">
             <div class="input-row">
               <input
+                v-if="ENABLE_FREE_TEXT_CHAT"
                 ref="inputRef"
                 v-model="inputText"
                 type="text"
@@ -136,6 +138,7 @@ function handleQuickReact(emoji: string) {
                 :maxlength="CHAT_MAX_LENGTH"
                 @keydown.enter.prevent="handleSubmit"
               />
+              <span v-else class="panel-input reacts-hint">Tap to send a reaction</span>
               <button
                 class="emoji-btn"
                 :class="{ active: showQuickReacts }"
@@ -144,6 +147,7 @@ function handleQuickReact(emoji: string) {
                 😊
               </button>
               <button
+                v-if="ENABLE_FREE_TEXT_CHAT"
                 class="send-btn"
                 :disabled="!canSubmit"
                 @click="handleSubmit"
@@ -207,6 +211,7 @@ function handleQuickReact(emoji: string) {
     <div class="panel-input-area">
       <div class="input-row">
         <input
+          v-if="ENABLE_FREE_TEXT_CHAT"
           ref="inputRef"
           v-model="inputText"
           type="text"
@@ -215,6 +220,7 @@ function handleQuickReact(emoji: string) {
           :maxlength="CHAT_MAX_LENGTH"
           @keydown.enter.prevent="handleSubmit"
         />
+        <span v-else class="panel-input reacts-hint">Tap to send a reaction</span>
         <button
           class="emoji-btn"
           :class="{ active: showQuickReacts }"
@@ -223,6 +229,7 @@ function handleQuickReact(emoji: string) {
           😊
         </button>
         <button
+          v-if="ENABLE_FREE_TEXT_CHAT"
           class="send-btn"
           :disabled="!canSubmit"
           @click="handleSubmit"
@@ -442,6 +449,12 @@ function handleQuickReact(emoji: string) {
   &::placeholder {
     color: rgba(255, 255, 255, 0.4);
   }
+}
+
+.reacts-hint {
+  color: rgba(255, 255, 255, 0.4);
+  user-select: none;
+  align-self: center;
 }
 
 .emoji-btn {
