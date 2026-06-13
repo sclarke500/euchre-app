@@ -505,19 +505,23 @@ function checkForUpdates() {
 }
 
 .about-buttons {
-  display: flex;
+  display: grid;
+  // Wrap into as many columns as fit (2-up in portrait, more when wide)
+  // instead of forcing one non-wrapping row that overflows horizontally.
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: $spacing-sm;
   margin-top: $spacing-md;
 }
 
 .about-btn {
-  flex: 1;
+  min-width: 0;
   padding: $spacing-sm $spacing-md;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: white;
   font-weight: 500;
   font-size: 0.85rem;
+  text-align: center;
   
   &:hover {
     background: rgba(255, 255, 255, 0.2);
