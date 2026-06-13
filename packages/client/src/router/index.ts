@@ -76,6 +76,11 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  // SPAs don't reset scroll on navigation by default. Scroll to top on a new
+  // navigation; restore the previous position on back/forward.
+  scrollBehavior(_to, _from, savedPosition) {
+    return savedPosition ?? { top: 0 }
+  },
 })
 
 // In the native app, skip the marketing landing page and go straight to the
