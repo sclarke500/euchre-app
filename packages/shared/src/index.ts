@@ -3,13 +3,13 @@
 // Utilities
 export { createGameTimer, type GameTimer, GameTimings } from './utils/timer.js'
 
-// AI Personality (legacy - kept for backward compatibility)
-export { getAIComment, resetAIChatCooldown, type AIChatEvent, type AIChatMode } from './ai/personality.js'
+// AI chat mode type (used by client settings + multiplayer lobby)
+export { type AIChatMode } from './ai/personality.js'
 
-// Bot profiles and remarks
+// Bot profiles and remarks (live in-game bot chat)
 export * from './ai/bots/index.js'
 
-// Chat System (legacy architecture - being replaced by bots)
+// Shared chat types (e.g. ChatMode, used by server games)
 export * from './ai/chat/index.js'
 
 // Multiplayer protocol and table/lobby types
@@ -51,9 +51,6 @@ export {
   SpadesTracker,
   chooseSpadesCardHard,
   chooseSpadesBidHard,
-  // Chat engine (legacy)
-  type SpadesChatState,
-  processSpadesChat,
   // Remarks engine
   getSpadesRemark,
   type SpadesRemarkState,
