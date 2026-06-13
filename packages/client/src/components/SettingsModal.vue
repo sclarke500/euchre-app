@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useSettingsStore, type AIDifficulty, type RoomTheme } from '@/stores/settingsStore'
+import { useLegalModal } from '@/composables/useLegalModal'
 
 const roomThemes: { id: RoomTheme; name: string; icon: string }[] = [
   { id: 'space', name: 'Space', icon: '🌌' },
@@ -17,7 +18,7 @@ import BugReportModal from '@/components/BugReportModal.vue'
 import { usePWAInstall, triggerInstall } from '@/composables/usePWAInstall'
 
 const route = useRoute()
-const router = useRouter()
+const { openLegal } = useLegalModal()
 
 defineProps<{
   show: boolean
@@ -27,14 +28,14 @@ const emit = defineEmits<{
   close: []
 }>()
 
+// Open as an in-app popup (over Settings) instead of navigating away, so
+// closing it returns the user to Settings rather than the marketing home page.
 function goToPrivacy() {
-  emit('close')
-  router.push('/privacy')
+  openLegal('privacy')
 }
 
 function goToSupport() {
-  emit('close')
-  router.push('/support')
+  openLegal('support')
 }
 
 const settings = useSettingsStore()

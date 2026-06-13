@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppToast from './components/AppToast.vue'
 import ScaledContainer from './components/ScaledContainer.vue'
+import LegalModal from './components/legal/LegalModal.vue'
 import { isMobile } from './utils/deviceMode'
 import { isNativeApp } from './utils/native'
 import { lockLandscape, unlockOrientation } from './utils/orientation'
@@ -259,6 +260,9 @@ function dismissOpenInAppPrompt() {
     
     <!-- Landing page without scaling -->
     <router-view v-else-if="canRenderView" />
+
+    <!-- Global Support/Privacy popup (in-app entry points) -->
+    <LegalModal />
   </div>
 </template>
 

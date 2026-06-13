@@ -6,9 +6,11 @@ import { isMobile } from '@/utils/deviceMode'
 import SettingsModal from './SettingsModal.vue'
 import ProfileModal from './ProfileModal.vue'
 import AppLogo from './AppLogo.vue'
+import { useLegalModal } from '@/composables/useLegalModal'
 
 const route = useRoute()
 const router = useRouter()
+const { openLegal } = useLegalModal()
 
 export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 
@@ -16,11 +18,12 @@ const showSettings = ref(false)
 const showProfile = ref(false)
 const showRotatePrompt = ref(false)
 
+// Open Support/Privacy as an in-app popup (closing returns to the menu).
 function goToSupport() {
-  router.push('/support')
+  openLegal('support')
 }
 function goToPrivacy() {
-  router.push('/privacy')
+  openLegal('privacy')
 }
 const pendingGame = ref<GameType | 'multiplayer' | null>(null)
 
