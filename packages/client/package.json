@@ -12,7 +12,7 @@
     "cap:sync": "npm run build && cap sync",
     "cap:ios": "npm run build && cap sync ios && cap open ios",
     "cap:android": "npm run build && cap sync android && cap open android",
-    "cap:assets": "npx @capacitor/assets generate --iconBackgroundColor '#181820' --iconBackgroundColorDark '#181820' --splashBackgroundColor '#181820' --splashBackgroundColorDark '#181820'"
+    "cap:assets": "npx @capacitor/assets generate --iconBackgroundColor '#1e6045' --iconBackgroundColorDark '#1e6045' --splashBackgroundColor '#1e6045' --splashBackgroundColorDark '#1e6045'"
   },
   "dependencies": {
     "@67cards/shared": "*",
