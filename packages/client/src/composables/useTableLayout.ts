@@ -1,6 +1,5 @@
 import { ref, computed, type Ref } from 'vue'
 import { Hand } from '@/components/cardContainers'
-import { isFullMode } from '@/utils/deviceMode'
 
 export interface SeatLayout {
   side: 'bottom' | 'left' | 'top' | 'right'
@@ -93,10 +92,10 @@ export function computeTableLayout(
   const userAreaPct = 0.24 // Larger user area - table bottom raised ~15px
 
   const tableW = boardWidth * (1 - marginLeft - marginRight)
-  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - 15
+  const tableH = boardHeight * (1 - tableMarginTop - userAreaPct) - boardHeight * 0.02
 
   const tableLeft = boardWidth * marginLeft
-  const tableTop = boardHeight * tableMarginTop - 5
+  const tableTop = boardHeight * tableMarginTop - boardHeight * 0.008
   const tableRight = tableLeft + tableW
   const tableBottom = tableTop + tableH
 
@@ -122,9 +121,9 @@ export function computeTableLayout(
     let handX: number
     let handY: number
 
-    // Offset from avatar into the table (cards appear "in front of" player)
-    // Full mode: further in (larger table). Mobile: closer to edge
-    const handOffset = isFullMode() ? 70 : 45
+    // Offset from the table edge inward (cards sit "in front of" each player).
+    // Proportional to board height so it scales with the single canonical.
+    const handOffset = boardHeight * 0.11
 
     switch (seat.side) {
       case 'left':
@@ -144,7 +143,7 @@ export function computeTableLayout(
         break
       default: // bottom (user) - deal position inside table, then animate down when fanning
         handX = tableX
-        handY = tableBottom - (isFullMode() ? 60 : 40)
+        handY = tableBottom - boardHeight * 0.095
     }
 
     const handPos = { x: handX, y: handY }

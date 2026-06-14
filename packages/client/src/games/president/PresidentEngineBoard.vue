@@ -746,7 +746,7 @@ onUnmounted(() => {
   border-radius: 6px;
   padding: 6px 12px;
   backdrop-filter: blur(8px);
-  font-size: 12px;
+  font-size: $ui-xs;
   font-weight: 600;
   color: #ccc;
 }
@@ -762,7 +762,7 @@ onUnmounted(() => {
   border: 1px solid $surface-500;
   border-radius: 16px;
   padding: 6px 16px;
-  font-size: 12px;
+  font-size: $ui-xs;
   font-weight: 500;
   color: #aaa;
   text-transform: uppercase;
@@ -862,7 +862,7 @@ onUnmounted(() => {
 
 .action-panel-container .action-label {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
+  font-size: $ui-xs;
   font-weight: 600;
   text-align: center;
 }
@@ -889,7 +889,7 @@ onUnmounted(() => {
 
 // Rank badges (President 👑, Scum 💩, etc.)
 .rank-badge {
-  font-size: 28px;
+  font-size: $ui-lg;
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
   
@@ -903,7 +903,7 @@ onUnmounted(() => {
 
 // Action hint text above buttons
 .action-hint {
-  font-size: 13px;
+  font-size: $ui-xs;
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 4px;
 }
@@ -944,7 +944,7 @@ onUnmounted(() => {
   gap: 8px;
   padding: 6px 8px;
   color: #ccc;
-  font-size: 0.9rem;
+  font-size: $ui-sm;
 
   &:nth-child(odd) {
     background: rgba(255, 255, 255, 0.05);
@@ -971,7 +971,7 @@ onUnmounted(() => {
 .title {
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: $ui-xs;
 }
 
 .next-round-msg {
@@ -1006,7 +1006,7 @@ onUnmounted(() => {
 
 .rules-content {
   text-align: left;
-  font-size: 0.9rem;
+  font-size: $ui-sm;
   line-height: 1.5;
   color: #ccc;
   
@@ -1035,7 +1035,7 @@ onUnmounted(() => {
 }
 
 .game-over-title {
-  font-size: 18px;
+  font-size: $ui-md;
   font-weight: 700;
   color: #fff;
   margin-bottom: 6px;
@@ -1060,7 +1060,7 @@ onUnmounted(() => {
 
 .restore-message {
   color: #88aa99;
-  font-size: 18px;
+  font-size: $ui-md;
   font-weight: 500;
 }
 

@@ -668,32 +668,32 @@ onUnmounted(() => {
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 12px;
+  padding: 10px 16px;
   backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   color: #ccc;
 
   .score-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 18px;
   }
 
   .score-label {
     font-weight: 600;
-    font-size: 13px;
+    font-size: $ui-md;
     color: #aaa;
   }
 
   .score-value {
     font-weight: 700;
-    font-size: 22px;
+    font-size: $ui-xl;
     color: #fff;
-    min-width: 28px;
+    min-width: 44px;
     text-align: right;
     position: relative;
     overflow: hidden;
@@ -722,7 +722,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: $ui-sm;
   font-weight: bold;
 }
 
@@ -731,7 +731,7 @@ onUnmounted(() => {
   height: 26px;
   border-radius: 50%;
   background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
-  font-size: 18px;
+  font-size: $ui-md;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -745,7 +745,7 @@ onUnmounted(() => {
   border-radius: 50%;
   background: linear-gradient(135deg, #3a3a4c 0%, #2a2a3c 100%);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  font-size: 16px;
+  font-size: $ui-sm;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -754,7 +754,7 @@ onUnmounted(() => {
 
 // Suit buttons need specific styling
 .suit-btn {
-  font-size: 24px !important;
+  font-size: $ui-lg !important;
   padding: 8px 16px !important;
   background: rgba(240, 240, 245, 0.95) !important;
   border-color: #bbb !important;
@@ -775,21 +775,21 @@ onUnmounted(() => {
 }
 
 .game-over-title {
-  font-size: 18px;
+  font-size: $ui-md;
   font-weight: 700;
   color: #fff;
   margin-bottom: 6px;
 }
 
 .game-over-result {
-  font-size: 14px;
+  font-size: $ui-sm;
   font-weight: 600;
   color: #ffd700;
   margin-bottom: 4px;
 }
 
 .game-over-scores {
-  font-size: 12px;
+  font-size: $ui-xs;
   color: #aaa;
   margin-bottom: 14px;
 }
@@ -802,9 +802,9 @@ onUnmounted(() => {
 
 .rules-content {
   text-align: left;
-  font-size: 0.9rem;
+  font-size: $ui-sm;
   line-height: 1.5;
-  
+
   p {
     margin: 0 0 12px;
     
@@ -828,10 +828,10 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 14px;
-  padding: 18px 16px;
-  min-width: 130px;
-  border-radius: 20px 0 0 20px;
+  gap: 22px;
+  padding: 30px 26px;
+  min-width: 210px;
+  border-radius: 32px 0 0 32px;
   
   // Unified frosted panel with gold glow (shares vars with user avatar)
   background: var(--panel-bg);
@@ -860,6 +860,11 @@ onUnmounted(() => {
 }
 
 // Pass button - neutral, strategic option (not cancel-like)
+.action-panel-container .frosted-btn {
+  font-size: $ui-lg;
+  padding: 16px 28px;
+}
+
 .action-panel-container .frosted-btn--pass {
   background: linear-gradient(
     180deg,
@@ -900,8 +905,8 @@ onUnmounted(() => {
 }
 
 .action-panel-container .suit-btn {
-  font-size: 22px !important;
-  padding: 8px 14px !important;
+  font-size: $ui-xl !important;
+  padding: 12px 22px !important;
   width: 100%;
   background: rgba(240, 240, 245, 0.95) !important;
   border-color: #bbb !important;
@@ -917,7 +922,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8px;
   color: rgba(255, 255, 255, 0.75);
-  font-size: 12px;
+  font-size: ui-size(14px, 2.5vh, 22px);
   cursor: pointer;
   user-select: none;
   margin-top: -4px; // Tuck closer to the action button above
@@ -934,13 +939,13 @@ onUnmounted(() => {
 
 .action-panel-container .action-label {
   color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
+  font-size: $ui-md;
   font-weight: 600;
 }
 
 .action-panel-container .discard-prompt {
   color: #ffd700;
-  font-size: 15px;
+  font-size: $ui-lg;
   font-weight: 700;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   padding: 8px 16px;
@@ -951,7 +956,7 @@ onUnmounted(() => {
 
 .action-panel-container .stick-dealer-label {
   color: #ff6b6b;
-  font-size: 14px;
+  font-size: $ui-sm;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -991,7 +996,7 @@ onUnmounted(() => {
 
 .restore-message {
   color: #88aa99;
-  font-size: 18px;
+  font-size: $ui-md;
   font-weight: 500;
 }
 

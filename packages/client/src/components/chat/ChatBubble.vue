@@ -101,7 +101,7 @@ const tailClass = computed(() => {
 .bubble-text {
   display: block;
   color: #1a1a1a;
-  font-size: 14px;
+  font-size: $ui-sm;
   line-height: 1.2;
 }
 

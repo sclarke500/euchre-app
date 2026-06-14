@@ -19,25 +19,28 @@
  * - We poll until dimensions stabilize (typically 100-500ms)
  */
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { isFullMode, isMobile } from '@/utils/deviceMode'
+import { isMobile } from '@/utils/deviceMode'
 import { getDeviceSafeAreas, type SafeAreaInsets } from '@/utils/deviceSafeAreas'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useBoardViewport, setViewportSize, setSafeInsets } from '@/composables/useBoardViewport'
 
 const settings = useSettingsStore()
 
-// Canonical dimensions - design at these sizes
-const DESKTOP_WIDTH = 1120
-const DESKTOP_HEIGHT = 630
-const MOBILE_LANDSCAPE_WIDTH = 820
-const MOBILE_LANDSCAPE_HEIGHT = 370
-const MOBILE_PORTRAIT_WIDTH = 370
-const MOBILE_PORTRAIT_HEIGHT = 700
+// Canonical geometry + scale come from the single board-viewport source of truth
+// (model B: fixed canonical height, width follows viewport aspect, one scale).
+const { canonicalWidth, canonicalHeight, scale } = useBoardViewport()
+
+// Expose the board scale as a CSS variable so screen-fixed HUD overlays
+// (scoreboard, action panel, menu, etc.) can scale in lockstep with the board
+// via `transform: scale(var(--board-scale))`.
+watch(scale, (s) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--board-scale', String(s))
+  }
+}, { immediate: true })
 
 const wrapperRef = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
-const scale = ref(1)
-const wrapperWidth = ref(0)
-const wrapperHeight = ref(0)
 const safeInsets = ref<SafeAreaInsets>({ top: 0, right: 0, bottom: 0, left: 0 })
 const deviceName = ref('Unknown')
 const isPortrait = ref(false)
@@ -45,19 +48,6 @@ const isPortrait = ref(false)
 // Track last known dimensions
 let lastViewportW = 0
 let lastViewportH = 0
-
-// Get canonical dimensions based on mode and orientation
-const canonicalWidth = computed(() => {
-  if (isFullMode()) return DESKTOP_WIDTH
-  return isPortrait.value ? MOBILE_PORTRAIT_WIDTH : MOBILE_LANDSCAPE_WIDTH
-})
-const canonicalHeight = computed(() => {
-  if (isFullMode()) return DESKTOP_HEIGHT
-  return isPortrait.value ? MOBILE_PORTRAIT_HEIGHT : MOBILE_LANDSCAPE_HEIGHT
-})
-
-// Always scale now (both mobile and desktop)
-const shouldScale = computed(() => true)
 
 /**
  * Get device orientation using screen.orientation API
@@ -143,62 +133,31 @@ function dimensionsLookValid(width: number, height: number, orientation: 'portra
 function calculateScale() {
   const deviceOrientation = getDeviceOrientation()
   const { width: viewportW, height: viewportH } = getViewportDimensions()
-  
-  if (viewportW === 0 || viewportH === 0) {
-    console.log('[ScaledContainer] Zero dimensions, skipping')
-    return
-  }
-  
-  // Use device orientation (derived from screen.orientation API)
+
+  if (viewportW === 0 || viewportH === 0) return
+
   isPortrait.value = deviceOrientation === 'portrait'
-  
-  // Apply safe area insets to get usable box
-  let usableW = viewportW
-  let usableH = viewportH
-  
+
+  // Resolve device safe-area insets. These feed the LAYOUT (to keep interactive
+  // content clear of notches/home indicator); the felt itself fills the whole
+  // viewport, so insets no longer shrink the board.
+  let insets: SafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 }
   if (isMobile()) {
-    // Get device-specific safe areas
     const deviceInfo = getDeviceSafeAreas()
     deviceName.value = deviceInfo.name
-    
-    // Safe areas are different in portrait vs landscape
-    // In portrait: top has notch/island, bottom has home indicator
-    // In landscape: left/right have notch, bottom has home indicator
     if (isPortrait.value) {
-      // Portrait: use top/bottom insets
-      // Note: deviceSafeAreas returns landscape values, so we need to swap
-      safeInsets.value = {
-        top: deviceInfo.insets.left, // Notch moves to top in portrait
-        right: 0,
-        bottom: deviceInfo.insets.bottom,
-        left: 0,
-      }
+      // deviceSafeAreas returns landscape values; the notch moves to top in portrait
+      insets = { top: deviceInfo.insets.left, right: 0, bottom: deviceInfo.insets.bottom, left: 0 }
     } else {
-      // Landscape: use left/right insets as-is
-      safeInsets.value = deviceInfo.insets
+      insets = deviceInfo.insets
     }
-    
-    usableW = viewportW - safeInsets.value.left - safeInsets.value.right
-    usableH = viewportH - safeInsets.value.top - safeInsets.value.bottom
-    
-    const orient = isPortrait.value ? 'portrait' : 'landscape'
-    console.log(`[ScaledContainer] ${deviceInfo.name} (${orient}), Viewport: ${viewportW}×${viewportH}, Usable: ${usableW}×${usableH}`)
-  } else {
-    console.log(`[ScaledContainer] Desktop: ${viewportW}×${viewportH}`)
   }
-  
-  wrapperWidth.value = usableW
-  wrapperHeight.value = usableH
-  
-  // Scale to fit usable box
-  const scaleX = usableW / canonicalWidth.value
-  const scaleY = usableH / canonicalHeight.value
-  
-  // Use smaller scale to maintain aspect ratio and fit
-  scale.value = Math.min(scaleX, scaleY)
-  console.log(`[ScaledContainer] Canonical: ${canonicalWidth.value}×${canonicalHeight.value}, Scale: ${scale.value.toFixed(3)}`)
-  
-  // Update last known dimensions
+  safeInsets.value = insets
+
+  // Feed the single source of truth (canonical width + scale derive from this).
+  setViewportSize(viewportW, viewportH)
+  setSafeInsets(insets)
+
   lastViewportW = viewportW
   lastViewportH = viewportH
 }
@@ -254,47 +213,21 @@ onUnmounted(() => {
   }
 })
 
-// Calculate style with centering offset
-const scaledStyle = computed(() => {
-  const scaledW = canonicalWidth.value * scale.value
-  const scaledH = canonicalHeight.value * scale.value
-  
-  // Calculate offset to center within usable box
-  // For mobile, also add safe area offset
-  let offsetX = Math.max(0, (wrapperWidth.value - scaledW) / 2)
-  let offsetY = Math.max(0, (wrapperHeight.value - scaledH) / 2)
-  
-  if (isMobile()) {
-    offsetX += safeInsets.value.left
-    offsetY += safeInsets.value.top
-  }
-  
-  return {
-    width: `${canonicalWidth.value}px`,
-    height: `${canonicalHeight.value}px`,
-    transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale.value})`,
-  }
-})
+// Model B fills the viewport exactly (canonical aspect == viewport aspect), so
+// the board scales from the top-left with no centering offset.
+const scaledStyle = computed(() => ({
+  width: `${canonicalWidth.value}px`,
+  height: `${canonicalHeight.value}px`,
+  transform: `scale(${scale.value})`,
+}))
 
-// Aurora glow positioned behind container (slightly larger, same transform)
+// Aurora glow sits behind the board (slightly larger), sharing the same scale.
 const auroraStyle = computed(() => {
-  const scaledW = canonicalWidth.value * scale.value
-  const scaledH = canonicalHeight.value * scale.value
-  
-  let offsetX = Math.max(0, (wrapperWidth.value - scaledW) / 2)
-  let offsetY = Math.max(0, (wrapperHeight.value - scaledH) / 2)
-  
-  if (isMobile()) {
-    offsetX += safeInsets.value.left
-    offsetY += safeInsets.value.top
-  }
-  
-  // Glow extends 50px beyond container on each side
   const glowPad = 50
   return {
     width: `${canonicalWidth.value + glowPad * 2}px`,
     height: `${canonicalHeight.value + glowPad * 2}px`,
-    transform: `translate(${offsetX - glowPad * scale.value}px, ${offsetY - glowPad * scale.value}px) scale(${scale.value})`,
+    transform: `translate(${-glowPad * scale.value}px, ${-glowPad * scale.value}px) scale(${scale.value})`,
   }
 })
 

@@ -28,8 +28,8 @@ const hasUnread = computed(() => chatStore.unreadCount > 0)
 <style scoped lang="scss">
 .chat-icon-btn {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 68px;
+  height: 68px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-dark-border);
   background: var(--color-dark-surface);
@@ -50,8 +50,8 @@ const hasUnread = computed(() => chatStore.unreadCount > 0)
   }
   
   svg {
-    width: 22px;
-    height: 22px;
+    width: 38px;
+    height: 38px;
   }
 }
 
@@ -59,8 +59,8 @@ const hasUnread = computed(() => chatStore.unreadCount > 0)
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 10px;
-  height: 10px;
+  width: 16px;
+  height: 16px;
   background: var(--color-danger);
   border-radius: 50%;
   border: 2px solid var(--color-dark-surface);

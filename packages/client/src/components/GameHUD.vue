@@ -108,8 +108,8 @@ function handleRules() {
 }
 
 .hud-btn {
-  width: 40px;
-  height: 40px;
+  width: 68px;
+  height: 68px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-dark-border);
   background: var(--color-dark-surface);
@@ -118,14 +118,14 @@ function handleRules() {
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   &:hover {
     background: var(--color-dark-surface-elevated);
   }
-  
+
   svg {
-    width: 24px;
-    height: 24px;
+    width: 40px;
+    height: 40px;
   }
 }
 
@@ -133,7 +133,7 @@ function handleRules() {
   position: absolute;
   top: 48px;
   left: 0;
-  min-width: 160px;
+  min-width: 200px;
   background: var(--color-dark-surface);
   border: 1px solid var(--color-dark-border);
   border-radius: var(--radius-md);
@@ -148,7 +148,7 @@ function handleRules() {
   background: none;
   border: none;
   color: var(--color-dark-text);
-  font-size: 14px;
+  font-size: $ui-sm;
   text-align: left;
   cursor: pointer;
   display: flex;

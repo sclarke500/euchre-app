@@ -60,3 +60,29 @@ $card-height: 116px;
 $card-overlap-hand: -25px;        // Player hands (Euchre, President)
 $card-overlap-hand-tight: -35px;  // Tight hands (many cards, small screens)
 $card-overlap-pile: -20px;        // Stacked piles (opponent backs, played cards)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Readable-floor sizing for HUD / text.
+//
+// The board scales by --board-scale (= viewportHeight / canonicalHeight), which
+// is < 1 on phones and > 1 on desktop. Sizing text in plain canonical px makes
+// it tiny on phones and huge on desktop. `ui-size()` instead pins the EFFECTIVE
+// on-screen size to a readable clamp(): it counter-divides by --board-scale so,
+// after the board transform multiplies by --board-scale, the result lands at
+// clamp($min, $pref, $max) on screen — regardless of board scale. Use vh for
+// $pref so it still tracks screen size between the floor and ceiling.
+//   e.g. font-size: ui-size(13px, 2.6vh, 22px);
+// ─────────────────────────────────────────────────────────────────────────────
+@function ui-size($min, $pref, $max) {
+  @return calc(clamp(#{$min}, #{$pref}, #{$max}) / var(--board-scale, 1));
+}
+
+// UI text scale — every HUD / board-overlay font-size should use one of these
+// (card FACE text is exempt; it scales with the card). Each value is the
+// EFFECTIVE on-screen clamp range (floor / viewport-tracking / ceiling). Tune
+// the whole HUD's readability from here.
+$ui-xs: ui-size(12px, 2.1vh, 18px); // fine print, secondary chips
+$ui-sm: ui-size(15px, 2.7vh, 23px); // labels, body, checkboxes
+$ui-md: ui-size(18px, 3.2vh, 29px); // names, buttons, emphasis
+$ui-lg: ui-size(23px, 4.1vh, 37px); // prompts, section headings
+$ui-xl: ui-size(30px, 5.4vh, 50px); // score numbers, hero text

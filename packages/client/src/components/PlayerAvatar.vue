@@ -205,8 +205,8 @@ const bubblePosition = computed(() => {
   }
 
   &.is-user .player-name {
-    padding: 4px 14px;
-    font-size: 14px;
+    padding: ui-size(4px, 0.9vh, 8px) ui-size(14px, 2.8vh, 26px);
+    font-size: ui-size(16px, 3vh, 26px);
     background: transparent; // Backdrop handles the background now
   }
   
@@ -222,15 +222,15 @@ const bubblePosition = computed(() => {
   }
 
   .avatar-circle {
-    width: 48px;
-    height: 48px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     background: linear-gradient(145deg, #4a4a5c, #3a3a4c);
     border: 2px solid #5a5a70;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: $ui-md;
     font-weight: bold;
     color: #ddd;
     box-shadow: 
@@ -253,7 +253,9 @@ const bubblePosition = computed(() => {
   }
   
   .avatar-initial {
-    // Keep existing initial styling
+    font-size: ui-size(24px, 4.6vh, 40px);
+    font-weight: 700;
+    color: #e8e8f0;
   }
 
   .name-column {
@@ -264,8 +266,8 @@ const bubblePosition = computed(() => {
   }
 
   .player-name {
-    padding: 3px 14px;
-    font-size: 13px;
+    padding: ui-size(4px, 0.9vh, 8px) ui-size(14px, 2.8vh, 26px);
+    font-size: ui-size(15px, 3vh, 25px);
     font-weight: 600;
     color: #e8e8f0;
     white-space: nowrap;
@@ -293,7 +295,7 @@ const bubblePosition = computed(() => {
     left: 50%;
     transform: translateX(-50%) scale(0.8);
     margin-top: 6px;
-    font-size: 12px;
+    font-size: $ui-xs;
     color: #fff;
     background: linear-gradient(180deg, rgba(70, 75, 90, 0.95) 0%, rgba(50, 55, 65, 0.98) 100%);
     padding: 5px 14px;
@@ -361,7 +363,7 @@ const bubblePosition = computed(() => {
     border-radius: 50%;
     background: #fff;
     border: none;
-    font-size: 22px;
+    font-size: $ui-lg;
     font-weight: bold;
     display: flex;
     align-items: center;
@@ -473,50 +475,52 @@ const bubblePosition = computed(() => {
 }
 </style>
 
-<!-- Unscoped styles for full-mode sizing (avatars, chips, labels) -->
+<!-- Avatar/chip/label sizing — universal now (the canonical is uniformly large,
+     so there is no separate "mobile" tier). PlayerAvatar is only used on the
+     game board, so these global selectors are safe. -->
 <style lang="scss">
-.full-mode .player-avatar {
-  // Larger avatar circle
+.player-avatar {
+  // Avatar circle (kept in sync with the scoped default above)
   .avatar-circle {
-    width: 80px;
-    height: 80px;
+    width: 90px;
+    height: 90px;
   }
-  
-  // Larger name labels
+
+  // Name labels — readable-floored so they never get tiny on phones
   .player-name {
-    padding: 5px 20px;
-    font-size: 15px;
+    padding: ui-size(4px, 0.9vh, 8px) ui-size(14px, 2.8vh, 26px);
+    font-size: ui-size(15px, 3vh, 25px);
     border-radius: 14px;
   }
-  
-  // Larger trump chip, adjusted position
+
+  // Trump chip
   .trump-chip {
     width: 36px;
     height: 36px;
-    font-size: 26px;
+    font-size: $ui-lg;
     top: -8px;
     right: -10px;
   }
-  
-  // Opponent trump chip - further out for larger avatar
+
+  // Opponent trump chip — further out for the larger avatar
   &:not(.is-user) .trump-chip {
     top: -10px;
     right: -13px;
   }
-  
+
   // Info tags (bid/tricks chips)
   .info-tags {
     gap: 6px;
-    
+
     .info-chip {
-      font-size: 13px;
+      font-size: $ui-xs;
       padding: 3px 10px;
     }
   }
 }
 
-// Full mode user avatar position (raised 5px)
-.full-mode .player-avatar.position-bottom {
+// User avatar position (raised slightly)
+.player-avatar.position-bottom {
   bottom: 15px;
 }
 </style>

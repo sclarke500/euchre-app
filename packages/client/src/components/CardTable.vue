@@ -95,7 +95,6 @@ import { useChatStore } from '@/stores/chatStore'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import { useCardSizing } from '@/composables/useCardSizing'
-import { isFullMode } from '@/utils/deviceMode'
 
 const props = withDefaults(defineProps<{
   playerCount: number
@@ -220,31 +219,18 @@ const dealerChipStyle = computed(() => {
   if (!seat) return { display: 'none' }
   
   const { tableBounds } = layout
-  // Chip offset: full mode has larger avatars (80px vs 48px), adjust position
-  const chipOffset = isFullMode() 
-    ? { x: -56, y: -61 } // Full mode: further out for larger avatar
-    : { x: -38, y: -38 } // Mobile: original values for 48px avatar
-  
+  // One universal avatar size now (the canonical is uniformly large), so a
+  // single chip offset applies everywhere.
+  const chipOffset = { x: -56, y: -61 }
+
   if (seat.isUser) {
-    // User avatar is fixed at bottom of screen
-    // Convert to top positioning so CSS transition works (can't animate between top/bottom)
+    // User avatar is fixed at the bottom of the screen.
     const boardHeight = board.offsetHeight
-    if (isFullMode()) {
-      // Full mode: adjusted position for larger avatar
-      const chipTop = boardHeight - 85 - 28
-      return {
-        left: `${tableBounds.centerX - 90}px`,
-        top: `${chipTop}px`,
-        bottom: 'auto',
-      }
-    } else {
-      // Mobile: original position
-      const chipTop = boardHeight - 50 - 28
-      return {
-        left: `${tableBounds.centerX - 73}px`,
-        top: `${chipTop}px`,
-        bottom: 'auto',
-      }
+    const chipTop = boardHeight - 85 - 28
+    return {
+      left: `${tableBounds.centerX - 90}px`,
+      top: `${chipTop}px`,
+      bottom: 'auto',
     }
   }
   
@@ -458,7 +444,7 @@ defineExpose({
     user-select: none;
     
     .watermark-img {
-      width: 120px;
+      width: 190px;
       height: auto;
       opacity: 0.2;
     }
@@ -506,7 +492,7 @@ defineExpose({
       #2563eb 300deg 330deg, #fff 330deg 360deg
     );
   color: #1e40af;
-  font-size: 14px;
+  font-size: $ui-sm;
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -549,6 +535,6 @@ defineExpose({
 .full-mode .dealer-chip-table {
   width: 36px;
   height: 36px;
-  font-size: 16px;
+  font-size: $ui-sm;
 }
 </style>

@@ -523,7 +523,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   border-radius: 7px;
   padding: 0;
   backdrop-filter: blur(8px);
-  font-size: 13px;
+  font-size: $ui-xs;
   color: #ccc;
 }
 
@@ -543,20 +543,20 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   
   .score-label {
     font-weight: 600;
-    font-size: 13px;
+    font-size: $ui-xs;
     color: rgba(255, 255, 255, 0.8);
   }
-  
+
   .score-value {
     font-weight: 700;
-    font-size: 22px;
+    font-size: $ui-lg;
     color: #fff;
     min-width: 28px;
     text-align: right;
   }
   
   .spades-broken-indicator {
-    font-size: 11px;
+    font-size: $ui-xs;
     color: rgba(255, 255, 255, 0.6);
     text-align: center;
     padding-top: 4px;
@@ -575,7 +575,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 }
 
 .round-summary-title {
-  font-size: 1rem;
+  font-size: $ui-sm;
   font-weight: 700;
   color: #fff;
   text-align: center;
@@ -594,7 +594,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   border-bottom: 1px solid rgba(255,255,255,0.2);
   margin-bottom: 6px;
   font-weight: 600;
-  font-size: 11px;
+  font-size: $ui-xs;
   color: #aaa;
   text-align: center;
   
@@ -609,7 +609,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   gap: 6px;
   padding: 2px 0;
   color: #ccc;
-  font-size: 12px;
+  font-size: $ui-xs;
   text-align: center;
   
   span:first-child {
@@ -630,7 +630,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
     margin-top: 8px;
     padding-top: 8px;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: $ui-md;
     color: #ffd700;
   }
   
@@ -658,21 +658,21 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 }
 
 .game-over-title {
-  font-size: 18px;
+  font-size: $ui-md;
   font-weight: 700;
   color: #fff;
   margin-bottom: 6px;
 }
 
 .game-over-result {
-  font-size: 14px;
+  font-size: $ui-sm;
   font-weight: 600;
   color: #ffd700;
   margin-bottom: 4px;
 }
 
 .game-over-scores {
-  font-size: 12px;
+  font-size: $ui-xs;
   color: #aaa;
   margin-bottom: 14px;
 }
@@ -701,7 +701,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   
   .timeout-label {
     color: #f39c12;
-    font-size: 13px;
+    font-size: $ui-xs;
     font-weight: 600;
     background: rgba(0, 0, 0, 0.7);
     padding: 4px 10px;
@@ -714,7 +714,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
     border: 1px solid rgba(180, 60, 60, 0.6);
     border-radius: 8px;
     color: #fff;
-    font-size: 14px;
+    font-size: $ui-sm;
     font-weight: 600;
     cursor: pointer;
     backdrop-filter: blur(8px);
@@ -734,7 +734,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   color: white;
   padding: 4px 12px;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: $ui-xs;
 }
 
 .bid-chip {
@@ -742,7 +742,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   color: white;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: $ui-xs;
   font-weight: bold;
 }
 
@@ -751,7 +751,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   color: white;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: $ui-xs;
   margin-left: 4px;
 }
 
@@ -766,13 +766,13 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   
   h2 {
     margin: 0 0 16px;
-    font-size: 1.25rem;
+    font-size: $ui-md;
   }
 }
 
 .rules-content {
   text-align: left;
-  font-size: 0.9rem;
+  font-size: $ui-sm;
   line-height: 1.5;
   color: #ccc;
   
@@ -802,7 +802,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 
 .restore-message {
   color: #88aa99;
-  font-size: 18px;
+  font-size: $ui-md;
   font-weight: 500;
 }
 
