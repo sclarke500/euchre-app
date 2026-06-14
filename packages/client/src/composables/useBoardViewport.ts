@@ -34,11 +34,13 @@ export const CARD_ASPECT_RATIO = 1.4
 export const BASE_CARD_HEIGHT = Math.round(BASE_CARD_WIDTH * CARD_ASPECT_RATIO)
 
 /**
- * Clamp the canonical aspect ratio so pathological viewports (ultra-wide
- * monitors, near-square foldables) don't distort the table. Within this range
+ * Clamp the canonical aspect ratio only for truly pathological viewports
+ * (ultra-wide monitors). The lower bound must stay below a portrait PHONE
+ * (~0.46) so portrait screens — e.g. the main menu — render full-height rather
+ * than getting squeezed into a small landscape box at the top. Within the range
  * the board fills the screen exactly; outside it, it letterboxes gracefully.
  */
-const MIN_ASPECT = 1.2 // taller than this → pillarbox (very tall/landscape-square)
+const MIN_ASPECT = 0.4 // taller than a portrait phone → pillarbox (rare)
 const MAX_ASPECT = 2.6 // wider than this → letterbox (ultra-wide)
 
 // ── Reactive viewport inputs (set by ScaledContainer) ────────────────────────
