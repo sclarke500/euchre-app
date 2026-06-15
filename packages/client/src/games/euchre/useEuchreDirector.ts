@@ -12,7 +12,7 @@ import type { Card, Suit, ServerMessage, StandardCard } from '@67cards/shared'
 import type { EuchreGameAdapter } from './useEuchreGameAdapter'
 import type { CardTableEngine } from '@/composables/useCardTable'
 import { useCardController, cardControllerPresets } from '@/composables/useCardController'
-import { CardScales, isMobile } from '@/composables/useCardSizing'
+import { CardScales, getBaseCardWidth } from '@/composables/useCardSizing'
 import { computeTableLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import type { EngineCard, CardPosition } from '@/components/cardContainers'
 import { AnimationDurations, AnimationDelays, AnimationBuffers, sleep } from '@/utils/animationTimings'
@@ -238,8 +238,9 @@ export function useEuchreDirector(
   /** Center-cross position for a trick card. */
   function getTrickCardPosition(playerId: number, tableCenter: { x: number; y: number }, cardIndex: number): CardPosition {
     const seatIndex = playerIdToSeatIndex(playerId)
-    // Tighter spacing on mobile (cards are smaller)
-    const d = isMobile() ? 28 : 45
+    // Spread played cards proportionally to card width so they don't overlap
+    // (canonical-relative, no device tiers).
+    const d = getBaseCardWidth() * 0.5
     const offsets: Record<number, { x: number; y: number; rotation: number }> = {
       0: { x: 0, y: d, rotation: 0 },
       1: { x: -d, y: 0, rotation: -8 },

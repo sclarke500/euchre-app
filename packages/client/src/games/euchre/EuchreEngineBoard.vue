@@ -716,8 +716,8 @@ onUnmounted(() => {
 }
 
 .info-chip {
-  width: 26px;
-  height: 26px;
+  width: 1.7em; // box tracks the (readable-floored) font so it never crowds
+  height: 1.7em;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -727,8 +727,8 @@ onUnmounted(() => {
 }
 
 .trump-chip {
-  width: 26px;
-  height: 26px;
+  width: 1.5em;
+  height: 1.5em;
   border-radius: 50%;
   background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
   font-size: $ui-md;
@@ -740,8 +740,8 @@ onUnmounted(() => {
 
 // User trump badge in avatar slot - dark background to match avatar backdrop
 .user-trump-badge {
-  width: 24px;
-  height: 24px;
+  width: 1.7em;
+  height: 1.7em;
   border-radius: 50%;
   background: linear-gradient(135deg, #3a3a4c 0%, #2a2a3c 100%);
   border: 1px solid rgba(255, 255, 255, 0.15);

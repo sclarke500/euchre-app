@@ -358,8 +358,8 @@ const bubblePosition = computed(() => {
     position: absolute;
     top: -4px;
     right: -4px;
-    width: 28px;
-    height: 28px;
+    width: 1.5em; // box tracks the font so it never crowds the suit symbol
+    height: 1.5em;
     border-radius: 50%;
     background: #fff;
     border: none;
@@ -495,8 +495,8 @@ const bubblePosition = computed(() => {
 
   // Trump chip
   .trump-chip {
-    width: 36px;
-    height: 36px;
+    width: 1.5em;
+    height: 1.5em;
     font-size: $ui-lg;
     top: -8px;
     right: -10px;

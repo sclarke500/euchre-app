@@ -477,8 +477,8 @@ defineExpose({
 // Dealer chip - poker chip style with striped border
 .dealer-chip-table {
   position: absolute;
-  width: 28px;
-  height: 28px;
+  width: 1.7em; // box tracks the font (see font-size below) so the chip scales
+  height: 1.7em;
   border-radius: 50%;
   background: 
     radial-gradient(circle at center, #fff 0%, #fff 55%, transparent 55%),
@@ -492,7 +492,7 @@ defineExpose({
       #2563eb 300deg 330deg, #fff 330deg 360deg
     );
   color: #1e40af;
-  font-size: $ui-sm;
+  font-size: $ui-md;
   font-weight: bold;
   display: flex;
   align-items: center;
