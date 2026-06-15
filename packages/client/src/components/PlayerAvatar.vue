@@ -219,10 +219,12 @@ const bubblePosition = computed(() => {
 
   &.is-user .avatar-circle {
     border-color: rgba(255, 255, 255, 0.25); // Frosted glass accent
-    // Break the avatar out of the plaque top/bottom so the pill stays slim and
-    // covers less of the hand.
+    // Break the avatar out of the plaque: top/bottom so the pill stays slim, and
+    // left by ~half the avatar so the plaque begins at the avatar's middle
+    // (avatar's left half sits outside the pill).
     margin-top: -26px;
     margin-bottom: -26px;
+    margin-left: -62px;
   }
 
   .avatar-circle {
