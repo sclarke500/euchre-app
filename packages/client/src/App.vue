@@ -30,9 +30,18 @@ const scrollableRoutes = computed(() => {
   return route.path === '/' || SCROLLABLE_ROUTE_NAMES.includes(route.name as string)
 })
 
-// Everything else renders inside the scaled container (the game surface)
+// Full-screen responsive UI pages (e.g. the main menu): they own their own
+// responsive CSS / media queries, so they render at full viewport size like a
+// normal web page — NOT inside the scaled game canvas (which would shrink their
+// fonts and fight their layout). Distinct from scrollable docs (no scrolling).
+const FULLSCREEN_ROUTE_NAMES = ['home']
+const fullscreenRoutes = computed(() => {
+  return FULLSCREEN_ROUTE_NAMES.includes(route.name as string)
+})
+
+// Only the actual game boards render inside the scaled canonical container.
 const useScaledContainer = computed(() => {
-  return !scrollableRoutes.value
+  return !scrollableRoutes.value && !fullscreenRoutes.value
 })
 
 // Apply scrollable class to html element for landing page
