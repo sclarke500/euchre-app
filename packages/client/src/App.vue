@@ -39,8 +39,11 @@ const fullscreenRoutes = computed(() => {
   return FULLSCREEN_ROUTE_NAMES.includes(route.name as string)
 })
 
-// Only the actual game boards render inside the scaled canonical container.
+// Only the trick-taking game boards (Euchre/Spades/President) render inside the
+// scaled canonical container. Klondike has its own engine that sizes itself
+// responsively from the real viewport, so it renders full-screen like the menu.
 const useScaledContainer = computed(() => {
+  if (route.path === '/play/klondike') return false
   return !scrollableRoutes.value && !fullscreenRoutes.value
 })
 
