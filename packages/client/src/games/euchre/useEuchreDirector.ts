@@ -1125,6 +1125,13 @@ export function useEuchreDirector(
     // resize event will catch up once it settles.
     if (isAnimating.value) return
     await cardController.handleLayoutChange()
+    // The generic relayout re-fans EVERY hand, which re-shows opponent hands we
+    // collapse to their avatars once the round is underway. Re-hide them (they're
+    // only shown during the deal animation).
+    const phase = game.phase.value
+    if (phase !== GamePhase.Dealing && phase !== GamePhase.Setup) {
+      await hideOpponentHands()
+    }
   }
 
   function setTableWidth(width: number) {
