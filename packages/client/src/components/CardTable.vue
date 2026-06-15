@@ -225,11 +225,12 @@ const dealerChipStyle = computed(() => {
   const chipOffset = { x: -66, y: -66 }
 
   if (seat.isUser) {
-    // User avatar is fixed at the bottom of the screen.
+    // User avatar is fixed at the bottom of the screen; chip at its top-left
+    // corner (same -66 offset as opponents, mirroring the trump chip).
     const boardHeight = board.offsetHeight
-    const chipTop = boardHeight - 85 - 28
+    const chipTop = boardHeight - 95 - 28
     return {
-      left: `${tableBounds.centerX - 90}px`,
+      left: `${tableBounds.centerX - 66}px`,
       top: `${chipTop}px`,
       bottom: 'auto',
     }

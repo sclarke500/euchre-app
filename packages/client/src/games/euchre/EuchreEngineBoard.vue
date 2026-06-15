@@ -821,7 +821,10 @@ onUnmounted(() => {
 // Sliding action panel from right - uses global frosted-panel--right
 .action-panel-container {
   position: fixed;
-  right: var(--safe-right, 0px);
+  // Float as a self-contained pill near the right edge (a small gap + the safe
+  // inset) rather than a flush drawer — the safe area would otherwise expose its
+  // square, border-less right side.
+  right: calc(8px + var(--safe-right, 0px));
   top: 50%;
   transform: translateY(-50%);
   z-index: 600;
@@ -831,12 +834,12 @@ onUnmounted(() => {
   gap: 22px;
   padding: 30px 26px;
   min-width: 210px;
-  border-radius: 32px 0 0 32px;
-  
+  border-radius: 32px;
+
   // Unified frosted panel with gold glow (shares vars with user avatar)
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-right: none;
+  border-right: 1px solid var(--panel-border);
   box-shadow: 
     -4px 0 24px rgba(0, 0, 0, 0.4),
     0 0 var(--panel-glow-size) var(--panel-glow-color),
