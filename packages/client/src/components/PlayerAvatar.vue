@@ -222,8 +222,8 @@ const bubblePosition = computed(() => {
   }
 
   .avatar-circle {
-    width: 90px;
-    height: 90px;
+    width: 125px;
+    height: 125px;
     border-radius: 50%;
     background: linear-gradient(145deg, #4a4a5c, #3a3a4c);
     border: 2px solid #5a5a70;
@@ -482,8 +482,8 @@ const bubblePosition = computed(() => {
 .player-avatar {
   // Avatar circle (kept in sync with the scoped default above)
   .avatar-circle {
-    width: 90px;
-    height: 90px;
+    width: 125px;
+    height: 125px;
   }
 
   // Name labels — readable-floored so they never get tiny on phones
