@@ -219,9 +219,10 @@ const dealerChipStyle = computed(() => {
   if (!seat) return { display: 'none' }
   
   const { tableBounds } = layout
-  // One universal avatar size now (the canonical is uniformly large), so a
-  // single chip offset applies everywhere.
-  const chipOffset = { x: -56, y: -61 }
+  // Place the dealer chip at the avatar's top-left corner (mirroring the trump
+  // chip's top-right). Avatars are centered on their anchor and ~125px, so the
+  // chip's top-left sits just outside the ~62px radius.
+  const chipOffset = { x: -66, y: -66 }
 
   if (seat.isUser) {
     // User avatar is fixed at the bottom of the screen.
