@@ -507,16 +507,16 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 
 .chat-icon-container {
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + var(--safe-top, 0px));
+  left: calc(16px + var(--safe-left, 0px));
   z-index: 100;
 }
 
 // Standard layout: scoreboard fixed top-right, action panel bottom-left
 .scoreboard {
   position: fixed;
-  top: 8px;
-  right: 8px; // ScaledContainer handles safe areas now
+  top: calc(8px + var(--safe-top, 0px));
+  right: calc(8px + var(--safe-right, 0px));
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
@@ -819,8 +819,8 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 // Chat icon positioned below HUD menu
 .chat-icon-container {
   position: absolute;
-  top: 60px;
-  left: 10px; // ScaledContainer handles safe areas now
+  top: calc(60px + var(--safe-top, 0px));
+  left: calc(10px + var(--safe-left, 0px));
   z-index: 500;
 }
 </style>

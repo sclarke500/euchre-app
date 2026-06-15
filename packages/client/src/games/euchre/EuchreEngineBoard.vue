@@ -656,15 +656,15 @@ onUnmounted(() => {
 
 .chat-icon-container {
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + var(--safe-top, 0px));
+  left: calc(16px + var(--safe-left, 0px));
   z-index: 100;
 }
 
 .scoreboard {
   position: fixed;
-  top: 8px;
-  right: 8px; // ScaledContainer handles safe areas now
+  top: calc(8px + var(--safe-top, 0px));
+  right: calc(8px + var(--safe-right, 0px));
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
@@ -821,7 +821,7 @@ onUnmounted(() => {
 // Sliding action panel from right - uses global frosted-panel--right
 .action-panel-container {
   position: fixed;
-  right: 0;
+  right: var(--safe-right, 0px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 600;

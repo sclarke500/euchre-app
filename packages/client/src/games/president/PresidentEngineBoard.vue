@@ -730,8 +730,8 @@ onUnmounted(() => {
 
 .chat-icon-container {
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + var(--safe-top, 0px));
+  left: calc(16px + var(--safe-left, 0px));
   z-index: 100;
 }
 
@@ -789,7 +789,7 @@ onUnmounted(() => {
 // Sliding action panel from right - uses global frosted-panel--right
 .action-panel-container {
   position: fixed;
-  right: 0;
+  right: var(--safe-right, 0px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 600;
@@ -1077,8 +1077,8 @@ onUnmounted(() => {
 // Chat icon positioned below HUD menu
 .chat-icon-container {
   position: absolute;
-  top: 60px;
-  left: 10px; // ScaledContainer handles safe areas now
+  top: calc(60px + var(--safe-top, 0px));
+  left: calc(10px + var(--safe-left, 0px));
   z-index: 500;
 }
 </style>

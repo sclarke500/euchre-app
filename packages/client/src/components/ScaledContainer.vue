@@ -28,7 +28,7 @@ const settings = useSettingsStore()
 
 // Canonical geometry + scale come from the single board-viewport source of truth
 // (model B: fixed canonical height, width follows viewport aspect, one scale).
-const { canonicalWidth, canonicalHeight, scale } = useBoardViewport()
+const { canonicalWidth, canonicalHeight, scale, safeRect } = useBoardViewport()
 
 // Expose the board scale as a CSS variable so screen-fixed HUD overlays
 // (scoreboard, action panel, menu, etc.) can scale in lockstep with the board
@@ -37,6 +37,19 @@ watch(scale, (s) => {
   if (typeof document !== 'undefined') {
     document.documentElement.style.setProperty('--board-scale', String(s))
   }
+}, { immediate: true })
+
+// Expose per-edge safe-area insets in CANONICAL units. The felt fills the whole
+// viewport (full-bleed, under notches); the interactive HUD adds these to its
+// edge offsets via calc(... + var(--safe-*)) so nothing tappable/readable hides
+// behind a notch, camera cutout, or home indicator.
+watch([safeRect, canonicalWidth, canonicalHeight], ([rect, cw, ch]) => {
+  if (typeof document === 'undefined') return
+  const s = document.documentElement.style
+  s.setProperty('--safe-left', `${Math.round(rect.left)}px`)
+  s.setProperty('--safe-top', `${Math.round(rect.top)}px`)
+  s.setProperty('--safe-right', `${Math.round(cw - rect.right)}px`)
+  s.setProperty('--safe-bottom', `${Math.round(ch - rect.bottom)}px`)
 }, { immediate: true })
 
 const wrapperRef = ref<HTMLElement | null>(null)
