@@ -293,9 +293,9 @@ export function useCardController(
     if (userHand && focusUserHand) {
       const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
       const cardCount = userHand.cards.length
-      // Consistent position - same for all hand sizes
-      // User hand higher on full mode (more room), lower on mobile (maximize space)
-      const bottomOffset = isMobile() ? 80 : 120
+      // User hand sits up from the bottom edge, proportional to board height
+      // (raised slightly so the avatar plaque covers less of it).
+      const bottomOffset = board.offsetHeight * 0.16
       const targetY = board.offsetHeight - bottomOffset
       const targetScale = config.userHandScale ?? CardScales.userHand
 
@@ -1236,8 +1236,8 @@ export function useCardController(
       if (!hand || !seat) continue
       
       if (seat.isUser) {
-        // User hand: bottom center with offset
-        const bottomOffset = isMobile() ? 80 : 120
+        // User hand: bottom center, raised proportionally from the edge
+        const bottomOffset = board.offsetHeight * 0.16
         hand.position = {
           x: newLayout.tableCenter.x,
           y: board.offsetHeight - bottomOffset

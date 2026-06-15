@@ -180,7 +180,7 @@ const bubblePosition = computed(() => {
 
   // User avatar: frosted glass look with unified glow
   &.is-user .avatar-container {
-    padding: 6px 12px 6px 6px;
+    padding: 2px 14px 2px 4px;
     background: var(--panel-bg);
     border-radius: 30px;
     backdrop-filter: blur(16px);
@@ -219,6 +219,10 @@ const bubblePosition = computed(() => {
 
   &.is-user .avatar-circle {
     border-color: rgba(255, 255, 255, 0.25); // Frosted glass accent
+    // Break the avatar out of the plaque top/bottom so the pill stays slim and
+    // covers less of the hand.
+    margin-top: -26px;
+    margin-bottom: -26px;
   }
 
   .avatar-circle {
