@@ -1,6 +1,7 @@
 <template>
   <div 
-    class="player-avatar" 
+    class="player-avatar"
+    :data-seat-index="seatIndex"
     :class="[
       positionClass,
       statusClass,
@@ -13,9 +14,23 @@
   >
     <div class="avatar-container">
       <div class="avatar-border">
-        <div class="avatar-circle" :class="{ 'has-image': hasAvatar }">
-          <img v-if="hasAvatar" :src="resolvedAvatarUrl" :alt="name" class="avatar-image" />
-          <span v-else class="avatar-initial">{{ initial }}</span>
+        <div class="avatar-circle-frame" :class="{ 'is-user-frame': props.isUser }">
+          <div class="avatar-circle" :class="{ 'has-image': hasAvatar }">
+            <img v-if="hasAvatar" :src="resolvedAvatarUrl" :alt="name" class="avatar-image" />
+            <span v-else class="avatar-initial">{{ initial }}</span>
+          </div>
+          <div
+            v-if="props.trumpSymbol"
+            class="avatar-chip avatar-chip--trump"
+            :style="trumpChipStyle"
+            aria-label="Trump suit"
+          >{{ props.trumpSymbol }}</div>
+          <div
+            v-if="hasBidBadge"
+            class="avatar-bid-badge"
+            :style="bidBadgeStyle"
+            aria-label="Bid"
+          >{{ props.bidBadge }}</div>
         </div>
         <div class="name-column">
           <!-- Info tags - above name for user, top-right for opponents -->
@@ -25,9 +40,6 @@
           <div class="player-name">{{ props.name }}</div>
         </div>
       </div>
-      
-      <!-- Trump indicator chip - top-right of avatar circle -->
-      <div v-if="props.trumpSymbol" class="trump-chip" :style="{ color: props.trumpColor }">{{ props.trumpSymbol }}</div>
       
       <!-- Turn indicator glow -->
       <div v-if="props.isCurrentTurn" class="avatar-glow"></div>
@@ -53,6 +65,7 @@ import { computed, type CSSProperties } from 'vue'
 import { getAIAvatar, type ChatMessage } from '@67cards/shared'
 import ChatBubble from './chat/ChatBubble.vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
+import { chipQuadrantStyle, chipQuadrantCenterStyle, CHIP_QUADRANTS, TRUMP_CHIP_SIZE } from '@/utils/avatarChipLayout'
 
 export type AvatarPosition = 'bottom' | 'left' | 'right' | 'top' | 'rail-left' | 'rail-right' | 'rail-top'
 
@@ -62,6 +75,8 @@ const props = withDefaults(defineProps<{
   isUser?: boolean
   status?: string
   position?: AvatarPosition
+  /** Seat index for DOM queries (dealer chip animation, debug) */
+  seatIndex?: number
   /** Custom positioning style (for table-relative placement) */
   customStyle?: CSSProperties
   /** Trump suit symbol to show (e.g., ♠ ♥ ♦ ♣) */
@@ -74,16 +89,23 @@ const props = withDefaults(defineProps<{
   chatMessage?: ChatMessage | null
   /** Keep bubble visible (for testing/positioning) */
   chatPersistent?: boolean
+  /** Corner badge at NE (e.g. Spades bid) — same anchor as the trump chip */
+  bidBadge?: string | number | null
+  /** Optional background color for the bid badge */
+  bidBadgeColor?: string
 }>(), {
   isCurrentTurn: false,
   isUser: false,
   status: '',
   position: 'bottom',
+  seatIndex: undefined,
   trumpSymbol: '',
   trumpColor: '#2c3e50',
   avatarUrl: '',
   chatMessage: null,
   chatPersistent: false,
+  bidBadge: null,
+  bidBadgeColor: '',
 })
 
 const emit = defineEmits<{
@@ -121,6 +143,22 @@ const positionClass = computed(() => `position-${props.position}`)
 
 const positionStyle = computed(() => props.customStyle ?? {})
 
+const trumpChipStyle = computed(() => ({
+  ...chipQuadrantStyle(CHIP_QUADRANTS.trump, TRUMP_CHIP_SIZE),
+  color: props.trumpColor,
+}))
+
+const hasBidBadge = computed(
+  () => props.bidBadge !== null && props.bidBadge !== undefined && props.bidBadge !== ''
+)
+
+// Bid badge sits at the same NE inset as the trump chip, but centers on the
+// anchor so variable-width text ("Nil"/"Blind Nil") grows around the corner.
+const bidBadgeStyle = computed(() => ({
+  ...chipQuadrantCenterStyle(CHIP_QUADRANTS.trump),
+  ...(props.bidBadgeColor ? { background: props.bidBadgeColor } : {}),
+}))
+
 // Status type for color coding: 'pass' = neutral, 'action' = green (order up, pick it up, etc.)
 const statusClass = computed(() => {
   if (!props.status) return ''
@@ -154,6 +192,8 @@ const bubblePosition = computed(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/avatar-chips' as *;
+
 .player-avatar {
   display: flex;
   flex-direction: column;
@@ -217,14 +257,15 @@ const bubblePosition = computed(() => {
     padding-left: 14px;
   }
 
-  &.is-user .avatar-circle {
-    border-color: rgba(255, 255, 255, 0.25); // Frosted glass accent
-    // Break the avatar out of the plaque: top/bottom so the pill stays slim, and
-    // left by ~half the avatar so the plaque begins at the avatar's middle
-    // (avatar's left half sits outside the pill).
+  &.is-user .avatar-circle-frame.is-user-frame {
+    // Break the circle out of the pill (left half sits outside the plaque).
     margin-top: -26px;
     margin-bottom: -26px;
     margin-left: -62px;
+  }
+
+  &.is-user .avatar-circle {
+    border-color: rgba(255, 255, 255, 0.25); // Frosted glass accent
   }
 
   .avatar-circle {
@@ -264,6 +305,30 @@ const bubblePosition = computed(() => {
     color: #e8e8f0;
   }
 
+  // Corner bid badge (Spades) — NE anchor, same as trump chip, centered on the
+  // anchor so numbers read as a circle and longer text grows around it.
+  .avatar-bid-badge {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.9em;
+    height: 1.9em;
+    padding: 0 0.5em;
+    border-radius: 999px;
+    background: #2f6fb0;
+    color: #fff;
+    font-size: $ui-md;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    z-index: 12;
+    pointer-events: none;
+  }
+
   .name-column {
     display: flex;
     flex-direction: column;
@@ -294,59 +359,72 @@ const bubblePosition = computed(() => {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
-  // Status pill - clean badge style, no tail (distinct from chat bubbles)
+  // Status callout — same speech-bubble look as chat comments, just bigger, so
+  // bidding feedback ("Pass" / "Order Up") reads consistently with player chat.
   .player-status {
     position: absolute;
     top: 100%;
     left: 50%;
-    transform: translateX(-50%) scale(0.8);
-    margin-top: 6px;
-    font-size: $ui-xs;
-    color: #fff;
-    background: linear-gradient(180deg, rgba(70, 75, 90, 0.95) 0%, rgba(50, 55, 65, 0.98) 100%);
-    padding: 5px 14px;
-    border-radius: 20px;
+    transform: translateX(-50%) scale(0.85);
+    margin-top: 12px;
+    font-size: ui-size(14px, 2.6vh, 22px);
+    line-height: 1.2;
+    color: #1a1a1a;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 248, 248, 0.98) 100%);
+    padding: ui-size(5px, 1vh, 9px) ui-size(12px, 2.4vh, 20px);
+    border-radius: 12px;
     font-weight: 700;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
     transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    // Tail pointing UP toward the avatar (callout style, like chat bubbles)
+    &::after {
+      content: '';
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border: 7px solid transparent;
+      border-bottom-color: rgba(255, 255, 255, 0.98);
+      border-top: none;
+    }
 
     &.visible {
       opacity: 1;
       transform: translateX(-50%) scale(1);
     }
   }
-  
-  // Color-coded status messages
+
+  // Color-coded text — bubble stays white like chat callouts, meaning carried by color
   &.status-pass .player-status {
-    background: linear-gradient(180deg, rgba(75, 80, 95, 0.95) 0%, rgba(55, 60, 75, 0.98) 100%);
+    color: #444b57;
   }
-  
+
   &.status-action .player-status {
-    background: linear-gradient(180deg, rgba(40, 115, 75, 0.95) 0%, rgba(28, 90, 55, 0.98) 100%);
-    border-color: rgba(80, 180, 120, 0.25);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(60, 180, 100, 0.2);
+    color: #1c7a4a;
   }
 
   // Info tags - for user, flows above name inside pill
   .info-tags {
     display: flex;
     gap: 4px;
-    z-index: 5;
-    
+    z-index: 20; // Above the name plaque (10) so bid/tricks chips aren't hidden
+
     &:empty {
       display: none;
     }
   }
   
-  // For opponents, position absolutely at top-right of avatar circle (snug like trump chip)
+  // Opponent info tags (bid/tricks) — near SE, below trump
   &:not(.is-user) .name-column .info-tags {
     position: absolute;
-    top: -45px;
-    right: -14px;
+    top: -8px;
+    right: -18px;
   }
 
   .avatar-glow {
@@ -358,33 +436,6 @@ const bubblePosition = computed(() => {
     pointer-events: none;
   }
   
-  // Trump indicator chip - positioned at top-right of avatar circle
-  // Sized to match dealer chip (28px), white background so suit color pops
-  .trump-chip {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 1.5em; // box tracks the font so it never crowds the suit symbol
-    height: 1.5em;
-    border-radius: 50%;
-    background: #fff;
-    border: none;
-    font-size: $ui-lg;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    z-index: 10;
-    pointer-events: none;
-  }
-  
-  // Opponent trump chip positioning (mobile)
-  &:not(.is-user) .trump-chip {
-    top: -6px;
-    right: -8px;
-  }
-
   // Turn indicator - bright animated glow on circle
   &.is-current-turn .avatar-circle {
     border-color: #ffd700;
@@ -485,6 +536,8 @@ const bubblePosition = computed(() => {
      so there is no separate "mobile" tier). PlayerAvatar is only used on the
      game board, so these global selectors are safe. -->
 <style lang="scss">
+@use '@/assets/styles/avatar-chips' as *;
+
 .player-avatar {
   // Avatar circle (kept in sync with the scoped default above)
   .avatar-circle {
@@ -497,21 +550,6 @@ const bubblePosition = computed(() => {
     padding: ui-size(4px, 0.9vh, 8px) ui-size(14px, 2.8vh, 26px);
     font-size: ui-size(15px, 3vh, 25px);
     border-radius: 14px;
-  }
-
-  // Trump chip
-  .trump-chip {
-    width: 1.5em;
-    height: 1.5em;
-    font-size: $ui-lg;
-    top: -8px;
-    right: -10px;
-  }
-
-  // Opponent trump chip — further out for the larger avatar
-  &:not(.is-user) .trump-chip {
-    top: -10px;
-    right: -13px;
   }
 
   // Info tags (bid/tricks chips)

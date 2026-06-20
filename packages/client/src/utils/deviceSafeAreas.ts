@@ -326,6 +326,11 @@ export function applySafeAreaCSSVars(): DeviceInfo {
   root.style.setProperty('--device-safe-right', `${info.insets.right}px`)
   root.style.setProperty('--device-safe-bottom', `${info.insets.bottom}px`)
   root.style.setProperty('--device-safe-left', `${info.insets.left}px`)
+  // Aliases consumed by teleported overlays (useScreenOverlay)
+  root.style.setProperty('--screen-safe-top', `${info.insets.top}px`)
+  root.style.setProperty('--screen-safe-right', `${info.insets.right}px`)
+  root.style.setProperty('--screen-safe-bottom', `${info.insets.bottom}px`)
+  root.style.setProperty('--screen-safe-left', `${info.insets.left}px`)
   
   console.log(`[SafeArea] Device: ${info.name} (${info.isKnown ? 'known' : 'fallback'})`, info.insets)
   

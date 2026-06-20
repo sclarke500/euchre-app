@@ -1,22 +1,16 @@
 <script setup lang="ts">
 /**
- * ScaledContainer - Unified scaling for all devices
- * 
- * In FULL mode (tablet/desktop):
- * - Canonical size: 1120×630 (16:9)
- * - Scales to fit viewport
- * 
- * In MOBILE mode:
- * - Landscape: 750×370 (~2:1)
- * - Portrait: 370×700 (~1:1.9)
- * - Applies device-specific safe area insets
- * - Scales to fit usable box
- * 
- * Both modes use transform: scale() for consistent rendering
- * 
- * iOS Safari Orientation Fix:
- * - iOS doesn't update viewport dimensions immediately on orientation change
- * - We poll until dimensions stabilize (typically 100-500ms)
+ * ScaledContainer — viewport adapter for the card engine (Model B).
+ *
+ * Canonical height is fixed (720); width follows viewport aspect ratio.
+ * One scale (`viewportHeight / 720`) maps canonical → CSS px via transform.
+ * Safe-area insets are exposed as --safe-* CSS vars for HUD positioning;
+ * the felt is full-bleed under notches.
+ *
+ * See docs/PLATFORM_CONTRACT.md and useBoardViewport.ts.
+ *
+ * iOS: viewport dimensions are derived from screen size + orientation because
+ * visualViewport is unreliable during rotation transitions.
  */
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { isMobile } from '@/utils/deviceMode'
@@ -166,6 +160,15 @@ function calculateScale() {
     }
   }
   safeInsets.value = insets
+
+  // Viewport-px safe areas for teleported overlays (chat, modals, back button).
+  if (typeof document !== 'undefined') {
+    const s = document.documentElement.style
+    s.setProperty('--screen-safe-top', `${insets.top}px`)
+    s.setProperty('--screen-safe-right', `${insets.right}px`)
+    s.setProperty('--screen-safe-bottom', `${insets.bottom}px`)
+    s.setProperty('--screen-safe-left', `${insets.left}px`)
+  }
 
   // Feed the single source of truth (canonical width + scale derive from this).
   setViewportSize(viewportW, viewportH)

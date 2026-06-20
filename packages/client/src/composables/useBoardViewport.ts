@@ -33,6 +33,18 @@ export const BASE_CARD_WIDTH = 116
 export const CARD_ASPECT_RATIO = 1.4
 export const BASE_CARD_HEIGHT = Math.round(BASE_CARD_WIDTH * CARD_ASPECT_RATIO)
 
+/** Frozen platform constants — see docs/PLATFORM_CONTRACT.md before changing. */
+export const PLATFORM_CONSTANTS = {
+  CANONICAL_HEIGHT,
+  BASE_CARD_WIDTH,
+  BASE_CARD_HEIGHT,
+  CARD_ASPECT_RATIO,
+  /** Fanned user-hand Y as a fraction of board height (canonical units). */
+  USER_HAND_Y_FRACTION: 0.84,
+  /** User avatar anchor Y offset from board bottom (canonical units). */
+  USER_AVATAR_BOTTOM_OFFSET: 50,
+} as const
+
 /**
  * Clamp the canonical aspect ratio only for truly pathological viewports
  * (ultra-wide monitors). The lower bound must stay below a portrait PHONE

@@ -6,7 +6,7 @@
         ref="overlayRef"
         class="modal-overlay"
         :class="{ 'non-blocking': nonBlocking }"
-        :style="{ zIndex: 10000 + priority }"
+        :style="{ zIndex: 10000 + priority, ...modalPadding }"
         @click.self="handleBackdropClick"
       >
         <div
@@ -30,6 +30,9 @@
 
 <script setup lang="ts">
 import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { useScreenOverlay } from '@/composables/useScreenOverlay'
+
+const { modalPadding } = useScreenOverlay()
 
 const props = withDefaults(defineProps<{
   show: boolean
@@ -188,7 +191,7 @@ onUnmounted(() => {
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  padding: $spacing-md;
+  // padding set via modalPadding (safe-area aware)
 
   &.non-blocking {
     pointer-events: none;

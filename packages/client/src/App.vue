@@ -4,9 +4,9 @@ import { useRoute } from 'vue-router'
 import AppToast from './components/AppToast.vue'
 import ScaledContainer from './components/ScaledContainer.vue'
 import LegalModal from './components/legal/LegalModal.vue'
-import { isMobile } from './utils/deviceMode'
 import { isNativeApp } from './utils/native'
 import { lockLandscape, unlockOrientation } from './utils/orientation'
+import { useAppRenderMode, LANDSCAPE_ROUTE_PREFIXES } from './composables/useAppRenderMode'
 import {
   usePWAInstall,
   initPWAInstall,
@@ -19,54 +19,21 @@ import {
 
 const route = useRoute()
 const { isStandalone, isIOS, canInstallNatively } = usePWAInstall()
+const { useScaledContainer, isScrollable, requiresLandscape } = useAppRenderMode()
 
-// Routes that require landscape orientation on MOBILE (phones only)
-// Tablets/desktop use scaled container which handles portrait fine
-const landscapeRoutes = ['/play/', '/lobby', '/game']  // Note: /play/ requires trailing slash to skip /play menu
-
-// Routes that are full-page, scrolling documents (not the fixed-size game box)
-const SCROLLABLE_ROUTE_NAMES = ['landing', 'privacy', 'support']
-const scrollableRoutes = computed(() => {
-  return route.path === '/' || SCROLLABLE_ROUTE_NAMES.includes(route.name as string)
-})
-
-// Full-screen responsive UI pages (e.g. the main menu): they own their own
-// responsive CSS / media queries, so they render at full viewport size like a
-// normal web page — NOT inside the scaled game canvas (which would shrink their
-// fonts and fight their layout). Distinct from scrollable docs (no scrolling).
-const FULLSCREEN_ROUTE_NAMES = ['home']
-const fullscreenRoutes = computed(() => {
-  return FULLSCREEN_ROUTE_NAMES.includes(route.name as string)
-})
-
-// Only the trick-taking game boards (Euchre/Spades/President) render inside the
-// scaled canonical container. Klondike has its own engine that sizes itself
-// responsively from the real viewport, so it renders full-screen like the menu.
-const useScaledContainer = computed(() => {
-  if (route.path === '/play/klondike') return false
-  return !scrollableRoutes.value && !fullscreenRoutes.value
-})
-
-// Apply scrollable class to html element for landing page
-watch(scrollableRoutes, (isScrollable) => {
-  if (isScrollable) {
+watch(isScrollable, (scrollable) => {
+  if (scrollable) {
     document.documentElement.classList.add('scrollable')
   } else {
     document.documentElement.classList.remove('scrollable')
   }
 }, { immediate: true })
 
-// Track landscape orientation
 const isLandscape = ref(true)
 
 function checkLandscape(): boolean {
-  // Primary check: viewport dimensions
   const byDimensions = window.innerWidth > window.innerHeight
-  
-  // Fallback: media query (more reliable on some devices/emulators)
   const byMediaQuery = window.matchMedia('(orientation: landscape)').matches
-  
-  // Consider landscape if either check passes
   return byDimensions || byMediaQuery
 }
 
@@ -74,39 +41,19 @@ function updateOrientation() {
   isLandscape.value = checkLandscape()
 }
 
-// Track if current view has been initialized in landscape
 const hasInitializedInLandscape = ref(false)
 
-// Check if current route requires landscape (mobile only - tablets handle portrait via scaled container)
-const requiresLandscape = computed(() => {
-  // Only enforce landscape on mobile devices
-  if (!isMobile()) return false
-  
-  const path = route.path
-  // Klondike doesn't require landscape
-  if (path === '/play/klondike') return false
-  return landscapeRoutes.some(r => path.startsWith(r))
-})
-
-// Show landscape blocker when in portrait on landscape-required routes (mobile only).
-// In the native app we force landscape instead (see watcher below), so the
-// "rotate your device" overlay is never needed there.
 const showLandscapeBlocker = computed(() => {
   return requiresLandscape.value && !isLandscape.value && !isNativeApp()
 })
 
-// Render landscape-required views once initialized in landscape
 const canRenderView = computed(() => {
   if (!requiresLandscape.value) return true
-  // Native app forces landscape via the OS, so render immediately (no
-  // dependence on the JS orientation read, which can lag the rotation).
   if (isNativeApp()) return true
   if (hasInitializedInLandscape.value) return true
   return isLandscape.value
 })
 
-// Native only: force landscape on landscape-required routes, release elsewhere.
-// No-op on web/PWA (helpers are guarded by isNativeApp()).
 watch(requiresLandscape, (needsLandscape) => {
   if (needsLandscape) {
     lockLandscape()
@@ -115,46 +62,38 @@ watch(requiresLandscape, (needsLandscape) => {
   }
 }, { immediate: true })
 
-// Initialize when in landscape on landscape-required route
 watch([isLandscape, () => route.path], ([landscape, path]) => {
-  if (landscape && landscapeRoutes.some(r => path.startsWith(r))) {
+  if (landscape && LANDSCAPE_ROUTE_PREFIXES.some((r) => path.startsWith(r))) {
     hasInitializedInLandscape.value = true
   }
 }, { immediate: true })
 
-// Reset initialization when leaving landscape-required routes
 watch(() => route.path, (newPath, oldPath) => {
-  const wasLandscapeRoute = landscapeRoutes.some(r => oldPath?.startsWith(r))
-  const isLandscapeRoute = landscapeRoutes.some(r => newPath.startsWith(r))
+  const wasLandscapeRoute = LANDSCAPE_ROUTE_PREFIXES.some((r) => oldPath?.startsWith(r))
+  const isLandscapeRoute = LANDSCAPE_ROUTE_PREFIXES.some((r) => newPath.startsWith(r))
   if (wasLandscapeRoute && !isLandscapeRoute) {
     hasInitializedInLandscape.value = false
   }
 })
 
-// PWA install prompt state
 const showInstallPrompt = ref(false)
 const showOpenInAppPrompt = ref(false)
 
 onMounted(async () => {
   updateOrientation()
   window.addEventListener('resize', updateOrientation)
-  
-  // Initialize PWA detection
+
   await initPWAInstall()
-  
-  // Don't prompt if already standalone
+
   if (isStandalone.value) return
-  
-  // Check for "open in app" prompt
+
   if (shouldShowOpenInAppPrompt()) {
     showOpenInAppPrompt.value = true
     return
   }
-  
-  // Check for install prompt (with delay)
+
   if (shouldShowInstallPrompt()) {
     setTimeout(() => {
-      // Re-check in case something changed
       if (shouldShowInstallPrompt()) {
         if (canInstallNatively.value || isIOS.value) {
           console.log('PWA: Showing install prompt')
@@ -169,7 +108,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateOrientation)
-  // Release any forced landscape lock (native only).
   unlockOrientation()
 })
 
@@ -192,7 +130,7 @@ function dismissOpenInAppPrompt() {
 </script>
 
 <template>
-  <div id="app" :class="{ scrollable: scrollableRoutes }">
+  <div id="app" :class="{ scrollable: isScrollable }">
     <AppToast />
 
     <!-- Portrait orientation overlay -->
@@ -216,7 +154,7 @@ function dismissOpenInAppPrompt() {
 
     <!-- Open in installed app prompt (not on landing page) -->
     <Transition name="slide-up">
-      <div v-if="showOpenInAppPrompt && !scrollableRoutes" class="install-prompt open-in-app">
+      <div v-if="showOpenInAppPrompt && !isScrollable" class="install-prompt open-in-app">
         <div class="install-content">
           <div class="install-icon app-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -239,7 +177,7 @@ function dismissOpenInAppPrompt() {
 
     <!-- Add to Home Screen prompt (not on landing page) -->
     <Transition name="slide-up">
-      <div v-if="showInstallPrompt && !scrollableRoutes" class="install-prompt">
+      <div v-if="showInstallPrompt && !isScrollable" class="install-prompt">
         <div class="install-content">
           <div class="install-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -264,16 +202,12 @@ function dismissOpenInAppPrompt() {
       </div>
     </Transition>
 
-    <!-- Router View - only render when allowed (landscape check) -->
-    <!-- Scaled container for app routes (not landing page) -->
     <ScaledContainer v-if="canRenderView && useScaledContainer">
       <router-view />
     </ScaledContainer>
-    
-    <!-- Landing page without scaling -->
+
     <router-view v-else-if="canRenderView" />
 
-    <!-- Global Support/Privacy popup (in-app entry points) -->
     <LegalModal />
   </div>
 </template>
@@ -284,8 +218,6 @@ function dismissOpenInAppPrompt() {
   height: 100%;
   overflow: hidden;
   background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
-
-  // Scrollable class handled by html.scrollable in _reset.scss
 }
 
 .rotate-device-overlay {

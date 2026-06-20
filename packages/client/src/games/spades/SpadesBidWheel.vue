@@ -111,8 +111,8 @@ watch(() => props.visible, (visible) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 14px 12px;
+  gap: 18px;
+  padding: 22px 18px;
   background: var(--panel-bg);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
@@ -162,24 +162,24 @@ watch(() => props.visible, (visible) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .arrow-btn {
-  width: 48px;
-  height: 32px;
+  width: 72px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
-  
+
   svg {
-    width: 24px;
-    height: 24px;
+    width: 36px;
+    height: 36px;
     color: rgba(255, 255, 255, 0.8);
     transition: color 0.15s ease;
   }
@@ -204,10 +204,10 @@ watch(() => props.visible, (visible) => {
 }
 
 .bid-display {
-  width: 60px;
-  height: 50px;
+  width: 92px;
+  height: 76px;
   background: rgba(245, 245, 248, 0.95);
-  border-radius: 10px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,7 +216,7 @@ watch(() => props.visible, (visible) => {
 }
 
 .bid-value {
-  font-size: 28px;
+  font-size: $ui-xl;
   font-weight: 700;
   color: #1a1a2e;
   
@@ -254,17 +254,17 @@ watch(() => props.visible, (visible) => {
 }
 
 .bid-button {
-  padding: 10px 20px;
+  padding: 14px 30px;
   background: rgba(42, 138, 106, 0.95);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   color: #fff;
-  font-size: 14px;
+  font-size: $ui-md;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: 0 3px 12px rgba(42, 138, 106, 0.4);
-  min-width: 80px;
+  min-width: 130px;
   
   &:hover {
     background: rgba(52, 158, 126, 1);

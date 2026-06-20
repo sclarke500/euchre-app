@@ -5,6 +5,7 @@
     :player-count="4"
     :player-names="playerNames"
     :player-statuses="playerStatuses"
+    :bid-badges="bidBadges"
     :avatar-opacities="[1, 1, 1, 1]"
     :engine="engine"
     :dealer-seat="dealerSeat"
@@ -15,20 +16,6 @@
     @card-click="handleCardClick"
     @layout-changed="handleLayoutChanged"
   >
-    <!-- Player bid info tags (indexed by seat, not player ID) -->
-    <template v-for="seat in [0, 1, 2, 3]" :key="seat" #[`player-info-${seat}`]>
-      <div v-if="getPlayerAtSeat(seat)?.bid" class="info-chip bid-chip">
-        {{ getBidDisplay(getPlayerAtSeat(seat)!.bid!) }}
-      </div>
-    </template>
-
-    <!-- User avatar bid tag -->
-    <template #user-info>
-      <div v-if="store.humanPlayer?.bid" class="info-chip bid-chip">
-        {{ getBidDisplay(store.humanPlayer.bid) }}
-      </div>
-    </template>
-
     <!-- Scoreboard (simplified - bags implied in ones digit) -->
     <div class="scoreboard spades-scoreboard">
       <div class="score-row">
@@ -336,6 +323,14 @@ const {
   dismissRoundSummary,
 } = useSpadesBoardUi(adapter, props.mode)
 
+// Per-seat bid badge (NE corner of each avatar), null when a seat hasn't bid yet
+const bidBadges = computed(() =>
+  [0, 1, 2, 3].map((seat) => {
+    const bid = getPlayerAtSeat(seat)?.bid
+    return bid ? getBidDisplay(bid) : null
+  })
+)
+
 // Handle layout changes (resize/orientation)
 function handleLayoutChanged(layout: { tableBounds: { width: number } }) {
   setTableWidth(layout.tableBounds.width)
@@ -520,38 +515,38 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
-  border-radius: 7px;
+  border-radius: 12px;
   padding: 0;
   backdrop-filter: blur(8px);
-  font-size: $ui-xs;
   color: #ccc;
 }
 
-// Simplified scoreboard (matches Euchre style - bags implied in ones digit)
+// Score readout — kept in sync with the Euchre scoreboard (bags implied in the
+// ones digit). TODO(inventory): extract a shared <Scoreboard> component.
 .spades-scoreboard {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 12px;
-  
+  gap: 3px;
+  padding: 10px 16px;
+
   .score-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
   }
-  
+
   .score-label {
     font-weight: 600;
-    font-size: $ui-xs;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: $ui-md;
+    color: #aaa;
   }
 
   .score-value {
     font-weight: 700;
-    font-size: $ui-lg;
+    font-size: $ui-xl;
     color: #fff;
-    min-width: 28px;
+    min-width: 44px;
     text-align: right;
   }
   
@@ -735,29 +730,6 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   padding: 4px 12px;
   border-radius: 4px;
   font-size: $ui-xs;
-}
-
-.bid-chip {
-  background: rgba(52, 152, 219, 0.8);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: $ui-xs;
-  font-weight: bold;
-}
-
-.tricks-chip {
-  background: rgba(46, 204, 113, 0.8);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: $ui-xs;
-  margin-left: 4px;
-}
-
-.info-chip {
-  display: inline-block;
-  margin-right: 4px;
 }
 
 // Rules modal

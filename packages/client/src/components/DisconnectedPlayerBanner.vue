@@ -75,8 +75,8 @@ const emit = defineEmits<{
 
 .message {
   color: #fff;
-  font-size: 0.95rem;
-  
+  font-size: $ui-sm;
+
   strong {
     color: #ffb400;
   }
@@ -84,7 +84,7 @@ const emit = defineEmits<{
 
 .waiting {
   color: rgba(255, 255, 255, 0.6);
-  font-size: 0.85rem;
+  font-size: $ui-xs;
   font-style: italic;
 }
 
@@ -95,7 +95,7 @@ const emit = defineEmits<{
   border-radius: 8px;
   padding: 8px 16px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: $ui-sm;
   cursor: pointer;
   transition: all 0.2s ease;
   

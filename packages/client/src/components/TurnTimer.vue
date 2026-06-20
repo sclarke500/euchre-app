@@ -295,7 +295,7 @@ defineExpose({ reset })
   border-radius: var(--radius-sm);
   background: var(--color-dark-surface);
   color: var(--color-dark-text-secondary);
-  font-size: 16px;
+  font-size: $ui-sm;
   cursor: pointer;
   display: flex;
   align-items: center;

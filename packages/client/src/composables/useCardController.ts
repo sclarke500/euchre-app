@@ -29,12 +29,31 @@ import type { CardTableEngine } from './useCardTable'
 import type { StandardCard } from '@67cards/shared'
 import { Suit } from '@67cards/shared'
 import { FullRank } from '@67cards/shared'
-import type { CardPosition } from '@/components/cardContainers'
+import type { CardContainer, CardPosition } from '@/components/cardContainers'
 import { CardTimings, AnimationDelays } from '@/utils/animationTimings'
-import { CardScales, getBaseCardWidth, getViewportWidth, isMobile } from './useCardSizing'
+import { CardScales, getBaseCardWidth, getViewportWidth } from './useCardSizing'
+import {
+  buildContainerBindings,
+  buildDealHandBindings,
+  resolveBindingPosition,
+  applyBindingsToContainers,
+  type ContainerBinding,
+} from './useCardLayout'
 
 export type PlayAreaMode = 'trick' | 'overlay'
 export type TrickCompleteMode = 'stack' | 'sweep'
+
+const WON_TRICK_STAGGER_GAP = 12
+/** Nudge each stack toward that player's left (canonical px). */
+const WON_TRICK_PLAYER_LEFT = 22
+
+/** Per-seat offset toward the player's left (screen coords). */
+const WON_TRICK_LEFT_OFFSETS: Record<number, { x: number; y: number }> = {
+  0: { x: -WON_TRICK_PLAYER_LEFT, y: 0 },
+  1: { x: 0, y: -WON_TRICK_PLAYER_LEFT },
+  2: { x: WON_TRICK_PLAYER_LEFT, y: 0 },
+  3: { x: 0, y: WON_TRICK_PLAYER_LEFT },
+}
 
 export const cardControllerPresets = {
   euchre: {
@@ -70,6 +89,8 @@ export interface CardControllerConfig {
   opponentCollapseDurationMs?: number
   /** Table width for calculating hand fan spacing (optional) */
   tableWidth?: number
+  /** Anchor bindings keyed by engine container ID. Defaults to buildContainerBindings(). */
+  containerBindings?: Record<string, ContainerBinding>
 }
 
 export interface DealOptions {
@@ -140,6 +161,51 @@ export function useCardController(
   const tricksWonByPlayer = ref<Record<number, number>>({})
   const hiddenSeatIndices = new Set<number>()
 
+  function getContainerBindings(): Record<string, ContainerBinding> {
+    return config.containerBindings ?? buildContainerBindings(getPlayerCount(), getUserSeatIndex())
+  }
+
+  function getDealHandBindings(): Record<string, ContainerBinding> {
+    return buildDealHandBindings(getPlayerCount(), getUserSeatIndex())
+  }
+
+  function resolveHandBindingForLayout(
+    handId: string,
+    handScale: number
+  ): ContainerBinding | undefined {
+    const seatIdx = parseInt(handId.replace('hand-', ''), 10)
+    if (Number.isNaN(seatIdx)) return undefined
+
+    const userScale = config.userHandScale ?? CardScales.userHand
+    const isUserFanned = seatIdx === getUserSeatIndex() && handScale >= userScale * 0.75
+
+    if (isUserFanned) {
+      return getContainerBindings()[handId]
+    }
+    return getDealHandBindings()[handId]
+  }
+
+  function applyLayoutBindings(layout: TableLayoutResult, boardHeight: number): void {
+    const bindings = getContainerBindings()
+    const handOverrides: Record<string, ContainerBinding> = {}
+
+    for (const hand of engine.getHands()) {
+      const binding = resolveHandBindingForLayout(hand.id, hand.scale)
+      if (binding) handOverrides[hand.id] = binding
+      hand.resetArcLock()
+    }
+
+    const entries: [string, CardContainer][] = []
+    const deck = engine.getDeck()
+    if (deck) entries.push(['deck', deck])
+    for (const hand of engine.getHands()) entries.push([hand.id, hand])
+    for (const pile of engine.getPiles()) entries.push([pile.id, pile])
+
+    applyBindingsToContainers(entries, bindings, layout, boardHeight, {
+      overrides: handOverrides,
+    })
+  }
+
   function setupTable(dealerSeatIndex?: number) {
     engine.reset()
 
@@ -157,11 +223,15 @@ export function useCardController(
     const deckScale = dealerSeatIndex !== undefined ? CardScales.hidden : CardScales.deck
     engine.createDeck(deckPos, deckScale)
 
+    const dealBindings = getDealHandBindings()
+    const bindings = getContainerBindings()
     const userScale = config.userHandScale ?? CardScales.userHand
     const opponentScale = config.opponentHandScale ?? CardScales.opponentHand
     for (let i = 0; i < getPlayerCount(); i++) {
       const seat = layout.seats[i]!
-      engine.createHand(`hand-${i}`, seat.handPosition, {
+      const handBinding = dealBindings[`hand-${i}`]!
+      const handPos = resolveBindingPosition(handBinding, layout, board.offsetHeight)
+      engine.createHand(`hand-${i}`, handPos, {
         fanSpacing: seat.isUser 
           ? (config.userFanSpacing ?? Math.round(getBaseCardWidth() * 0.36))
           : (config.opponentFanSpacing ?? Math.round(getBaseCardWidth() * 0.19)),
@@ -174,11 +244,15 @@ export function useCardController(
       })
     }
 
-    engine.createPile('center', { x: tableCenter.value.x, y: tableCenter.value.y }, CardScales.playArea)
+    const centerBinding = bindings.center!
+    const centerPos = resolveBindingPosition(centerBinding, layout, board.offsetHeight)
+    engine.createPile('center', centerPos, CardScales.playArea)
 
     if (trickCompleteMode === 'stack') {
       for (let i = 0; i < getPlayerCount(); i++) {
-        engine.createPile(`tricks-won-player-${i}`, layout.tableCenter, CardScales.tricksWon)
+        const pileBinding = bindings[`tricks-won-player-${i}`]!
+        const pilePos = resolveBindingPosition(pileBinding, layout, board.offsetHeight)
+        engine.createPile(`tricks-won-player-${i}`, pilePos, CardScales.tricksWon)
       }
     }
 
@@ -291,12 +365,19 @@ export function useCardController(
     await new Promise(r => setTimeout(r, dealFlightMs))
 
     if (userHand && focusUserHand) {
-      const targetX = (tableLayout.value?.tableCenter ?? tableCenter.value).x
+      const layout = tableLayout.value
+      const userBinding = layout
+        ? getContainerBindings()[`hand-${userSeatIndex}`]
+        : undefined
+      const handPos = layout && userBinding
+        ? resolveBindingPosition(userBinding, layout, board.offsetHeight)
+        : {
+            x: (tableLayout.value?.tableCenter ?? tableCenter.value).x,
+            y: board.offsetHeight * 0.84,
+          }
+      const targetX = handPos.x
+      const targetY = handPos.y
       const cardCount = userHand.cards.length
-      // User hand sits up from the bottom edge, proportional to board height
-      // (raised slightly so the avatar plaque covers less of it).
-      const bottomOffset = board.offsetHeight * 0.16
-      const targetY = board.offsetHeight - bottomOffset
       const targetScale = config.userHandScale ?? CardScales.userHand
 
       userHand.position = { x: targetX, y: targetY }
@@ -546,8 +627,8 @@ export function useCardController(
     const layout = tableLayout.value
     const center = layout?.tableCenter ?? tableCenter.value
     const seatIndex = playerIdToSeatIndex(playerId)
-    // Spread proportional to card width so played cards don't pile up.
-    const d = getBaseCardWidth() * 0.6
+    // Spread proportional to card width — keep the cross tight.
+    const d = getBaseCardWidth() * 0.45
     const offsets: Record<number, { x: number; y: number; rotation: number }> = {
       0: { x: 0, y: d, rotation: 0 },
       1: { x: -d, y: 0, rotation: -8 },
@@ -690,38 +771,34 @@ export function useCardController(
     }
 
     const { tableBounds } = layout
-    const inset = 20
-    const gap = 12
+    const gap = WON_TRICK_STAGGER_GAP
+    // Just inside the felt edge — up to the rail, not tucked under it.
+    const railInset = Math.round(getBaseCardWidth() * CardScales.tricksWon * 0.8)
+    const seatIndex = playerIdToSeatIndex(playerId)
+    const leftOffset = WON_TRICK_LEFT_OFFSETS[seatIndex] ?? { x: 0, y: 0 }
     let x: number
     let y: number
     let rotation: number
 
-    // Offset toward center for better spacing (full mode only - mobile is tighter)
-    const inwardOffset = isMobile() ? 0 : 20
-    
-    switch (playerIdToSeatIndex(playerId)) {
+    switch (seatIndex) {
       case 0:
-        // User: also move inward (up into table)
-        x = tableBounds.centerX - 60 - trickNumber * gap
-        y = tableBounds.bottom - inset - inwardOffset
+        x = tableBounds.centerX - 50 - trickNumber * gap + leftOffset.x
+        y = tableBounds.bottom - railInset + leftOffset.y
         rotation = 0
         break
       case 1:
-        // Left player: inward = right
-        x = tableBounds.left + inset + inwardOffset
-        y = tableBounds.centerY - 40 - trickNumber * gap
+        x = tableBounds.left + railInset + leftOffset.x
+        y = tableBounds.centerY - 40 - trickNumber * gap + leftOffset.y
         rotation = 90
         break
       case 2:
-        // Top player: inward = down
-        x = tableBounds.centerX + 60 + trickNumber * gap
-        y = tableBounds.top + inset + inwardOffset
+        x = tableBounds.centerX + 50 + trickNumber * gap + leftOffset.x
+        y = tableBounds.top + railInset + leftOffset.y
         rotation = 0
         break
       case 3:
-        // Right player: inward = left
-        x = tableBounds.right - inset - inwardOffset
-        y = tableBounds.centerY + 40 + trickNumber * gap
+        x = tableBounds.right - railInset + leftOffset.x
+        y = tableBounds.centerY + 40 + trickNumber * gap + leftOffset.y
         rotation = 90
         break
       default:
@@ -1000,20 +1077,8 @@ export function useCardController(
       const hand = hands[seatIndex]
       if (!hand || hand.cards.length === 0) continue
 
-      // Position at each opponent's own avatar (so plays animate from correct spot)
-      // Add offset toward center for better visual spacing (full mode only)
       const avatarPos = getAvatarBoardPosition(seatIndex, layout)
-      const seat = layout.seats[seatIndex]
-      const inward = isMobile() ? 0 : 20
-      let offsetX = 0, offsetY = 0
-      if (seat) {
-        switch (seat.side) {
-          case 'left': offsetX = inward; break   // right (toward center)
-          case 'right': offsetX = -inward; break // left (toward center)
-          case 'top': offsetY = inward; break    // down (toward center)
-        }
-      }
-      const targetPos = { x: avatarPos.x + offsetX, y: avatarPos.y + offsetY }
+      const targetPos = { x: avatarPos.x, y: avatarPos.y }
       
       hiddenSeatIndices.add(seatIndex)
       for (const managed of hand.cards) {
@@ -1215,74 +1280,26 @@ export function useCardController(
     const board = boardRef.value
     if (!board) return
 
-    // Recalculate layout
-    const newLayout = computeTableLayout(board.offsetWidth, board.offsetHeight, getLayoutType(), getPlayerCount())
+    const newLayout = computeTableLayout(
+      board.offsetWidth,
+      board.offsetHeight,
+      getLayoutType(),
+      getPlayerCount()
+    )
     tableLayout.value = newLayout
     tableCenter.value = newLayout.tableCenter
 
-    // Update deck position (at table center)
-    const deck = engine.getDeck()
-    if (deck) {
-      deck.position = { x: newLayout.tableCenter.x, y: newLayout.tableCenter.y }
-    }
+    applyLayoutBindings(newLayout, board.offsetHeight)
 
-    // Update hand positions from layout seats
-    const hands = engine.getHands()
-    const userSeatIndex = getUserSeatIndex()
-    
-    for (let i = 0; i < hands.length; i++) {
-      const hand = hands[i]
-      const seat = newLayout.seats[i]
-      if (!hand || !seat) continue
-      
-      if (seat.isUser) {
-        // User hand: bottom center, raised proportionally from the edge
-        const bottomOffset = board.offsetHeight * 0.16
-        hand.position = {
-          x: newLayout.tableCenter.x,
-          y: board.offsetHeight - bottomOffset
-        }
-      } else {
-        // Opponent hands: use seat position
-        hand.position = { ...seat.handPosition }
-      }
-      
-      // Reset arc lock so fan recalculates for new size
-      hand.resetArcLock()
-    }
-
-    // Update pile positions
-    const piles = engine.getPiles()
-    for (const pile of piles) {
-      if (pile.id === 'center') {
-        // Center pile at table center
-        pile.position = { x: newLayout.tableCenter.x, y: newLayout.tableCenter.y }
-      } else if (pile.id.startsWith('tricks-won-player-')) {
-        // Trick piles near player's avatar
-        const seatIdx = parseInt(pile.id.replace('tricks-won-player-', ''))
-        const seat = newLayout.seats[seatIdx]
-        if (seat) {
-          const offset = seat.isUser ? { x: 80, y: -30 } : { x: 40, y: 30 }
-          pile.position = {
-            x: seat.handPosition.x + offset.x,
-            y: seat.handPosition.y + offset.y
-          }
-        }
-      }
-    }
-
-    // Animate all cards to new positions
     const promises: Promise<void>[] = []
-    
-    if (deck) {
-      promises.push(deck.repositionAll(animationMs))
-    }
-    
-    for (const hand of hands) {
+    const deck = engine.getDeck()
+    if (deck) promises.push(deck.repositionAll(animationMs))
+
+    for (const hand of engine.getHands()) {
       promises.push(hand.repositionAll(animationMs))
     }
-    
-    for (const pile of piles) {
+
+    for (const pile of engine.getPiles()) {
       promises.push(pile.repositionAll(animationMs))
     }
 

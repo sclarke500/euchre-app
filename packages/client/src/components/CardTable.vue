@@ -8,6 +8,14 @@
           <img src="@/assets/logo-jester-67-dark.png" alt="" class="watermark-img" />
         </div>
       </div>
+
+      <!-- Rail overlay: redraws just the wood rail ABOVE the table cards, so
+           won-trick piles and opponent card-backs tuck under it. -->
+      <div class="table-rail-overlay" :class="layout" aria-hidden="true"></div>
+
+      <!-- Felt shadow overlay: re-casts the rail's recessed inner shadow ABOVE
+           the cards, so cards tucked against the rail sit *under* the shadow. -->
+      <div class="table-felt-shadow" :class="layout" aria-hidden="true"></div>
       
       <!-- Opponent avatars - outside table-surface for proper z-index stacking -->
       <PlayerAvatar
@@ -22,6 +30,8 @@
         :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
         :trump-symbol="trumpCallerSeat === i ? trumpSymbol : ''"
         :trump-color="trumpCallerSeat === i ? trumpColor : ''"
+        :bid-badge="bidBadges[i] ?? null"
+        :seat-index="i"
         :chat-message="chatStore.activeBubbles.get(i)"
         :chat-persistent="chatStore.debugBubbles"
         @chat-dismiss="chatStore.hideBubble(i)"
@@ -50,15 +60,18 @@
         position="bottom"
         :trump-symbol="trumpCallerSeat === 0 ? trumpSymbol : ''"
         :trump-color="trumpCallerSeat === 0 ? trumpColor : ''"
+        :bid-badge="bidBadges[0] ?? null"
+        :seat-index="0"
       >
         <slot name="user-info" />
       </PlayerAvatar>
 
-      <!-- Dealer chip - animates between player positions -->
-      <div 
-        v-if="dealerSeat >= 0" 
-        class="dealer-chip-table"
+      <!-- Dealer chip — single element animates between seats (NW quadrant of each avatar) -->
+      <div
+        v-if="dealerSeat >= 0 && dealerChipVisible"
+        class="dealer-chip-animated avatar-chip avatar-chip--dealer"
         :style="dealerChipStyle"
+        aria-label="Dealer"
       >D</div>
 
       <!-- Overlay slot for game-specific UI (modals, score, etc.) -->
@@ -88,13 +101,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide, watch, nextTick } from 'vue'
 import BoardCard from './BoardCard.vue'
 import PlayerAvatar, { type AvatarPosition } from './PlayerAvatar.vue'
 import { useChatStore } from '@/stores/chatStore'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
 import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import { useCardSizing } from '@/composables/useCardSizing'
+import { measureDealerChipBoardPosition } from '@/utils/avatarChipLayout'
 
 const props = withDefaults(defineProps<{
   playerCount: number
@@ -107,6 +121,8 @@ const props = withDefaults(defineProps<{
   trumpSymbol?: string
   trumpColor?: string
   playerStatuses?: string[]
+  /** Per-seat corner badge (e.g. Spades bid), shown at the avatar's NE corner */
+  bidBadges?: (string | number | null)[]
   currentTurnSeat?: number
   dimmedCardIds?: Set<string>
   selectedCardIds?: Set<string>
@@ -121,6 +137,7 @@ const props = withDefaults(defineProps<{
   trumpSymbol: '',
   trumpColor: '',
   playerStatuses: () => [],
+  bidBadges: () => [],
   currentTurnSeat: -1,
   avatarOpacities: () => [],
   playerAvatars: () => [],
@@ -205,63 +222,37 @@ function getDebugAvatarStyle(seat: SeatLayout, index: number) {
   return { left: pos.x + 'px', top: pos.y + 'px' }
 }
 
-/**
- * Dealer chip position - top-left of each player's avatar.
- * Uses absolute positioning with transition for smooth animation between dealers.
- * User position uses 'bottom' since avatar is fixed to screen bottom.
- */
-const dealerChipStyle = computed(() => {
-  const layout = lastLayoutResult.value
-  const board = boardRef.value
-  if (!layout || !board || props.dealerSeat < 0) return { display: 'none' }
-  
-  const seat = seatData.value[props.dealerSeat]
-  if (!seat) return { display: 'none' }
-  
-  const { tableBounds } = layout
-  // Place the dealer chip at the avatar's top-left corner (mirroring the trump
-  // chip's top-right). Avatars are centered on their anchor and ~125px, so the
-  // chip's top-left sits just outside the ~62px radius.
-  const chipOffset = { x: -66, y: -66 }
+const dealerChipPos = ref<{ left: number; top: number } | null>(null)
+const dealerChipVisible = ref(false)
 
-  if (seat.isUser) {
-    // User avatar is fixed at the bottom of the screen; chip at its top-left
-    // corner (same -66 offset as opponents, mirroring the trump chip).
-    const boardHeight = board.offsetHeight
-    const chipTop = boardHeight - 95 - 28
-    return {
-      left: `${tableBounds.centerX - 66}px`,
-      top: `${chipTop}px`,
-      bottom: 'auto',
-    }
+// Arg-less so it can double as the resize listener (no Event leaking in).
+function updateDealerChipPosition() {
+  tryPlaceDealerChip(5)
+}
+
+function tryPlaceDealerChip(retries: number) {
+  if (props.dealerSeat < 0) {
+    dealerChipVisible.value = false
+    dealerChipPos.value = null
+    return
   }
-  
-  // Opponent avatars - use top positioning
-  let avatarX: number
-  let avatarY: number
-  
-  switch (seat.side) {
-    case 'left':
-      avatarX = tableBounds.left
-      avatarY = seat.handPosition.y
-      break
-    case 'right':
-      avatarX = tableBounds.right
-      avatarY = seat.handPosition.y
-      break
-    case 'top':
-      avatarX = seat.handPosition.x
-      avatarY = tableBounds.top
-      break
-    default:
-      avatarX = tableBounds.centerX
-      avatarY = tableBounds.bottom
+
+  const pos = measureDealerChipBoardPosition(boardRef.value, props.dealerSeat)
+  if (pos) {
+    dealerChipPos.value = pos
+    dealerChipVisible.value = true
+  } else if (retries > 0) {
+    // Avatar frame not laid out yet (mid round-transition) — retry next frame
+    // so we don't strand the chip at a garbage (top-left) position.
+    requestAnimationFrame(() => tryPlaceDealerChip(retries - 1))
   }
-  
+}
+
+const dealerChipStyle = computed(() => {
+  if (!dealerChipPos.value) return { visibility: 'hidden' as const }
   return {
-    left: `${avatarX + chipOffset.x}px`,
-    top: `${avatarY + chipOffset.y}px`,
-    bottom: 'auto',
+    left: `${dealerChipPos.value.left}px`,
+    top: `${dealerChipPos.value.top}px`,
   }
 })
 
@@ -291,6 +282,8 @@ function computeLayout() {
   // Notify listeners of layout change
   emit('layout-changed', result)
 
+  nextTick(() => updateDealerChipPosition())
+
   return result
 }
 
@@ -311,10 +304,16 @@ onMounted(() => {
     resizeObserver.observe(boardRef.value)
   }
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('resize', updateDealerChipPosition)
+  nextTick(() => updateDealerChipPosition())
 })
 
 watch(() => [props.playerCount, props.layout], () => {
   computeLayout()
+})
+
+watch(() => props.dealerSeat, () => {
+  nextTick(() => updateDealerChipPosition())
 })
 
 onUnmounted(() => {
@@ -323,6 +322,7 @@ onUnmounted(() => {
     resizeObserver = null
   }
   window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('resize', updateDealerChipPosition)
 })
 
 // Provide engine and layout for director composables
@@ -339,6 +339,16 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
+@use '@/assets/styles/avatar-chips' as *;
+
+.dealer-chip-animated {
+  position: absolute;
+  z-index: 550;
+  transition:
+    left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .card-table-root {
   width: 100%;
   height: 100%;
@@ -477,37 +487,58 @@ defineExpose({
 }
 
 // Dealer chip - poker chip style with striped border
-.dealer-chip-table {
+// Rail overlay — redraws just the outer wood ring (center masked out so cards
+// show through) above the table cards, so won-trick piles / opponent backs tuck
+// under the rail. Positioned identically to .table-surface.
+.table-rail-overlay {
   position: absolute;
-  width: 1.7em; // box tracks the font (see font-size below) so the chip scales
-  height: 1.7em;
-  border-radius: 50%;
-  background: 
-    radial-gradient(circle at center, #fff 0%, #fff 55%, transparent 55%),
-    conic-gradient(
-      from 0deg,
-      #2563eb 0deg 30deg, #fff 30deg 60deg,
-      #2563eb 60deg 90deg, #fff 90deg 120deg,
-      #2563eb 120deg 150deg, #fff 150deg 180deg,
-      #2563eb 180deg 210deg, #fff 210deg 240deg,
-      #2563eb 240deg 270deg, #fff 270deg 300deg,
-      #2563eb 300deg 330deg, #fff 330deg 360deg
-    );
-  color: #1e40af;
-  font-size: $ui-md;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.5),
-    inset 0 1px 2px rgba(255, 255, 255, 0.8),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
-  z-index: 550; // Above user avatar (500)
+  top: var(--table-top, 15%);
+  bottom: var(--table-bottom, 20%);
+  left: var(--table-left, 20%);
+  right: var(--table-right, 20%);
+  border-radius: 40px;
+  z-index: 250; // above won-trick (50) + opponent backs (200), below avatars (350)
   pointer-events: none;
-  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 12px; // ring thickness == felt inset on .table-surface::after
+  background:
+    repeating-linear-gradient(90deg, transparent 0px, rgba(0, 0, 0, 0.03) 1px, transparent 2px, transparent 8px),
+    linear-gradient(180deg, #5c4035 0%, #4a332a 15%, #3d2a22 50%, #4a332a 85%, #5c4035 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.5);
+  // Show ONLY the padding ring: full mask minus the content-box center.
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+
+  &.normal {
+    border-radius: 30px;
+  }
+}
+
+// Felt shadow overlay — mirrors the felt inner area (12px inside the rail) and
+// re-casts the recessed under-rail shadow ABOVE the cards. Without this the
+// shadow lives on .table-surface::after (below the cards), so won-trick piles
+// tucked against the rail would cover it. z-index sits above the cards
+// (won-trick 50, opponent backs 200) but below the rail ring (250) and avatars.
+.table-felt-shadow {
+  position: absolute;
+  top: calc(var(--table-top, 15%) + 12px);
+  bottom: calc(var(--table-bottom, 20%) + 12px);
+  left: calc(var(--table-left, 20%) + 12px);
+  right: calc(var(--table-right, 20%) + 12px);
+  border-radius: 28px;
+  z-index: 240;
+  pointer-events: none;
+  background: none;
+  box-shadow:
+    inset 0 4px 16px rgba(0, 0, 0, 0.5),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+
+  &.normal {
+    border-radius: 18px;
+  }
 }
 
 // Debug position dots
@@ -532,11 +563,4 @@ defineExpose({
 }
 </style>
 
-<!-- Unscoped styles for full-mode dealer chip sizing -->
-<style lang="scss">
-.full-mode .dealer-chip-table {
-  width: 36px;
-  height: 36px;
-  font-size: $ui-sm;
-}
-</style>
+

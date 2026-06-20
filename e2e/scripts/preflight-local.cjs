@@ -85,12 +85,15 @@ async function run() {
       fn: checkClient,
       fix: 'Start frontend: `cd /Users/steve/code/euchre-app && npm run dev`',
     },
-    {
+  ]
+
+  if (process.env.SKIP_SERVER_CHECK !== '1') {
+    checks.push({
       name: `server (${SERVER_HEALTH_URL})`,
       fn: checkServerHealth,
       fix: 'Start backend: `cd /Users/steve/code/euchre-app && npm run start:server`',
-    },
-  ]
+    })
+  }
 
   const failures = []
 

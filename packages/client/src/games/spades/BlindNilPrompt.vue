@@ -36,7 +36,7 @@ defineEmits<{
 .prompt-btn {
   padding: 12px 20px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: $ui-sm;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;

@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { useScreenOverlay } from '@/composables/useScreenOverlay'
+
 defineEmits<{
   click: []
 }>()
+
+const { backButtonPosition } = useScreenOverlay()
 </script>
 
 <template>
   <Teleport to="body">
-    <button class="back-button" @click="$emit('click')">
+    <button class="back-button" :style="backButtonPosition" @click="$emit('click')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
@@ -17,8 +21,6 @@ defineEmits<{
 <style scoped lang="scss">
 .back-button {
   position: fixed;
-  top: $spacing-md;
-  left: $spacing-md;
   z-index: 10100;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);

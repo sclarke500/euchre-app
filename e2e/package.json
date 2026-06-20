@@ -11,6 +11,9 @@
     "test:phase0": "playwright test tests/spades-multiplayer.spec.ts tests/turn-timer.spec.ts --workers=1 --reporter=line",
     "pretest:phase0:headed": "node ./scripts/preflight-local.cjs",
     "test:phase0:headed": "playwright test tests/spades-multiplayer.spec.ts tests/turn-timer.spec.ts --workers=1 --reporter=line --headed",
+    "pretest:layout": "SKIP_SERVER_CHECK=1 node ./scripts/preflight-local.cjs",
+    "test:layout": "playwright test tests/layout-matrix.spec.ts --workers=1 --reporter=line",
+    "test:layout:update": "playwright test tests/layout-matrix.spec.ts --workers=1 --update-snapshots",
     "report": "playwright show-report"
   },
   "devDependencies": {

@@ -3,10 +3,12 @@
 // useLegalModal state is set. Closing returns the user exactly where they were.
 import { computed } from 'vue'
 import { useLegalModal } from '@/composables/useLegalModal'
+import { useScreenOverlay } from '@/composables/useScreenOverlay'
 import SupportContent from './SupportContent.vue'
 import PrivacyContent from './PrivacyContent.vue'
 
 const { activePage, close } = useLegalModal()
+const { overlayPadding } = useScreenOverlay()
 
 const title = computed(() => (activePage.value === 'privacy' ? 'Privacy Policy' : 'Support'))
 </script>
@@ -17,6 +19,7 @@ const title = computed(() => (activePage.value === 'privacy' ? 'Privacy Policy' 
       <div
         v-if="activePage"
         class="legal-overlay"
+        :style="overlayPadding"
         role="dialog"
         aria-modal="true"
         :aria-label="title"
@@ -42,7 +45,6 @@ const title = computed(() => (activePage.value === 'privacy' ? 'Privacy Policy' 
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -62,9 +64,6 @@ const title = computed(() => (activePage.value === 'privacy' ? 'Privacy Policy' 
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  // Respect notches/safe areas when near full screen
-  margin: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .legal-close {

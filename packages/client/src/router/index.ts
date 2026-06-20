@@ -66,6 +66,14 @@ const routes: RouteRecordRaw[] = [
     name: 'support',
     component: () => import('@/views/SupportView.vue'),
   },
+  // Dev / CI layout smoke (empty table with debug anchors)
+  ...(import.meta.env.DEV || import.meta.env.VITE_LAYOUT_SMOKE
+    ? [{
+        path: '/dev/layout',
+        name: 'dev-layout',
+        component: () => import('@/views/dev/LayoutSmokeView.vue'),
+      } as RouteRecordRaw]
+    : []),
   // Catch-all redirect to home
   {
     path: '/:pathMatch(.*)*',

@@ -140,8 +140,8 @@
             {{ isUserDealer ? 'Pick Up' : 'Order Up' }}
           </button>
           <label class="action-checkbox">
-            <input type="checkbox" v-model="goAlone" />
-            Go Alone
+            <span class="action-checkbox__text">Go Alone</span>
+            <input type="checkbox" switch class="action-checkbox__box" v-model="goAlone" />
           </label>
         </template>
 
@@ -163,8 +163,8 @@
             </button>
           </div>
           <label class="action-checkbox">
-            <input type="checkbox" v-model="goAlone" />
-            Go Alone
+            <span class="action-checkbox__text">Go Alone</span>
+            <input type="checkbox" switch class="action-checkbox__box" v-model="goAlone" />
           </label>
         </template>
 
@@ -922,21 +922,28 @@ onUnmounted(() => {
 .action-panel-container .action-checkbox {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: ui-size(14px, 2.5vh, 22px);
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: $ui-sm; // label kept modest; the switch is the prominent control
+  font-weight: 600;
   cursor: pointer;
   user-select: none;
   margin-top: -4px; // Tuck closer to the action button above
-  padding: 6px 10px;
+  padding: 8px 12px;
   background: rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
+  border-radius: 10px;
 
-  input {
+  // Native checkbox — bulletproof (a replaced element can't collapse the way a
+  // custom span track can). `switch` attr → native iOS toggle on Safari 17.4+;
+  // `accent-color` colors the checked state everywhere else.
+  .action-checkbox__box {
+    flex-shrink: 0;
+    width: ui-size(24px, 4.5vh, 36px);
+    height: ui-size(24px, 4.5vh, 36px);
+    margin: 0;
+    cursor: pointer;
     accent-color: #2a8a6a;
-    width: 16px;
-    height: 16px;
   }
 }
 

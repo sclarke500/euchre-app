@@ -4,6 +4,9 @@ import { useChatStore } from '@/stores/chatStore'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { CHAT_MAX_LENGTH } from '@67cards/shared'
 import { ENABLE_FREE_TEXT_CHAT } from '@/config/chat'
+import { useScreenOverlay } from '@/composables/useScreenOverlay'
+
+const { chatPanelInset } = useScreenOverlay()
 
 const props = withDefaults(defineProps<{
   show: boolean
@@ -96,7 +99,7 @@ function handleQuickReact(emoji: string) {
         class="chat-panel-overlay"
         @click="handleBackdropClick"
       >
-        <div class="chat-panel overlay-panel">
+        <div class="chat-panel overlay-panel" :style="chatPanelInset">
           <div class="panel-header">
             <h3>Chat</h3>
             <button class="close-btn" @click="$emit('close')" title="Close">
@@ -281,8 +284,7 @@ function handleQuickReact(emoji: string) {
     -webkit-backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
-    // Safe area for Dynamic Island / notch in landscape
-    padding-left: var(--device-safe-left, 0);
+    // padding-left set via chatPanelInset (--screen-safe-left)
   }
   
   // Sidebar mode (inline)

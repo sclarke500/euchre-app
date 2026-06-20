@@ -11,6 +11,7 @@
 
 - `README.md` — Project overview, setup, commands
 - `CLAUDE.md` — Session conventions for Claude coding sessions
+- `docs/PLATFORM_CONTRACT.md` — **Frozen layout/sizing contract** for trick-taking games
 - `docs/ROADMAP.md` — Shared multiplayer flow reference, checklists, deferred work
 - `docs/MULTIPLAYER_ARCHITECTURE.md` — Detailed architecture reference
 - `docs/SAFE_AREAS.md` — Notch/Dynamic Island handling strategy

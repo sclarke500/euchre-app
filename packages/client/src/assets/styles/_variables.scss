@@ -62,27 +62,29 @@ $card-overlap-hand-tight: -35px;  // Tight hands (many cards, small screens)
 $card-overlap-pile: -20px;        // Stacked piles (opponent backs, played cards)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Readable-floor sizing for HUD / text.
+// Board UI text scale — ONE-LAYER model (all pixels, scale to fit).
 //
-// The board scales by --board-scale (= viewportHeight / canonicalHeight), which
-// is < 1 on phones and > 1 on desktop. Sizing text in plain canonical px makes
-// it tiny on phones and huge on desktop. `ui-size()` instead pins the EFFECTIVE
-// on-screen size to a readable clamp(): it counter-divides by --board-scale so,
-// after the board transform multiplies by --board-scale, the result lands at
-// clamp($min, $pref, $max) on screen — regardless of board scale. Use vh for
-// $pref so it still tracks screen size between the floor and ceiling.
-//   e.g. font-size: ui-size(13px, 2.6vh, 22px);
+// The whole game board lives in a fixed canonical space (720px tall) and is
+// scaled to the viewport by a single transform (--board-scale: ~0.55 on phones,
+// ~1.1 on tablets, ≥1 on desktop). EVERYTHING on the board — boxes, padding, and
+// text — is plain canonical px and scales together as one unit, so a box and the
+// text inside it can never mismatch. Pick each canonical px so it's legible at
+// the smallest scale: e.g. 25px canonical → ~14px on a phone, ~28px on a tablet.
+// Tune the whole board's text from here; if phones read too small, scale these
+// up uniformly.
+//
+// NOTE: standalone pages (home / landing / settings / lobby) are NOT on the
+// board and must NOT use these tokens — they use normal responsive CSS.
 // ─────────────────────────────────────────────────────────────────────────────
-@function ui-size($min, $pref, $max) {
-  @return calc(clamp(#{$min}, #{$pref}, #{$max}) / var(--board-scale, 1));
-}
+$ui-xs: 22px; // fine print, secondary chips     → ~12px @0.55
+$ui-sm: 25px; // labels, body, checkboxes         → ~14px @0.55
+$ui-md: 29px; // names, buttons, emphasis         → ~16px @0.55
+$ui-lg: 36px; // prompts, section headings        → ~20px @0.55
+$ui-xl: 51px; // score numbers, hero text         → ~28px @0.55
 
-// UI text scale — every HUD / board-overlay font-size should use one of these
-// (card FACE text is exempt; it scales with the card). Each value is the
-// EFFECTIVE on-screen clamp range (floor / viewport-tracking / ceiling). Tune
-// the whole HUD's readability from here.
-$ui-xs: ui-size(12px, 2.1vh, 18px); // fine print, secondary chips
-$ui-sm: ui-size(15px, 2.7vh, 23px); // labels, body, checkboxes
-$ui-md: ui-size(18px, 3.2vh, 29px); // names, buttons, emphasis
-$ui-lg: ui-size(23px, 4.1vh, 37px); // prompts, section headings
-$ui-xl: ui-size(30px, 5.4vh, 50px); // score numbers, hero text
+// Transitional shim: a handful of call sites still pass ui-size(min, pref, max).
+// Under the one-layer model only the canonical ceiling matters, so return it.
+// TODO(finalize): inline these to plain px and delete this function.
+@function ui-size($min, $pref, $max) {
+  @return $max;
+}

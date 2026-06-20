@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import ChatPanel from './chat/ChatPanel.vue'
 import ChatIcon from './chat/ChatIcon.vue'
 import { isFullMode } from '@/utils/deviceMode'
+import { useBoardViewport } from '@/composables/useBoardViewport'
 
 const props = withDefaults(defineProps<{
   showChat: boolean
@@ -15,22 +16,9 @@ const emit = defineEmits<{
   'update:showChat': [value: boolean]
 }>()
 
-// Viewport tracking
-const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+const { viewportWidth } = useBoardViewport()
 
-function updateViewport() {
-  viewportWidth.value = window.innerWidth
-}
-
-onMounted(() => {
-  window.addEventListener('resize', updateViewport)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', updateViewport)
-})
-
-// Wide mode: >= 1350px, chat becomes sidebar (only in full mode)
+// Wide mode: >= 1350px viewport, chat becomes sidebar (only in full mode)
 const isWideMode = computed(() => isFullMode() && viewportWidth.value >= 1350)
 const chatMode = computed(() => isWideMode.value ? 'sidebar' : 'overlay')
 
@@ -119,8 +107,8 @@ function toggleChat() {
 // Chat toggle for wide mode
 .chat-toggle-wide {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + var(--safe-top, 0px));
+  left: calc(16px + var(--safe-left, 0px));
   z-index: 100;
 }
 
@@ -158,8 +146,8 @@ function toggleChat() {
 // Chat icon wrapper (narrow mode)
 .chat-icon-wrapper {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + var(--safe-top, 0px));
+  left: calc(16px + var(--safe-left, 0px));
   z-index: 100;
 }
 </style>

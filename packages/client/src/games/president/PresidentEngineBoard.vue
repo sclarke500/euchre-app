@@ -736,17 +736,20 @@ onUnmounted(() => {
 }
 
 // Round indicator - top right (similar to Spades scoreboard)
+// Top-right HUD readout — shares the scoreboard shell with Euchre/Spades
+// (same bg/border/radius/padding) so the corner chrome is consistent; content
+// here is "Round N" rather than a team score.
 .round-indicator {
   position: fixed;
-  top: 8px;
-  right: 8px; // ScaledContainer handles safe areas now
+  top: calc(8px + var(--safe-top, 0px));
+  right: calc(8px + var(--safe-right, 0px));
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
-  border-radius: 6px;
-  padding: 6px 12px;
+  border-radius: 12px;
+  padding: 10px 16px;
   backdrop-filter: blur(8px);
-  font-size: $ui-xs;
+  font-size: $ui-sm;
   font-weight: 600;
   color: #ccc;
 }
@@ -826,6 +829,13 @@ onUnmounted(() => {
       0 0 var(--panel-glow-size-pulse) var(--panel-glow-color),
       inset 1px 1px 0 rgba(255, 255, 255, 0.15);
   }
+}
+
+// Action buttons — match Euchre's panel sizing (the shared frosted-btn mixin
+// defaults to 14px, which is tiny under the board scale; override to a token).
+.action-panel-container .frosted-btn {
+  font-size: $ui-lg;
+  padding: 16px 28px;
 }
 
 // Pass button - neutral, strategic option (not cancel-like)

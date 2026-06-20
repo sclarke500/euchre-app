@@ -135,11 +135,18 @@ Two AI implementations in `packages/shared/src/`:
 
 The app uses a shared container-based card animation engine for Euchre, President, and Spades.
 
+**Platform layout contract:** `docs/PLATFORM_CONTRACT.md` — canonical coordinate space (Model B), frozen constants in `useBoardViewport.PLATFORM_CONSTANTS`, container positions via anchor bindings in `useCardLayout.buildContainerBindings()`. Games must not set absolute pixel positions in directors.
+
 ### Key Files
 - `CardTable.vue` - Shared table surface and avatar/chip rendering
 - `BoardCard.vue` - Single card component with position/animation methods
 - `cardContainers.ts` - Container classes that own and position cards
 - `useCardTable.ts` - Engine API for decks/hands/piles + card moves
+- `useBoardViewport.ts` - Single source of truth for canonical scale + safe rect
+- `useCardLayout.ts` - Anchor-based container bindings (resize-safe)
+- `useCardController.ts` - Shared deal/play/resize animations (uses bindings)
+- `useAppRenderMode.ts` - Route → render path (canonical / responsive / scrollable / solitaire)
+- `useScreenOverlay.ts` - Safe-area positioning for teleported overlays
 
 ### Architecture Concepts
 
