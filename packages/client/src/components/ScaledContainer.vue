@@ -52,6 +52,52 @@ const safeInsets = ref<SafeAreaInsets>({ top: 0, right: 0, bottom: 0, left: 0 })
 const deviceName = ref('Unknown')
 const isPortrait = ref(false)
 
+// ── TEMP full-bleed diagnostic ───────────────────────────────────────────────
+// On-screen readout of every dimension source + the REAL env(safe-area-inset)
+// values, so we can see whether the PWA is drawing under the notch. Remove once
+// the bleed issue is resolved.
+const SHOW_BLEED_DEBUG = true
+const dbg = ref('')
+
+/** Read the browser's actual safe-area insets via a probe element. */
+function readEnvInsets(): { t: number; r: number; b: number; l: number } {
+  const probe = document.createElement('div')
+  probe.style.cssText =
+    'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;' +
+    'padding:env(safe-area-inset-top) env(safe-area-inset-right) ' +
+    'env(safe-area-inset-bottom) env(safe-area-inset-left);'
+  document.body.appendChild(probe)
+  const cs = getComputedStyle(probe)
+  const out = {
+    t: Math.round(parseFloat(cs.paddingTop) || 0),
+    r: Math.round(parseFloat(cs.paddingRight) || 0),
+    b: Math.round(parseFloat(cs.paddingBottom) || 0),
+    l: Math.round(parseFloat(cs.paddingLeft) || 0),
+  }
+  document.body.removeChild(probe)
+  return out
+}
+
+function updateDebug(): void {
+  if (!SHOW_BLEED_DEBUG) return
+  const env = readEnvInsets()
+  const vv = window.visualViewport
+  const wrap = wrapperRef.value?.getBoundingClientRect()
+  const standalone =
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches
+  dbg.value = [
+    `screen ${window.screen.width}x${window.screen.height}`,
+    `inner ${window.innerWidth}x${window.innerHeight}`,
+    `vv ${vv ? Math.round(vv.width) + 'x' + Math.round(vv.height) : '-'}`,
+    `docEl ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}`,
+    `wrap ${wrap ? Math.round(wrap.width) + 'x' + Math.round(wrap.height) : '-'}`,
+    `ENV t${env.t} r${env.r} b${env.b} l${env.l}`,
+    `iOS:${isIOS()} mob:${isMobile()} sa:${standalone} ${isPortrait.value ? 'P' : 'L'}`,
+  ].join('\n')
+}
+
 // Track last known dimensions
 let lastViewportW = 0
 let lastViewportH = 0
@@ -236,6 +282,8 @@ function calculateScale() {
 
   lastViewportW = viewportW
   lastViewportH = viewportH
+
+  updateDebug()
 }
 
 function handleResize() {
@@ -350,10 +398,32 @@ defineExpose({
     >
       <slot />
     </div>
+
+    <!-- TEMP full-bleed diagnostic readout -->
+    <pre v-if="SHOW_BLEED_DEBUG" class="bleed-debug">{{ dbg }}</pre>
   </div>
 </template>
 
 <style scoped lang="scss">
+.bleed-debug {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 99999;
+  margin: 0;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.82);
+  color: #6f6;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid #6f6;
+  border-radius: 8px;
+  white-space: pre;
+  pointer-events: none;
+}
+
 .scaled-container-wrapper {
   // Pin to the physical viewport so PWA safe-area gutters don't leave black bars.
   position: fixed;
