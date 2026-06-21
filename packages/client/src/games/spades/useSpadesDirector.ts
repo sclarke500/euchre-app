@@ -180,6 +180,9 @@ export function useSpadesDirector(
 
   async function initializeBoard() {
     await setupBoardReference()
+    // Wait for a settled board size before laying out the table, or the deal
+    // collapses every card to the screen's left edge (x≈0) on a fresh mount.
+    await cardController.waitForStableBoardSize()
     cardController.setupTable(game.dealer.value)
   }
 

@@ -14,11 +14,18 @@ export type AppRenderMode =
 
 export const SCROLLABLE_ROUTE_NAMES = ['landing', 'privacy', 'support'] as const
 export const FULLSCREEN_ROUTE_NAMES = ['home'] as const
+// App pages that are NOT the scaled card board — forms/lists that must render at
+// natural size (and scroll if needed). Previously these fell through to
+// 'canonical' and got shrunk by the board scale, so everything looked tiny.
+export const RESPONSIVE_PAGE_ROUTE_NAMES = ['create-game', 'lobby'] as const
 export const LANDSCAPE_ROUTE_PREFIXES = ['/play/', '/lobby', '/game'] as const
 export const SOLITAIRE_PATH = '/play/klondike'
 
 export function getAppRenderMode(path: string, routeName?: string | symbol | null): AppRenderMode {
   if (path === '/' || SCROLLABLE_ROUTE_NAMES.includes(routeName as (typeof SCROLLABLE_ROUTE_NAMES)[number])) {
+    return 'scrollable'
+  }
+  if (RESPONSIVE_PAGE_ROUTE_NAMES.includes(routeName as (typeof RESPONSIVE_PAGE_ROUTE_NAMES)[number])) {
     return 'scrollable'
   }
   if (FULLSCREEN_ROUTE_NAMES.includes(routeName as (typeof FULLSCREEN_ROUTE_NAMES)[number])) {

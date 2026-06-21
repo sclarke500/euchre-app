@@ -184,13 +184,6 @@
     />
   </CardTable>
 
-  <!-- Chat (multiplayer only) -->
-  <template v-if="mode === 'multiplayer'">
-    <div class="chat-icon-container">
-      <ChatIcon @click="showChatPanel = true" />
-    </div>
-    <ChatPanel :show="showChatPanel" @close="showChatPanel = false" />
-  </template>
   </div>
 </template>
 
@@ -202,8 +195,6 @@ import TurnTimer from '@/components/TurnTimer.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
-import ChatIcon from '@/components/chat/ChatIcon.vue'
-import ChatPanel from '@/components/chat/ChatPanel.vue'
 import DisconnectedPlayerBanner from '@/components/DisconnectedPlayerBanner.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { useEuchreGameAdapter } from './useEuchreGameAdapter'
@@ -564,7 +555,6 @@ function handlePlayAgain() {
 // Leave confirmation for multiplayer
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
-const showChatPanel = ref(false)
 const timerPaused = ref(false)
 const emit = defineEmits<{
   'leave-game': []

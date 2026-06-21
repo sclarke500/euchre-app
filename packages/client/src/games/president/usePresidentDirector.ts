@@ -495,6 +495,9 @@ export function usePresidentDirector(
     switch (newPhase) {
       case PresidentPhase.Dealing:
         clearPlayerStatuses()
+        // Wait for a settled board size first (see useCardController) — otherwise
+        // the deal collapses every card to the screen's left edge (x≈0).
+        await cardController.waitForStableBoardSize()
         setupTable()
         await nextTick()
         await animateDeal()
@@ -533,6 +536,9 @@ export function usePresidentDirector(
     switch (newPhase) {
       case PresidentPhase.Dealing:
         clearPlayerStatuses()
+        // Wait for a settled board size first (see useCardController) — otherwise
+        // the deal collapses every card to the screen's left edge (x≈0).
+        await cardController.waitForStableBoardSize()
         setupTable()
         await nextTick()
         await animateDeal()
@@ -692,6 +698,7 @@ export function usePresidentDirector(
       // If state already exists (messages arrived before mount), catch up
       const phase = game.phase.value
       if (phase !== PresidentPhase.Setup && lastAnimatedPhase.value === null) {
+        await cardController.waitForStableBoardSize()
         setupTable()
         await nextTick()
         // Always deal if we haven't dealt yet, regardless of current phase.

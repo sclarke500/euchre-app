@@ -131,9 +131,9 @@ function handleRules() {
 
 .menu-dropdown {
   position: absolute;
-  top: 48px;
+  top: 76px;
   left: 0;
-  min-width: 200px;
+  min-width: 260px;
   background: var(--color-dark-surface);
   border: 1px solid var(--color-dark-border);
   border-radius: var(--radius-md);
@@ -144,20 +144,20 @@ function handleRules() {
 
 .menu-item {
   width: 100%;
-  padding: 12px 16px;
+  padding: 16px 22px;
   background: none;
   border: none;
   color: var(--color-dark-text);
-  font-size: $ui-sm;
+  font-size: $ui-md;
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  
+  gap: 14px;
+
   svg {
-    width: 18px;
-    height: 18px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
   }
   

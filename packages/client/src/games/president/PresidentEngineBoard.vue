@@ -240,13 +240,6 @@
 
   </CardTable>
 
-  <!-- Chat (multiplayer only) -->
-  <template v-if="mode === 'multiplayer'">
-    <div class="chat-icon-container">
-      <ChatIcon @click="showChatPanel = true" />
-    </div>
-    <ChatPanel :show="showChatPanel" @close="showChatPanel = false" />
-  </template>
   </div>
 </template>
 
@@ -258,8 +251,6 @@ import TurnTimer from '@/components/TurnTimer.vue'
 import Modal from '@/components/Modal.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
-import ChatIcon from '@/components/chat/ChatIcon.vue'
-import ChatPanel from '@/components/chat/ChatPanel.vue'
 import DisconnectedPlayerBanner from '@/components/DisconnectedPlayerBanner.vue'
 import { useCardTable } from '@/composables/useCardTable'
 import { usePresidentGameAdapter } from './usePresidentGameAdapter'
@@ -337,7 +328,6 @@ const timerSettings = computed(() => {
 })
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
-const showChatPanel = ref(false)
 const timerPaused = ref(false)
 
 function handleLeaveClick() {

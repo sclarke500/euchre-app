@@ -1276,6 +1276,34 @@ export function useCardController(
    * Handle layout change (resize, orientation change).
    * Repositions all containers and animates cards to new positions.
    */
+  /**
+   * Wait until the board has a valid, STABLE layout size before computing deal /
+   * setup positions. On a fresh mount — especially mobile, where ScaledContainer
+   * derives the viewport a frame or two after mount — board.offsetWidth can be
+   * briefly 0 or a transient value; laying out then collapses every card to x≈0
+   * (they pile up at the screen's left edge). Poll rAF until the width is
+   * non-zero and unchanged for two frames, or give up after ~40 frames (~0.65s).
+   */
+  async function waitForStableBoardSize(maxFrames: number = 40): Promise<void> {
+    const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
+    let lastW = -1
+    let stable = 0
+    for (let i = 0; i < maxFrames; i++) {
+      const el = boardRef.value
+      const w = el?.offsetWidth ?? 0
+      const h = el?.offsetHeight ?? 0
+      if (w > 0 && h > 0) {
+        if (w === lastW) {
+          if (++stable >= 2) return
+        } else {
+          stable = 0
+          lastW = w
+        }
+      }
+      await nextFrame()
+    }
+  }
+
   async function handleLayoutChange(animationMs: number = 200): Promise<void> {
     const board = boardRef.value
     if (!board) return
@@ -1318,6 +1346,7 @@ export function useCardController(
     tableLayout,
     setupTable,
     handleLayoutChange,
+    waitForStableBoardSize,
     setTableWidth,
     dealFromPlayers,
     restoreHands,

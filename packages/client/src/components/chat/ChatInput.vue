@@ -118,7 +118,7 @@ function handleClickOutside(e: MouseEvent) {
 .chat-input-wrapper {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   background: linear-gradient(
     180deg,
     rgba(45, 48, 58, 0.5) 0%,
@@ -157,22 +157,22 @@ function handleClickOutside(e: MouseEvent) {
 
 .reacts-label {
   color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
+  font-size: $ui-sm;
   letter-spacing: 0.02em;
   padding-right: 2px;
   user-select: none;
 }
 
 .quick-react-btn {
-  width: 32px;
-  height: 32px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 50%;
-  font-size: 16px;
+  font-size: $ui-lg;
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.1s ease;
   
@@ -195,8 +195,8 @@ function handleClickOutside(e: MouseEvent) {
   left: 0;
   margin-bottom: 8px;
   display: flex;
-  gap: 4px;
-  padding: 8px;
+  gap: 6px;
+  padding: 10px;
   background: linear-gradient(
     180deg,
     rgba(45, 48, 58, 0.95) 0%,
@@ -211,27 +211,27 @@ function handleClickOutside(e: MouseEvent) {
 .quick-react-option {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 10px 16px;
   background: rgba(255, 255, 255, 0.08);
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
+  font-size: $ui-lg;
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.15);
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   .react-text {
-    font-size: 12px;
+    font-size: $ui-sm;
     color: rgba(255, 255, 255, 0.7);
   }
 }

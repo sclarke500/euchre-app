@@ -332,6 +332,10 @@ export function useEuchreDirector(
     resetGameState()
   }
 
+  // Shared board-size gate (see useCardController) — prevents dealing before the
+  // board has a real, settled size, which would collapse cards to the left edge.
+  const { waitForStableBoardSize } = cardController
+
   // ── Deal animation ──────────────────────────────────────────────────────
 
   async function animateDeal() {
@@ -563,6 +567,9 @@ export function useEuchreDirector(
         const nextDealer = dealerSeat.value
         await animateTrickPilesSweepOff(nextDealer)
         clearPlayerStatuses()
+        // Don't lay out the deal until the board has a real, settled size,
+        // or every card collapses to the screen's left edge (x≈0).
+        await waitForStableBoardSize()
         setupTable()
         await nextTick()
         await animateDeal()
@@ -700,6 +707,9 @@ export function useEuchreDirector(
         const nextDealer = dealerSeat.value
         await animateTrickPilesSweepOff(nextDealer)
         clearPlayerStatuses()
+        // Don't lay out the deal until the board has a real, settled size,
+        // or every card collapses to the screen's left edge (x≈0).
+        await waitForStableBoardSize()
         setupTable()
         await nextTick()
         await animateDeal()
