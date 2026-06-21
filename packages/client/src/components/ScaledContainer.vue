@@ -81,39 +81,72 @@ function isIOS(): boolean {
 }
 
 /**
- * Get viewport dimensions
- * - iOS PWA: derive from screen size + orientation (visualViewport is broken)
- * - Android/Desktop: use window.innerWidth/Height (works reliably)
+ * Derive full-screen dimensions from physical screen + orientation.
+ * Used as fallback when layout APIs are mid-rotation garbage (iOS PWA).
+ */
+function getScreenOrientedDimensions(): { width: number, height: number } {
+  const orientation = getDeviceOrientation()
+  const screenW = window.screen.width
+  const screenH = window.screen.height
+  const isScreenPortrait = screenH > screenW
+
+  if (orientation === 'portrait') {
+    return {
+      width: isScreenPortrait ? screenW : screenH,
+      height: isScreenPortrait ? screenH : screenW,
+    }
+  }
+  return {
+    width: isScreenPortrait ? screenH : screenW,
+    height: isScreenPortrait ? screenW : screenH,
+  }
+}
+
+/**
+ * Get viewport dimensions for scale math.
+ * Prefer the laid-out wrapper (self-corrects PWA safe-area inset quirks), then
+ * visualViewport / documentElement, then iOS screen fallback.
  */
 function getViewportDimensions(): { width: number, height: number } {
-  // iOS PWA has broken visualViewport during orientation transitions
-  // Derive dimensions from physical screen size + orientation
-  if (isMobile() && isIOS()) {
-    const orientation = getDeviceOrientation()
-    const screenW = window.screen.width
-    const screenH = window.screen.height
-    
-    // iOS screen.width/height are physical (don't swap on rotation)
-    const isScreenPortrait = screenH > screenW
-    
-    let width: number, height: number
-    if (orientation === 'portrait') {
-      width = isScreenPortrait ? screenW : screenH
-      height = isScreenPortrait ? screenH : screenW
-    } else {
-      width = isScreenPortrait ? screenH : screenW
-      height = isScreenPortrait ? screenW : screenH
+  if (wrapperRef.value) {
+    const rect = wrapperRef.value.getBoundingClientRect()
+    if (rect.width >= 200 && rect.height >= 200) {
+      return { width: Math.round(rect.width), height: Math.round(rect.height) }
     }
-    
-    console.log(`[ScaledContainer] iOS: screen=${screenW}×${screenH}, orientation=${orientation} → ${width}×${height}`)
-    return { width, height }
   }
-  
-  // Android and desktop: window.innerWidth/Height work reliably
-  return {
-    width: window.innerWidth,
-    height: window.innerHeight,
+
+  const vv = window.visualViewport
+  if (vv && vv.width >= 200 && vv.height >= 200) {
+    return { width: Math.round(vv.width), height: Math.round(vv.height) }
   }
+
+  const rootW = document.documentElement.clientWidth
+  const rootH = document.documentElement.clientHeight
+  if (rootW >= 200 && rootH >= 200) {
+    return { width: rootW, height: rootH }
+  }
+
+  const innerW = window.innerWidth
+  const innerH = window.innerHeight
+  if (innerW >= 200 && innerH >= 200) {
+    // iOS PWA can report inset inner dims while the physical screen is larger.
+    if (isMobile() && isIOS()) {
+      const screen = getScreenOrientedDimensions()
+      return {
+        width: Math.max(innerW, screen.width),
+        height: Math.max(innerH, screen.height),
+      }
+    }
+    return { width: innerW, height: innerH }
+  }
+
+  if (isMobile() && isIOS()) {
+    const screen = getScreenOrientedDimensions()
+    console.log(`[ScaledContainer] iOS screen fallback → ${screen.width}×${screen.height}`)
+    return screen
+  }
+
+  return { width: innerW || 1280, height: innerH || 720 }
 }
 
 /**
@@ -137,29 +170,56 @@ function dimensionsLookValid(width: number, height: number, orientation: 'portra
   return true
 }
 
+/** If the laid-out box is inset inside the physical screen, scale to the full bleed size. */
+function ensureFullBleedDimensions(
+  width: number,
+  height: number,
+  edgeInsets: SafeAreaInsets,
+): { width: number; height: number } {
+  if (!isMobile()) return { width, height }
+
+  const target = isIOS() ? getScreenOrientedDimensions() : null
+  let w = width
+  let h = height
+
+  if (target) {
+    if (w < target.width - 2) w = target.width
+    if (h < target.height - 2) h = target.height
+  } else {
+    w += edgeInsets.left + edgeInsets.right
+    h += edgeInsets.top + edgeInsets.bottom
+  }
+
+  return { width: w, height: h }
+}
+
+function resolveEdgeInsets(isPortraitOrientation: boolean): SafeAreaInsets {
+  if (!isMobile()) return { top: 0, right: 0, bottom: 0, left: 0 }
+
+  const deviceInfo = getDeviceSafeAreas()
+  deviceName.value = deviceInfo.name
+  if (isPortraitOrientation) {
+    // deviceSafeAreas returns landscape values; the notch moves to top in portrait
+    return { top: deviceInfo.insets.left, right: 0, bottom: deviceInfo.insets.bottom, left: 0 }
+  }
+  return deviceInfo.insets
+}
+
 function calculateScale() {
   const deviceOrientation = getDeviceOrientation()
-  const { width: viewportW, height: viewportH } = getViewportDimensions()
-
-  if (viewportW === 0 || viewportH === 0) return
-
   isPortrait.value = deviceOrientation === 'portrait'
 
-  // Resolve device safe-area insets. These feed the LAYOUT (to keep interactive
-  // content clear of notches/home indicator); the felt itself fills the whole
-  // viewport, so insets no longer shrink the board.
-  let insets: SafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 }
-  if (isMobile()) {
-    const deviceInfo = getDeviceSafeAreas()
-    deviceName.value = deviceInfo.name
-    if (isPortrait.value) {
-      // deviceSafeAreas returns landscape values; the notch moves to top in portrait
-      insets = { top: deviceInfo.insets.left, right: 0, bottom: deviceInfo.insets.bottom, left: 0 }
-    } else {
-      insets = deviceInfo.insets
-    }
-  }
+  const insets = resolveEdgeInsets(isPortrait.value)
   safeInsets.value = insets
+
+  const measured = getViewportDimensions()
+  const { width: viewportW, height: viewportH } = ensureFullBleedDimensions(
+    measured.width,
+    measured.height,
+    insets,
+  )
+
+  if (viewportW === 0 || viewportH === 0) return
 
   // Viewport-px safe areas for teleported overlays (chat, modals, back button).
   if (typeof document !== 'undefined') {
@@ -196,34 +256,40 @@ function handleOrientationChange() {
   setTimeout(() => calculateScale(), 300)
 }
 
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
+  if (wrapperRef.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => calculateScale())
+    resizeObserver.observe(wrapperRef.value)
+  }
+
   // Initial calculation with small delay to let DOM settle
   requestAnimationFrame(() => {
     calculateScale()
-    
+
     // On mobile, do a few more checks in case dimensions are still settling
     if (isMobile()) {
       setTimeout(() => calculateScale(), 100)
       setTimeout(() => calculateScale(), 300)
     }
   })
-  
-  // Listen to resize events
+
   window.addEventListener('resize', handleResize)
-  
-  // Listen to orientation change specifically (iOS)
   window.addEventListener('orientationchange', handleOrientationChange)
-  
-  // Also listen to visualViewport resize if available (more reliable on mobile)
+
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', handleResize)
   }
 })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('orientationchange', handleOrientationChange)
-  
+
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', handleResize)
   }
@@ -289,11 +355,20 @@ defineExpose({
 
 <style scoped lang="scss">
 .scaled-container-wrapper {
+  // Pin to the physical viewport so PWA safe-area gutters don't leave black bars.
+  position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  position: relative;
   background: radial-gradient(ellipse at center, #12121a 0%, #08080c 50%, #050508 100%);
+
+  // When the layout viewport sits inside the device cutouts, extend the felt
+  // and starfield under notches / home indicator (HUD still uses --safe-*).
+  margin: calc(-1 * env(safe-area-inset-top, 0px))
+          calc(-1 * env(safe-area-inset-right, 0px))
+          calc(-1 * env(safe-area-inset-bottom, 0px))
+          calc(-1 * env(safe-area-inset-left, 0px));
 }
 
 // Star field - layers of different star sizes

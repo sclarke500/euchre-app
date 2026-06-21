@@ -216,6 +216,9 @@ function dismissOpenInAppPrompt() {
 #app {
   width: 100%;
   height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
 }
