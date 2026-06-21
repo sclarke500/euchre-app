@@ -154,6 +154,11 @@ function getScreenOrientedDimensions(): { width: number, height: number } {
  * visualViewport / documentElement, then iOS screen fallback.
  */
 function getViewportDimensions(): { width: number, height: number } {
+  // The wrapper is fixed + inset:0 — it IS the drawable viewport (the full screen
+  // when viewport-fit=cover is honored, the safe-area box otherwise). Measure it
+  // directly and fill exactly that. Do NOT force it up to the physical screen
+  // size: if the body is inset, a bigger board just overflows off the right edge
+  // (it's anchored top-left) instead of moving under the notch.
   if (wrapperRef.value) {
     const rect = wrapperRef.value.getBoundingClientRect()
     if (rect.width >= 200 && rect.height >= 200) {
@@ -166,30 +171,14 @@ function getViewportDimensions(): { width: number, height: number } {
     return { width: Math.round(vv.width), height: Math.round(vv.height) }
   }
 
-  const rootW = document.documentElement.clientWidth
-  const rootH = document.documentElement.clientHeight
-  if (rootW >= 200 && rootH >= 200) {
-    return { width: rootW, height: rootH }
-  }
-
   const innerW = window.innerWidth
   const innerH = window.innerHeight
   if (innerW >= 200 && innerH >= 200) {
-    // iOS PWA can report inset inner dims while the physical screen is larger.
-    if (isMobile() && isIOS()) {
-      const screen = getScreenOrientedDimensions()
-      return {
-        width: Math.max(innerW, screen.width),
-        height: Math.max(innerH, screen.height),
-      }
-    }
     return { width: innerW, height: innerH }
   }
 
   if (isMobile() && isIOS()) {
-    const screen = getScreenOrientedDimensions()
-    console.log(`[ScaledContainer] iOS screen fallback → ${screen.width}×${screen.height}`)
-    return screen
+    return getScreenOrientedDimensions()
   }
 
   return { width: innerW || 1280, height: innerH || 720 }
@@ -216,29 +205,6 @@ function dimensionsLookValid(width: number, height: number, orientation: 'portra
   return true
 }
 
-/** If the laid-out box is inset inside the physical screen, scale to the full bleed size. */
-function ensureFullBleedDimensions(
-  width: number,
-  height: number,
-  edgeInsets: SafeAreaInsets,
-): { width: number; height: number } {
-  if (!isMobile()) return { width, height }
-
-  const target = isIOS() ? getScreenOrientedDimensions() : null
-  let w = width
-  let h = height
-
-  if (target) {
-    if (w < target.width - 2) w = target.width
-    if (h < target.height - 2) h = target.height
-  } else {
-    w += edgeInsets.left + edgeInsets.right
-    h += edgeInsets.top + edgeInsets.bottom
-  }
-
-  return { width: w, height: h }
-}
-
 function resolveEdgeInsets(isPortraitOrientation: boolean): SafeAreaInsets {
   if (!isMobile()) return { top: 0, right: 0, bottom: 0, left: 0 }
 
@@ -258,12 +224,7 @@ function calculateScale() {
   const insets = resolveEdgeInsets(isPortrait.value)
   safeInsets.value = insets
 
-  const measured = getViewportDimensions()
-  const { width: viewportW, height: viewportH } = ensureFullBleedDimensions(
-    measured.width,
-    measured.height,
-    insets,
-  )
+  const { width: viewportW, height: viewportH } = getViewportDimensions()
 
   if (viewportW === 0 || viewportH === 0) return
 
@@ -425,20 +386,14 @@ defineExpose({
 }
 
 .scaled-container-wrapper {
-  // Pin to the physical viewport so PWA safe-area gutters don't leave black bars.
+  // Fill the drawable viewport exactly (the full screen when viewport-fit=cover
+  // is honored, the safe-area box otherwise). The board sizes itself to this.
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
   background: radial-gradient(ellipse at center, #12121a 0%, #08080c 50%, #050508 100%);
-
-  // When the layout viewport sits inside the device cutouts, extend the felt
-  // and starfield under notches / home indicator (HUD still uses --safe-*).
-  margin: calc(-1 * env(safe-area-inset-top, 0px))
-          calc(-1 * env(safe-area-inset-right, 0px))
-          calc(-1 * env(safe-area-inset-bottom, 0px))
-          calc(-1 * env(safe-area-inset-left, 0px));
 }
 
 // Star field - layers of different star sizes
