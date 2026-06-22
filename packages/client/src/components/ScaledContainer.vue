@@ -367,11 +367,13 @@ defineExpose({
 
 <style scoped lang="scss">
 .bleed-debug {
-  position: absolute;
+  // !important to beat `.theme-pub > * { position: relative; z-index: 1 }`,
+  // which otherwise forces this panel into normal flow (off-screen) on device.
+  position: absolute !important;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 99999;
+  z-index: 99999 !important;
   margin: 0;
   padding: 10px 14px;
   background: rgba(0, 0, 0, 0.82);
