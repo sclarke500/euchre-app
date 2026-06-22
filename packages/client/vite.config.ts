@@ -33,7 +33,11 @@ export default defineConfig({
         scope: '/',
         theme_color: '#181820',
         background_color: '#181820',
-        display: 'standalone',
+        // fullscreen hides the Android status bar so the felt uses the whole
+        // height; display_override lets browsers that honor it go fullscreen,
+        // falling back to standalone where fullscreen isn't supported.
+        display: 'fullscreen',
+        display_override: ['fullscreen', 'standalone'],
         orientation: 'any',
         icons: [
           {
