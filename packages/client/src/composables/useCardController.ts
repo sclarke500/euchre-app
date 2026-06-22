@@ -160,6 +160,10 @@ export function useCardController(
   const tableLayout = ref<TableLayoutResult | null>(null)
   const tricksWonByPlayer = ref<Record<number, number>>({})
   const hiddenSeatIndices = new Set<number>()
+  // Per-card won-trick placement metadata, so a relayout (orientation flip) can
+  // re-tuck each won-trick card via getPlayerTrickPosition for the new layout.
+  // The flat pile order can't be reconstructed (tricks vary in size when alone).
+  const wonTrickMeta = new Map<string, { playerId: number; trickNumber: number; cardIndex: number }>()
 
   function getContainerBindings(): Record<string, ContainerBinding> {
     return config.containerBindings ?? buildContainerBindings(getPlayerCount(), getUserSeatIndex())
@@ -259,6 +263,7 @@ export function useCardController(
     tricksWonByPlayer.value = Object.fromEntries(
       Array.from({ length: getPlayerCount() }, (_, i) => [i, 0])
     ) as Record<number, number>
+    wonTrickMeta.clear()
 
     engine.refreshCards()
     return layout
@@ -859,6 +864,7 @@ export function useCardController(
     const cardsToMove = [...pile.cards]
     const movePromises = cardsToMove.map((managed, index) => {
       const targetPos = getPlayerTrickPosition(winnerId, tricksWon, index)
+      wonTrickMeta.set(managed.card.id, { playerId: winnerId, trickNumber: tricksWon, cardIndex: index })
       return engine.moveCard(managed.card.id, pile, targetPile, targetPos, stackDuration)
     })
 
@@ -917,6 +923,7 @@ export function useCardController(
     for (const { cardId, winnerId, trickNumber, cardIndex } of cardsToPosition) {
       const ref = engine.getCardRef(cardId)
       const targetPos = getPlayerTrickPosition(winnerId, trickNumber, cardIndex)
+      wonTrickMeta.set(cardId, { playerId: winnerId, trickNumber, cardIndex })
       ref?.setPosition(targetPos)
     }
 
@@ -1328,6 +1335,23 @@ export function useCardController(
     }
 
     for (const pile of engine.getPiles()) {
+      // Won-trick piles tuck each card via getPlayerTrickPosition, not the pile's
+      // generic stacking — re-tuck them for the new layout so they don't scatter.
+      if (pile.id.startsWith('tricks-won-player-')) {
+        for (const managed of pile.cards) {
+          const meta = wonTrickMeta.get(managed.card.id)
+          if (!meta) continue
+          const ref = engine.getCardRef(managed.card.id)
+          if (!ref) continue
+          promises.push(
+            ref.moveTo(
+              getPlayerTrickPosition(meta.playerId, meta.trickNumber, meta.cardIndex),
+              animationMs
+            )
+          )
+        }
+        continue
+      }
       promises.push(pile.repositionAll(animationMs))
     }
 
