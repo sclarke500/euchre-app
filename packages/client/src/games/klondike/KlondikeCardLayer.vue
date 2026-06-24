@@ -333,7 +333,9 @@ function getCardZIndex(pos: CardPosition): number {
   position: absolute;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  // Left-align so the suit sits at the card edge under the rank's first digit
+  // (consistent across single- and two-digit ranks like "10").
+  align-items: flex-start;
   font-weight: bold;
   color: #2c3e50;
 
@@ -368,7 +370,8 @@ function getCardZIndex(pos: CardPosition): number {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: calc(var(--card-width) * 0.48);
+  font-size: calc(var(--card-width) * 0.36);
+  line-height: 1;
   color: #2c3e50;
 
   &.red {

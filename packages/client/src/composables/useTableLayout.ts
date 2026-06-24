@@ -76,6 +76,20 @@ const SEAT_PRESETS: Record<number, SeatDefinition[]> = {
   ],
 }
 
+// Canonical px to lift the user's PLAYABLE hand + avatar up by — used to clear the
+// phone's bottom safe area (gesture nav) plus a slight raise. Set once by CardTable
+// (which owns the viewport/safe-area) and consumed by resolveAnchor's 'user-hand'
+// and 'user-avatar' anchors, so the playable fan and avatar move together. NOT
+// applied to the deal stack (the bottom seat handPosition below).
+// Shared by Euchre/Spades/President.
+let userHandLiftPx = 0
+export function setUserHandLift(px: number): void {
+  userHandLiftPx = Math.max(0, px)
+}
+export function getUserHandLift(): number {
+  return userHandLiftPx
+}
+
 export function computeTableLayout(
   boardWidth: number,
   boardHeight: number,

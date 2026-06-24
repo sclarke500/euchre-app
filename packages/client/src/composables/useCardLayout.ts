@@ -8,7 +8,7 @@
  */
 
 import { ref, type Ref } from 'vue'
-import { computeTableLayout, type TableLayoutResult } from './useTableLayout'
+import { computeTableLayout, getUserHandLift, type TableLayoutResult } from './useTableLayout'
 import { CardScales } from './useCardSizing'
 import { PLATFORM_CONSTANTS } from './useBoardViewport'
 import type { CardContainer, Hand } from '@/components/cardContainers'
@@ -44,15 +44,16 @@ export function resolveAnchor(
       return { x: tableBounds.centerX, y: tableBounds.centerY }
 
     case 'user-hand':
+      // Lift the playable fan by the safe-area + slight raise (see setUserHandLift).
       return {
         x: tableBounds.centerX,
-        y: boardHeight * PLATFORM_CONSTANTS.USER_HAND_Y_FRACTION,
+        y: boardHeight * PLATFORM_CONSTANTS.USER_HAND_Y_FRACTION - getUserHandLift(),
       }
 
     case 'user-avatar':
       return {
         x: tableBounds.centerX,
-        y: boardHeight - PLATFORM_CONSTANTS.USER_AVATAR_BOTTOM_OFFSET,
+        y: boardHeight - PLATFORM_CONSTANTS.USER_AVATAR_BOTTOM_OFFSET - getUserHandLift(),
       }
 
     default:

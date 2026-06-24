@@ -300,7 +300,10 @@ export function useEuchreDirector(
       // User sits out — animate hand off the bottom of the screen
       const userHand = engine.getHands()[0]
       if (userHand && boardRef.value) {
-        const offscreenY = boardRef.value.offsetHeight + 100
+        // Drop past the bottom edge by more than a full card height so the tall,
+        // scaled-up user-hand cards clear completely (their CENTER must end well
+        // below the edge, not just their top — base 162 × userHand 1.5 ≈ 243 tall).
+        const offscreenY = boardRef.value.offsetHeight + 320
         const promises: Promise<void>[] = []
         for (const m of userHand.cards) {
           const cardRef = engine.getCardRef(m.card.id)

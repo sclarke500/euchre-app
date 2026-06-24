@@ -1291,7 +1291,7 @@ export function useCardController(
    * (they pile up at the screen's left edge). Poll rAF until the width is
    * non-zero and unchanged for two frames, or give up after ~40 frames (~0.65s).
    */
-  async function waitForStableBoardSize(maxFrames: number = 40): Promise<void> {
+  async function waitForStableBoardSize(maxFrames: number = 90): Promise<void> {
     const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
     let lastW = -1
     let stable = 0
@@ -1299,13 +1299,22 @@ export function useCardController(
       const el = boardRef.value
       const w = el?.offsetWidth ?? 0
       const h = el?.offsetHeight ?? 0
-      if (w > 0 && h > 0) {
+      // Require a LANDSCAPE, settled width. On game entry the app rotates
+      // portrait→landscape; the board is briefly portrait-shaped (w < h) and
+      // "stable" for a few frames. Dealing then lays every card out for the
+      // narrow width — they pile at the left edge and never recover. Waiting for
+      // w > h ensures we deal against the real landscape canvas. maxFrames is
+      // generous (~1.5s) because a cold-start rotation can take a while.
+      if (w > 0 && h > 0 && w > h) {
         if (w === lastW) {
           if (++stable >= 2) return
         } else {
           stable = 0
           lastW = w
         }
+      } else {
+        stable = 0
+        lastW = -1
       }
       await nextFrame()
     }
@@ -1314,6 +1323,9 @@ export function useCardController(
   async function handleLayoutChange(animationMs: number = 200): Promise<void> {
     const board = boardRef.value
     if (!board) return
+    // Never relayout against a zero/transient board size — doing so recomputes
+    // every container position from width 0 and slams all cards to the left edge.
+    if (board.offsetWidth === 0 || board.offsetHeight === 0) return
 
     const newLayout = computeTableLayout(
       board.offsetWidth,

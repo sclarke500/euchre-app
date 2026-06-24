@@ -178,24 +178,31 @@ export function useSpadesDirector(
     }
   }
 
-  async function initializeBoard() {
-    await setupBoardReference()
-    // Wait for a settled board size before laying out the table, or the deal
-    // collapses every card to the screen's left edge (x≈0) on a fresh mount.
-    await cardController.waitForStableBoardSize()
-    cardController.setupTable(game.dealer.value)
-  }
+  // True while a deal animation for the current Dealing phase is running. The
+  // deal can be triggered from three places (phase→Dealing, the board element
+  // becoming available, and mount); this guard makes it run EXACTLY once.
+  // Without it, an early trigger (fired at director construction, before mount,
+  // while boardRef is still null) raced the onMounted init — dealing with no
+  // board ref collapses every card to the screen's left edge, and on re-entry
+  // the lost race left the table with no cards at all.
+  let dealInProgress = false
 
-  watch(
-    () => game.phase.value,
-    async (newPhase) => {
-      if (newPhase !== SpadesPhase.Dealing) return
+  async function dealCurrentHandIfReady() {
+    if (game.phase.value !== SpadesPhase.Dealing) return
+    // Board not mounted yet — the boardRef watcher / onMounted retries once it is.
+    if (!boardRef.value) return
+    if (dealInProgress) return
+    dealInProgress = true
 
+    try {
       if (mode === 'multiplayer') {
         game.enableQueueMode?.()
       }
 
-      await initializeBoard()
+      // Wait for a settled board size before laying out, or the deal collapses
+      // every card to the screen's left edge (x≈0) on a fresh mount.
+      await cardController.waitForStableBoardSize()
+      cardController.setupTable(game.dealer.value)
 
       opponentsHidden.value = false
       animatedTrickCardIds.value = new Set<string>()
@@ -223,9 +230,25 @@ export function useSpadesDirector(
       }
 
       game.dealAnimationComplete()
-    },
-    { immediate: true }
+    } finally {
+      dealInProgress = false
+    }
+  }
+
+  // Deal when the game enters the Dealing phase…
+  watch(
+    () => game.phase.value,
+    (newPhase) => {
+      if (newPhase === SpadesPhase.Dealing) void dealCurrentHandIfReady()
+    }
   )
+
+  // …and also the moment the board element becomes available. This covers
+  // re-entry, where the board mounts while the phase is ALREADY Dealing, so no
+  // phase change fires to drive the deal.
+  watch(boardRef, (el) => {
+    if (el) void dealCurrentHandIfReady()
+  })
 
   watch(
     () => [game.currentTrick.value.cards.length, game.completedTricks.value.length, game.phase.value],
@@ -273,7 +296,11 @@ export function useSpadesDirector(
   }
 
   onMounted(async () => {
-    await initializeBoard()
+    // Set boardRef from the now-mounted table, then deal if we mounted straight
+    // into a Dealing phase (fresh game or re-entry). The boardRef assignment also
+    // wakes the boardRef watcher above; dealInProgress dedupes the overlap.
+    await setupBoardReference()
+    await dealCurrentHandIfReady()
 
     game.setPlayAnimationCallback(async ({ card, playerId }: { card: StandardCard; playerId: number }) => {
       // Use engine pile length (like Euchre) - more reliable than game state

@@ -236,7 +236,10 @@ defineExpose({
   position: absolute;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  // Left-align so the suit sits at the card edge under the rank's first digit,
+  // not centered under it — otherwise a two-digit "10" shifts its suit right and
+  // looks inconsistent with single-digit cards.
+  align-items: flex-start;
   font-weight: bold;
   line-height: 1;
 
@@ -251,13 +254,14 @@ defineExpose({
     transform: rotate(180deg);
   }
 
-  // Font sizes scale with card - slightly larger for readability
+  // Font sizes scale with card - slightly larger for readability.
+  // Kept below the size where a two-digit "10" rank would reach the center pip.
   .rank {
-    font-size: calc(var(--card-base-width, 83px) * 0.32);
+    font-size: calc(var(--card-base-width, 83px) * 0.26);
   }
 
   .suit {
-    font-size: calc(var(--card-base-width, 83px) * 0.28);
+    font-size: calc(var(--card-base-width, 83px) * 0.22);
   }
 
   &.red { color: #e74c3c; }
@@ -266,15 +270,21 @@ defineExpose({
 }
 
 .center {
+  // Fill the whole card and flex-center so the glyph is geometrically centered.
+  // (Relying on a text baseline — the old translate(-50%,-50%) on an inline span —
+  // floated the pip high because suit glyphs aren't centered in their line box.)
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   .suit-large {
-    font-size: calc(var(--card-base-width, 83px) * 0.45);
+    // Sized so it never reaches the (now smaller) corner indices, even on a "10".
+    font-size: calc(var(--card-base-width, 83px) * 0.34);
+    line-height: 1;
   }
-  
+
   .joker-logo {
     width: calc(var(--card-base-width, 83px) * 0.85);
     height: auto;

@@ -106,8 +106,9 @@ import BoardCard from './BoardCard.vue'
 import PlayerAvatar, { type AvatarPosition } from './PlayerAvatar.vue'
 import { useChatStore } from '@/stores/chatStore'
 import { useCardTable, type CardTableEngine } from '@/composables/useCardTable'
-import { computeTableLayout, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
+import { computeTableLayout, setUserHandLift, type SeatLayout, type TableLayoutResult } from '@/composables/useTableLayout'
 import { useCardSizing } from '@/composables/useCardSizing'
+import { useBoardViewport } from '@/composables/useBoardViewport'
 import { measureDealerChipBoardPosition } from '@/utils/avatarChipLayout'
 
 const props = withDefaults(defineProps<{
@@ -162,6 +163,10 @@ const lastLayoutResult = ref<TableLayoutResult | null>(null)
 // Dynamic card sizing based on viewport
 const { baseWidth, baseHeight } = useCardSizing()
 
+// Canonical safe-area, so the user hand can be lifted clear of the bottom
+// gesture nav (native) plus a slight raise. Shared across all games.
+const { safeRect, canonicalHeight } = useBoardViewport()
+
 /**
  * Map seat side to avatar position class
  */
@@ -194,7 +199,9 @@ const avatarStyles = computed(() => {
       case 'right':
         return { left: `${tableBounds.right}px`, top: `${seat.handPosition.y}px` }
       case 'top':
-        return { left: `${seat.handPosition.x}px`, top: `${tableBounds.top}px` }
+        // Nudge the top avatar down by a quarter of the top safe-area (status bar)
+        // so it clears without dropping too far onto the table.
+        return { left: `${seat.handPosition.x}px`, top: `calc(${tableBounds.top}px + (var(--safe-top, 0px) * 0.25))` }
       default: // bottom (shouldn't happen - user is at bottom)
         return { left: `${seat.handPosition.x}px`, top: `${tableBounds.bottom}px` }
     }
@@ -263,6 +270,17 @@ function computeLayout() {
   // return visual dimensions, while absolute px positioning uses layout coordinates.
   const w = boardRef.value.offsetWidth
   const h = boardRef.value.offsetHeight
+  // Bail while the board has no real size (a transient 0 fires during mount /
+  // orientation change). Laying out now collapses every seat to x≈0, and emitting
+  // it makes the director reposition all dealt cards to the left edge. A later
+  // ResizeObserver fire at a real size re-runs this.
+  if (w === 0 || h === 0) return
+  // Lift the user hand by the bottom safe-area inset (gesture nav) + a slight raise.
+  // Set here (CardTable owns the viewport) so cardController's deal/relayout use the
+  // same value — keeps the hand cards aligned with the lifted bottom avatar.
+  // Half-strength: a gentle raise (the full lift sat too high).
+  const safeBottom = Math.max(0, canonicalHeight.value - safeRect.value.bottom)
+  setUserHandLift((safeBottom + h * 0.02) * 0.5)
   const result = computeTableLayout(w, h, props.layout, props.playerCount)
   seatData.value = result.seats
   lastLayoutResult.value = result

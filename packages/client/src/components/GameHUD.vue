@@ -154,6 +154,9 @@ function handleRules() {
   display: flex;
   align-items: center;
   gap: 14px;
+  // Never wrap "Game Rules" / "Report Bug" onto two lines — let the dropdown
+  // grow to fit the longest label instead.
+  white-space: nowrap;
 
   svg {
     width: 26px;

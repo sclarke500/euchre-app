@@ -159,16 +159,64 @@ function dimensionsLookValid(width: number, height: number, orientation: 'portra
   return true
 }
 
+/** CSS env(safe-area-inset-*) via a probe element (iOS notch / PWA / cutout). */
+function readEnvInsets(): SafeAreaInsets {
+  if (typeof document === 'undefined') return { top: 0, right: 0, bottom: 0, left: 0 }
+  const probe = document.createElement('div')
+  probe.style.cssText =
+    'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;' +
+    'padding:env(safe-area-inset-top) env(safe-area-inset-right) ' +
+    'env(safe-area-inset-bottom) env(safe-area-inset-left);'
+  document.body.appendChild(probe)
+  const cs = getComputedStyle(probe)
+  const out = {
+    top: Math.round(parseFloat(cs.paddingTop) || 0),
+    right: Math.round(parseFloat(cs.paddingRight) || 0),
+    bottom: Math.round(parseFloat(cs.paddingBottom) || 0),
+    left: Math.round(parseFloat(cs.paddingLeft) || 0),
+  }
+  document.body.removeChild(probe)
+  return out
+}
+
+/**
+ * Real OS insets, preferring live OS data over the device guess-table:
+ *  - --android-safe-* : true system-bar + cutout insets injected by MainActivity
+ *    (Android WebView env() omits the status/nav bars, so we must read these).
+ *  - env(safe-area-inset-*) : iOS notch / PWA / display cutout.
+ * Per-side max of both, so whichever source actually knows the inset wins.
+ */
+function readActualInsets(): SafeAreaInsets {
+  const env = readEnvInsets()
+  if (typeof document === 'undefined') return env
+  const root = getComputedStyle(document.documentElement)
+  const px = (name: string) => Math.round(parseFloat(root.getPropertyValue(name)) || 0)
+  return {
+    top: Math.max(env.top, px('--android-safe-top')),
+    right: Math.max(env.right, px('--android-safe-right')),
+    bottom: Math.max(env.bottom, px('--android-safe-bottom')),
+    left: Math.max(env.left, px('--android-safe-left')),
+  }
+}
+
 function resolveEdgeInsets(isPortraitOrientation: boolean): SafeAreaInsets {
   if (!isMobile()) return { top: 0, right: 0, bottom: 0, left: 0 }
 
+  // Device guess-table — used only as a floor when the OS reports nothing
+  // (e.g. an iPhone where standalone env() hasn't populated yet).
   const deviceInfo = getDeviceSafeAreas()
   deviceName.value = deviceInfo.name
-  if (isPortraitOrientation) {
-    // deviceSafeAreas returns landscape values; the notch moves to top in portrait
-    return { top: deviceInfo.insets.left, right: 0, bottom: deviceInfo.insets.bottom, left: 0 }
+  const tbl = isPortraitOrientation
+    ? { top: deviceInfo.insets.left, right: 0, bottom: deviceInfo.insets.bottom, left: 0 }
+    : deviceInfo.insets
+
+  const actual = readActualInsets()
+  return {
+    top: Math.max(actual.top, tbl.top),
+    right: Math.max(actual.right, tbl.right),
+    bottom: Math.max(actual.bottom, tbl.bottom),
+    left: Math.max(actual.left, tbl.left),
   }
-  return deviceInfo.insets
 }
 
 function calculateScale() {

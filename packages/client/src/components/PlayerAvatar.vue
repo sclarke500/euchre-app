@@ -503,8 +503,11 @@ const bubblePosition = computed(() => {
   // Position variants
   &.position-bottom {
     position: fixed;
-    // Position so avatar sits just above user's cards
-    bottom: 10px; // At bottom of screen, above cards (mobile)
+    // Gentle raise off the bottom — enough to ease the safe-area (gesture nav)
+    // cutoff without sitting so high it blocks the hand. Quarter-strength of the
+    // earlier (too-drastic) lift. This scoped rule (with its [data-v] attr) must
+    // hold the value — a non-scoped rule loses on specificity.
+    bottom: calc(18px + (var(--safe-bottom, 0px) * 0.25));
     left: 50%;
     transform: translateX(-50%);
     z-index: 500; // Above table cards, below user hand (~1000+)
@@ -563,8 +566,4 @@ const bubblePosition = computed(() => {
   }
 }
 
-// User avatar position (raised slightly)
-.player-avatar.position-bottom {
-  bottom: 15px;
-}
 </style>

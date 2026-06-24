@@ -1251,6 +1251,15 @@ function doNewGame() {
   height: 100%;
   display: flex;
   flex-direction: column;
+  // Respect device safe areas (notch / status bar / gesture nav). Klondike renders
+  // outside ScaledContainer, so it reads the OS insets directly: env() (iOS notch +
+  // Android cutout) maxed with --android-safe-* (the full system-bar insets injected
+  // by MainActivity, which Android WebView's env() omits). Real CSS px, so usable as-is.
+  box-sizing: border-box;
+  padding-top: max(env(safe-area-inset-top), var(--android-safe-top, 0px));
+  padding-right: max(env(safe-area-inset-right), var(--android-safe-right, 0px));
+  padding-bottom: max(env(safe-area-inset-bottom), var(--android-safe-bottom, 0px));
+  padding-left: max(env(safe-area-inset-left), var(--android-safe-left, 0px));
 }
 
 // Menu bar (top in full mode, bottom in mobile)
