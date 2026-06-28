@@ -44,10 +44,11 @@ export function resolveAnchor(
       return { x: tableBounds.centerX, y: tableBounds.centerY }
 
     case 'user-hand':
-      // Lift the playable fan by the safe-area + slight raise (see setUserHandLift).
+      // Lift the playable fan by the safe-area + slight raise (see setUserHandLift),
+      // then nudge it back down 15px per design tuning.
       return {
         x: tableBounds.centerX,
-        y: boardHeight * PLATFORM_CONSTANTS.USER_HAND_Y_FRACTION - getUserHandLift(),
+        y: boardHeight * PLATFORM_CONSTANTS.USER_HAND_Y_FRACTION - getUserHandLift() + 15,
       }
 
     case 'user-avatar':

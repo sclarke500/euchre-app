@@ -5,7 +5,7 @@
  * with their center inset from each corner toward the circle center.
  */
 
-export const AVATAR_CIRCLE_SIZE = 125
+export const AVATAR_CIRCLE_SIZE = 112
 
 /** Chip center distance from the bounding-square corner (canonical px). */
 export const AVATAR_CHIP_CORNER_INSET = 18

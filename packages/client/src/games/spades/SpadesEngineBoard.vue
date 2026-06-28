@@ -502,6 +502,8 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   position: fixed;
   top: calc(8px + var(--safe-top, 0px));
   right: calc(8px + var(--safe-right, 0px));
+  transform: scale(0.85); // -15%, anchored to its top-right corner
+  transform-origin: top right;
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;

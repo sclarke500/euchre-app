@@ -655,6 +655,8 @@ onUnmounted(() => {
   position: fixed;
   top: calc(8px + var(--safe-top, 0px));
   right: calc(8px + var(--safe-right, 0px));
+  transform: scale(0.85); // -15%, anchored to its top-right corner
+  transform-origin: top right;
   z-index: 500;
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
@@ -816,7 +818,8 @@ onUnmounted(() => {
   // square, border-less right side.
   right: calc(8px + var(--safe-right, 0px));
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) scale(0.9); // -10%, anchored to its right edge
+  transform-origin: right center;
   z-index: 600;
   display: flex;
   flex-direction: column;

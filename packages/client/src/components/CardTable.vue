@@ -18,26 +18,26 @@
       <div class="table-felt-shadow" :class="layout" aria-hidden="true"></div>
       
       <!-- Opponent avatars - outside table-surface for proper z-index stacking -->
-      <PlayerAvatar
-        v-for="(seat, i) in seatData"
-        :key="'avatar-' + i"
-        v-show="!seat.isUser"
-        :name="playerNames[i] ?? 'Player'"
-        :avatar-url="playerAvatars[i]"
-        :is-current-turn="currentTurnSeat === i"
-        :status="playerStatuses[i]"
-        :position="getRailPosition(seat.side)"
-        :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
-        :trump-symbol="trumpCallerSeat === i ? trumpSymbol : ''"
-        :trump-color="trumpCallerSeat === i ? trumpColor : ''"
-        :bid-badge="bidBadges[i] ?? null"
-        :seat-index="i"
-        :chat-message="chatStore.activeBubbles.get(i)"
-        :chat-persistent="chatStore.debugBubbles"
-        @chat-dismiss="chatStore.hideBubble(i)"
-      >
-        <slot :name="`player-info-${i}`" />
-      </PlayerAvatar>
+      <template v-for="(seat, i) in seatData" :key="'avatar-' + i">
+        <PlayerAvatar
+          v-if="!seat.isUser"
+          :name="playerNames[i] ?? 'Player'"
+          :avatar-url="playerAvatars[i]"
+          :is-current-turn="currentTurnSeat === i"
+          :status="playerStatuses[i]"
+          :position="getRailPosition(seat.side)"
+          :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
+          :trump-symbol="trumpCallerSeat === i ? trumpSymbol : ''"
+          :trump-color="trumpCallerSeat === i ? trumpColor : ''"
+          :bid-badge="bidBadges[i] ?? null"
+          :seat-index="i"
+          :chat-message="chatStore.activeBubbles.get(i)"
+          :chat-persistent="chatStore.debugBubbles"
+          @chat-dismiss="chatStore.hideBubble(i)"
+        >
+          <slot :name="`player-info-${i}`" />
+        </PlayerAvatar>
+      </template>
 
       <!-- All cards rendered here -->
       <BoardCard
