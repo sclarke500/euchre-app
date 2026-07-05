@@ -141,7 +141,7 @@
     </Transition>
 
     <!-- Round complete modal -->
-    <Modal :show="game.showRoundSummary.value" @close="() => {}">
+    <Modal :show="game.showRoundSummary.value" scale-with-board @close="() => {}">
       <div class="round-modal dialog-panel">
         <h3 class="dialog-title">Round {{ game.roundNumber.value }} Complete!</h3>
         <div class="rankings">
@@ -162,7 +162,7 @@
     </Modal>
 
     <!-- Game over modal -->
-    <Modal :show="game.gameOver.value" :dismiss-on-backdrop="false" @close="$emit('leave-game')">
+    <Modal :show="game.gameOver.value" scale-with-board :dismiss-on-backdrop="false" @close="$emit('leave-game')">
       <div class="round-modal dialog-panel">
         <h2 class="dialog-title">Game Over!</h2>
         <div class="rankings">
@@ -187,7 +187,7 @@
     </Modal>
 
     <!-- Leave confirmation modal -->
-    <Modal :show="showLeaveConfirm" aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
+    <Modal :show="showLeaveConfirm" scale-with-board aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
       <div class="game-dialog">
         <div class="game-dialog__title">Leave Game?</div>
         <div class="game-dialog__text">You'll forfeit the current game.</div>

@@ -242,7 +242,8 @@ defineExpose({ reset })
 <style scoped lang="scss">
 .timer-panel {
   position: fixed;
-  left: 12px; // ScaledContainer handles safe areas now
+  // The canvas is full-bleed (felt under notches) — HUD must add --safe-* itself.
+  left: calc(12px + var(--safe-left, 0px));
   bottom: 50%;
   transform: translateY(50%);
   z-index: 600;

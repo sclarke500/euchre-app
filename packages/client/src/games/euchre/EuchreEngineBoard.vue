@@ -10,7 +10,7 @@
     :engine="engine"
     :dealer-seat="dealerSeat"
     :trump-caller-seat="trumpCallerSeat"
-    :trump-symbol="trumpSymbol"
+    :trump-suit="trumpSuit"
     :trump-color="trumpColor"
     :current-turn-seat="currentTurnSeat"
     :dimmed-card-ids="dimmedCardIds"
@@ -49,7 +49,7 @@
     />
 
     <!-- Game Over overlay -->
-    <Modal :show="game.gameOver.value" :dismiss-on-backdrop="false" aria-label="Game over" @close="emit('leave-game')">
+    <Modal :show="game.gameOver.value" scale-with-board :dismiss-on-backdrop="false" aria-label="Game over" @close="emit('leave-game')">
       <div class="game-over-panel dialog-panel">
         <div class="game-over-title dialog-title">Game Over</div>
         <div class="game-over-result dialog-text">{{ winnerText }}</div>
@@ -68,7 +68,7 @@
     </Modal>
 
     <!-- Leave confirmation modal -->
-    <Modal :show="showLeaveConfirm" aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
+    <Modal :show="showLeaveConfirm" scale-with-board aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
       <div class="game-dialog">
         <div class="game-dialog__title">Leave Game?</div>
         <div class="game-dialog__text">You'll forfeit the current game.</div>
@@ -159,7 +159,7 @@
               :style="{ color: suit.color }"
               @click="handleCallSuit(suit.name)"
             >
-              {{ suit.symbol }}
+              <SuitGlyph :suit="suit.name" class="suit-btn-glyph" />
             </button>
           </div>
           <label class="action-checkbox">
@@ -193,6 +193,7 @@ import { GamePhase, BidAction, Suit, type TeamScore } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import GameHUD from '@/components/GameHUD.vue'
+import SuitGlyph from '@/components/SuitGlyph.vue'
 import Modal from '@/components/Modal.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import DisconnectedPlayerBanner from '@/components/DisconnectedPlayerBanner.vue'
@@ -206,9 +207,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { websocket } from '@/services/websocket'
 import confetti from 'canvas-confetti'
 
-const SUIT_SYMBOLS: Record<string, string> = {
-  hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠',
-}
+const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'] as const
 const SUIT_COLORS: Record<string, string> = {
   hearts: '#e74c3c', diamonds: '#e74c3c', clubs: '#2c3e50', spades: '#2c3e50',
 }
@@ -236,12 +235,12 @@ const currentTurnSeat = computed(() => director.currentTurnSeat.value)
 // Trump caller info - find which seat called trump
 const trumpCallerSeat = computed(() => {
   const info = director.playerInfo.value
-  return info.findIndex(p => p.trumpSymbol)
+  return info.findIndex(p => p.trumpSuit)
 })
-const trumpSymbol = computed(() => {
+const trumpSuit = computed(() => {
   const seat = trumpCallerSeat.value
   if (seat < 0) return ''
-  return director.playerInfo.value[seat]?.trumpSymbol ?? ''
+  return director.playerInfo.value[seat]?.trumpSuit ?? ''
 })
 const trumpColor = computed(() => {
   const seat = trumpCallerSeat.value
@@ -367,11 +366,10 @@ const mustCall = computed(() => {
 // Available suits for round 2 (exclude the turned-down suit)
 const availableSuits = computed(() => {
   const turnedDown = game.turnUpCard.value?.suit
-  return Object.entries(SUIT_SYMBOLS)
-    .filter(([name]) => name !== turnedDown)
-    .map(([name, symbol]) => ({
+  return SUITS
+    .filter(name => name !== turnedDown)
+    .map(name => ({
       name: name as Suit,
-      symbol,
       color: SUIT_COLORS[name] ?? '#ccc',
     }))
 })
@@ -748,6 +746,13 @@ onUnmounted(() => {
 .suit-btn {
   font-size: $ui-lg !important;
   padding: 8px 16px !important;
+
+  .suit-btn-glyph {
+    // SVG pip sized relative to the button's font-size (matches the old text glyph)
+    width: 0.85em;
+    height: 0.85em;
+    margin: 0 auto;
+  }
   background: rgba(240, 240, 245, 0.95) !important;
   border-color: #bbb !important;
 

@@ -401,9 +401,16 @@ export function useCardController(
       } else if (config.tableWidth && cardCount > 1) {
         // Table-based: span table width with padding, clamped to max
         const padding = scaledCardWidth * 0.5 // Half card padding on each side
-        const availableWidth = config.tableWidth - padding * 2 - scaledCardWidth
+        // Big hands (10+, e.g. Spades' 13-card deal) read cramped tucked inside
+        // the felt — let the fan overhang the table edges by up to ~3/4 of a
+        // card per side instead of keeping the half-card inner padding.
+        const overhang = cardCount >= 10 ? scaledCardWidth * 1.5 : 0
+        // The regular cap would swallow the overhang on wide tables, so big
+        // hands get a proportionally higher one.
+        const spacingCap = cardCount >= 10 ? Math.round(baseWidth * 0.8) : maxSpacing
+        const availableWidth = config.tableWidth - padding * 2 - scaledCardWidth + overhang
         const tableBasedSpacing = availableWidth / (cardCount - 1)
-        fanSpacing = Math.max(minSpacing, Math.min(maxSpacing, tableBasedSpacing))
+        fanSpacing = Math.max(minSpacing, Math.min(spacingCap, tableBasedSpacing))
       } else {
         // Fallback: viewport-based calculation
         const baseFanSpacing = Math.round(baseWidth * 0.40)

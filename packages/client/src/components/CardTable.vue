@@ -27,7 +27,7 @@
           :status="playerStatuses[i]"
           :position="getRailPosition(seat.side)"
           :custom-style="{ ...avatarStyles[i], opacity: props.avatarOpacities[i] ?? 1 }"
-          :trump-symbol="trumpCallerSeat === i ? trumpSymbol : ''"
+          :trump-suit="trumpCallerSeat === i ? trumpSuit : ''"
           :trump-color="trumpCallerSeat === i ? trumpColor : ''"
           :bid-badge="bidBadges[i] ?? null"
           :seat-index="i"
@@ -58,7 +58,7 @@
         :is-current-turn="currentTurnSeat === 0"
         :is-user="true"
         position="bottom"
-        :trump-symbol="trumpCallerSeat === 0 ? trumpSymbol : ''"
+        :trump-suit="trumpCallerSeat === 0 ? trumpSuit : ''"
         :trump-color="trumpCallerSeat === 0 ? trumpColor : ''"
         :bid-badge="bidBadges[0] ?? null"
         :seat-index="0"
@@ -119,7 +119,8 @@ const props = withDefaults(defineProps<{
   engine?: CardTableEngine
   dealerSeat?: number
   trumpCallerSeat?: number
-  trumpSymbol?: string
+  /** Trump suit name (e.g. "hearts") — rendered as an SVG pip on the caller's avatar */
+  trumpSuit?: string
   trumpColor?: string
   playerStatuses?: string[]
   /** Per-seat corner badge (e.g. Spades bid), shown at the avatar's NE corner */
@@ -135,7 +136,7 @@ const props = withDefaults(defineProps<{
   layout: 'normal',
   dealerSeat: -1,
   trumpCallerSeat: -1,
-  trumpSymbol: '',
+  trumpSuit: '',
   trumpColor: '',
   playerStatuses: () => [],
   bidBadges: () => [],

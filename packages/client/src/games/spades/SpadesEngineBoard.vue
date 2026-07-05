@@ -27,7 +27,7 @@
         <span class="score-value">{{ scores[1]?.score ?? 0 }}</span>
       </div>
       <div v-if="store.spadesBroken" class="spades-broken-indicator">
-        ♠ Broken
+        <SuitGlyph suit="spades" class="broken-glyph" /> Broken
       </div>
     </div>
 
@@ -45,7 +45,7 @@
     />
 
     <!-- Round Summary Modal -->
-    <Modal :show="showRoundSummary" aria-label="Round summary" @close="dismissRoundSummary">
+    <Modal :show="showRoundSummary" scale-with-board aria-label="Round summary" @close="dismissRoundSummary">
       <div class="round-summary-panel dialog-panel">
           <div class="round-summary-title dialog-title">Round Complete</div>
           <div class="round-summary-table">
@@ -115,7 +115,7 @@
     </Modal>
 
     <!-- Game Over overlay -->
-    <Modal :show="store.gameOver" :dismiss-on-backdrop="false" aria-label="Game over" @close="emit('leave-game')">
+    <Modal :show="store.gameOver" scale-with-board :dismiss-on-backdrop="false" aria-label="Game over" @close="emit('leave-game')">
       <div class="game-over-panel dialog-panel">
         <div class="game-over-title dialog-title">Game Over</div>
         <div class="game-over-result dialog-text">{{ winnerText }}</div>
@@ -134,7 +134,7 @@
     </Modal>
 
     <!-- Leave confirmation -->
-    <Modal :show="showLeaveConfirm" aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
+    <Modal :show="showLeaveConfirm" scale-with-board aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
       <div class="game-dialog">
         <div class="game-dialog__title">Leave Game?</div>
         <div class="game-dialog__text">You'll forfeit the current game.</div>
@@ -239,6 +239,7 @@ import { type SpadesBid } from '@67cards/shared'
 import CardTable from '@/components/CardTable.vue'
 import GameHUD from '@/components/GameHUD.vue'
 import Modal from '@/components/Modal.vue'
+import SuitGlyph from '@/components/SuitGlyph.vue'
 import TurnTimer from '@/components/TurnTimer.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import DisconnectedPlayerBanner from '@/components/DisconnectedPlayerBanner.vue'
@@ -549,6 +550,13 @@ watch(() => adapter.gameOver.value, (gameOver) => {
     padding-top: 4px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     margin-top: 2px;
+
+    .broken-glyph {
+      display: inline-block;
+      width: 0.8em;
+      height: 0.8em;
+      vertical-align: -0.05em;
+    }
   }
 }
 
@@ -575,8 +583,11 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 
 .summary-header {
   display: grid;
-  grid-template-columns: 1fr 50px 50px;
-  gap: 6px;
+  // 64px fits "Them" / 3-digit scores in Roboto (Android renders wider than
+  // SF); 50px clipped the header and let game-score digits collide. Fixed
+  // widths (not auto) so columns align across the sibling row grids.
+  grid-template-columns: 1fr 64px 64px;
+  gap: 10px;
   padding: 3px 0;
   border-bottom: 1px solid rgba(255,255,255,0.2);
   margin-bottom: 6px;
@@ -592,8 +603,8 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 
 .summary-row {
   display: grid;
-  grid-template-columns: 1fr 50px 50px;
-  gap: 6px;
+  grid-template-columns: 1fr 64px 64px;
+  gap: 10px;
   padding: 2px 0;
   color: #ccc;
   font-size: $ui-xs;
@@ -678,8 +689,9 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 // Timeout controls (multiplayer)
 .timeout-controls {
   position: fixed;
-  bottom: 16px; // ScaledContainer handles safe areas now
-  left: 16px;
+  // The canvas is full-bleed (felt under notches) — HUD must add --safe-* itself.
+  bottom: calc(16px + var(--safe-bottom, 0px));
+  left: calc(16px + var(--safe-left, 0px));
   z-index: 600;
   display: flex;
   flex-direction: column;

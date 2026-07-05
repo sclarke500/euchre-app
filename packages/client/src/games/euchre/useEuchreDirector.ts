@@ -54,9 +54,6 @@ const TRICK_WON_SCALE = 0.5     // won trick stacks at table edge
 
 // ── Suit display helpers ─────────────────────────────────────────────────────
 
-const SUIT_SYMBOLS: Record<string, string> = {
-  hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠',
-}
 const SUIT_COLORS: Record<string, string> = {
   hearts: '#e74c3c', diamonds: '#e74c3c', clubs: '#2c3e50', spades: '#2c3e50',
 }
@@ -162,7 +159,7 @@ export function useEuchreDirector(
       return {
         dealer: game.dealer.value === pid,
         currentTurn: game.currentPlayer.value === pid,
-        trumpSymbol: isCaller ? SUIT_SYMBOLS[trump.suit] : undefined,
+        trumpSuit: isCaller ? trump.suit : undefined,
         trumpColor: isCaller ? SUIT_COLORS[trump.suit] : undefined,
         tricksWon: game.tricksWonByPlayer.value[pid] ?? 0,
         goingAlone: trump?.goingAlone && trump?.calledBy === pid,

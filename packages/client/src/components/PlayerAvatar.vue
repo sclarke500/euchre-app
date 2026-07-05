@@ -20,11 +20,11 @@
             <span v-else class="avatar-initial">{{ initial }}</span>
           </div>
           <div
-            v-if="props.trumpSymbol"
+            v-if="props.trumpSuit"
             class="avatar-chip avatar-chip--trump"
             :style="trumpChipStyle"
             aria-label="Trump suit"
-          >{{ props.trumpSymbol }}</div>
+          ><SuitGlyph :suit="props.trumpSuit" class="trump-chip-glyph" /></div>
           <div
             v-if="hasBidBadge"
             class="avatar-bid-badge"
@@ -64,6 +64,7 @@
 import { computed, type CSSProperties } from 'vue'
 import { getAIAvatar, type ChatMessage } from '@67cards/shared'
 import ChatBubble from './chat/ChatBubble.vue'
+import SuitGlyph from './SuitGlyph.vue'
 import { useLobbyStore } from '@/stores/lobbyStore'
 import { chipQuadrantStyle, chipQuadrantCenterStyle, CHIP_QUADRANTS, TRUMP_CHIP_SIZE } from '@/utils/avatarChipLayout'
 
@@ -79,8 +80,8 @@ const props = withDefaults(defineProps<{
   seatIndex?: number
   /** Custom positioning style (for table-relative placement) */
   customStyle?: CSSProperties
-  /** Trump suit symbol to show (e.g., ♠ ♥ ♦ ♣) */
-  trumpSymbol?: string
+  /** Trump suit name to show (e.g., "spades", "hearts") */
+  trumpSuit?: string
   /** Trump suit color (e.g., #e74c3c for red, #2c3e50 for black) */
   trumpColor?: string
   /** Optional avatar image URL (overrides auto-detection) */
@@ -99,7 +100,7 @@ const props = withDefaults(defineProps<{
   status: '',
   position: 'bottom',
   seatIndex: undefined,
-  trumpSymbol: '',
+  trumpSuit: '',
   trumpColor: '#2c3e50',
   avatarUrl: '',
   chatMessage: null,

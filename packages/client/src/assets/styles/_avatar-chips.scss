@@ -29,6 +29,12 @@
   font-weight: bold;
   background: #fff;
   border: none;
+
+  // SuitGlyph SVG pip (sized to match the old text glyph)
+  svg {
+    width: 0.8em;
+    height: 0.8em;
+  }
 }
 
 // Dealer — NW quadrant

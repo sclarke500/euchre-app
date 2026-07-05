@@ -104,7 +104,9 @@ watch(() => props.visible, (visible) => {
 <style scoped lang="scss">
 .bid-picker-container {
   position: fixed;
-  right: 0;
+  // Float as a self-contained pill near the right edge (small gap + safe
+  // inset), matching the Euchre/President action panels and the scoreboard.
+  right: calc(8px + var(--safe-right, 0px));
   top: 55%;
   transform: translateY(-50%);
   z-index: 600;
@@ -116,9 +118,8 @@ watch(() => props.visible, (visible) => {
   background: var(--panel-bg);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  border-radius: 20px 0 0 20px;
+  border-radius: 20px;
   border: 1px solid var(--panel-border);
-  border-right: none;
   box-shadow: 
     -4px 0 24px rgba(0, 0, 0, 0.4),
     0 0 var(--panel-glow-size) var(--panel-glow-color),

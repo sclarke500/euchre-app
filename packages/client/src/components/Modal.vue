@@ -5,7 +5,7 @@
         v-if="show"
         ref="overlayRef"
         class="modal-overlay"
-        :class="{ 'non-blocking': nonBlocking }"
+        :class="{ 'non-blocking': nonBlocking, 'modal-canonical': scaleWithBoard && isCanonical }"
         :style="{ zIndex: 10000 + priority, ...modalPadding }"
         @click.self="handleBackdropClick"
       >
@@ -31,8 +31,15 @@
 <script setup lang="ts">
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useScreenOverlay } from '@/composables/useScreenOverlay'
+import { useAppRenderMode } from '@/composables/useAppRenderMode'
 
 const { modalPadding } = useScreenOverlay()
+// On canonical (game) routes the board is transform-scaled, but modals teleport
+// to <body> and escape that scale. Dialogs authored in canonical px ($ui-*,
+// game-dialog/dialog-panel) render ~2x too large on phones unscaled — those
+// opt in via scaleWithBoard to shrink by the board scale (never enlarged past
+// 1). rem-authored modals (rules, modal-light) stay unscaled.
+const { isCanonical } = useAppRenderMode()
 
 const props = withDefaults(defineProps<{
   show: boolean
@@ -41,6 +48,8 @@ const props = withDefaults(defineProps<{
   dismissOnBackdrop?: boolean
   dismissOnEsc?: boolean
   lockScroll?: boolean
+  /** Shrink the dialog by --board-scale on canonical routes (for dialogs authored in canonical px) */
+  scaleWithBoard?: boolean
   ariaLabel?: string
   ariaLabelledby?: string
   ariaDescribedby?: string
@@ -51,6 +60,7 @@ const props = withDefaults(defineProps<{
   dismissOnBackdrop: true,
   dismissOnEsc: true,
   lockScroll: true,
+  scaleWithBoard: false,
   ariaLabel: undefined,
   ariaLabelledby: undefined,
   ariaDescribedby: undefined,
@@ -205,11 +215,20 @@ onUnmounted(() => {
 }
 
 .modal-content {
+  // Board-scale factor for canonical routes (1 elsewhere). Layout constraints
+  // divide by it so the dialog lays out in canonical space, then the transform
+  // shrinks it to viewport size — same proportions as the scaled board behind it.
+  --modal-scale: 1;
   background: transparent;
   border-radius: 12px;
-  max-width: min(92vw, 560px);
-  max-height: calc(100dvh - #{$spacing-xl});
+  transform: scale(var(--modal-scale));
+  max-width: calc(min(92vw, 560px) / var(--modal-scale));
+  max-height: calc((100dvh - #{$spacing-xl}) / var(--modal-scale));
   overflow: auto;
+}
+
+.modal-canonical .modal-content {
+  --modal-scale: min(1, var(--board-scale, 1));
 }
 
 :deep(.dialog-panel) {
@@ -303,7 +322,7 @@ onUnmounted(() => {
 
   .modal-content {
     opacity: 0;
-    transform: scale(0.75) translateY(15px);
+    transform: scale(calc(var(--modal-scale) * 0.75)) translateY(15px);
   }
 }
 
@@ -312,7 +331,7 @@ onUnmounted(() => {
 
   .modal-content {
     opacity: 0;
-    transform: scale(0.8) translateY(-10px);
+    transform: scale(calc(var(--modal-scale) * 0.8)) translateY(-10px);
   }
 }
 </style>

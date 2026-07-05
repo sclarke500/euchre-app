@@ -202,7 +202,19 @@ function readActualInsets(): SafeAreaInsets {
 function resolveEdgeInsets(isPortraitOrientation: boolean): SafeAreaInsets {
   if (!isMobile()) return { top: 0, right: 0, bottom: 0, left: 0 }
 
-  // Device guess-table — used only as a floor when the OS reports nothing
+  const actual = readActualInsets()
+
+  // Android: OS-reported insets are authoritative — the native shell injects
+  // exact system-bar + cutout values (--android-safe-*), and mobile browsers
+  // keep web content clear of the cutout themselves. The guess-table below
+  // pads BOTH sides for a punch-hole that only exists on one, wasting the
+  // other edge — so skip it entirely.
+  if (/Android/i.test(navigator.userAgent)) {
+    deviceName.value = 'Android (OS insets)'
+    return actual
+  }
+
+  // iOS device guess-table — used only as a floor when the OS reports nothing
   // (e.g. an iPhone where standalone env() hasn't populated yet).
   const deviceInfo = getDeviceSafeAreas()
   deviceName.value = deviceInfo.name
@@ -210,7 +222,6 @@ function resolveEdgeInsets(isPortraitOrientation: boolean): SafeAreaInsets {
     ? { top: deviceInfo.insets.left, right: 0, bottom: deviceInfo.insets.bottom, left: 0 }
     : deviceInfo.insets
 
-  const actual = readActualInsets()
   return {
     top: Math.max(actual.top, tbl.top),
     right: Math.max(actual.right, tbl.right),

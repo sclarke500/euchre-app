@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import type { CardPosition } from './useKlondikeLayout'
 import { Suit, type Selection } from '@67cards/shared'
+import SuitGlyph from '@/components/SuitGlyph.vue'
 
 const props = defineProps<{
   positions: CardPosition[]
@@ -79,17 +80,6 @@ function shouldShowFaceUp(cardId: string, actualFaceUp: boolean): boolean {
 
 function isBeingDragged(cardId: string): boolean {
   return props.dragCardIds?.includes(cardId) ?? false
-}
-
-// Get suit symbol
-function getSuitSymbol(suit: Suit): string {
-  switch (suit) {
-    case Suit.Spades: return '♠'
-    case Suit.Hearts: return '♥'
-    case Suit.Diamonds: return '♦'
-    case Suit.Clubs: return '♣'
-    default: return ''
-  }
 }
 
 // Check if suit is red
@@ -238,14 +228,14 @@ function getCardZIndex(pos: CardPosition): number {
         <template v-if="shouldShowFaceUp(pos.id, pos.faceUp)">
           <div class="card-corner top-left" :class="{ red: isRedSuit(pos.card.suit) }">
             <div class="rank">{{ pos.card.rank }}</div>
-            <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
+            <SuitGlyph :suit="pos.card.suit" class="suit" />
           </div>
           <div class="card-center" :class="{ red: isRedSuit(pos.card.suit) }">
-            {{ getSuitSymbol(pos.card.suit) }}
+            <SuitGlyph :suit="pos.card.suit" class="center-glyph" />
           </div>
           <div class="card-corner bottom-right" :class="{ red: isRedSuit(pos.card.suit) }">
             <div class="rank">{{ pos.card.rank }}</div>
-            <div class="suit">{{ getSuitSymbol(pos.card.suit) }}</div>
+            <SuitGlyph :suit="pos.card.suit" class="suit" />
           </div>
         </template>
         <!-- Face down card -->
@@ -360,8 +350,8 @@ function getCardZIndex(pos: CardPosition): number {
   }
 
   .suit {
-    font-size: calc(var(--card-width) * 0.25);
-    line-height: 1;
+    width: calc(var(--card-width) * 0.18);
+    height: calc(var(--card-width) * 0.18);
   }
 }
 
@@ -370,12 +360,15 @@ function getCardZIndex(pos: CardPosition): number {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: calc(var(--card-width) * 0.36);
-  line-height: 1;
   color: #2c3e50;
 
   &.red {
     color: #e74c3c;
+  }
+
+  .center-glyph {
+    width: calc(var(--card-width) * 0.40);
+    height: calc(var(--card-width) * 0.40);
   }
 }
 

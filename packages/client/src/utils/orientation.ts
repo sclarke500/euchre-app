@@ -15,7 +15,7 @@ export async function lockLandscape(): Promise<void> {
   if (!isNativeApp()) return
   try {
     const { ScreenOrientation } = await import('@capacitor/screen-orientation')
-    await ScreenOrientation.lock({ orientation: 'landscape' })
+    await ScreenOrientation.lock({ orientation: 'landscape-primary' })
   } catch {
     // Orientation lock is best-effort; ignore failures (e.g. iPad multitasking).
   }

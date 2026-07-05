@@ -360,22 +360,17 @@ export const useSpadesStore = defineStore('spadesGame', () => {
         // Wait for trick-complete animation to settle before showing modal
         await new Promise(r => setTimeout(r, CardTimings.roundEnd))
 
-        const preScoreState = gameState.value
-        
-        // Round is complete - apply final scoring
-        const scoredState = Spades.completeRound(gameState.value)
-        applyState(scoredState)
-        
-        // Detect nil/set events for chat
-        detectRoundEndChatEvents(preScoreState, scoredState)
-        
-        if (scoredState.gameOver) {
+        // state already has scores applied: playCard calls completeRound internally
+        // on the 13th trick, so calling completeRound again would double the score.
+        detectRoundEndChatEvents(state, state)
+
+        if (state.gameOver) {
           phase.value = SpadesPhase.GameOver
         } else {
           // Show round summary (UI will call startNextRound when ready)
           phase.value = SpadesPhase.RoundComplete
         }
-        
+
         // Process chat after round complete
         processChatAfterStateChange()
         return
