@@ -1,6 +1,6 @@
 {
   "name": "@67cards/client",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,6 +21,7 @@
     "@capacitor/core": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
     "@capacitor/screen-orientation": "^7.0.4",
+    "@capgo/capacitor-updater": "7.50.1",
     "canvas-confetti": "^1.9.4",
     "pinia": "^3.0.4",
     "vue": "^3.5.26",

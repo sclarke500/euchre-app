@@ -6,6 +6,7 @@ import './assets/styles/main.scss'
 import { installConsoleCapture } from './utils/consoleCapture'
 import { initDeviceMode } from './utils/deviceMode'
 import { applySafeAreaCSSVars } from './utils/deviceSafeAreas'
+import { initAppUpdates } from './composables/useAppUpdates'
 
 // Install console capture early (before any logging)
 installConsoleCapture()
@@ -16,6 +17,10 @@ initDeviceMode()
 // Set safe area CSS vars for overlays outside ScaledContainer
 applySafeAreaCSSVars()
 
+// Updates: registers the service worker on web (prompt mode); on native,
+// notifyAppReady (required by Capgo or it rolls the bundle back) + silent OTA check
+initAppUpdates()
+
 // Log build version
 const buildDate = new Date(__BUILD_TIME__)
 const buildInfo = buildDate.toLocaleDateString('en-US', {
@@ -25,7 +30,7 @@ const buildInfo = buildDate.toLocaleDateString('en-US', {
   hour: 'numeric',
   minute: '2-digit',
 })
-console.log(`🃏 67cardgames.com | Build: ${buildInfo}`)
+console.log(`🃏 67cardgames.com | v${__APP_VERSION__} | Build: ${buildInfo}`)
 
 const app = createApp(App)
 const pinia = createPinia()

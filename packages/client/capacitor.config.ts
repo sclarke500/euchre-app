@@ -10,6 +10,19 @@ const config: CapacitorConfig = {
   // into the native iOS/Android shells on `cap sync`.
   webDir: 'dist',
   // All @capacitor/* packages must share the same major version (here: 7.x).
+  plugins: {
+    // OTA web-bundle updates (Capgo, self-hosted). Manual mode: useAppUpdates
+    // fetches /ota/latest.json itself (static GET — no Capgo cloud, no update
+    // server) and drives download()/next()/set(). The plugin still owns the
+    // hard parts: atomic bundle swap + auto-rollback when a new bundle fails
+    // to call notifyAppReady() within appReadyTimeout.
+    CapacitorUpdater: {
+      autoUpdate: false,
+      // Disable Capgo cloud telemetry endpoints — we self-host.
+      statsUrl: '',
+      channelUrl: '',
+    },
+  },
 }
 
 export default config

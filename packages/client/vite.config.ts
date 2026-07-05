@@ -1,13 +1,19 @@
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync } from 'node:fs'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'))
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    // Baked into each build — the running JS always knows its own version.
+    // Native OTA update checks compare this against /ota/latest.json.
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   server: {
     port: 4200,
@@ -22,7 +28,15 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': a new service worker waits until we activate it, instead of
+      // auto-activating and reloading tabs mid-game. useAppUpdates surfaces it
+      // as "Restart to update" in Settings.
+      registerType: 'prompt',
+      // We register the SW ourselves in useAppUpdates, and only on the web —
+      // inside the native shells the Capgo bundle swapper owns updates, and a
+      // service worker on Android (https://localhost) would serve stale
+      // precached assets over a freshly swapped OTA bundle.
+      injectRegister: false,
       includeAssets: ['favicon-32x32.png', 'favicon-16x16.png', 'apple-touch-icon.png', 'cards/**/*.svg'],
       manifest: {
         id: '/67-card-games',

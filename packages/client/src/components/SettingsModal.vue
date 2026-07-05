@@ -16,6 +16,7 @@ import SpadesOptions from '@/games/spades/SpadesOptions.vue'
 import KlondikeOptions from '@/games/klondike/KlondikeOptions.vue'
 import BugReportModal from '@/components/BugReportModal.vue'
 import { usePWAInstall, triggerInstall } from '@/composables/usePWAInstall'
+import { useAppUpdates } from '@/composables/useAppUpdates'
 
 const route = useRoute()
 const { openLegal } = useLegalModal()
@@ -100,8 +101,27 @@ async function handleInstallClick() {
   }
 }
 
-function checkForUpdates() {
-  window.location.reload()
+// App updates — real check + feedback (SW prompt flow on web, Capgo OTA on native)
+const { updateStatus, updateError, appVersion, checkForUpdates, applyUpdate } = useAppUpdates()
+
+const updateBusy = computed(() =>
+  updateStatus.value === 'checking' || updateStatus.value === 'downloading'
+)
+
+const updateButtonLabel = computed(() => {
+  switch (updateStatus.value) {
+    case 'checking': return 'Checking…'
+    case 'downloading': return 'Downloading…'
+    case 'up-to-date': return 'Up to Date ✓'
+    case 'ready': return 'Restart to Update'
+    case 'error': return updateError.value || 'Check Failed'
+    default: return 'Check for Updates'
+  }
+})
+
+function handleUpdateClick() {
+  if (updateStatus.value === 'ready') applyUpdate()
+  else checkForUpdates()
 }
 </script>
 
@@ -222,12 +242,17 @@ function checkForUpdates() {
               <div class="section game-section">
                 <h2>About</h2>
                 <div class="about-row">
-                  <span class="about-label">Build</span>
-                  <span class="about-value">{{ buildInfo }}</span>
+                  <span class="about-label">Version</span>
+                  <span class="about-value">v{{ appVersion }} · {{ buildInfo }}</span>
                 </div>
                 <div class="about-buttons">
-                  <button class="about-btn" @click="checkForUpdates">
-                    Check for Updates
+                  <button
+                    class="about-btn"
+                    :class="{ 'update-ready': updateStatus === 'ready' }"
+                    :disabled="updateBusy"
+                    @click="handleUpdateClick"
+                  >
+                    {{ updateButtonLabel }}
                   </button>
                   <button class="about-btn bug-btn" @click="showBugReport = true">
                     Report Bug
@@ -522,9 +547,23 @@ function checkForUpdates() {
   font-weight: 500;
   font-size: 0.85rem;
   text-align: center;
-  
+
   &:hover {
     background: rgba(255, 255, 255, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  // Update downloaded, waiting for restart
+  &.update-ready {
+    background: rgba(40, 115, 80, 0.9);
+
+    &:hover {
+      background: rgba(48, 130, 90, 0.95);
+    }
   }
   
   &.bug-btn {

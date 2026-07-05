@@ -189,6 +189,20 @@ Hand options: `rotation`, `scale`, `fanSpacing`, `fanCurve` (arc effect for user
 - Player avatars positioned outside table edges
 - User always at bottom (seat-0), hidden avatar
 
+## App Updates & OTA Releases
+
+Unified update system in `useAppUpdates.ts` (state machine: idle → checking → up-to-date | downloading → ready). Settings → "Check for Updates" drives it on all platforms.
+
+- **Web/PWA**: service worker in `prompt` mode (vite-plugin-pwa). SW is registered manually in `useAppUpdates` — **never inside the native shells** (on Android the SW would fight the OTA bundle swapper).
+- **Native (iOS/Android)**: Capgo `@capgo/capacitor-updater` (pinned version) in manual mode. Checks static `https://67cardgames.com/ota/latest.json`, compares against baked-in `__APP_VERSION__`, plugin handles download/atomic swap/rollback. `notifyAppReady()` is called every launch in `initAppUpdates()` — removing it makes Capgo roll back the bundle.
+
+**OTA release flow** (web-layer changes only):
+1. Bump version in `packages/client/package.json` (script refuses otherwise)
+2. `npm run release:ota` — builds, zips dist, publishes (GitHub Release via `gh` CLI, or `public/ota/` fallback), writes `public/ota/latest.json`
+3. Commit + push (Netlify serves the manifest)
+
+**Never OTA-ship** a bundle requiring native code not in the store binary (new Capacitor plugins, MainActivity/iOS shell changes, etc.) — those need a real App Store/Play release. CORS for `/ota/*` is set in `public/_headers`.
+
 ## Code Style
 
 - Vue components use `<script setup lang="ts">`

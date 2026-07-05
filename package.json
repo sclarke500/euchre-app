@@ -19,7 +19,8 @@
     "start:server": "npm run start -w @67cards/server",
     "preview": "npm run preview -w @67cards/client",
     "test": "npm test -w @67cards/shared && npm test -w @67cards/server",
-    "prepush": "npm run build:shared && npm test && npm run build"
+    "prepush": "npm run build:shared && npm test && npm run build",
+    "release:ota": "node scripts/release-ota.mjs"
   },
   "dependencies": {
     "zod": "^4.3.6"

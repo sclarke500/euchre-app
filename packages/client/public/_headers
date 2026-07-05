@@ -1,0 +1,7 @@
+# OTA update manifest/bundles are fetched from inside the native apps, whose
+# WebView origin is capacitor://localhost (iOS) / https://localhost (Android)
+# — cross-origin, so they need CORS. no-cache keeps update checks fresh
+# (etag revalidation, not a full re-download).
+/ota/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: no-cache
