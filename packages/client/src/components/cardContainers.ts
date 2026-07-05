@@ -202,7 +202,12 @@ export class Hand extends CardContainer {
         const baseWidth = getBaseCardWidth()
         const scaleFactor = baseWidth / 83
         const baseSpacing = 33 * scaleFactor
-        const targetSpacing = Math.min(72 * scaleFactor, baseSpacing + this.fanCurve * 5.2 * scaleFactor)
+        const curveSpacing = Math.min(72 * scaleFactor, baseSpacing + this.fanCurve * 5.2 * scaleFactor)
+        // The controller's fanSpacing (e.g. table-width-based for 10+ card
+        // hands) can exceed the curve formula — honor whichever is wider so
+        // big hands actually spread to the width granted to them.
+        // (fanSpacing is pre-scale, like the flat branch below.)
+        const targetSpacing = Math.max(curveSpacing, this.fanSpacing * this.scale)
         const curveRad = this.fanCurve * Math.PI / 180
         this.lockedArcRadius = targetSpacing / Math.sin(curveRad)
       }

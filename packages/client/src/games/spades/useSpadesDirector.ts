@@ -42,7 +42,8 @@ export function useSpadesDirector(
     playerIdToSeatIndex,
     userHandScale: CardScales.userHand,
     opponentHandScale: CardScales.opponentHand,
-    userFanSpacing: 39, // +30% spread
+    // No userFanSpacing override — use the table-based calculation so the
+    // 13-card hand spreads past the table rails (see useCardController).
     opponentFanSpacing: 16,
     playMoveMs: CardTimings.move,
     ...cardControllerPresets.spades,

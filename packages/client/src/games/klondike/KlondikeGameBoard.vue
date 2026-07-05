@@ -558,21 +558,23 @@ function calculateCardSize(): { width: number; height: number } {
   const RATIO = 1.4 // card height / width
   const PAD = 8
   const GAP = 4
-  const TOOLBAR = 50
+  // NOTE: vw/vh are .klondike-board's own size, which already excludes the
+  // menu bar (it's a flex sibling) — subtracting a toolbar here double-counts
+  // it and shrinks cards ~20% on landscape phones.
 
   let maxW: number
 
   if (landscape) {
     // Width: left foundations(1 card) + gaps + center 7 tableau cols + gaps + right stock/waste(~1.5 card)
     const wFromWidth = (vw - PAD * 2 - GAP * 6 - 8 * 2) / 9.5
-    // Height: 4 stacked foundations + gaps + toolbar + padding
-    const wFromHeight = (vh - TOOLBAR - PAD * 2 - GAP * 3) / (4 * RATIO)
+    // Height: 4 stacked foundations + gaps + padding
+    const wFromHeight = (vh - PAD * 2 - GAP * 3) / (4 * RATIO)
     maxW = Math.min(wFromWidth, wFromHeight)
   } else {
     // Width: 7 tableau columns + gaps + padding
     const wFromWidth = (vw - PAD * 2 - GAP * 6) / 7
-    // Height: top row(1 card) + gap + tableau cascade(~2.1x card height) + toolbar + padding
-    const wFromHeight = (vh - TOOLBAR - PAD * 2 - GAP) / (3.1 * RATIO)
+    // Height: top row(1 card) + gap + tableau cascade(~2.1x card height) + padding
+    const wFromHeight = (vh - PAD * 2 - GAP) / (3.1 * RATIO)
     maxW = Math.min(wFromWidth, wFromHeight)
   }
 
@@ -1260,6 +1262,16 @@ function doNewGame() {
   padding-right: max(env(safe-area-inset-right), var(--android-safe-right, 0px));
   padding-bottom: max(env(safe-area-inset-bottom), var(--android-safe-bottom, 0px));
   padding-left: max(env(safe-area-inset-left), var(--android-safe-left, 0px));
+  // The felt paints HERE (the full-bleed element) rather than on .klondike-board,
+  // so the safe-area padding above shows felt instead of black letterbox strips
+  // on notched phones. Content still respects the insets; only pixels bleed.
+  background:
+    // Stronger vignette around edges
+    radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(0, 0, 0, 0.45) 100%),
+    // Subtle center highlight
+    radial-gradient(ellipse 60% 50% at 50% 45%, #1a5c3d 0%, transparent 70%),
+    // Darker base felt color
+    #144030;
 }
 
 // Menu bar (top in full mode, bottom in mobile)
@@ -1347,18 +1359,12 @@ function doNewGame() {
 .klondike-board {
   flex: 1;
   min-height: 0; // Allow shrinking in flex
-  // Dark green felt background with radial gradient for depth
-  background: 
-    // Stronger vignette around edges
-    radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(0, 0, 0, 0.45) 100%),
-    // Subtle center highlight
-    radial-gradient(ellipse 60% 50% at 50% 45%, #1a5c3d 0%, transparent 70%),
-    // Darker base felt color
-    #144030;
+  // Felt background lives on .klondike-layout (full-bleed under safe areas);
+  // keep this transparent so the vignette isn't painted twice.
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
-  
+
   // Card size CSS variables (set dynamically by calculateCardSize)
   --card-width: 50px;
   --card-height: 70px;

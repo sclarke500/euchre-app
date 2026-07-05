@@ -399,18 +399,23 @@ export function useCardController(
         // Explicit override
         fanSpacing = config.userFanSpacing
       } else if (config.tableWidth && cardCount > 1) {
-        // Table-based: span table width with padding, clamped to max
-        const padding = scaledCardWidth * 0.5 // Half card padding on each side
-        // Big hands (10+, e.g. Spades' 13-card deal) read cramped tucked inside
-        // the felt — let the fan overhang the table edges by up to ~3/4 of a
-        // card per side instead of keeping the half-card inner padding.
-        const overhang = cardCount >= 10 ? scaledCardWidth * 1.5 : 0
-        // The regular cap would swallow the overhang on wide tables, so big
-        // hands get a proportionally higher one.
-        const spacingCap = cardCount >= 10 ? Math.round(baseWidth * 0.8) : maxSpacing
-        const availableWidth = config.tableWidth - padding * 2 - scaledCardWidth + overhang
-        const tableBasedSpacing = availableWidth / (cardCount - 1)
-        fanSpacing = Math.max(minSpacing, Math.min(spacingCap, tableBasedSpacing))
+        // Table-based fan. All math here is in visual canonical px; NOTE that
+        // Hand.layoutCards multiplies fanSpacing by the hand's scale, so the
+        // scale is divided back out when storing.
+        const bigHand = cardCount >= 10
+        // Small hands sit inside the rails with a half-card margin per side.
+        // Big hands (10+: Spades/President 13-card deals) read cramped tucked
+        // inside the felt — let them overhang the rail by ~a quarter card per
+        // side. (Wider collided with the bid wheel pinned to the right screen
+        // edge, hiding the last cards during bidding.)
+        const targetFanWidth = bigHand
+          ? config.tableWidth + scaledCardWidth * 0.5
+          : config.tableWidth - scaledCardWidth
+        const visualGap = (targetFanWidth - scaledCardWidth) / (cardCount - 1)
+        // Caps: keep small hands from spreading flat, any hand from cramming.
+        const visualMax = baseWidth * targetScale * (bigHand ? 0.8 : 0.65)
+        const visualMin = baseWidth * targetScale * 0.2
+        fanSpacing = Math.max(visualMin, Math.min(visualMax, visualGap)) / targetScale
       } else {
         // Fallback: viewport-based calculation
         const baseFanSpacing = Math.round(baseWidth * 0.40)
@@ -422,6 +427,9 @@ export function useCardController(
       // 5 cards: ~8°, 8 cards: ~2.5°, 13 cards: ~1.5° (nearly flat for big hands)
       const dynamicCurve = cardCount > 0 ? Math.max(1.5, Math.min(9, 20 / cardCount + (cardCount <= 6 ? 4 : 0))) : 0
       userHand.fanCurve = config.userFanCurve !== undefined ? config.userFanCurve : dynamicCurve
+      // The arc radius may have locked during the deal at deal-time spacing —
+      // clear it so the focus fan above actually applies the new spacing.
+      userHand.resetArcLock()
 
       for (const managed of userHand.cards) {
         const cardRef = engine.getCardRef(managed.card.id)

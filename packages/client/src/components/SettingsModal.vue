@@ -518,14 +518,18 @@ function handleUpdateClick() {
 .about-row {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: $spacing-sm;
   padding: $spacing-xs 0;
-  
+
   .about-label {
     color: rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
   }
-  
+
   .about-value {
     color: rgba(255, 255, 255, 0.9);
+    text-align: right;
   }
 }
 

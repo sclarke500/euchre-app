@@ -15,7 +15,15 @@ export async function lockLandscape(): Promise<void> {
   if (!isNativeApp()) return
   try {
     const { ScreenOrientation } = await import('@capacitor/screen-orientation')
-    await ScreenOrientation.lock({ orientation: 'landscape-primary' })
+    // The plugin's generic 'landscape' maps to a SINGLE fixed orientation on
+    // both platforms (landscapeRight on iOS, SCREEN_ORIENTATION_LANDSCAPE on
+    // Android) — there is no "either landscape, sensor decides" option. So
+    // locking blindly force-flips the UI 180° for users already holding the
+    // device in the other landscape. Lock to whichever landscape the device
+    // is currently in; fall back to primary when coming from portrait.
+    const { type } = await ScreenOrientation.orientation()
+    const target = type === 'landscape-secondary' ? 'landscape-secondary' : 'landscape-primary'
+    await ScreenOrientation.lock({ orientation: target })
   } catch {
     // Orientation lock is best-effort; ignore failures (e.g. iPad multitasking).
   }

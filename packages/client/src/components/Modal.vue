@@ -228,7 +228,10 @@ onUnmounted(() => {
 }
 
 .modal-canonical .modal-content {
-  --modal-scale: min(1, var(--board-scale, 1));
+  // Track the board scale so dialogs don't dwarf a shrunken board, but floor
+  // at 0.8: below that, rem-authored dialog text/buttons get too small to
+  // read/tap (e.g. President's round summary at 0.56 on a phone).
+  --modal-scale: clamp(0.8, var(--board-scale, 1), 1);
 }
 
 :deep(.dialog-panel) {
