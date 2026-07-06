@@ -16,6 +16,13 @@ initDeviceMode()
 
 // Set safe area CSS vars for overlays outside ScaledContainer
 applySafeAreaCSSVars()
+// Re-apply on rotation: cutout insets swap sides at 180°, and the vars are
+// otherwise a launch-time snapshot. The delayed second pass catches the
+// native --android-safe-* injection landing after the resize event.
+window.addEventListener('resize', () => {
+  applySafeAreaCSSVars()
+  setTimeout(applySafeAreaCSSVars, 250)
+})
 
 // Updates: registers the service worker on web (prompt mode); on native,
 // notifyAppReady (required by Capgo or it rolls the bundle back) + silent OTA check

@@ -196,10 +196,7 @@ Unified update system in `useAppUpdates.ts` (state machine: idle → checking �
 - **Web/PWA**: service worker in `prompt` mode (vite-plugin-pwa). SW is registered manually in `useAppUpdates` — **never inside the native shells** (on Android the SW would fight the OTA bundle swapper).
 - **Native (iOS/Android)**: Capgo `@capgo/capacitor-updater` (pinned version) in manual mode. Checks static `https://67cardgames.com/ota/latest.json`, compares against baked-in `__APP_VERSION__`, plugin handles download/atomic swap/rollback. `notifyAppReady()` is called every launch in `initAppUpdates()` — removing it makes Capgo roll back the bundle.
 
-**OTA release flow** (web-layer changes only):
-1. Bump version in `packages/client/package.json` (script refuses otherwise)
-2. `npm run release:ota` — builds, zips dist, publishes (GitHub Release via `gh` CLI, or `public/ota/` fallback), writes `public/ota/latest.json`
-3. Commit + push (Netlify serves the manifest)
+**OTA release flow** (web-layer changes only): `npm run release` — one command. Auto-bumps the patch version (a hand-bumped `packages/client/package.json` version is respected instead), builds, zips dist, publishes (GitHub Release via `gh` CLI, or `public/ota/` fallback), writes `public/ota/latest.json`, then commits **all working-tree changes** and pushes. For the manual/partial flow use `npm run release:ota` (no bump, no push).
 
 **Never OTA-ship** a bundle requiring native code not in the store binary (new Capacitor plugins, MainActivity/iOS shell changes, etc.) — those need a real App Store/Play release. CORS for `/ota/*` is set in `public/_headers`.
 

@@ -36,6 +36,12 @@ const SITE_URL = 'https://67cardgames.com'
 
 const skipBuild = process.argv.includes('--skip-build')
 const forceLocal = process.argv.includes('--local')
+// --bump: if package.json's version isn't already ahead of the published
+// manifest, auto-increment the patch number (so `npm run release` needs no
+// manual edit; a hand-bumped version is respected as-is).
+const autoBump = process.argv.includes('--bump')
+// --push: git add/commit/push after publishing, so the manifest deploys.
+const doPush = process.argv.includes('--push')
 
 function run(cmd, opts = {}) {
   execSync(cmd, { stdio: 'inherit', cwd: root, ...opts })
@@ -48,7 +54,7 @@ function fail(msg) {
 
 // --- 1. Version ------------------------------------------------------------
 const pkg = JSON.parse(readFileSync(join(clientDir, 'package.json'), 'utf-8'))
-const version = pkg.version
+let version = pkg.version
 if (!/^\d+\.\d+\.\d+$/.test(version)) fail(`Bad version in client package.json: "${version}"`)
 
 const manifestPath = join(otaPublicDir, 'latest.json')
@@ -63,7 +69,15 @@ if (existsSync(manifestPath)) {
     return 0
   })()
   if (cmp <= 0) {
-    fail(`Version ${version} is not newer than published ${prev.version}.\n  Bump packages/client/package.json first.`)
+    if (autoBump) {
+      // Not hand-bumped — increment the patch of the published version.
+      // Must happen BEFORE the build so __APP_VERSION__ bakes the new number.
+      version = `${old[0]}.${old[1]}.${old[2] + 1}`
+      console.log(`Auto-bumping version: ${prev.version} → ${version}`)
+      run(`npm version ${version} --no-git-tag-version`, { cwd: clientDir })
+    } else {
+      fail(`Version ${version} is not newer than published ${prev.version}.\n  Bump packages/client/package.json first (or run with --bump).`)
+    }
   }
 }
 
@@ -134,8 +148,21 @@ const manifest = {
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
 console.log(`\n✔ Wrote public/ota/latest.json → ${bundleUrl}`)
 
-console.log(`
+// --- 6. Commit + push (--push) ---------------------------------------------
+if (doPush) {
+  console.log('\nCommitting and pushing:')
+  run('git status --short')
+  run('git add -A')
+  run(`git commit -m "release: OTA v${version}"`)
+  run('git push')
+  console.log(`
+✔ Released v${version}. Netlify deploys the manifest in ~1 min;
+  native apps pick it up on next launch / Settings → Check for Updates.
+`)
+} else {
+  console.log(`
 Next steps:
   1. git add + commit + push  (Netlify deploys the manifest & PWA)
   2. Native apps see v${version} on next launch / Settings → Check for Updates
 `)
+}

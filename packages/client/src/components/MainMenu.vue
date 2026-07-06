@@ -422,8 +422,10 @@ const gameTitle = computed(() => {
 
 .settings-btn {
   position: absolute;
-  top: $spacing-md;
-  right: $spacing-md;
+  // Offset by the OS insets so the gear clears the status bar clock/battery
+  // (Android draws the status bar over the WebView) and any camera cutout.
+  top: calc(#{$spacing-md} + var(--screen-safe-top, 0px));
+  right: calc(#{$spacing-md} + var(--screen-safe-right, 0px));
   width: 44px;
   height: 44px;
   display: flex;

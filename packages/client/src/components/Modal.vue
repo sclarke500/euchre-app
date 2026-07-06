@@ -264,6 +264,24 @@ onUnmounted(() => {
 
 :deep(.dialog-btn) {
   @include frosted-btn;
+  // frosted-btn is authored at a normal on-screen size (~14px). On canonical
+  // routes the dialog shrinks by --modal-scale (down to the 0.8 floor on
+  // phones), which would drag the buttons below a comfortable tap size while
+  // the canonical $ui-* title/text shrink *to* their intended size. Counter-
+  // scale by the inverse so buttons stay at a constant on-screen size. On
+  // non-canonical modals --modal-scale is 1, so this is a no-op there.
+  font-size: calc(15px / var(--modal-scale, 1));
+  padding: calc(11px / var(--modal-scale, 1)) calc(22px / var(--modal-scale, 1));
+  border-radius: calc(8px / var(--modal-scale, 1));
+}
+
+// Same counter-scale for the other dialog button convention (leave-confirm
+// dialogs use .game-dialog__btn from _game-dialog.scss). This :deep rule
+// out-specifies the global stylesheet, keeping these tappable when the
+// dialog shrinks. No-op off canonical routes (--modal-scale = 1).
+:deep(.game-dialog__btn) {
+  font-size: calc(0.95rem / var(--modal-scale, 1));
+  padding: calc(0.6rem / var(--modal-scale, 1)) calc(1.25rem / var(--modal-scale, 1));
 }
 
 :deep(.dialog-btn--primary) {

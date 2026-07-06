@@ -20,6 +20,7 @@
     "preview": "npm run preview -w @67cards/client",
     "test": "npm test -w @67cards/shared && npm test -w @67cards/server",
     "prepush": "npm run build:shared && npm test && npm run build",
+    "release": "node scripts/release-ota.mjs --bump --push",
     "release:ota": "node scripts/release-ota.mjs"
   },
   "dependencies": {
