@@ -321,7 +321,24 @@ export function getSafeAreaCSSVars(): string {
 export function applySafeAreaCSSVars(): DeviceInfo {
   const info = getDeviceSafeAreas()
   const root = document.documentElement
-  
+
+  // Android: the WebView's env() omits system bars (status bar reads as 0)
+  // and the guess tables above can't know which side the cutout is on.
+  // MainActivity injects the real OS insets as --android-safe-*, so set the
+  // consumer vars to live max() EXPRESSIONS referencing them — every CSS
+  // consumer then re-resolves automatically when the injection lands (it can
+  // arrive after this runs) or rotation swaps the cutout side. No JS snapshot
+  // to go stale. (Safe because no JS reads these vars back as numbers.)
+  if (/Android/i.test(navigator.userAgent)) {
+    for (const edge of ['top', 'right', 'bottom', 'left'] as const) {
+      const expr = `max(env(safe-area-inset-${edge}, 0px), var(--android-safe-${edge}, 0px))`
+      root.style.setProperty(`--device-safe-${edge}`, expr)
+      root.style.setProperty(`--screen-safe-${edge}`, expr)
+    }
+    console.log('[SafeArea] Android: live max(env, --android-safe-*) expressions')
+    return info
+  }
+
   root.style.setProperty('--device-safe-top', `${info.insets.top}px`)
   root.style.setProperty('--device-safe-right', `${info.insets.right}px`)
   root.style.setProperty('--device-safe-bottom', `${info.insets.bottom}px`)
@@ -331,8 +348,8 @@ export function applySafeAreaCSSVars(): DeviceInfo {
   root.style.setProperty('--screen-safe-right', `${info.insets.right}px`)
   root.style.setProperty('--screen-safe-bottom', `${info.insets.bottom}px`)
   root.style.setProperty('--screen-safe-left', `${info.insets.left}px`)
-  
+
   console.log(`[SafeArea] Device: ${info.name} (${info.isKnown ? 'known' : 'fallback'})`, info.insets)
-  
+
   return info
 }

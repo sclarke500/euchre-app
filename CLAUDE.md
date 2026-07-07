@@ -181,6 +181,21 @@ Hand options: `rotation`, `scale`, `fanSpacing`, `fanCurve` (arc effect for user
 
 **PlayArea**: Center area for played cards (not yet fully implemented).
 
+### User-Hand Fan Spacing (read before touching hand spread!)
+
+`Hand.getCardPosition()` in `cardContainers.ts` has **two spacing paths**:
+- **Flat branch** (opponents / no curve): gap = `fanSpacing × hand.scale`
+- **Arc branch** (user hand, `fanCurve > 0`): gap comes from the locked arc radius = `max(curve formula, fanSpacing × hand.scale)`. Historically the arc **ignored** `fanSpacing` entirely — every spacing knob was a silent no-op for the user's hand until this `max()` was added. If spacing changes seem to do nothing, you're probably in the arc branch.
+
+Key facts:
+- `fanSpacing` is **pre-scale**; the rendered gap is `fanSpacing × scale` (user hand scale = 1.5).
+- The table-based calc in `useCardController` (focus block) works in *visual canonical px*, then divides the scale back out when storing. Big hands (≥10 cards, Spades/President) target `tableWidth + ¼ card overhang per side` — wider collided with the bid wheel pinned to the right screen edge.
+- `config.userFanSpacing` in a director **bypasses the table calc entirely** (Euchre uses 30; Spades' override was deliberately removed — don't re-add it).
+- Arc radius **locks on first fan** (`lockedArcRadius`) so spacing stays constant as cards are played; call `resetArcLock()` before re-fanning with new spacing (the focus block does this).
+
+### Suit Glyphs
+All suit symbols render via `SuitGlyph.vue` (inline SVG, `fill: currentColor`). **Never** use Unicode ♥♦♣♠ text — platform symbol-font fallbacks size them wildly differently (this was the Android oversized-pips bug).
+
 **Restore helper**: `useCardController` includes `restoreWonTrickStacks(tricks)` for rebuilding decorative won-trick piles from persisted completed tricks. This is reusable across trick-taking games (e.g., Euchre/Spades).
 
 ### Table Layout
@@ -188,6 +203,20 @@ Hand options: `rotation`, `scale`, `fanSpacing`, `fanCurve` (arc effect for user
 - Supports `normal` (4 players) and `wide` (5+ players) layouts
 - Player avatars positioned outside table edges
 - User always at bottom (seat-0), hidden avatar
+
+## Modal & Dialog Scaling
+
+Modals (`Modal.vue`) teleport to `<body>`, so they **escape the board's transform scale**. On canonical (game) routes:
+- Dialogs authored in canonical px opt in via the `scale-with-board` prop → shrunk by `--modal-scale: clamp(0.8, var(--board-scale), 1)`. The **0.8 floor** exists because rem-authored dialogs (President) became unreadable at raw board scale (~0.56 on phones).
+- Dialog **buttons** (`.dialog-btn`, `.game-dialog__btn`) are counter-scaled inside `Modal.vue` by dividing by `--modal-scale`, so they render at a constant on-screen size (~15px) on every device. If buttons look too small/large in a scaled dialog, fix it there — **not** by resizing `frosted-btn` or `_game-dialog.scss` (that would leak to unscaled contexts).
+
+## Safe Areas & Orientation (native)
+
+- `--screen-safe-*` vars are set on `:root` by `applySafeAreaCSSVars()`. On **Android** they are live CSS expressions `max(env(...), var(--android-safe-*))` — never numeric snapshots, because the WebView's `env()` omits system bars and MainActivity's injected values can arrive late / change on rotation (ScaledContainer deliberately skips overwriting them on Android). On iOS/web they're numeric (guess-table-floored) and re-applied on resize (main.ts). Details: `docs/SAFE_AREAS.md`.
+- Fixed/absolute overlays living outside `ScaledContainer` must add `--screen-safe-*` offsets themselves (e.g. MainMenu's settings gear, TurnTimer, bid wheels). Symptom of forgetting: element collides with the status-bar clock/battery or camera cutout in exactly one landscape rotation.
+- **Full-bleed pattern**: paint the background (felt/wood) on the outermost full-screen element and apply safe-area padding on that same element so only *content* is inset — otherwise the padding shows black letterbox strips. Klondike's felt lives on `.klondike-layout` (not `.klondike-board`) for this reason.
+- Klondike `calculateCardSize()` measures `.klondike-board` itself, which already excludes the menu bar — do **not** subtract a toolbar height (double-count previously shrank cards ~20%).
+- `@capacitor/screen-orientation` has **no "either landscape" mask** — `'landscape'` maps to one fixed direction on both platforms. `lockLandscape()` (`utils/orientation.ts`) therefore reads the current orientation and locks to the matching landscape. Never lock a hardcoded direction: it 180°-flips users holding the device the other way.
 
 ## App Updates & OTA Releases
 

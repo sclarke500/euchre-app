@@ -242,7 +242,10 @@ function calculateScale() {
   if (viewportW === 0 || viewportH === 0) return
 
   // Viewport-px safe areas for teleported overlays (chat, modals, back button).
-  if (typeof document !== 'undefined') {
+  // On Android, applySafeAreaCSSVars set these to live max(env, --android-safe-*)
+  // expressions — don't overwrite with numeric snapshots that go stale when
+  // rotation swaps the cutout side.
+  if (typeof document !== 'undefined' && !/Android/i.test(navigator.userAgent)) {
     const s = document.documentElement.style
     s.setProperty('--screen-safe-top', `${insets.top}px`)
     s.setProperty('--screen-safe-right', `${insets.right}px`)
