@@ -12,20 +12,12 @@
     :selected-card-ids="selectedCardIds"
     :highlighted-card-ids="highlightedCardIds"
     :layout="playerCount > 5 ? 'wide' : 'normal'"
+    :bid-badges="rankChipBadges"
+    bid-badge-variant="bare"
     game-name="PRESIDENT"
     @card-click="handleCardClick"
     @layout-changed="handleLayoutChanged"
   >
-    <!-- Player rank badges via named slots -->
-    <template v-for="(player, i) in game.players.value" :key="i" #[`player-info-${playerIdToSeatIndex(i)}`]>
-      <span v-if="getRankBadge(i)" class="rank-badge">{{ getRankBadge(i) }}</span>
-    </template>
-
-    <!-- User rank badge -->
-    <template #user-info>
-      <span v-if="userRankBadge" class="rank-badge user-rank">{{ userRankBadge }}</span>
-    </template>
-
     <!-- HUD: Menu button -->
     <GameHUD
       game-type="president"
@@ -152,7 +144,10 @@
           >
             <span class="position">#{{ index + 1 }}</span>
             <span class="name">{{ game.players.value[playerId]?.name }}</span>
-            <span class="title">{{ game.getPlayerRankDisplay(playerId) }}</span>
+            <span class="title">
+              <span v-if="getRankBadge(playerId)" class="title-badge">{{ getRankBadge(playerId) }}</span>
+              {{ game.getPlayerRankDisplay(playerId) }}
+            </span>
           </div>
         </div>
         <div class="modal-buttons dialog-actions">
@@ -304,7 +299,16 @@ const playerCount = computed(() =>
   game.players.value.length || settingsStore.presidentPlayerCount || 4
 )
 const userName = computed(() => director.playerNames.value[0] ?? 'You')
-const userRankBadge = computed(() => getRankBadge(game.humanPlayer.value?.id ?? 0))
+
+// Rank emoji (👑/💩/…) per SEAT, rendered via CardTable's corner-badge system —
+// same NE-of-avatar anchor and chip sizing as Spades' bid badges.
+const rankChipBadges = computed(() => {
+  const badges: (string | null)[] = Array(playerCount.value).fill(null)
+  for (let id = 0; id < game.players.value.length; id++) {
+    badges[playerIdToSeatIndex(id)] = getRankBadge(id) || null
+  }
+  return badges
+})
 
 // Exchange phase status message - always visible during exchange
 const exchangeStatus = computed(() => {
@@ -888,19 +892,8 @@ onUnmounted(() => {
   transform: translateY(-50%) translateX(100%);
 }
 
-// Rank badges (President 👑, Scum 💩, etc.)
-.rank-badge {
-  font-size: $ui-lg;
-  line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
-  
-  // User's rank badge - displayed above name in pill
-  &.user-rank {
-    display: block;
-    margin-top: -8px;
-    margin-bottom: -4px;
-  }
-}
+// Rank badges (President 👑, Scum 💩) render as avatar corner chips via
+// CardTable's bid-badges prop — no local badge styles needed.
 
 // Action hint text above buttons
 .action-hint {
@@ -917,7 +910,7 @@ onUnmounted(() => {
 
 // Modals - match Spades round summary styling
 .round-modal {
-  min-width: 240px;
+  min-width: 340px;
   max-width: 90vw;
   text-align: center;
 
@@ -973,6 +966,14 @@ onUnmounted(() => {
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
   font-size: $ui-xs;
+  white-space: nowrap;
+
+  .title-badge {
+    font-style: normal;
+    font-size: $ui-sm;
+    margin-right: 4px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
 }
 
 .next-round-msg {

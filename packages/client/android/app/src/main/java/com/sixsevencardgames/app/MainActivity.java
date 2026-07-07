@@ -12,8 +12,28 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
+  // Latest OS insets (CSS px), kept so we can re-inject after page navigations.
+  private int safeTop = 0;
+  private int safeRight = 0;
+  private int safeBottom = 0;
+  private int safeLeft = 0;
+
+  private void injectSafeAreaVars() {
+    final WebView webView = getBridge().getWebView();
+    if (webView == null) return;
+    final String js =
+        "(function(){var s=document.documentElement.style;" +
+        "s.setProperty('--android-safe-top','" + safeTop + "px');" +
+        "s.setProperty('--android-safe-right','" + safeRight + "px');" +
+        "s.setProperty('--android-safe-bottom','" + safeBottom + "px');" +
+        "s.setProperty('--android-safe-left','" + safeLeft + "px');" +
+        "window.dispatchEvent(new Event('resize'));})();";
+    webView.post(() -> webView.evaluateJavascript(js, null));
+  }
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -48,20 +68,26 @@ public class MainActivity extends BridgeActivity {
     ViewCompat.setOnApplyWindowInsetsListener(webView, (v, windowInsets) -> {
       Insets bars = windowInsets.getInsets(
           WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-      final int top = Math.round(bars.top / density);
-      final int right = Math.round(bars.right / density);
-      final int bottom = Math.round(bars.bottom / density);
-      final int left = Math.round(bars.left / density);
-      final String js =
-          "(function(){var s=document.documentElement.style;" +
-          "s.setProperty('--android-safe-top','" + top + "px');" +
-          "s.setProperty('--android-safe-right','" + right + "px');" +
-          "s.setProperty('--android-safe-bottom','" + bottom + "px');" +
-          "s.setProperty('--android-safe-left','" + left + "px');" +
-          "window.dispatchEvent(new Event('resize'));})();";
-      webView.post(() -> webView.evaluateJavascript(js, null));
+      safeTop = Math.round(bars.top / density);
+      safeRight = Math.round(bars.right / density);
+      safeBottom = Math.round(bars.bottom / density);
+      safeLeft = Math.round(bars.left / density);
+      injectSafeAreaVars();
       return windowInsets;
     });
+
+    // The insets listener typically fires BEFORE the page finishes loading, and
+    // a navigation replaces documentElement — wiping the injected vars. Without
+    // this, the vars only reappear on the next inset change (i.e. a rotation).
+    // Re-inject after every page load: the initial load AND Capgo OTA bundle
+    // swaps, which reload the WebView.
+    getBridge().addWebViewListener(new WebViewListener() {
+      @Override
+      public void onPageLoaded(WebView view) {
+        injectSafeAreaVars();
+      }
+    });
+
     ViewCompat.requestApplyInsets(webView);
   }
 }

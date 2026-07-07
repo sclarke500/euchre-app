@@ -28,6 +28,7 @@
           <div
             v-if="hasBidBadge"
             class="avatar-bid-badge"
+            :class="{ 'avatar-bid-badge--bare': props.bidBadgeVariant === 'bare' }"
             :style="bidBadgeStyle"
             aria-label="Bid"
           >{{ props.bidBadge }}</div>
@@ -94,6 +95,9 @@ const props = withDefaults(defineProps<{
   bidBadge?: string | number | null
   /** Optional background color for the bid badge */
   bidBadgeColor?: string
+  /** 'chip' = filled circle (Spades bids); 'bare' = content only, no chip
+   *  background (President rank emoji) — same anchor and sizing */
+  bidBadgeVariant?: 'chip' | 'bare'
 }>(), {
   isCurrentTurn: false,
   isUser: false,
@@ -107,6 +111,7 @@ const props = withDefaults(defineProps<{
   chatPersistent: false,
   bidBadge: null,
   bidBadgeColor: '',
+  bidBadgeVariant: 'chip',
 })
 
 const emit = defineEmits<{
@@ -328,6 +333,19 @@ const bubblePosition = computed(() => {
     border: 2px solid rgba(255, 255, 255, 0.85);
     z-index: 12;
     pointer-events: none;
+
+    // Bare variant: the content IS the badge (President rank emoji) — same
+    // anchor and footprint, no chip circle behind it.
+    &.avatar-bid-badge--bare {
+      background: none;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      min-width: 0;
+      height: auto;
+      font-size: $ui-lg;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+    }
   }
 
   .name-column {

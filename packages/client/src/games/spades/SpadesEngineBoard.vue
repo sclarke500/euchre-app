@@ -569,33 +569,35 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   max-width: 90vw;
 }
 
+// Fonts run one step smaller than the $ui-* scale: the summary has up to 9
+// rows and was overflowing the screen height on phones at modal scale 0.8.
 .round-summary-title {
-  font-size: $ui-sm;
+  font-size: $ui-xs;
   font-weight: 700;
   color: #fff;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .round-summary-table {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .summary-header {
   display: grid;
-  // 64px fits "Them" / 3-digit scores in Roboto (Android renders wider than
-  // SF); 50px clipped the header and let game-score digits collide. Fixed
-  // widths (not auto) so columns align across the sibling row grids.
-  grid-template-columns: 1fr 64px 64px;
+  // 56px fits "Them" / 3-digit scores in Roboto at the reduced font (Android
+  // renders wider than SF). Fixed widths (not auto) so columns align across
+  // the sibling row grids.
+  grid-template-columns: 1fr 56px 56px;
   gap: 10px;
   padding: 3px 0;
   border-bottom: 1px solid rgba(255,255,255,0.2);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   font-weight: 600;
-  font-size: $ui-xs;
+  font-size: 19px;
   color: #aaa;
   text-align: center;
-  
+
   span:first-child {
     text-align: left;
   }
@@ -603,32 +605,32 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 
 .summary-row {
   display: grid;
-  grid-template-columns: 1fr 64px 64px;
+  grid-template-columns: 1fr 56px 56px;
   gap: 10px;
   padding: 2px 0;
   color: #ccc;
-  font-size: $ui-xs;
+  font-size: 19px;
   text-align: center;
-  
+
   span:first-child {
     text-align: left;
     color: #aaa;
   }
-  
+
   &.total {
     border-top: 1px solid rgba(255,255,255,0.2);
-    margin-top: 8px;
-    padding-top: 8px;
+    margin-top: 6px;
+    padding-top: 6px;
     font-weight: 700;
     color: #fff;
   }
-  
+
   &.game-total {
     border-top: 2px solid rgba(255,215,0,0.5);
-    margin-top: 8px;
-    padding-top: 8px;
+    margin-top: 6px;
+    padding-top: 6px;
     font-weight: 700;
-    font-size: $ui-md;
+    font-size: $ui-sm;
     color: #ffd700;
   }
   

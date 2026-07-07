@@ -30,6 +30,7 @@
           :trump-suit="trumpCallerSeat === i ? trumpSuit : ''"
           :trump-color="trumpCallerSeat === i ? trumpColor : ''"
           :bid-badge="bidBadges[i] ?? null"
+          :bid-badge-variant="bidBadgeVariant"
           :seat-index="i"
           :chat-message="chatStore.activeBubbles.get(i)"
           :chat-persistent="chatStore.debugBubbles"
@@ -61,6 +62,7 @@
         :trump-suit="trumpCallerSeat === 0 ? trumpSuit : ''"
         :trump-color="trumpCallerSeat === 0 ? trumpColor : ''"
         :bid-badge="bidBadges[0] ?? null"
+        :bid-badge-variant="bidBadgeVariant"
         :seat-index="0"
       >
         <slot name="user-info" />
@@ -125,6 +127,8 @@ const props = withDefaults(defineProps<{
   playerStatuses?: string[]
   /** Per-seat corner badge (e.g. Spades bid), shown at the avatar's NE corner */
   bidBadges?: (string | number | null)[]
+  /** 'chip' = filled circle; 'bare' = content only (President rank emoji) */
+  bidBadgeVariant?: 'chip' | 'bare'
   currentTurnSeat?: number
   dimmedCardIds?: Set<string>
   selectedCardIds?: Set<string>
@@ -140,6 +144,7 @@ const props = withDefaults(defineProps<{
   trumpColor: '',
   playerStatuses: () => [],
   bidBadges: () => [],
+  bidBadgeVariant: 'chip',
   currentTurnSeat: -1,
   avatarOpacities: () => [],
   playerAvatars: () => [],

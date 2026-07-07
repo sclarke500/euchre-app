@@ -422,10 +422,11 @@ const gameTitle = computed(() => {
 
 .settings-btn {
   position: absolute;
-  // Offset by the OS insets so the gear clears the status bar clock/battery
-  // (Android draws the status bar over the WebView) and any camera cutout.
-  top: calc(#{$spacing-md} + var(--screen-safe-top, 0px));
-  right: calc(#{$spacing-md} + var(--screen-safe-right, 0px));
+  // Clear the OS status bar / camera cutout, but blend the margin into the
+  // inset (inset + small gap, floored at the normal margin) instead of
+  // stacking margin on top of the full inset — full stacking sat too low.
+  top: max(#{$spacing-md}, calc(var(--screen-safe-top, 0px) + 8px));
+  right: max(#{$spacing-md}, calc(var(--screen-safe-right, 0px) + 8px));
   width: 44px;
   height: 44px;
   display: flex;
