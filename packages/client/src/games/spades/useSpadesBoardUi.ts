@@ -106,22 +106,22 @@ export function useSpadesBoardUi(adapter: SpadesGameAdapter, mode: 'singleplayer
     async (newPhase, oldPhase) => {
       // Guard: only show modal once per round (prevent double popup)
       if (newPhase === SpadesPhase.RoundComplete && oldPhase !== SpadesPhase.RoundComplete) {
-        // Delay to let chat bubble appear first
-        await new Promise((resolve) => setTimeout(resolve, CardTimings.roundEnd + 2000))
+        // Snapshot round data NOW: in multiplayer the server deals the next
+        // round shortly after RoundComplete, resetting bids/tricksWon behind the modal.
+        const playersSnapshot = adapter.players.value
+        // scores are already post-round here; bags were stored as (before + new) % 10,
+        // so recover this round's starting bags to get the bag penalty right.
+        const usBagsAfter = adapter.scores.value[0]?.bags ?? 0
+        const themBagsAfter = adapter.scores.value[1]?.bags ?? 0
+        const usProbe = Spades.calculateRoundScore(playersSnapshot, 0, 0)
+        const themProbe = Spades.calculateRoundScore(playersSnapshot, 1, 0)
+        const usBags = Math.max(0, usProbe.tricksWon - usProbe.baseBid)
+        const themBags = Math.max(0, themProbe.tricksWon - themProbe.baseBid)
+        const usBagsBefore = ((usBagsAfter - usBags) % 10 + 10) % 10
+        const themBagsBefore = ((themBagsAfter - themBags) % 10 + 10) % 10
 
-        const usScore = Spades.calculateRoundScore(
-          adapter.players.value,
-          0,
-          adapter.scores.value[0]?.bags ?? 0,
-        )
-        const themScore = Spades.calculateRoundScore(
-          adapter.players.value,
-          1,
-          adapter.scores.value[1]?.bags ?? 0,
-        )
-
-        const usBags = Math.max(0, usScore.tricksWon - usScore.baseBid)
-        const themBags = Math.max(0, themScore.tricksWon - themScore.baseBid)
+        const usScore = Spades.calculateRoundScore(playersSnapshot, 0, usBagsBefore)
+        const themScore = Spades.calculateRoundScore(playersSnapshot, 1, themBagsBefore)
 
         roundSummary.value = {
           usBid: usScore.baseBid,
@@ -141,6 +141,9 @@ export function useSpadesBoardUi(adapter: SpadesGameAdapter, mode: 'singleplayer
           usTotal: usScore.roundPoints,
           themTotal: themScore.roundPoints,
         }
+
+        // Delay to let chat bubble appear first
+        await new Promise((resolve) => setTimeout(resolve, CardTimings.roundEnd + 2000))
 
         showRoundSummary.value = true
       }

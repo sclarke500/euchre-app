@@ -442,12 +442,15 @@ export class SpadesGame {
       this.events.onGameOver(this.winner ?? 0, this.scores)
     } else {
       this.phase = SpadesPhase.RoundComplete
-      // Start new round after delay
+      // Start new round after delay. Clients show the round-summary modal
+      // ~3.5s after this broadcast (roundEnd 1500ms + 2000ms chat delay) —
+      // keep this above that so the modal is on screen before the deal
+      // starts behind it (players don't need to dismiss it first).
       setTimeout(() => {
         this.dealer = (this.dealer + 1) % 4
         this.roundNumber++
         this.startNewRound()
-      }, 3000)
+      }, 5000)
     }
 
     this.broadcastState()

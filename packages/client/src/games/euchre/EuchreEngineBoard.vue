@@ -54,7 +54,14 @@
         <div class="game-over-title dialog-title">Game Over</div>
         <div class="game-over-result dialog-text">{{ winnerText }}</div>
         <div class="game-over-scores dialog-text">
-          <span>Us {{ teamScore(0) }} - {{ teamScore(1) }} Them</span>
+          <div class="final-score">
+            <span class="final-score__label">Us</span>
+            <span class="final-score__value">{{ teamScore(0) }}</span>
+          </div>
+          <div class="final-score">
+            <span class="final-score__label">Them</span>
+            <span class="final-score__value">{{ teamScore(1) }}</span>
+          </div>
         </div>
         <div v-if="mode === 'singleplayer' || isHost" class="game-over-actions dialog-actions">
           <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handlePlayAgain">Play Again</button>
@@ -786,9 +793,28 @@ onUnmounted(() => {
 }
 
 .game-over-scores {
-  font-size: $ui-xs;
-  color: #aaa;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
   margin-bottom: 14px;
+
+  .final-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .final-score__label {
+    font-size: $ui-xs;
+    color: #aaa;
+  }
+
+  .final-score__value {
+    font-size: $ui-md;
+    font-weight: 700;
+    color: #fff;
+  }
 }
 
 .game-over-actions {

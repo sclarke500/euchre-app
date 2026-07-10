@@ -20,11 +20,11 @@
     <div class="scoreboard spades-scoreboard">
       <div class="score-row">
         <span class="score-label">Us</span>
-        <span class="score-value">{{ scores[0]?.score ?? 0 }}</span>
+        <span class="score-value">{{ scoreHead(scores[0]?.score ?? 0) }}<span class="score-bags-digit">{{ scoreBagsDigit(scores[0]?.score ?? 0) }}</span></span>
       </div>
       <div class="score-row">
         <span class="score-label">Them</span>
-        <span class="score-value">{{ scores[1]?.score ?? 0 }}</span>
+        <span class="score-value">{{ scoreHead(scores[1]?.score ?? 0) }}<span class="score-bags-digit">{{ scoreBagsDigit(scores[1]?.score ?? 0) }}</span></span>
       </div>
       <div v-if="store.spadesBroken" class="spades-broken-indicator">
         <SuitGlyph suit="spades" class="broken-glyph" /> Broken
@@ -120,7 +120,14 @@
         <div class="game-over-title dialog-title">Game Over</div>
         <div class="game-over-result dialog-text">{{ winnerText }}</div>
         <div class="game-over-scores dialog-text">
-          <span>Us {{ scores[0]?.score ?? 0 }} - {{ scores[1]?.score ?? 0 }} Them</span>
+          <div class="final-score">
+            <span class="final-score__label">Us</span>
+            <span class="final-score__value">{{ scores[0]?.score ?? 0 }}</span>
+          </div>
+          <div class="final-score">
+            <span class="final-score__label">Them</span>
+            <span class="final-score__value">{{ scores[1]?.score ?? 0 }}</span>
+          </div>
         </div>
         <div v-if="mode === 'singleplayer' || isHost" class="game-over-actions dialog-actions">
           <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handlePlayAgain">Play Again</button>
@@ -313,6 +320,15 @@ const {
   handleBid,
   dismissRoundSummary,
 } = useSpadesBoardUi(adapter, props.mode)
+
+// Scoreboard renders the ones digit in gold: in Spades scoring every component
+// except bags is a multiple of 10, so the last digit reads as the bag count.
+function scoreHead(score: number): string {
+  return String(score).slice(0, -1)
+}
+function scoreBagsDigit(score: number): string {
+  return String(score).slice(-1)
+}
 
 // Per-seat bid badge (NE corner of each avatar), null when a seat hasn't bid yet
 const bidBadges = computed(() =>
@@ -542,7 +558,11 @@ watch(() => adapter.gameOver.value, (gameOver) => {
     min-width: 44px;
     text-align: right;
   }
-  
+
+  .score-bags-digit {
+    color: #ffd700;
+  }
+
   .spades-broken-indicator {
     font-size: $ui-xs;
     color: rgba(255, 255, 255, 0.6);
@@ -672,9 +692,28 @@ watch(() => adapter.gameOver.value, (gameOver) => {
 }
 
 .game-over-scores {
-  font-size: $ui-xs;
-  color: #aaa;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
   margin-bottom: 14px;
+
+  .final-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .final-score__label {
+    font-size: $ui-xs;
+    color: #aaa;
+  }
+
+  .final-score__value {
+    font-size: $ui-md;
+    font-weight: 700;
+    color: #fff;
+  }
 }
 
 .game-over-actions {

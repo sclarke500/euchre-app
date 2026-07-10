@@ -164,7 +164,11 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: $spacing-md $spacing-lg;
+  // Header background is full-bleed; inset only the content past notch/status bar.
+  padding: calc(#{$spacing-md} + var(--screen-safe-top, 0px))
+    calc(#{$spacing-lg} + var(--screen-safe-right, 0px))
+    $spacing-md
+    calc(#{$spacing-lg} + var(--screen-safe-left, 0px));
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
@@ -236,7 +240,10 @@ const checkGameStart = computed(() => lobbyStore.gameId)
 .table-list {
   flex: 1;
   overflow-y: auto;
-  padding: $spacing-lg;
+  padding: $spacing-lg
+    calc(#{$spacing-lg} + var(--screen-safe-right, 0px))
+    calc(#{$spacing-lg} + var(--screen-safe-bottom, 0px))
+    calc(#{$spacing-lg} + var(--screen-safe-left, 0px));
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
@@ -248,7 +255,10 @@ const checkGameStart = computed(() => lobbyStore.gameId)
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: $spacing-lg;
+  padding: $spacing-lg
+    calc(#{$spacing-lg} + var(--screen-safe-right, 0px))
+    calc(#{$spacing-lg} + var(--screen-safe-bottom, 0px))
+    calc(#{$spacing-lg} + var(--screen-safe-left, 0px));
   gap: $spacing-lg;
 }
 
