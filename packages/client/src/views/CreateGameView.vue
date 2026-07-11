@@ -20,9 +20,11 @@ const STORAGE_KEYS = {
   bootInactive: 'createTable.bootInactive',
 }
 
-// Load saved preferences
+// Load saved preferences (menu mode-chooser may have just written lastGameType)
 const selectedGame = ref<GameType>(
-  (localStorage.getItem(STORAGE_KEYS.lastGameType) as GameType) || 'euchre'
+  (localStorage.getItem(STORAGE_KEYS.lastGameType) as GameType)
+    || (localStorage.getItem('selectedGame') as GameType)
+    || 'euchre'
 )
 const chatEnabled = ref(localStorage.getItem(STORAGE_KEYS.chatEnabled) !== 'false')
 const isPrivate = ref(localStorage.getItem(STORAGE_KEYS.isPrivate) === 'true')

@@ -18,6 +18,8 @@ export type GameType = 'euchre' | 'president' | 'klondike' | 'spades'
 const showSettings = ref(false)
 const showProfile = ref(false)
 const showRotatePrompt = ref(false)
+const showModeChooser = ref(false)
+const modeChooserGame = ref<GameType | null>(null)
 
 // Open Support/Privacy as an in-app popup (closing returns to the menu).
 function goToSupport() {
@@ -43,9 +45,25 @@ function updateOrientation() {
 
 // Games that require landscape
 const landscapeGames: GameType[] = ['euchre', 'spades', 'president']
+// Dual-mode games offer Solo vs Friends before starting
+const dualModeGames: GameType[] = ['euchre', 'spades', 'president']
 
 function needsLandscape(game: GameType): boolean {
   return landscapeGames.includes(game)
+}
+
+function isDualMode(game: GameType): boolean {
+  return dualModeGames.includes(game)
+}
+
+function labelForGame(game: GameType): string {
+  switch (game) {
+    case 'euchre': return 'Euchre'
+    case 'president': return 'President'
+    case 'klondike': return 'Klondike'
+    case 'spades': return 'Spades'
+    default: return 'Game'
+  }
 }
 
 // Carousel scroll state
@@ -121,8 +139,12 @@ onUnmounted(() => {
 
 const emit = defineEmits<{
   startSinglePlayer: [game: GameType]
-  enterMultiplayer: [game: GameType]
+  /** preferCreate: true when user picked a specific game then Friends */
+  enterMultiplayer: [game: GameType, preferCreate?: boolean]
 }>()
+
+/** When rotate prompt defers multiplayer, remember whether to open create vs lobby. */
+const pendingMultiplayerCreate = ref(false)
 
 // Load saved game selection from localStorage, default to 'euchre'
 const savedGame = localStorage.getItem('selectedGame') as GameType | null
@@ -174,15 +196,7 @@ watch(showProfile, (isOpen) => {
   }
 })
 
-function handleMultiplayer() {
-  // Multiplayer always needs landscape on mobile. In the native app we force
-  // landscape automatically, so skip the "please rotate" prompt and just launch.
-  if (isPortrait.value && !isNativeApp()) {
-    pendingGame.value = 'multiplayer'
-    showRotatePrompt.value = true
-    return
-  }
-  
+function launchMultiplayer(game: GameType, preferCreate = false) {
   if (!canEnterMultiplayer.value) {
     showProfile.value = true
     highlightNickname.value = true
@@ -191,7 +205,20 @@ function handleMultiplayer() {
     }, 600)
     return
   }
-  emit('enterMultiplayer', selectedGame.value)
+  emit('enterMultiplayer', game, preferCreate)
+}
+
+function handleMultiplayer() {
+  // Multiplayer always needs landscape on mobile. In the native app we force
+  // landscape automatically, so skip the "please rotate" prompt and just launch.
+  if (isPortrait.value && !isNativeApp()) {
+    pendingGame.value = 'multiplayer'
+    pendingMultiplayerCreate.value = false
+    showRotatePrompt.value = true
+    return
+  }
+
+  launchMultiplayer(selectedGame.value, false)
 }
 
 // Get user's initial for avatar fallback
@@ -204,6 +231,29 @@ function handleSinglePlayer() {
 }
 
 function playGame(game: GameType) {
+  selectedGame.value = game
+
+  // Solitaire has no multiplayer path — start immediately.
+  if (game === 'klondike') {
+    startSolo(game)
+    return
+  }
+
+  // Dual-mode games: ask Solo vs Friends before launching.
+  if (isDualMode(game)) {
+    modeChooserGame.value = game
+    showModeChooser.value = true
+    return
+  }
+
+  startSolo(game)
+}
+
+function startSolo(game: GameType) {
+  showModeChooser.value = false
+  modeChooserGame.value = null
+  selectedGame.value = game
+
   // Native app force-rotates to landscape, so skip the rotate prompt there.
   if (isPortrait.value && !isNativeApp() && needsLandscape(game)) {
     pendingGame.value = game
@@ -213,37 +263,49 @@ function playGame(game: GameType) {
   emit('startSinglePlayer', game)
 }
 
+function startFriends(game: GameType) {
+  showModeChooser.value = false
+  modeChooserGame.value = null
+  selectedGame.value = game
+
+  if (isPortrait.value && !isNativeApp()) {
+    pendingGame.value = 'multiplayer'
+    pendingMultiplayerCreate.value = true
+    showRotatePrompt.value = true
+    return
+  }
+
+  launchMultiplayer(game, true)
+}
+
+function cancelModeChooser() {
+  showModeChooser.value = false
+  modeChooserGame.value = null
+}
+
 function confirmRotateAndPlay() {
   showRotatePrompt.value = false
   if (pendingGame.value === 'multiplayer') {
-    // Actually handle multiplayer
-    if (!canEnterMultiplayer.value) {
-      showProfile.value = true
-      highlightNickname.value = true
-      setTimeout(() => highlightNickname.value = false, 600)
-    } else {
-      emit('enterMultiplayer', selectedGame.value)
-    }
+    launchMultiplayer(selectedGame.value, pendingMultiplayerCreate.value)
   } else if (pendingGame.value) {
     emit('startSinglePlayer', pendingGame.value)
   }
   pendingGame.value = null
+  pendingMultiplayerCreate.value = false
 }
 
 function cancelRotatePrompt() {
   showRotatePrompt.value = false
   pendingGame.value = null
+  pendingMultiplayerCreate.value = false
 }
 
-const gameTitle = computed(() => {
-  switch (selectedGame.value) {
-    case 'euchre': return 'Euchre'
-    case 'president': return 'President'
-    case 'klondike': return 'Klondike'
-    case 'spades': return 'Spades'
-    default: return 'Euchre'
-  }
+const modeChooserTitle = computed(() => {
+  if (!modeChooserGame.value) return 'How do you want to play?'
+  return labelForGame(modeChooserGame.value)
 })
+
+const gameTitle = computed(() => labelForGame(selectedGame.value))
 </script>
 
 <template>
@@ -288,6 +350,7 @@ const gameTitle = computed(() => {
 
     <div class="content-section">
       <h2 class="section-title">Pick a Game</h2>
+      <p class="section-subtitle">Solo or with friends — choose when you pick</p>
 
       <div class="game-grid">
         <button class="game-card" @click="playGame('euchre')">
@@ -299,6 +362,7 @@ const gameTitle = computed(() => {
           </span>
           <span class="game-name">Euchre</span>
           <span class="game-desc">Classic Midwest trick-taking</span>
+          <span class="game-modes">Solo · Friends</span>
         </button>
         <button class="game-card" @click="playGame('spades')">
           <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
@@ -309,6 +373,7 @@ const gameTitle = computed(() => {
           </span>
           <span class="game-name">Spades</span>
           <span class="game-desc">Bid your tricks wisely</span>
+          <span class="game-modes">Solo · Friends</span>
         </button>
         <button class="game-card" @click="playGame('president')">
           <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
@@ -319,10 +384,12 @@ const gameTitle = computed(() => {
           </span>
           <span class="game-name">President</span>
           <span class="game-desc">Race to shed your cards</span>
+          <span class="game-modes">Solo · Friends</span>
         </button>
         <button class="game-card" @click="playGame('klondike')">
           <span class="game-name">Klondike</span>
           <span class="game-desc">Classic solitaire</span>
+          <span class="game-modes">Solo only</span>
         </button>
       </div>
 
@@ -351,6 +418,37 @@ const gameTitle = computed(() => {
         </svg>
         <span>Requires landscape</span>
       </div>
+
+      <!-- Mode chooser: Solo vs Friends for dual-mode games -->
+      <Transition name="fade">
+        <div
+          v-if="showModeChooser && modeChooserGame"
+          class="mode-chooser-overlay"
+          @click.self="cancelModeChooser"
+        >
+          <div class="mode-chooser" role="dialog" aria-modal="true" :aria-label="modeChooserTitle">
+            <h3>{{ modeChooserTitle }}</h3>
+            <p class="mode-chooser-sub">How do you want to play?</p>
+            <div class="mode-chooser-actions">
+              <button class="mode-btn solo" @click="startSolo(modeChooserGame)">
+                <span class="mode-btn-icon" aria-hidden="true">🎮</span>
+                <span class="mode-btn-text">
+                  <span class="mode-btn-title">Play Solo</span>
+                  <span class="mode-btn-desc">Vs computer opponents</span>
+                </span>
+              </button>
+              <button class="mode-btn friends" @click="startFriends(modeChooserGame)">
+                <span class="mode-btn-icon" aria-hidden="true">👥</span>
+                <span class="mode-btn-text">
+                  <span class="mode-btn-title">Play with Friends</span>
+                  <span class="mode-btn-desc">Private online room</span>
+                </span>
+              </button>
+            </div>
+            <button class="mode-chooser-cancel" @click="cancelModeChooser">Cancel</button>
+          </div>
+        </div>
+      </Transition>
       
       <!-- Rotate prompt modal -->
       <Transition name="fade">
@@ -680,11 +778,25 @@ const gameTitle = computed(() => {
     text-align: center;
   }
 
+  .game-modes {
+    margin-top: 8px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0.55;
+  }
+
   @media (max-height: 500px) {
     padding: $spacing-md $spacing-sm;
 
     .game-name {
       font-size: 0.85rem;
+    }
+
+    .game-modes {
+      margin-top: 4px;
+      font-size: 0.6rem;
     }
   }
 
@@ -1012,6 +1124,135 @@ const gameTitle = computed(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.section-subtitle {
+  margin: -0.35rem 0 0.85rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+
+  @media (max-height: 500px) {
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+// Mode chooser (Solo vs Friends)
+.mode-chooser-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+}
+
+.mode-chooser {
+  width: min(100%, 360px);
+  background: linear-gradient(135deg, $home-gradient-top 0%, $home-gradient-bottom 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  padding: $spacing-xl $spacing-lg $spacing-lg;
+  text-align: center;
+  color: white;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1.4rem;
+  }
+}
+
+.mode-chooser-sub {
+  margin: 0 0 $spacing-lg;
+  font-size: 0.95rem;
+  opacity: 0.75;
+}
+
+.mode-chooser-actions {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &.friends {
+    border-color: rgba(212, 175, 55, 0.55);
+    background: rgba(212, 175, 55, 0.12);
+
+    &:hover {
+      background: rgba(212, 175, 55, 0.2);
+      border-color: rgba(212, 175, 55, 0.85);
+      box-shadow: 0 0 18px rgba(212, 175, 55, 0.25);
+    }
+  }
+}
+
+.mode-btn-icon {
+  font-size: 1.45rem;
+  line-height: 1;
+  width: 1.6rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.mode-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mode-btn-title {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.mode-btn-desc {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.mode-chooser-cancel {
+  margin-top: $spacing-md;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  cursor: pointer;
+
+  &:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+  }
 }
 
 </style>
