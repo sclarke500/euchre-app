@@ -287,7 +287,8 @@ const gameTitle = computed(() => {
     </div>
 
     <div class="content-section">
-      <h2 class="section-title">Pick a Game</h2>
+      <h2 class="section-title">Single Player</h2>
+      <p class="section-subtitle">Play instantly vs. the computer</p>
 
       <div class="game-grid">
         <button class="game-card" @click="playGame('euchre')">
@@ -326,22 +327,19 @@ const gameTitle = computed(() => {
         </button>
       </div>
 
-      <div class="action-buttons">
-        <button class="multiplayer-btn" @click="handleMultiplayer">
-          <span class="mp-icon">👥</span>
-          <span class="mp-text">Play with Friends</span>
-          <span v-if="isPortrait" class="rotate-badge mp" title="Requires landscape">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 4v6h6" />
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-            </svg>
-          </span>
-        </button>
-        <button v-if="canShare" class="share-btn" @click="shareApp">
-          <span class="share-icon">📤</span>
-          <span class="share-text">Share</span>
-        </button>
-      </div>
+      <button class="multiplayer-card" @click="handleMultiplayer">
+        <span v-if="isPortrait" class="rotate-badge" title="Requires landscape">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 4v6h6" />
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          </svg>
+        </span>
+        <span class="mp-icon">👥</span>
+        <span class="mp-info">
+          <span class="mp-title">Play with Friends</span>
+          <span class="mp-desc">Online multiplayer · Euchre, Spades &amp; President</span>
+        </span>
+      </button>
 
       <!-- Landscape legend (portrait only) -->
       <div v-if="isPortrait" class="landscape-legend">
@@ -379,6 +377,10 @@ const gameTitle = computed(() => {
         <a @click="goToSupport">Support</a>
         <span class="footer-sep">·</span>
         <a @click="goToPrivacy">Privacy</a>
+        <template v-if="canShare">
+          <span class="footer-sep">·</span>
+          <a @click="shareApp">Share</a>
+        </template>
       </div>
     </div>
     </div>
@@ -607,7 +609,7 @@ const gameTitle = computed(() => {
     font-family: 'Rock Salt', cursive;
     font-size: 1.5rem;
     font-weight: 400;
-    margin-bottom: $spacing-lg;
+    margin-bottom: $spacing-xs;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     opacity: 0.9;
 
@@ -618,7 +620,21 @@ const gameTitle = computed(() => {
 
     @media (orientation: portrait) and (max-width: 600px) {
       font-size: 1.25rem;
-      margin-bottom: $spacing-sm;
+    }
+  }
+
+  .section-subtitle {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: $spacing-lg;
+
+    // Short landscape phones: the title alone says enough
+    @media (max-height: 500px) {
+      display: none;
+    }
+
+    @media (orientation: portrait) and (max-width: 600px) {
+      margin-bottom: $spacing-md;
     }
   }
 }
@@ -694,78 +710,86 @@ const gameTitle = computed(() => {
   }
 }
 
-.action-buttons {
-  display: flex;
-  gap: $spacing-md;
-  align-items: center;
-  justify-content: center;
-  
-  @media (orientation: portrait) and (max-width: 600px) {
-    flex-direction: column;
-    gap: $spacing-sm;
-  }
-}
-
-.multiplayer-btn, .share-btn {
+.multiplayer-card {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: $spacing-md;
-  padding: $spacing-md $spacing-xl;
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 30px;
+  width: 100%;
+  max-width: 400px;
+  padding: $spacing-md $spacing-lg;
+  background: linear-gradient(135deg, $brand-green-light 0%, $brand-green-dark 100%);
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  border-radius: 16px;
   color: white;
-  font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    border-color: rgba(212, 175, 55, 0.7);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 20px rgba(212, 175, 55, 0.25);
   }
 
   &:active {
     transform: scale(0.98);
   }
 
-  @media (max-height: 500px) {
-    padding: $spacing-sm $spacing-lg;
-    font-size: 1rem;
-  }
-
-  @media (orientation: portrait) and (max-width: 600px) {
-    padding: $spacing-sm $spacing-lg;
-    font-size: 1rem;
-  }
-}
-
-.multiplayer-btn {
   .mp-icon {
-    font-size: 1.3rem;
+    font-size: 1.6rem;
   }
 
-  .mp-text {
-    font-weight: 500;
+  .mp-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 
-  @media (orientation: portrait) and (max-width: 600px) {
-    margin-top: $spacing-sm;
-    
+  .mp-title {
+    font-size: 1.15rem;
+    font-weight: bold;
+  }
+
+  .mp-desc {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    text-align: left;
+  }
+
+  @media (max-height: 500px) {
+    max-width: 350px;
+    padding: $spacing-sm $spacing-md;
+
     .mp-icon {
-      font-size: 1.1rem;
+      font-size: 1.3rem;
+    }
+
+    .mp-title {
+      font-size: 0.95rem;
+    }
+
+    .mp-desc {
+      font-size: 0.7rem;
     }
   }
-}
 
-.share-btn {
-  .share-icon {
-    font-size: 1.2rem;
-  }
+  @media (orientation: portrait) and (max-width: 600px) {
+    max-width: 320px;
+    padding: $spacing-sm $spacing-md;
 
-  .share-text {
-    font-weight: 500;
+    .mp-icon {
+      font-size: 1.4rem;
+    }
+
+    .mp-title {
+      font-size: 1.05rem;
+    }
+
+    .mp-desc {
+      font-size: 0.7rem;
+    }
   }
 }
 
@@ -878,18 +902,6 @@ const gameTitle = computed(() => {
     width: 18px;
     height: 18px;
     color: rgba(255, 255, 255, 0.7);
-  }
-  
-  &.mp {
-    position: relative;
-    top: auto;
-    right: auto;
-    margin-left: $spacing-sm;
-    
-    svg {
-      width: 18px;
-      height: 18px;
-    }
   }
 }
 

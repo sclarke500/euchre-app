@@ -230,6 +230,10 @@ Unified update system in `useAppUpdates.ts` (state machine: idle → checking �
 
 **Never OTA-ship** a bundle requiring native code not in the store binary (new Capacitor plugins, MainActivity/iOS shell changes, etc.) — those need a real App Store/Play release. CORS for `/ota/*` is set in `public/_headers`.
 
+**Native version sync**: `scripts/sync-native-version.mjs` (runs automatically in the `cap:*` scripts) keeps Android `versionName`/`versionCode` and iOS `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` in lockstep with the client package version (build number = `major*1000000 + minor*1000 + patch`). This matters because Capgo's `resetWhenUpdate` only discards a stored OTA bundle when the *native* version changes — with a static versionName, new store binaries stay masked by old OTA bundles.
+
+**Dev gotcha — OTA bundle masks local builds**: once a device has applied an OTA update, Capgo serves that stored bundle instead of the APK's baked-in assets, so `cap:android`/`cap:ios` changes won't appear. Uninstall the app (or clear its storage) first, or use live reload (`npx cap run android -l --external`) for UI iteration.
+
 ## Code Style
 
 - Vue components use `<script setup lang="ts">`

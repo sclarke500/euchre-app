@@ -9,9 +9,10 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "cap:sync": "npm run build && cap sync",
-    "cap:ios": "npm run build && cap sync ios && cap open ios",
-    "cap:android": "npm run build && cap sync android && cap open android",
+    "sync:native-version": "node ../../scripts/sync-native-version.mjs",
+    "cap:sync": "npm run sync:native-version && npm run build && cap sync",
+    "cap:ios": "npm run sync:native-version && npm run build && cap sync ios && cap open ios",
+    "cap:android": "npm run sync:native-version && npm run build && cap sync android && cap open android",
     "cap:assets": "npx @capacitor/assets generate --iconBackgroundColor '#1e6045' --iconBackgroundColorDark '#1e6045' --splashBackgroundColor '#1e6045' --splashBackgroundColorDark '#1e6045'"
   },
   "dependencies": {

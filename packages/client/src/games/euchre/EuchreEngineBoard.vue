@@ -848,15 +848,22 @@ onUnmounted(() => {
   // inset) rather than a flush drawer — the safe area would otherwise expose its
   // square, border-less right side.
   right: calc(8px + var(--safe-right, 0px));
-  top: 50%;
-  transform: translateY(-50%) scale(0.9); // -10%, anchored to its right edge
-  transform-origin: right center;
+  // Bottom-anchored in the empty bottom-right corner so the panel clears the
+  // right player's avatar (vertically centered on the table edge). Variable
+  // panel heights grow upward from here; keep the tallest variant (round-2
+  // trump calling) compact or it climbs back into the nameplate.
+  bottom: calc(16px + var(--safe-bottom, 0px));
+  transform: scale(0.9); // -10%, anchored to its bottom-right corner
+  transform-origin: bottom right;
   z-index: 600;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 22px;
-  padding: 30px 26px;
+  // Spacing is deliberately tight: the tallest variant (round-2 trump calling)
+  // must stay below the right player's nameplate — check both bid rounds
+  // before loosening.
+  gap: 16px;
+  padding: 24px 26px;
   min-width: 210px;
   border-radius: 32px;
 
@@ -925,15 +932,21 @@ onUnmounted(() => {
 }
 
 .action-panel-container .suit-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  // One row: keeps the round-2 panel short enough that its top stays below
+  // the right player's avatar (the panel is bottom-anchored and grows upward).
+  // Extra width just overlaps empty felt; extra height covers the avatar.
+  display: flex;
   gap: 8px;
   width: 100%;
+
+  .suit-btn {
+    flex: 1;
+  }
 }
 
 .action-panel-container .suit-btn {
   font-size: $ui-xl !important;
-  padding: 12px 22px !important;
+  padding: 10px 18px !important;
   width: 100%;
   background: rgba(240, 240, 245, 0.95) !important;
   border-color: #bbb !important;
