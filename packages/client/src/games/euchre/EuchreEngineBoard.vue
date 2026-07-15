@@ -981,6 +981,17 @@ onUnmounted(() => {
     margin: 0;
     cursor: pointer;
     accent-color: #2a8a6a;
+
+    // WebKit draws `switch` inputs as a native toggle at its intrinsic
+    // ~32×18px size — width/height only grow the layout box around it
+    // (the control letterboxes inside). `zoom` is what actually scales the
+    // drawn toggle. WebKit-only guard so Chrome's square checkbox (which
+    // does obey width/height) is unaffected.
+    @supports (-webkit-touch-callout: none) {
+      width: auto;
+      height: auto;
+      zoom: 1.8;
+    }
   }
 }
 
