@@ -18,6 +18,7 @@ import {
   spadesGames,
   getCurrentStateSeq,
   getRuntime,
+  startFinishedGameSweeper,
 } from './sessions/registry.js'
 import { createMessagingHelpers } from './orchestration/messaging.js'
 import {
@@ -305,5 +306,7 @@ app.get('/api/metrics', (_req, res) => {
     },
   })
 })
+
+startFinishedGameSweeper()
 
 console.log(`Euchre/President HTTP + WebSocket server running on port ${PORT}`)

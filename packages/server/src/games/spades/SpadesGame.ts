@@ -66,6 +66,10 @@ export class SpadesGame {
     return this.stateSeq
   }
 
+  isGameOver(): boolean {
+    return this.gameOver
+  }
+
   initializePlayers(humanPlayers: Array<{ odusId: string; name: string; avatar?: string; seatIndex: number }>): void {
     const aiCount = 4 - humanPlayers.length
     const aiNames = getRandomAINames(aiCount)

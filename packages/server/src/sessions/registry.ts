@@ -34,6 +34,7 @@ export function unregisterRuntime(gameId: string): void {
   gameTypes.delete(gameId)
   gameHosts.delete(gameId)
   gameSettings.delete(gameId)
+  finishedGameFirstSeen.delete(gameId)
 }
 
 export function getRuntime(gameId: string): RuntimeRegistryEntry | null {
@@ -41,12 +42,54 @@ export function getRuntime(gameId: string): RuntimeRegistryEntry | null {
 }
 
 export function findRuntimeByPlayer(odusId: string): { gameId: string; entry: RuntimeRegistryEntry } | null {
+  // Finished games can linger in the registry (players who close the app from the
+  // victory screen never send leave_game). Matching one would send a reconnecting
+  // player a stale game-over state instead of their live game, so skip them — and
+  // keep scanning so the newest live match wins (Map iteration is insertion order).
+  let match: { gameId: string; entry: RuntimeRegistryEntry } | null = null
   for (const [gameId, entry] of runtimes) {
+    if (entry.runtime.isGameOver?.()) continue
     if (entry.runtime.getPlayerInfo(odusId)) {
-      return { gameId, entry }
+      match = { gameId, entry }
     }
   }
-  return null
+  return match
+}
+
+// Finished games are swept from the registry after a grace period. The grace
+// period keeps "Play Again" (restart_game) working for players idling on the
+// victory screen; after that, the runtime is just leaked memory.
+const FINISHED_GAME_GRACE_MS = 15 * 60 * 1000
+const SWEEP_INTERVAL_MS = 60 * 1000
+const finishedGameFirstSeen = new Map<string, number>()
+
+export function sweepFinishedGames(now: number = Date.now()): string[] {
+  const swept: string[] = []
+  for (const [gameId, entry] of runtimes) {
+    if (!entry.runtime.isGameOver?.()) {
+      finishedGameFirstSeen.delete(gameId)
+      continue
+    }
+    const firstSeen = finishedGameFirstSeen.get(gameId)
+    if (firstSeen === undefined) {
+      finishedGameFirstSeen.set(gameId, now)
+    } else if (now - firstSeen >= FINISHED_GAME_GRACE_MS) {
+      entry.runtime.cleanup?.()
+      games.delete(gameId)
+      presidentGames.delete(gameId)
+      spadesGames.delete(gameId)
+      unregisterRuntime(gameId)
+      swept.push(gameId)
+      console.log(`[Registry] Swept finished ${entry.type} game ${gameId}`)
+    }
+  }
+  return swept
+}
+
+export function startFinishedGameSweeper(): ReturnType<typeof setInterval> {
+  const timer = setInterval(() => sweepFinishedGames(), SWEEP_INTERVAL_MS)
+  timer.unref?.()
+  return timer
 }
 
 export function getCurrentStateSeq(gameId: string): number | null {

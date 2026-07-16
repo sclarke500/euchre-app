@@ -74,6 +74,10 @@ export class EuchreGame {
     return this.stateSeq
   }
 
+  isGameOver(): boolean {
+    return this.gameOver
+  }
+
   /**
    * Initialize the game with players
    */

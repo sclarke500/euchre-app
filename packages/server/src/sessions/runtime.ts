@@ -23,6 +23,8 @@ export interface GameRuntime {
   bootPlayer(playerIndex: number): boolean
   getPlayerInfo(odusId: string): RuntimePlayerInfo | null
   getStateSeq(): number
+  // Finished games must not capture reconnecting players and are swept from the registry
+  isGameOver?(): boolean
   // New disconnection handling (optional for backwards compatibility during rollout)
   markPlayerDisconnected?(playerIndex: number): boolean
   markPlayerReconnected?(playerIndex: number): boolean

@@ -99,6 +99,10 @@ export class PresidentGame {
     return this.stateSeq
   }
 
+  isGameOver(): boolean {
+    return this.gameOver
+  }
+
   /**
    * Initialize the game with players
    */
