@@ -173,7 +173,36 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
         gameType: getRuntime(client.gameId)?.type ?? null,
         messageType: message.type,
       })
-      enqueueGameCommand(client.gameId, action)
+      const expectedStateSeq = message.expectedStateSeq
+      enqueueGameCommand(client.gameId, () => {
+        // Re-check staleness at execution time: the receive-time check above can
+        // pass for two commands queued back-to-back (e.g. a re-tapped bid racing
+        // its stalled original, #66). If another command advanced the game while
+        // this one waited in the queue, resync instead of failing loudly.
+        if (typeof expectedStateSeq === 'number' && client.gameId) {
+          const currentSeq = getCurrentStateSeq(client.gameId)
+          if (currentSeq !== null && expectedStateSeq !== currentSeq) {
+            logOrchestrationEvent('game_command_stale_at_execution', {
+              messageType: message.type,
+              gameId: client.gameId,
+              expectedStateSeq,
+              currentStateSeq: currentSeq,
+              playerId: client.player?.odusId ?? null,
+            })
+            recordSyncRequired({
+              gameId: client.gameId,
+              gameType: getRuntime(client.gameId)?.type ?? null,
+              playerId: client.player?.odusId ?? null,
+              expectedSeq: expectedStateSeq,
+              actualSeq: currentSeq,
+            })
+            send(ws, { type: 'error', message: 'State out of date. Resyncing.', code: 'sync_required' })
+            sessionHandlers.handleRequestState(ws, client)
+            return
+          }
+        }
+        action()
+      })
     } else {
       action()
     }
