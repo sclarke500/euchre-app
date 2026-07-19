@@ -221,7 +221,7 @@ See `docs/designs/pure-game-architecture-plan.md` for phased work:
 | Game | Shared pure machine | Client applies pure | Server applies pure |
 |---|---|---|---|
 | Spades | Yes (+ blind-nil `handRevealed`, bid 1–13) | Yes (double-deal fixed) | Bid + play apply pure; host is thin shell |
-| President | Play/pass pure (+ joker clear); exchange still dual SP/MP | Mostly | Play/pass apply pure + **passedThisTrick preserved**; exchange host-owned |
+| President | Play/pass + **simultaneous exchange** (`confirmExchange`) + joker clear | Simultaneous exchange via pure | Play/pass/exchange apply pure; host prompts + AI timers only |
 | Euchre | Yes (`game.ts`) | Yes — thin apply + animation shell | Yes; **table settings** stickTheDealer / canadianLoner via `TableSettings` |
 
 See `docs/designs/pure-game-architecture-plan.md` for remaining phases.

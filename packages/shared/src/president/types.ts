@@ -66,12 +66,27 @@ export interface PresidentPlayer extends BasePlayer {
   cardsToReceive: number        // Cards to receive from lower rank
 }
 
-// Track pending exchanges during CardExchange phase
+// Track completed exchanges for display/animation after swaps execute
 export interface PendingExchange {
-  fromPlayerId: number          // Who is giving (Scum/Vice-Scum)
-  toPlayerId: number            // Who receives (President/VP)
-  cards: StandardCard[]         // Cards being given
-  complete: boolean             // Has this exchange happened?
+  fromPlayerId: number
+  toPlayerId: number
+  cards: StandardCard[]
+  complete: boolean
+}
+
+/**
+ * Simultaneous card-exchange participant (pure state).
+ * Scum/ViceScum: canSelect=false, cardIds pre-filled with best cards.
+ * President/VP: canSelect=true, cardIds filled on confirm.
+ * When every participant.confirmed, host/pure executes atomic swap.
+ */
+export interface ExchangeParticipant {
+  seatId: number
+  partnerSeatId: number
+  canSelect: boolean
+  cardsNeeded: number
+  cardIds: string[]
+  confirmed: boolean
 }
 
 // Full game state for President
@@ -92,8 +107,10 @@ export interface PresidentGameState {
   rules: PresidentRules
   
   // Exchange tracking
-  pendingExchanges: PendingExchange[]  // Cards Scum gave to President (for display)
-  awaitingGiveBack: number | null      // Player ID who needs to select cards to give back
+  pendingExchanges: PendingExchange[]  // Completed swap records (display/animation)
+  awaitingGiveBack: number | null      // Legacy sequential SP; prefer exchangeParticipants
+  /** Simultaneous exchange seats; empty outside CardExchange */
+  exchangeParticipants: ExchangeParticipant[]
 }
 
 // Actions a player can take

@@ -8,7 +8,6 @@ import type {
 import {
   PresidentPhase,
   createPresidentGame,
-  dealPresidentCards,
   processPlay,
   processPass,
   assignRanks,
@@ -17,6 +16,7 @@ import {
   isValidPlay,
   getRankDisplayName,
   getRandomAINames,
+  startNewRound,
   GameTimings,
   createPresidentRemarkEngine,
   type PresidentRemarkState,
@@ -42,6 +42,8 @@ export class PresidentGame {
   private currentPlayer = 0
   private consecutivePasses = 0
   private passedThisTrick: number[] = []
+  private exchangeParticipants: import('@67cards/shared').ExchangeParticipant[] = []
+  private pendingExchanges: import('@67cards/shared').PendingExchange[] = []
   private finishedPlayers: number[] = []
   private roundNumber = 1
   private gameOver = false
@@ -77,6 +79,8 @@ export class PresidentGame {
     this.cardExchange = createPresidentCardExchangeController({
       players: this.players,
       getPhase: () => this.phase,
+      toPureState: () => this.toPureState(),
+      applyPureState: (state) => this.applyPure(state),
       setPhase: (phase) => {
         this.phase = phase
       },
@@ -330,59 +334,26 @@ export class PresidentGame {
   private startNewRound(): void {
     try {
       console.log('startNewRound called, roundNumber:', this.roundNumber)
-      this.phase = PresidentPhase.Dealing
 
-      // Build game state for shared functions
-      const gameState = this.toPureState()
-
-      // Deal cards using shared function
-      const dealtState = dealPresidentCards(gameState)
-      console.log('Cards dealt, players hand sizes:', dealtState.players.map(p => p.hand.length))
-
-      // Update local state from dealt state
-      for (let i = 0; i < this.players.length; i++) {
-        const statePlayer = dealtState.players[i]
-        if (statePlayer) {
-          this.players[i]!.hand = statePlayer.hand
-        }
-      }
-
-      this.currentPile = createEmptyPile()
-      this.consecutivePasses = 0
-      this.passedThisTrick = []
-      this.finishedPlayers = []
-      this.lastPlayerId = null
-
-      // Reset each player's finishOrder for the new round (ranks are kept)
-      for (const player of this.players) {
-        player.finishOrder = null
-      }
-
-      // Broadcast state to all players
+      // Pure deal + optional exchange init (preserves ranks on players)
+      const next = startNewRound(this.toPureState())
+      // Show Dealing briefly for clients, then advance to pure phase
+      this.applyPure({ ...next, phase: PresidentPhase.Dealing })
       this.broadcastState()
 
-      // Check for card exchange (after first round)
-      const hasRanks = this.players.some(p => p.rank !== null)
-      console.log('hasRanks:', hasRanks, 'player ranks:', this.players.map(p => p.rank))
-
-      if (hasRanks) {
-        // Start card exchange - all players confirm simultaneously
-        setTimeout(() => {
-          try {
-            this.cardExchange.startExchange()
-          } catch (error) {
-            console.error('Error in setTimeout -> startExchange:', error)
-          }
-        }, 1200)
-      } else {
-        // First round - find starting player (has 3 of clubs)
-        setTimeout(() => {
-          this.currentPlayer = this.findStartingPlayer()
-          this.phase = PresidentPhase.Playing
+      setTimeout(() => {
+        try {
+          this.applyPure(next)
           this.broadcastState()
-          this.processCurrentTurn()
-        }, 1200)
-      }
+          if (next.phase === PresidentPhase.CardExchange) {
+            this.cardExchange.startExchange()
+          } else {
+            this.processCurrentTurn()
+          }
+        } catch (error) {
+          console.error('Error advancing after deal:', error)
+        }
+      }, 1200)
     } catch (error) {
       console.error('Error in startNewRound:', error)
       throw error
@@ -417,10 +388,12 @@ export class PresidentGame {
       turnStyle: this.turnStyle,
       awaitingGiveCards: null,
       passedThisTrick: this.passedThisTrick,
+      exchangeParticipants: this.exchangeParticipants,
+      pendingExchanges: this.pendingExchanges,
     })
   }
 
-  private applyPure(newState: ReturnType<typeof processPlay>): void {
+  private applyPure(newState: import('@67cards/shared').PresidentGameState): void {
     const nextState = applyPresidentGameState(this.players, newState)
     this.phase = nextState.phase
     this.currentPile = nextState.currentPile
@@ -430,6 +403,8 @@ export class PresidentGame {
     this.gameOver = nextState.gameOver
     this.lastPlayerId = nextState.lastPlayerId
     this.passedThisTrick = nextState.passedThisTrick
+    this.exchangeParticipants = nextState.exchangeParticipants
+    this.pendingExchanges = nextState.pendingExchanges
   }
 
   private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {

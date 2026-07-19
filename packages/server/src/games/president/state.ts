@@ -4,6 +4,7 @@ import type {
   PresidentGameState,
   PresidentPhase,
   PresidentPile,
+  ExchangeParticipant,
 } from '@67cards/shared'
 import type { PresidentGamePlayer } from './types.js'
 
@@ -86,6 +87,8 @@ interface BuildPresidentGameStateParams {
   awaitingGiveCards: number | null
   /** Required for passLockout / singleRound turn styles */
   passedThisTrick?: number[]
+  exchangeParticipants?: PresidentGameState['exchangeParticipants']
+  pendingExchanges?: PresidentGameState['pendingExchanges']
 }
 
 export function buildPresidentGameState({
@@ -102,6 +105,8 @@ export function buildPresidentGameState({
   turnStyle,
   awaitingGiveCards,
   passedThisTrick = [],
+  exchangeParticipants = [],
+  pendingExchanges = [],
 }: BuildPresidentGameStateParams): PresidentGameState {
   return {
     gameType: 'president',
@@ -129,8 +134,9 @@ export function buildPresidentGameState({
       whoLeads: 'scum',
       turnStyle,
     },
-    pendingExchanges: [],
+    pendingExchanges,
     awaitingGiveBack: awaitingGiveCards,
+    exchangeParticipants,
   }
 }
 
@@ -146,6 +152,8 @@ export function applyPresidentGameState(
   gameOver: boolean
   lastPlayerId: number | null
   passedThisTrick: number[]
+  exchangeParticipants: ExchangeParticipant[]
+  pendingExchanges: PresidentGameState['pendingExchanges']
 } {
   for (let i = 0; i < players.length && i < state.players.length; i++) {
     const statePlayer = state.players[i]!
@@ -166,5 +174,7 @@ export function applyPresidentGameState(
     gameOver: state.gameOver,
     lastPlayerId: state.lastPlayerId,
     passedThisTrick: state.passedThisTrick ?? [],
+    exchangeParticipants: state.exchangeParticipants ?? [],
+    pendingExchanges: state.pendingExchanges ?? [],
   }
 }

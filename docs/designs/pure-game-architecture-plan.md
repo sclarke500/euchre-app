@@ -1,6 +1,6 @@
 # Align Games to Pure State-Machine Architecture
 
-**Status:** Ready to execute (signed off after Claude review + second-pass refinements)  
+**Status:** Largely implemented on branch `pure` (through Phase 4B exchange). Phase 5 polish optional.  
 **Branch style:** Per-phase PRs to main (not one long-lived branch)  
 **Goal before adding new games:** Spades as pristine template; then Euchre + President aligned; docs say “copy Spades”  
 **Review note:** Claude verified load-bearing claims, signed off on structure, then refined Phase 0.5 wording, blind-nil resolution, and same-ref invariant.

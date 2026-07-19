@@ -11,7 +11,9 @@ import {
   type PresidentPlay,
   type PresidentRules,
   type PendingExchange,
+  type ExchangeParticipant,
 } from './types.js'
+import { chooseCardsToGive } from './ai.js'
 
 /**
  * Default rules
@@ -88,6 +90,7 @@ export function createPresidentGame(
     rules: fullRules,
     pendingExchanges: [],
     awaitingGiveBack: null,
+    exchangeParticipants: [],
   }
 }
 
@@ -118,6 +121,7 @@ export function dealPresidentCards(state: PresidentGameState): PresidentGameStat
     lastPlayerId: null,
     pendingExchanges: [],
     awaitingGiveBack: null,
+    exchangeParticipants: [],
   }
 }
 
@@ -406,13 +410,11 @@ export function startNewRound(state: PresidentGameState): PresidentGameState {
   const hasRanks = state.players.some(p => p.rank !== null)
 
   if (hasRanks) {
-    // Start card exchange phase - all players confirm simultaneously
-    return {
+    // Simultaneous exchange: init participants (Scum best cards pre-selected)
+    return initCardExchange({
       ...dealtState,
-      phase: PresidentPhase.CardExchange,
       roundNumber: state.roundNumber + 1,
-      awaitingGiveBack: null,
-    }
+    })
   }
 
   // First round - find player with 3 of clubs to start
@@ -423,6 +425,187 @@ export function startNewRound(state: PresidentGameState): PresidentGameState {
     phase: PresidentPhase.Playing,
     currentPlayer: startingPlayer,
     roundNumber: state.roundNumber,
+  }
+}
+
+/**
+ * Build simultaneous exchange participants after ranks + deal.
+ * Scum/ViceScum get forced best cards; President/VP select later via confirmExchange.
+ */
+export function initCardExchange(state: PresidentGameState): PresidentGameState {
+  const participants: ExchangeParticipant[] = []
+
+  const president = state.players.find(p => p.rank === PlayerRank.President)
+  const scum = state.players.find(p => p.rank === PlayerRank.Scum)
+  const vp = state.players.find(p => p.rank === PlayerRank.VicePresident)
+  const viceScum = state.players.find(p => p.rank === PlayerRank.ViceScum)
+
+  if (president && scum) {
+    const scumBest = chooseCardsToGive(scum, 2)
+    participants.push({
+      seatId: scum.id,
+      partnerSeatId: president.id,
+      canSelect: false,
+      cardsNeeded: 2,
+      cardIds: scumBest.map(c => c.id),
+      confirmed: false,
+    })
+    participants.push({
+      seatId: president.id,
+      partnerSeatId: scum.id,
+      canSelect: true,
+      cardsNeeded: 2,
+      cardIds: [],
+      confirmed: false,
+    })
+  }
+
+  if (vp && viceScum) {
+    const vsBest = chooseCardsToGive(viceScum, 1)
+    participants.push({
+      seatId: viceScum.id,
+      partnerSeatId: vp.id,
+      canSelect: false,
+      cardsNeeded: 1,
+      cardIds: vsBest.map(c => c.id),
+      confirmed: false,
+    })
+    participants.push({
+      seatId: vp.id,
+      partnerSeatId: viceScum.id,
+      canSelect: true,
+      cardsNeeded: 1,
+      cardIds: [],
+      confirmed: false,
+    })
+  }
+
+  // No exchange pairs (shouldn't happen with ranks) → go to play
+  if (participants.length === 0) {
+    const startPlayer = getLeadingPlayer(state, state.players)
+    return {
+      ...state,
+      phase: PresidentPhase.Playing,
+      currentPlayer: startPlayer,
+      exchangeParticipants: [],
+      awaitingGiveBack: null,
+    }
+  }
+
+  return {
+    ...state,
+    phase: PresidentPhase.CardExchange,
+    exchangeParticipants: participants,
+    pendingExchanges: [],
+    awaitingGiveBack: null,
+  }
+}
+
+/**
+ * Confirm one seat's exchange contribution. When all seats confirmed, execute atomic swaps.
+ * Illegal / already confirmed → same reference.
+ */
+export function confirmExchange(
+  state: PresidentGameState,
+  seatId: number,
+  cardIds: string[]
+): PresidentGameState {
+  if (state.phase !== PresidentPhase.CardExchange) return state
+
+  const participants = state.exchangeParticipants ?? []
+  const info = participants.find(p => p.seatId === seatId)
+  if (!info || info.confirmed) return state
+
+  const player = state.players[seatId]
+  if (!player) return state
+
+  let finalIds: string[]
+  if (info.canSelect) {
+    if (cardIds.length !== info.cardsNeeded) return state
+    for (const id of cardIds) {
+      if (!player.hand.some(c => c.id === id)) return state
+    }
+    // Must not include partner's pre-selected cards still in hand? N/A — separate hands
+    finalIds = [...cardIds]
+  } else {
+    // Forced best cards already on participant
+    finalIds = [...info.cardIds]
+    // Ensure they still exist in hand
+    for (const id of finalIds) {
+      if (!player.hand.some(c => c.id === id)) return state
+    }
+  }
+
+  const nextParticipants = participants.map(p =>
+    p.seatId === seatId
+      ? { ...p, cardIds: finalIds, confirmed: true }
+      : p
+  )
+
+  const allConfirmed = nextParticipants.every(p => p.confirmed)
+  if (!allConfirmed) {
+    return {
+      ...state,
+      exchangeParticipants: nextParticipants,
+    }
+  }
+
+  return executeCardExchanges({
+    ...state,
+    exchangeParticipants: nextParticipants,
+  })
+}
+
+/**
+ * Apply all confirmed give lists as simultaneous hand swaps.
+ */
+function executeCardExchanges(state: PresidentGameState): PresidentGameState {
+  const participants = state.exchangeParticipants ?? []
+  const pendingExchanges: PendingExchange[] = []
+
+  // Map seat → cards to give (as card objects from that seat's hand)
+  const gives = new Map<number, StandardCard[]>()
+  for (const p of participants) {
+    const player = state.players[p.seatId]
+    if (!player) continue
+    const cards = p.cardIds
+      .map(id => player.hand.find(c => c.id === id))
+      .filter((c): c is StandardCard => !!c)
+    gives.set(p.seatId, cards)
+    pendingExchanges.push({
+      fromPlayerId: p.seatId,
+      toPlayerId: p.partnerSeatId,
+      cards,
+      complete: true,
+    })
+  }
+
+  const players = state.players.map(player => {
+    const myGive = gives.get(player.id) ?? []
+    const giveIds = new Set(myGive.map(c => c.id))
+    // Receive from whoever has partnerSeatId === me
+    const received: StandardCard[] = []
+    for (const p of participants) {
+      if (p.partnerSeatId === player.id) {
+        received.push(...(gives.get(p.seatId) ?? []))
+      }
+    }
+    return {
+      ...player,
+      hand: [...player.hand.filter(c => !giveIds.has(c.id)), ...received],
+    }
+  })
+
+  const startPlayer = getLeadingPlayer(state, players)
+
+  return {
+    ...state,
+    players,
+    phase: PresidentPhase.Playing,
+    currentPlayer: startPlayer,
+    pendingExchanges,
+    exchangeParticipants: [],
+    awaitingGiveBack: null,
   }
 }
 

@@ -13,7 +13,7 @@ import {
   dealPresidentCards,
   processPlay,
   processPass,
-  processGiveBackCards,
+  confirmExchange,
   getHumanExchangeInfo,
   assignRanks,
   startNewRound,
@@ -67,6 +67,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   // Exchange tracking
   const pendingExchanges = ref<PendingExchange[]>([])
   const awaitingGiveBack = ref<number | null>(null)
+  const exchangeParticipants = ref<PresidentGameState['exchangeParticipants']>([])
 
   // Card exchange state - only for human player's exchange
   const exchangeInfo = ref<{
@@ -98,6 +99,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     rules: rules.value,
     pendingExchanges: pendingExchanges.value,
     awaitingGiveBack: awaitingGiveBack.value,
+    exchangeParticipants: exchangeParticipants.value,
   }))
 
   const activePlayers = computed(() =>
@@ -125,39 +127,26 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     return canPlay(human.hand, currentPile.value, rules.value.superTwosMode)
   })
   
-  // Check if human needs to give cards during exchange phase (President/VP)
+  // Human still needs to confirm as a selectable exchange seat (President/VP)
   const isHumanGivingCards = computed(() => {
     const human = humanPlayer.value
     if (!human || phase.value !== PresidentPhase.CardExchange) return false
-    // Human is President or VP and it's their turn to give
-    const humanRank = human.rank
-    if (humanRank === PlayerRank.President || humanRank === PlayerRank.VicePresident) {
-      // Check if it's their turn based on awaitingGiveBack or if exchange not started
-      return awaitingGiveBack.value === human.id || awaitingGiveBack.value === null
-    }
-    return false
+    const part = exchangeParticipants.value.find(p => p.seatId === human.id)
+    return !!(part && part.canSelect && !part.confirmed)
   })
   
   // Get number of cards human needs to give
   const cardsToGiveCount = computed(() => {
     const human = humanPlayer.value
     if (!human || phase.value !== PresidentPhase.CardExchange) return 0
-    if (human.rank === PlayerRank.President) return 2
-    if (human.rank === PlayerRank.VicePresident) return 1
-    return 0
+    const part = exchangeParticipants.value.find(p => p.seatId === human.id)
+    return part?.cardsNeeded ?? 0
   })
 
   // SP exchange state for Scum/ViceScum (unified with MP flow)
   const isInExchange = ref(false)
   const exchangeCanSelect = ref(false)
   const exchangePreSelectedIds = ref<string[]>([])
-
-  // Scum gives 2, ViceScum gives 1
-  function getScumCardsToGive(player: PresidentPlayer): number {
-    if (player.rank === PlayerRank.Scum) return 2
-    if (player.rank === PlayerRank.ViceScum) return 1
-    return 0
-  }
 
   // Deal animation callback — director signals when dealing visuals are done
   let dealCompleteResolve: (() => void) | null = null
@@ -297,6 +286,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     lastPlayedCards.value = null
     pendingExchanges.value = state.pendingExchanges
     awaitingGiveBack.value = state.awaitingGiveBack
+    exchangeParticipants.value = state.exchangeParticipants ?? []
     roundNumber.value = state.roundNumber
 
     // Wait for deal animation to complete before advancing phase.
@@ -306,8 +296,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       phase.value = state.phase
 
       if (state.phase === PresidentPhase.CardExchange) {
-        // Card exchange phase - check if human needs to give cards
-        handleGivingPhase()
+        beginSimultaneousExchange()
       } else if (state.phase === PresidentPhase.Playing) {
         // First round or exchange complete
         currentPlayer.value = state.currentPlayer
@@ -325,157 +314,95 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     })
   }
   
-  function handleGivingPhase() {
+  /**
+   * Simultaneous exchange: show human UI from pure participants, auto-confirm AI seats.
+   */
+  function beginSimultaneousExchange() {
     const human = humanPlayer.value
-    if (!human) {
-      // No human player - AI handles everything
-      initializeAIExchange()
-      return
-    }
+    const parts = exchangeParticipants.value
 
-    const humanRank = human.rank
-    
-    // Check if human is Scum or ViceScum (they need to confirm their pre-selected cards)
-    // But skip if they've already exchanged (check pendingExchanges)
-    const humanAlreadyExchanged = pendingExchanges.value.some(e => e.fromPlayerId === human.id)
-    if (!humanAlreadyExchanged && (humanRank === PlayerRank.Scum || humanRank === PlayerRank.ViceScum)) {
-      // Human is Scum/ViceScum - show them their best cards and wait for confirmation
-      const cardsToGive = getScumCardsToGive(human)
-      const bestCards = chooseCardsToGive(human, cardsToGive)
-      
-      isInExchange.value = true
-      exchangeCanSelect.value = false  // Can't change selection
-      exchangePreSelectedIds.value = bestCards.map(c => c.id)
-      waitingForExchangeAck.value = false
-      return
-    }
-    
-    // Human is President or VP - determine who gives first
-    if (awaitingGiveBack.value === null) {
-      const president = players.value.find(p => p.rank === PlayerRank.President)
-      if (president) {
-        awaitingGiveBack.value = president.id
+    // Configure human UI if they participate and haven't confirmed
+    if (human) {
+      const part = parts.find(p => p.seatId === human.id && !p.confirmed)
+      if (part) {
+        isInExchange.value = true
+        exchangeCanSelect.value = part.canSelect
+        exchangePreSelectedIds.value = part.canSelect ? [] : [...part.cardIds]
+        waitingForExchangeAck.value = false
+      } else {
+        isInExchange.value = false
       }
     }
 
-    const givingPlayer = players.value.find(p => p.id === awaitingGiveBack.value)
+    // Auto-confirm AI participants
+    for (const part of parts) {
+      const player = players.value[part.seatId]
+      if (!player || player.isHuman || part.confirmed) continue
+      timer.schedule(`exchange-ai-${part.seatId}`, CardTimings.aiThink, () => {
+        void applyExchangeConfirm(part.seatId, part.canSelect
+          ? chooseCardsToGiveBack(player, part.cardsNeeded).map(c => c.id)
+          : part.cardIds)
+      })
+    }
 
-    if (givingPlayer && givingPlayer.id === human.id) {
-      // Human is President or VP - needs to select cards to give
-      isInExchange.value = true
-      exchangeCanSelect.value = true
-      exchangePreSelectedIds.value = []
-      waitingForExchangeAck.value = false
-    } else if (givingPlayer) {
-      // AI is President/VP - let them give cards automatically
-      processAIGiveBack()
-    } else {
-      console.warn('[PresidentStore] handleGivingPhase: no giving player found')
+    // All-AI table with no human in exchange
+    if (parts.length > 0 && parts.every(p => {
+      const pl = players.value[p.seatId]
+      return pl && !pl.isHuman
+    })) {
+      // AI timers will complete the exchange
     }
   }
-  
-  function initializeAIExchange() {
-    // All AI - start President's exchange
-    if (awaitingGiveBack.value === null) {
-      const president = players.value.find(p => p.rank === PlayerRank.President)
-      if (president) {
-        awaitingGiveBack.value = president.id
-      }
-    }
-    processAIGiveBack()
-  }
-  
-  async function processAIGiveBack() {
-    // AI President/VP selects cards to give back (lowest cards)
-    const givingPlayer = players.value.find(p => p.id === awaitingGiveBack.value)
-    if (!givingPlayer) return
 
-    const cardsCount = givingPlayer.rank === PlayerRank.President ? 2 : 1
-    const cardsToGive = chooseCardsToGiveBack(givingPlayer, cardsCount)
+  async function applyExchangeConfirm(seatId: number, cardIds: string[]) {
+    const prev = gameState.value
+    if (prev.phase !== PresidentPhase.CardExchange) return
 
-    // Process the bidirectional exchange
-    const prevExchangeCount = pendingExchanges.value.length
-    const state = processGiveBackCards(gameState.value, givingPlayer.id, cardsToGive)
-    const newExchanges = state.pendingExchanges.slice(prevExchangeCount)
+    const prevExchanges = prev.pendingExchanges.length
+    const state = confirmExchange(prev, seatId, cardIds)
+    if (state === prev) return
+
+    const newExchanges = state.pendingExchanges.slice(prevExchanges)
     applyState(state)
 
-    // Animate the card exchange between hands
-    if (exchangeAnimationCallback && newExchanges.length > 0) {
+    if (state.phase === PresidentPhase.Playing && exchangeAnimationCallback && newExchanges.length > 0) {
       await exchangeAnimationCallback(newExchanges)
     }
 
-    // Check if human was involved in this exchange (as Scum/ViceScum)
-    const human = humanPlayer.value
-    if (human) {
-      const info = getHumanExchangeInfo(state.pendingExchanges, human.id, state.players)
-      if (info && (info.youGive.length > 0 || info.youReceive.length > 0)) {
-        exchangeInfo.value = info
-        waitingForExchangeAck.value = true
-        return // Wait for human to acknowledge before continuing
+    if (state.phase === PresidentPhase.Playing) {
+      const human = humanPlayer.value
+      if (human) {
+        const info = getHumanExchangeInfo(state.pendingExchanges, human.id, state.players)
+        if (info && (info.youGive.length > 0 || info.youReceive.length > 0)) {
+          exchangeInfo.value = info
+          waitingForExchangeAck.value = true
+          return
+        }
       }
-    }
-
-    // No human involvement — continue
-    if (state.phase === PresidentPhase.CardExchange) {
-      timer.schedule('phase-transition', CardTimings.phaseTransition, () => handleGivingPhase())
-    } else if (state.phase === PresidentPhase.Playing) {
-      // Longer pause after exchange completes so user can see their new cards
       timer.schedule('ai-turn', CardTimings.aiThink, () => processAITurn())
     }
   }
-  
-  // Human President/VP gives cards back
+
+  // Human President/VP selects cards to give
   async function giveCardsBack(cards: StandardCard[]) {
     const human = humanPlayer.value
-    if (!human || awaitingGiveBack.value !== human.id) return
-
-    const expectedCount = human.rank === PlayerRank.President ? 2 : 1
-    if (cards.length !== expectedCount) return
-
-    // Process the bidirectional exchange
-    const prevExchangeCount = pendingExchanges.value.length
-    const state = processGiveBackCards(gameState.value, human.id, cards)
-    const newExchanges = state.pendingExchanges.slice(prevExchangeCount)
-    applyState(state)
-
-    // Animate the card exchange between hands
-    if (exchangeAnimationCallback && newExchanges.length > 0) {
-      await exchangeAnimationCallback(newExchanges)
-    }
-
-    // Show notification with exchange details
-    const info = getHumanExchangeInfo(state.pendingExchanges, human.id, state.players)
-    if (info) {
-      exchangeInfo.value = info
-      waitingForExchangeAck.value = true
-      // Don't continue until human acknowledges
-    }
+    if (!human || !isHumanGivingCards.value) return
+    await applyExchangeConfirm(human.id, cards.map(c => c.id))
+    isInExchange.value = false
   }
-  
-  // Human Scum/ViceScum confirms their exchange (pre-selected cards)
+
+  // Human Scum/ViceScum confirms forced best cards
   async function confirmScumExchange() {
     const human = humanPlayer.value
     if (!human) return
-    
-    const humanRank = human.rank
-    if (humanRank !== PlayerRank.Scum && humanRank !== PlayerRank.ViceScum) return // Only Scum/ViceScum
-    
-    // Clear the exchange UI state
+    const part = exchangeParticipants.value.find(p => p.seatId === human.id)
+    if (!part || part.canSelect) return
     isInExchange.value = false
     exchangeCanSelect.value = false
     exchangePreSelectedIds.value = []
-    
-    // Now let AI President/VP do their exchange
-    // Set up awaitingGiveBack for President first
-    const president = players.value.find(p => p.rank === PlayerRank.President)
-    if (president) {
-      awaitingGiveBack.value = president.id
-    }
-    
-    // Process AI exchanges
-    await processAIGiveBack()
+    await applyExchangeConfirm(human.id, part.cardIds)
   }
-  
+
   // Helper to apply state from shared functions
   function applyState(state: PresidentGameState) {
     players.value = state.players
@@ -487,7 +414,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     lastPlayerId.value = state.lastPlayerId
     pendingExchanges.value = state.pendingExchanges
     awaitingGiveBack.value = state.awaitingGiveBack
-    
+    exchangeParticipants.value = state.exchangeParticipants ?? []
+
     // Clear exchange UI state when moving to Playing phase
     if (state.phase === PresidentPhase.Playing) {
       isInExchange.value = false
@@ -513,11 +441,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     waitingForExchangeAck.value = false
     exchangeInfo.value = null
 
-    // Continue with the giving phase (VP exchange) or start playing
-    if (phase.value === PresidentPhase.CardExchange) {
-      timer.schedule('phase-transition', CardTimings.phaseTransition, () => handleGivingPhase())
-    } else if (phase.value === PresidentPhase.Playing) {
-      // Longer pause after exchange completes
+    if (phase.value === PresidentPhase.Playing) {
       timer.schedule('ai-turn', CardTimings.aiThink, () => processAITurn())
     }
   }
