@@ -15,6 +15,8 @@ import {
   createTrick,
   makeAIBidRound1,
   makeAIBidRound2,
+  makeAIBidRound1Hard,
+  makeAIBidRound2Hard,
   chooseCardToPlay,
   isPartnerWinning,
   chooseDealerDiscard,
@@ -26,12 +28,14 @@ import {
   createEuchreRemarkEngine,
   type EuchreRemarkState,
   type RemarkMode,
+  type EuchreRules,
   applyBid,
   applyDealerDiscard,
   applyPlay,
   continueAfterTrick,
   dealRound,
   startBiddingRound1,
+  rotateDealer,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useChatStore } from '@/stores/chatStore'
@@ -108,6 +112,11 @@ export const useEuchreGameStore = defineStore('game', () => {
   const lastAIBidAction = ref<{ playerId: number; message: string } | null>(null)
   const biddingStartPlayer = ref(0)
   const passCount = ref(0)
+  /** Rules frozen at game start (host contract — not live settings) */
+  const gameRules = ref<EuchreRules>({
+    stickTheDealer: false,
+    canadianLoner: false,
+  })
 
   // Animation callbacks — store awaits these before advancing turns
   let playAnimationCallback: ((data: { card: Card; playerId: number }) => Promise<void>) | null = null
@@ -133,13 +142,6 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   // ---- Pure state bridge ----
 
-  function rulesFromSettings() {
-    return {
-      stickTheDealer: settingsStore.isStickTheDealer(),
-      canadianLoner: settingsStore.canadianLoner === true,
-    }
-  }
-
   function toPureState(): EuchreGameState {
     return {
       players: players.value,
@@ -151,7 +153,7 @@ export const useEuchreGameStore = defineStore('game', () => {
       currentDealer: currentDealer.value,
       passCount: passCount.value,
       biddingStartPlayer: biddingStartPlayer.value,
-      rules: rulesFromSettings(),
+      rules: gameRules.value,
     }
   }
 
@@ -165,6 +167,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     currentDealer.value = next.currentDealer
     passCount.value = next.passCount
     biddingStartPlayer.value = next.biddingStartPlayer
+    gameRules.value = next.rules
   }
 
   // Computed
@@ -209,6 +212,12 @@ export const useEuchreGameStore = defineStore('game', () => {
 
     const aiNames = getRandomAINames(3)
     const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
+
+    // Snapshot rules at game start (not live from settings mid-round)
+    gameRules.value = {
+      stickTheDealer: settingsStore.isStickTheDealer(),
+      canadianLoner: settingsStore.canadianLoner === true,
+    }
 
     players.value = [
       { id: 0, name: playerName, hand: [], isHuman: true, teamId: 0 },
@@ -356,8 +365,10 @@ export const useEuchreGameStore = defineStore('game', () => {
           return
         }
 
-        // Rotate dealer now so the chip moves during the pause (matches prior UX)
-        currentDealer.value = (currentDealer.value + 1) % 4
+        // Pure rotate for chip UX during pause (not a phase-machine fork)
+        const beforeRotate = toPureState()
+        const rotated = rotateDealer(beforeRotate)
+        if (rotated !== beforeRotate) applyPureState(rotated)
         timer.schedule('next-round', 2000, () => {
           gameTracker.reset()
           // Dealer already advanced — deal only (don't double-rotate via startNextRound)
@@ -417,9 +428,13 @@ export const useEuchreGameStore = defineStore('game', () => {
     await sleep(CardTimings.aiThink)
     if (!currentRound.value) return
 
+    const hard = settingsStore.isHardAI()
+
     if (phase.value === GamePhase.BiddingRound1) {
       if (!currentRound.value.turnUpCard) return
-      const bid = makeAIBidRound1(player, currentRound.value.turnUpCard, currentRound.value.dealer)
+      const bid = hard
+        ? makeAIBidRound1Hard(player, currentRound.value.turnUpCard, currentRound.value.dealer)
+        : makeAIBidRound1(player, currentRound.value.turnUpCard, currentRound.value.dealer)
       const message = getBidMessage(bid, player.id === currentRound.value.dealer)
       lastAIBidAction.value = { playerId: player.id, message }
       await sleep(800)
@@ -427,12 +442,19 @@ export const useEuchreGameStore = defineStore('game', () => {
       makeBid(bid)
     } else if (phase.value === GamePhase.BiddingRound2) {
       if (!currentRound.value.turnUpCard) return
-      const bid = makeAIBidRound2(
-        player,
-        currentRound.value.turnUpCard.suit,
-        currentRound.value.dealer,
-        settingsStore.isStickTheDealer()
-      )
+      const bid = hard
+        ? makeAIBidRound2Hard(
+            player,
+            currentRound.value.turnUpCard.suit,
+            currentRound.value.dealer,
+            gameRules.value.stickTheDealer
+          )
+        : makeAIBidRound2(
+            player,
+            currentRound.value.turnUpCard.suit,
+            currentRound.value.dealer,
+            gameRules.value.stickTheDealer
+          )
       const message = getBidMessage(bid, player.id === currentRound.value.dealer)
       lastAIBidAction.value = { playerId: player.id, message }
       await sleep(800)
@@ -440,7 +462,7 @@ export const useEuchreGameStore = defineStore('game', () => {
       makeBid(bid)
     } else if (phase.value === GamePhase.Playing && currentRound.value.trump) {
       let card: Card
-      if (settingsStore.isHardAI()) {
+      if (hard) {
         const partnerWinning = isPartnerWinningHard(
           currentRound.value.currentTrick,
           player.id,

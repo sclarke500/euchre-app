@@ -522,10 +522,11 @@ export function confirmExchange(
   let finalIds: string[]
   if (info.canSelect) {
     if (cardIds.length !== info.cardsNeeded) return state
+    // Reject duplicates (would otherwise clone cards onto recipient)
+    if (new Set(cardIds).size !== cardIds.length) return state
     for (const id of cardIds) {
       if (!player.hand.some(c => c.id === id)) return state
     }
-    // Must not include partner's pre-selected cards still in hand? N/A — separate hands
     finalIds = [...cardIds]
   } else {
     // Forced best cards already on participant

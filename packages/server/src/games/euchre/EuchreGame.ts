@@ -1,7 +1,6 @@
 import type {
   Card,
   Bid,
-  Suit,
   Round,
   TeamScore,
   ClientGameState,
@@ -10,6 +9,7 @@ import type {
   EuchreRules,
 } from '@67cards/shared'
 import {
+  Suit,
   GamePhase,
   BidAction,
   chooseDealerDiscard,
@@ -470,12 +470,37 @@ export class EuchreGame {
         player,
         aiDifficulty: this.aiDifficulty,
         aiTracker: this.aiTracker,
+        stickTheDealer: this.rules.stickTheDealer,
       })
 
       if (action.type === 'bid') {
-        this.processBidInternal(action.bid)
+        const ok = this.processBidInternal(action.bid)
+        if (!ok) {
+          // Defensive: rejected Pass under stick-the-dealer — force a legal CallTrump
+          console.warn(
+            `[EuchreGame ${this.id}] AI bid rejected (seat ${player.seatIndex}); forcing CallTrump fallback`
+          )
+          if (
+            this.phase === GamePhase.BiddingRound2 &&
+            this.currentRound?.turnUpCard
+          ) {
+            const banned = this.currentRound.turnUpCard.suit
+            const candidates = [Suit.Hearts, Suit.Diamonds, Suit.Clubs, Suit.Spades]
+            const suit = candidates.find(s => s !== banned) ?? Suit.Hearts
+            this.processBidInternal({
+              playerId: player.seatIndex,
+              action: BidAction.CallTrump,
+              suit,
+            })
+          }
+        }
       } else if (action.type === 'play') {
-        this.playCardInternal(player.seatIndex, action.card)
+        const ok = this.playCardInternal(player.seatIndex, action.card)
+        if (!ok) {
+          console.warn(
+            `[EuchreGame ${this.id}] AI play rejected (seat ${player.seatIndex})`
+          )
+        }
       }
     }, GameTimings.aiThinkMs)
   }
@@ -555,6 +580,7 @@ export class EuchreGame {
       currentDealer: this.currentDealer,
       passCount: this.passCount,
       currentRound: this.currentRound,
+      rules: this.rules,
     })
 
     // Clear any existing reminder timeout
@@ -603,6 +629,7 @@ export class EuchreGame {
       currentDealer: this.currentDealer,
       passCount: this.passCount,
       currentRound: this.currentRound,
+      rules: this.rules,
     })
     console.log(`Sending turn reminder ${this.turnReminderCount} to player ${playerIndex}`)
     this.events.onTurnReminder(odusId, validActions, validCards)

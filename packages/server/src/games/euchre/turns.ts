@@ -1,4 +1,12 @@
-import { BidAction, GamePhase, getLegalPlays, type Round, type Card } from '@67cards/shared'
+import {
+  BidAction,
+  GamePhase,
+  getLegalPlays,
+  type Round,
+  type Card,
+  type EuchreRules,
+  DEFAULT_EUCHRE_RULES,
+} from '@67cards/shared'
 import type { GamePlayer } from './types.js'
 
 export interface EuchreTurnOptions {
@@ -13,6 +21,8 @@ interface BuildEuchreTurnOptionsParams {
   currentDealer: number
   passCount: number
   currentRound: Round | null
+  /** Must match pure state.rules so UI and machine agree */
+  rules?: EuchreRules
 }
 
 export function buildEuchreTurnOptions({
@@ -22,6 +32,7 @@ export function buildEuchreTurnOptions({
   currentDealer,
   passCount,
   currentRound,
+  rules = DEFAULT_EUCHRE_RULES,
 }: BuildEuchreTurnOptionsParams): EuchreTurnOptions {
   let validActions: string[] = []
   let validCards: string[] | undefined
@@ -32,7 +43,8 @@ export function buildEuchreTurnOptions({
         ? [BidAction.PickUp, BidAction.Pass]
         : [BidAction.OrderUp, BidAction.Pass]
   } else if (phase === GamePhase.BiddingRound2) {
-    if (playerIndex === currentDealer && passCount >= 3) {
+    // Stick-the-dealer: dealer with 3 prior passes must call. Can-pass: dealer may Pass → redeal.
+    if (rules.stickTheDealer && playerIndex === currentDealer && passCount >= 3) {
       validActions = [BidAction.CallTrump]
     } else {
       validActions = [BidAction.CallTrump, BidAction.Pass]

@@ -79,6 +79,14 @@ describe('president simultaneous card exchange', () => {
     expect(rejected).toBe(s)
   })
 
+  it('rejects duplicate card ids with same ref', () => {
+    const s = rankedDealt4()
+    const pres = s.exchangeParticipants.find(p => p.canSelect)!
+    const id = s.players[pres.seatId]!.hand[0]!.id
+    const rejected = confirmExchange(s, pres.seatId, [id, id])
+    expect(rejected).toBe(s)
+  })
+
   it('executes swap when all seats confirm', () => {
     let s = rankedDealt4()
     const scum = s.exchangeParticipants.find(p => !p.canSelect)!

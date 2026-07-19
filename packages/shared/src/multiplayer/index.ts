@@ -111,6 +111,7 @@ export type ClientMessage = (
   | PresidentPassMessage
   | PresidentConfirmExchangeMessage
   | SpadesMakeBidMessage
+  | SpadesRevealHandMessage
   | BugReportMessage
   // Chat
   | ChatSendMessage
@@ -203,6 +204,11 @@ export interface SpadesMakeBidMessage {
   type: 'spades_make_bid'
   bidType: SpadesBidType
   count: number
+}
+
+/** Forfeit blind-nil pre-look and reveal hand for bidding */
+export interface SpadesRevealHandMessage {
+  type: 'spades_reveal_hand'
 }
 
 export interface BugReportMessage {

@@ -16,6 +16,7 @@ export interface GameActionHandlers {
     bidType: 'normal' | 'nil' | 'blind_nil',
     count: number
   ) => void
+  handleSpadesRevealHand: (ws: WebSocket, client: ConnectedClient) => void
   handleMakeBid: (
     ws: WebSocket,
     client: ConnectedClient,
@@ -79,6 +80,24 @@ export function createGameActionHandlers({
     })
     if (!success) {
       send(ws, { type: 'error', message: 'Invalid Spades bid' })
+    }
+  }
+
+  function handleSpadesRevealHand(ws: WebSocket, client: ConnectedClient): void {
+    const gameId = requireActivePlayerAndGame(ws, client)
+    if (!gameId || !client.player) {
+      return
+    }
+
+    const spadesGame = spadesGames.get(gameId)
+    if (!spadesGame) {
+      send(ws, { type: 'error', message: 'Spades game not found' })
+      return
+    }
+
+    const success = spadesGame.revealHand(client.player.odusId)
+    if (!success) {
+      send(ws, { type: 'error', message: 'Cannot reveal hand right now' })
     }
   }
 
@@ -305,6 +324,7 @@ export function createGameActionHandlers({
 
   return {
     handleSpadesMakeBid,
+    handleSpadesRevealHand,
     handleMakeBid,
     handlePlayCard,
     handleDiscardCard,

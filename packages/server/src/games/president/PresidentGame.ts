@@ -241,7 +241,8 @@ export class PresidentGame {
 
     const player = this.players[playerIndex]!
 
-    // Find the cards in hand
+    // Find the cards in hand (reject duplicates — would invent extra copies)
+    if (new Set(cardIds).size !== cardIds.length) return false
     const cards: StandardCard[] = []
     for (const cardId of cardIds) {
       const card = player.hand.find((c) => c.id === cardId)

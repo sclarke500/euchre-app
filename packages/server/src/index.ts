@@ -231,6 +231,8 @@ function handleMessage(ws: WebSocket, client: ConnectedClient, message: ClientMe
       routeGameCommand(() => gameActions.handlePresidentConfirmExchange(socket, c, cardIds)),
     spadesMakeBid: (socket, c, bidType, count) =>
       routeGameCommand(() => gameActions.handleSpadesMakeBid(socket, c, bidType, count)),
+    spadesRevealHand: (socket, c) =>
+      routeGameCommand(() => gameActions.handleSpadesRevealHand(socket, c)),
     bootPlayer: (socket, c, playerId) =>
       routeGameCommand(() => gameActions.handleBootPlayer(socket, c, playerId)),
     bootDisconnectedPlayer: (socket, c, playerId) =>

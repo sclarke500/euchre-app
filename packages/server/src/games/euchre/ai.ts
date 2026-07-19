@@ -24,6 +24,8 @@ interface ComputeEuchreAIActionParams {
   player: GamePlayer
   aiDifficulty: 'easy' | 'hard'
   aiTracker: GameTracker | null
+  /** When true, R2 dealer must call (matches pure rules.stickTheDealer) */
+  stickTheDealer?: boolean
 }
 
 export function computeEuchreAIAction({
@@ -32,6 +34,7 @@ export function computeEuchreAIAction({
   player,
   aiDifficulty,
   aiTracker,
+  stickTheDealer = false,
 }: ComputeEuchreAIActionParams): EuchreAIAction {
   if (!currentRound) {
     return { type: 'none' }
@@ -65,8 +68,18 @@ export function computeEuchreAIAction({
 
     const bid =
       aiDifficulty === 'hard'
-        ? makeAIBidRound2Hard(aiPlayer, currentRound.turnUpCard.suit, currentRound.dealer)
-        : makeAIBidRound2(aiPlayer, currentRound.turnUpCard.suit, currentRound.dealer)
+        ? makeAIBidRound2Hard(
+            aiPlayer,
+            currentRound.turnUpCard.suit,
+            currentRound.dealer,
+            stickTheDealer
+          )
+        : makeAIBidRound2(
+            aiPlayer,
+            currentRound.turnUpCard.suit,
+            currentRound.dealer,
+            stickTheDealer
+          )
 
     return { type: 'bid', bid }
   }

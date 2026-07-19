@@ -120,8 +120,14 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
         if (newRound > prevRound) {
           userCardsRevealed.value = false
         }
-        
+
         gameState.value = message.state
+        // Authoritative reveal flag from pure state (when present)
+        if (typeof message.state.handRevealed === 'boolean') {
+          userCardsRevealed.value = message.state.handRevealed
+        } else if (!message.state.blindNilEnabled) {
+          userCardsRevealed.value = true
+        }
         updateLastStateSeq(lastStateSeq, message.state.stateSeq)
         resyncWatchdog.markStateReceived()
         // Only clear turn state if it's definitely not our turn
@@ -184,6 +190,13 @@ export const useSpadesMultiplayerStore = defineStore('spadesMultiplayer', () => 
   // Blind nil: user chose to see their cards (decline blind nil)
   function declineBlindNil(): void {
     if (!blindNilDecisionPending.value) return
+    const expectedStateSeq = getExpectedStateSeq(lastStateSeq.value, gameState.value?.stateSeq)
+    // Server is authoritative for hand reveal (pure processRevealHand gate)
+    websocket.send({
+      type: 'spades_reveal_hand',
+      expectedStateSeq,
+    })
+    // Optimistic local UI until next state broadcast
     userCardsRevealed.value = true
   }
 

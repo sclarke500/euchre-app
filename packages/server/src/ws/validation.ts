@@ -126,6 +126,11 @@ const spadesMakeBidSchema = z.object({
   ...clientMetaShape,
 }).strict()
 
+const spadesRevealHandSchema = z.object({
+  type: z.literal('spades_reveal_hand'),
+  ...clientMetaShape,
+}).strict()
+
 const bugReportSchema = z.object({
   type: z.literal('bug_report'),
   payload: z.string().max(500_000),
@@ -157,6 +162,7 @@ const clientMessageSchema = z.discriminatedUnion('type', [
   presidentPassSchema,
   presidentConfirmExchangeSchema,
   spadesMakeBidSchema,
+  spadesRevealHandSchema,
   bugReportSchema,
   chatSendSchema,
 ])

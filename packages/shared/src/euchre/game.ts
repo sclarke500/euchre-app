@@ -462,10 +462,19 @@ export function finishRound(state: EuchreGameState): EuchreGameState {
   }
 }
 
-/** Rotate dealer and deal next round (after RoundComplete). */
+/** Rotate dealer only (UX: chip moves during pause). Illegal phase → same ref. */
+export function rotateDealer(state: EuchreGameState): EuchreGameState {
+  if (state.phase !== GamePhase.RoundComplete) return state
+  return {
+    ...state,
+    currentDealer: (state.currentDealer + 1) % 4,
+  }
+}
+
+/** Rotate dealer and deal next round (after RoundComplete). Illegal phase → same ref. */
 export function startNextRound(state: EuchreGameState, rng: Rng = Math.random): EuchreGameState {
   if (state.phase !== GamePhase.RoundComplete && state.phase !== GamePhase.Setup) {
-    // Allow from RoundComplete primarily
+    return state
   }
   return dealRound(
     {
