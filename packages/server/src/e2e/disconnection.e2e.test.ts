@@ -197,8 +197,11 @@ describe('E2E: Player Disconnection', () => {
     const game = games.get('test-game')!
     game.players[1] = { odusId: 'p2', isHuman: true, disconnected: false }
 
-    // Player 1 disconnects
+    // Player 1 disconnects — subscribe to both broadcasts before closing,
+    // or the back-to-back sends can coalesce and game_state arrives before
+    // its listener is attached
     const disconnectPromise = waitForMessage(player2, 'player_disconnected')
+    const statePromise = waitForMessage<{ state: { players: Array<{ disconnected?: boolean }> } }>(player2, 'game_state')
     player1.close()
 
     const disconnectMsg = await disconnectPromise
@@ -208,7 +211,7 @@ describe('E2E: Player Disconnection', () => {
     })
 
     // Verify game state shows player 1 as disconnected
-    const stateMsg = await waitForMessage<{ state: { players: Array<{ disconnected?: boolean }> } }>(player2, 'game_state')
+    const stateMsg = await statePromise
     expect(stateMsg.state.players[0]?.disconnected).toBe(true)
 
     player2.close()
