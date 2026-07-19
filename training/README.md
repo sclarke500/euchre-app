@@ -33,11 +33,16 @@ npm run sim -- euchre --games 1000 --mix default --seed 1000042 \
 python -m euchre_play.train \
   --train data/euchre-mix-train-5k.jsonl \
   --val data/euchre-mix-val-1k.jsonl \
-  --out models/play_mlp_mix.joblib
+  --out models/play_mlp_mix_tracker.joblib \
+  --hidden 256 --max-iter 60
 # --model defaults to mlp
 ```
 
-`--model` defaults to **mlp** (keep it that way). HGB is optional offline only — slow to serve over the subprocess bridge; never use for live eval iteration.
+Tracker-style features (voids, bowers, trump remaining, partner winning) live in
+`euchre_play/features.py`, derived from public history with **left-bower-aware**
+effective suits. Not written into the JSONL schema.
+
+`--model` defaults to **mlp** (keep it that way). HGB is optional offline only.
 
 When rolling out with `play_model`, the report prints **hard-fallback rate** (confidence floor → hard AI). High fallback means win rate is partly hard, not pure model.
 
