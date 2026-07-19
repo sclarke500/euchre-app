@@ -37,6 +37,9 @@ def is_play_teacher_step(rec: dict) -> bool:
 
 
 def legal_play_card_ids(rec: dict) -> list[str]:
+    # Compact dumps use legalCardIds; full dumps use legalActions
+    if rec.get("legalCardIds"):
+        return [str(c) for c in rec["legalCardIds"]]
     ids: list[str] = []
     for a in rec.get("legalActions") or []:
         if isinstance(a, dict) and a.get("kind") == "play" and a.get("cardId"):

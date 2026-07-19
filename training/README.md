@@ -11,64 +11,76 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Data (train / val by seed)
-
-From repo root:
+## Data (hard×4 play-teacher dumps — preferred)
 
 ```bash
-# Train (~10k games, seed 42)
-npm run sim -- euchre --games 10000 --mix default --seed 42 \
-  --out training/data/euchre-train-10k.jsonl --report
+# Train (seed 42) — compact teacher play lines only
+npm run sim -- euchre --games 5000 --policies hard,hard,hard,hard --seed 42 \
+  --dump-mode play_teacher \
+  --out training/data/euchre-hard4-train-5k.jsonl --report
 
-# Val (seed range disjoint from train)
-npm run sim -- euchre --games 2000 --mix default --seed 1000042 \
-  --out training/data/euchre-val-2k.jsonl --report
+# Val (disjoint seed)
+npm run sim -- euchre --games 1000 --policies hard,hard,hard,hard --seed 1000042 \
+  --dump-mode play_teacher \
+  --out training/data/euchre-hard4-val-1k.jsonl --report
 ```
 
 ## Train (play-phase teacher only)
 
 ```bash
 python -m euchre_play.train \
-  --train data/euchre-train-10k.jsonl \
-  --val data/euchre-val-2k.jsonl \
-  --out models/play_mlp.joblib
+  --train data/euchre-hard4-train-5k.jsonl \
+  --val data/euchre-hard4-val-1k.jsonl \
+  --out models/play_mlp_hard4.joblib \
+  --model mlp
 ```
 
-Offline metric: **action-match** vs hard on held-out play steps (`labelQuality == teacher`).
+Use **MLP** for the iteration loop. HGB is slower to serve over the subprocess bridge — not for live eval.
 
-## Serve (subprocess bridge for sim)
+## Inner-loop metric: action-match (no rollouts)
 
 ```bash
-python -m euchre_play.serve --model models/play_mlp.joblib
+python -m euchre_play.action_match \
+  --model models/play_mlp_hard4.joblib \
+  --val data/euchre-hard4-val-1k.jsonl
 ```
 
-Protocol: one JSON object per line on stdin → one JSON action per line on stdout.
-See `euchre_play/serve.py`.
+This is the default “did this change help?” signal (seconds).
 
-## Eval in sim (hybrid: hard bids, model play)
+## Milestone metric: mirrored-deal eval
+
+Euchre win rate is luck-heavy (~33% rule). Compare policies with **mirrored pairs**:
+same deal seed, policies rotated +1 (partnerships swap), score the pair.
 
 ```bash
-# From repo root, with venv python on PATH or absolute --python
-npm run sim -- euchre --games 200 --seed 2000042 --report \
+# Ceiling: hard vs easy
+npm run sim -- euchre --mirror --pairs 1000 --seed 2000042 --report \
+  --policies hard,easy,hard,easy
+
+# Model vs easy (challenger = seats 0,2 = play_model)
+npm run sim -- euchre --mirror --pairs 500 --seed 2000042 --report \
   --policies play_model,easy,play_model,easy \
-  --play-model training/models/play_mlp.joblib \
-  --python training/.venv/bin/python
+  --play-model training/models/play_mlp_hard4.joblib \
+  --python training/.venv/bin/python \
+  --training-cwd training
 ```
 
-**Exit criterion (S1.5):** play_model partnership beats easy partnership in sim.
+**Exit criterion:** model closes most of the hard−easy gap on mirrored pair win rate  
+(not “beat easy” on raw win rate — that was always coin-flip-shaped).
 
-### Spike results (first pass)
+## Serve (subprocess bridge)
+
+```bash
+python -m euchre_play.serve --model models/play_mlp_hard4.joblib
+```
+
+## Spike results (so far)
 
 | Metric | Value |
 |---|---|
-| Train dump | 5k games seed 42 (`data/euchre-train-5k.jsonl`, ~1.8GB — slim dumps next) |
-| Val dump | 1k games seed 1000042 |
-| Teacher play steps | ~751k train / ~152k val |
-| Offline val action-match | ~95% |
-| Live vs hard action-match | ~96% (same-state) |
-| hard vs easy (400g) | **52%** hard |
-| play_model vs easy (400g) | **45%** model — **exit criterion not met yet** |
+| Offline action-match (hard×4 val) | ~96% (MLP) |
+| Raw hard vs easy (400g) | ~52% hard |
+| Raw play_model vs easy (400g) | ~49% (HGB) / ~49% (MLP, floor 0.75) |
+| HGB live eval | ~30 min / 400g — **do not use for iteration** |
 
-Offline match does not equal win rate: the remaining 5% card errors compound. Next loop: denser hard×4 dumps, better features / model, dump size reduction, then retrain.
-
-Python is **not** inside `packages/sim`. Sim steers dumps; Python trains + serves; sim eval uses `--play-model` subprocess bridge.
+Python is **not** inside `packages/sim`.

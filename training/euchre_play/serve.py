@@ -37,7 +37,7 @@ def load_model(path: str):
     return payload, {"model": payload}
 
 
-def predict_card(clf, observation: dict, legal: list[dict]) -> dict[str, Any]:
+def predict_card(clf, observation: dict, legal: list[dict]) -> tuple[dict[str, Any], float]:
     legal_ids = [
         str(a["cardId"])
         for a in legal
@@ -47,6 +47,7 @@ def predict_card(clf, observation: dict, legal: list[dict]) -> dict[str, Any]:
         raise ValueError("no legal play actions")
 
     x = encode_play_features(observation, legal_ids).reshape(1, -1)
+    confidence = 1.0
     if hasattr(clf, "predict_proba"):
         proba = clf.predict_proba(x)[0]
         classes = list(clf.classes_)
@@ -54,7 +55,6 @@ def predict_card(clf, observation: dict, legal: list[dict]) -> dict[str, Any]:
         best_id = None
         best_s = -1.0
         for cid in legal_ids:
-            # card index
             try:
                 idx = CARD_IDS.index(cid)
             except ValueError:
@@ -65,12 +65,14 @@ def predict_card(clf, observation: dict, legal: list[dict]) -> dict[str, Any]:
                 best_id = cid
         if best_id is None:
             best_id = legal_ids[0]
+            best_s = 0.0
+        confidence = float(best_s) if best_s >= 0 else 0.0
     else:
         pred = int(clf.predict(x)[0])
         pred_id = CARD_IDS[pred] if 0 <= pred < N_CARDS else None
         best_id = pred_id if pred_id in legal_ids else legal_ids[0]
 
-    return {"kind": "play", "cardId": best_id}
+    return {"kind": "play", "cardId": best_id}, confidence
 
 
 def main() -> None:
@@ -107,8 +109,15 @@ def main() -> None:
             continue
 
         try:
-            action = predict_card(clf, req.get("observation") or {}, req.get("legal") or [])
-            print(json.dumps({"type": "action", "action": action}), flush=True)
+            action, confidence = predict_card(
+                clf, req.get("observation") or {}, req.get("legal") or []
+            )
+            print(
+                json.dumps(
+                    {"type": "action", "action": action, "confidence": confidence}
+                ),
+                flush=True,
+            )
         except Exception as e:  # noqa: BLE001 — surface to sim
             print(json.dumps({"type": "error", "message": str(e)}), flush=True)
 

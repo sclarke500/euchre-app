@@ -1,6 +1,6 @@
 # Simulation & Training-Data Plan
 
-**Status:** S1 done. **S1.5 in progress** — pipeline closed once (dump → train → bridge → eval). Exit criterion (beat easy at cards) **not yet met** (~45% vs easy vs ~52% hard baseline). Iterate model/features/dump density before S2/S3.  
+**Status:** S1 done. **S1.5 in progress** — pipeline closed; metrics recalibrated (mirrored-deal + action-match). Raw win rate is a poor skill instrument in Euchre (~33% rule); use mirror pairs + offline action-match for iteration.  
 **Repo:** this monorepo (`packages/sim` + pure engines in `@67cards/shared`)  
 **Depends on:** pure game architecture (Euchre / Spades / President state machines)  
 **Non-goal (v1):** Python training loop, ONNX export, shipping Expert difficulty  
@@ -341,13 +341,24 @@ npm run sim -- euchre --policies hard,easy,hard,easy --report
 | 5. Eval in sim | Model-play + hard-bid vs hard / vs easy over a few hundred seeded games |
 | 6. Loop | Obs/action/schema gaps → fix sim → regen → retrain. Schema freezes (S4) only after **two consecutive passes need no sim changes** |
 
-**Exit criterion:** a model trained purely from JSONL **beats easy AI at cards** (sim win rate). Beating hard is later RL, not this spike.
+**Exit criterion (recalibrated):** model **closes most of the gap** between easy and hard on **mirrored-deal** pair win rate (not raw win rate). Establish hard-vs-easy ceiling with mirror pairs + CI first; then measure model-vs-easy on the same protocol. Beating hard is later RL.
+
+**Why not raw win rate:** Euchre’s “33% rule” (deal luck) means skill only shows in a middle third of deals; excellent players often sit within ~5% of average. hard−easy ≈ 2pp on random deals is expected, not a sim bug.
+
+**Metrics (ordered):**
+
+| When | Metric | How |
+|---|---|---|
+| **Inner loop** | Action-match vs teacher on held-out play steps | `python -m euchre_play.action_match` (seconds, no rollouts) |
+| **Milestone** | Mirrored-deal pair win rate | `sim … --mirror --pairs N --policies … --report` |
+| Avoid | HGB subprocess rollouts | MLP-only for live eval; HGB optional offline curiosity |
 
 **Calls locked for S1.5:**
 
 - Play-phase-only first model (bidding is a separate, smaller problem once the loop works)
-- Subprocess bridge over anything fancier
+- Subprocess bridge over anything fancier; **MLP for eval iteration**
 - Python stays in `training/` — **no Python inside `packages/sim`**
+- Mirrored-deal eval as durable comparison infrastructure
 
 ### S2 — Spades (deferred until S1.5 exit)
 

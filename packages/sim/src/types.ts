@@ -60,6 +60,8 @@ export interface RunHeader {
   games: number
   rules: Record<string, unknown>
   createdAt: string
+  /** full | play_teacher (compact obs, teacher-play lines only) */
+  dumpMode?: string
 }
 
 export interface GameStats {
