@@ -1,6 +1,6 @@
 # Simulation & Training-Data Plan
 
-**Status:** S1 done. **S1.5 in progress** — pipeline closed; metrics recalibrated (mirrored-deal + action-match). Raw win rate is a poor skill instrument in Euchre (~33% rule); use mirror pairs + offline action-match for iteration.  
+**Status:** S1 done. **S1.5 closed** — IL play model reaches hard parity on card play (verified model-vs-hard pure floor=0). Pipeline asset is the product of the spike; next is S4 schema freeze, then Steve's fork: Euchre depth (bid+RL) vs Spades breadth.  
 **Repo:** this monorepo (`packages/sim` + pure engines in `@67cards/shared`)  
 **Depends on:** pure game architecture (Euchre / Spades / President state machines)  
 **Non-goal (v1):** Python training loop, ONNX export, shipping Expert difficulty  
@@ -341,7 +341,7 @@ npm run sim -- euchre --policies hard,easy,hard,easy --report
 | 5. Eval in sim | Model-play + hard-bid vs hard / vs easy over a few hundred seeded games |
 | 6. Loop | Obs/action/schema gaps → fix sim → regen → retrain. Schema freezes (S4) only after **two consecutive passes need no sim changes** |
 
-**Exit criterion (recalibrated):** model **closes most of the gap** between easy and hard on **mirrored-deal** pair win rate (not raw win rate). Establish hard-vs-easy ceiling with mirror pairs + CI first; then measure model-vs-easy on the same protocol. Beating hard is later RL.
+**Exit criterion (recalibrated, met):** model closes the hard−easy gap on mirrored deal (target ~52–53% vs easy). **Verified hard parity:** model-vs-hard pure (floor=0) ≈ 50% game WR / ~0 point margin. Beating hard is later RL.
 
 **Why not raw win rate:** Euchre’s “33% rule” (deal luck) means skill only shows in a middle third of deals; excellent players often sit within ~5% of average. hard−easy ≈ 2pp on random deals is expected, not a sim bug.
 

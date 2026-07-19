@@ -36,6 +36,7 @@ Options:
   --play-model PATH    joblib model for play_model seats (hybrid hard-bid)
   --python PATH        Python binary (default: python3)
   --training-cwd PATH  Dir with euchre_play package (default: repo training/)
+  --confidence-floor F play_model: use hard when max-legal proba < F (default 0.75; 0 = pure model)
   --dump-mode MODE     full | play_teacher (default full)
   -h, --help           Show help
 
@@ -72,6 +73,7 @@ function parseArgs(argv: string[]) {
   let trainingCwd = REPO_TRAINING
   let dumpMode: 'full' | 'play_teacher' = 'full'
   let mirror = false
+  let confidenceFloor = 0.75
 
   for (let i = 1; i < args.length; i++) {
     const a = args[i]!
@@ -141,6 +143,9 @@ function parseArgs(argv: string[]) {
         dumpMode = m
         break
       }
+      case '--confidence-floor':
+        confidenceFloor = parseFloat(next())
+        break
       case '-h':
       case '--help':
         usage()
@@ -169,6 +174,7 @@ function parseArgs(argv: string[]) {
     trainingCwd,
     dumpMode,
     mirror,
+    confidenceFloor,
   }
 }
 
@@ -189,6 +195,7 @@ async function main() {
       python: opts.python,
       modelPath: opts.playModel,
       cwd: opts.trainingCwd,
+      confidenceFloor: opts.confidenceFloor,
     })
   }
 
