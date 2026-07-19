@@ -1,6 +1,6 @@
 # Simulation & Training-Data Plan
 
-**Status:** §14 implemented (E3 Euchre legalActions + packages/sim multi-policy dump). E1/E2/S2+ still open.  
+**Status:** S1 done. **S1.5 in progress** — pipeline closed once (dump → train → bridge → eval). Exit criterion (beat easy at cards) **not yet met** (~45% vs easy vs ~52% hard baseline). Iterate model/features/dump density before S2/S3.  
 **Repo:** this monorepo (`packages/sim` + pure engines in `@67cards/shared`)  
 **Depends on:** pure game architecture (Euchre / Spades / President state machines)  
 **Non-goal (v1):** Python training loop, ONNX export, shipping Expert difficulty  
@@ -319,37 +319,57 @@ npm run sim -- euchre --policies hard,easy,hard,easy --report
 - `packages/sim` workspace, CLI, seeded RNG, JSONL writer  
 - Smoke 100 Euchre hard-only  
 
-### S1 — Euchre multi-policy sim
+### S1 — Euchre multi-policy sim ✅
 
 - Depends on: **E3 (Euchre bid/discard enums)**, E4  
 - Policies: hard, easy, random_legal, noisy_*  
 - Privileged built-in path + obs recording  
 - Default mix §4.3  
 - Report: win rates, alone rate, points/hand  
-- **Milestone:** 10k–100k games dump  
+- Smoke dump done; large dumps live under `training/data/` (gitignored)
 
-### S2 — Spades
+### S1.5 — Close the loop (current)
+
+**Goal:** prove the pipeline end-to-end with the smallest model that can play cards — *before* Spades/President or a huge dump. First training pass will force sim/encoder fixes; regeneration must stay cheap.
+
+| Step | What |
+|---|---|
+| 1. Regen | ~10k train games (`--seed 42`) + separate val seed range (e.g. `--seed 1_000_042`); pull **train/val by seed** forward from S4 |
+| 2. Train | `training/` at repo root (not inside `packages/sim`). Load JSONL → `labelQuality === 'teacher'` → **play phase only** for v1 |
+| 3. Offline metric | Held-out action-match vs hard on play steps |
+| 4. Bridge | `LearnedPolicy` / hybrid: model plays cards; **hard keeps bids + discard**. Subprocess stdin/stdout JSON (throwaway; ONNX is ship path later) |
+| 5. Eval in sim | Model-play + hard-bid vs hard / vs easy over a few hundred seeded games |
+| 6. Loop | Obs/action/schema gaps → fix sim → regen → retrain. Schema freezes (S4) only after **two consecutive passes need no sim changes** |
+
+**Exit criterion:** a model trained purely from JSONL **beats easy AI at cards** (sim win rate). Beating hard is later RL, not this spike.
+
+**Calls locked for S1.5:**
+
+- Play-phase-only first model (bidding is a separate, smaller problem once the loop works)
+- Subprocess bridge over anything fancier
+- Python stays in `training/` — **no Python inside `packages/sim`**
+
+### S2 — Spades (deferred until S1.5 exit)
 
 - Depends on: **E1, E2, E3 (Spades bids)**  
 - Blind-nil v1: AI always reveal then bid  
 
-### S3 — President
+### S3 — President (deferred until S1.5 exit)
 
 - Depends on: **E1, E2, E3 (pass/play)**  
 - Pure exchange auto-confirm for all AI  
 
-### S4 — Dataset hygiene
+### S4 — Dataset hygiene / schema freeze
 
-- schemaVersion freeze  
+- schemaVersion freeze (**after** S1.5 loop is quiet)  
 - Validate: no private cards in obs, action ∈ legal, reject rate  
-- Train/val by seed ranges  
+- Train/val by seed ranges (started in S1.5)  
 - Throughput notes  
 
-### S5 — Training handoff (later)
+### S5 — Training handoff (started as S1.5 spike)
 
-- Schema doc + Python consumer sample  
-- IL on `labelQuality === 'teacher'` only (v1)  
-- ONNX path later  
+- Python consumer + IL on `labelQuality === 'teacher'` (play-only v1)  
+- ONNX / in-process TS inference later (not the learn-the-process path)  
 
 ---
 
@@ -380,12 +400,23 @@ npm run sim -- euchre --policies hard,easy,hard,easy --report
 
 ## 13. Explicit non-goals (v1)
 
-- Python inside `packages/sim`  
-- Training / model serving  
-- Observation-only wrappers for product hard AI  
+- Python inside `packages/sim` (training lives in repo-root `training/`)  
+- Shipping ONNX / production model serving in the app (spike uses subprocess bridge only)  
+- Observation-only wrappers for product hard AI (built-ins stay privileged)  
 - Baking tracker-derived features into frozen obs schema  
 - Human game logging  
 - Klondike  
+- Large multi-game dumps / Spades / President until S1.5 exit criterion  
+
+### Seed ranges (train / val)
+
+| Split | Master seed | Games (S1.5 default) |
+|---|---|---|
+| Train | `42` | 10_000 |
+| Val | `1_000_042` | 2_000 |
+| Eval rollouts | `2_000_042` | 200–500 (sim, not dump) |
+
+Never train on val/eval seeds.
 
 ---
 

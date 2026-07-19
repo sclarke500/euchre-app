@@ -4,12 +4,17 @@
  *
  *   npm run sim -- euchre --games 100 --mix default --seed 42 --out data/euchre.jsonl --report
  *   npm run sim -- euchre --policies hard,easy,hard,easy --report
+ *   npm run sim -- euchre --policies play_model,easy,play_model,easy --play-model … --python …
  */
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { runEuchreSim } from './runners/euchre.js'
 import { buildReport, formatReport } from './report/summary.js'
+import { PlayModelBridge } from './policies/playModel.js'
 import type { PolicyId } from './types.js'
+
+const REPO_TRAINING = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../../training')
 
 function usage(): never {
   console.log(`Usage:
@@ -25,9 +30,12 @@ Options:
   --report             Print summary
   --stick-dealer       Enable stick-the-dealer
   --canadian-loner     Enable Canadian loner
+  --play-model PATH    joblib model for play_model seats (hybrid hard-bid)
+  --python PATH        Python binary (default: python3)
+  --training-cwd PATH  Dir with euchre_play package (default: repo training/)
   -h, --help           Show help
 
-Policies: hard | easy | random_legal | noisy_hard | noisy_easy
+Policies: hard | easy | random_legal | noisy_hard | noisy_easy | play_model
 `)
   process.exit(1)
 }
@@ -50,6 +58,9 @@ function parseArgs(argv: string[]) {
   let stickTheDealer = false
   let canadianLoner = false
   let useMix = true
+  let playModel: string | null = null
+  let python = 'python3'
+  let trainingCwd = REPO_TRAINING
 
   for (let i = 1; i < args.length; i++) {
     const a = args[i]!
@@ -79,7 +90,7 @@ function parseArgs(argv: string[]) {
         break
       case '--mix':
         useMix = true
-        next() // consume name (only "default" for now)
+        next()
         break
       case '--policies': {
         const parts = next().split(',').map(s => s.trim())
@@ -96,6 +107,15 @@ function parseArgs(argv: string[]) {
         break
       case '--canadian-loner':
         canadianLoner = true
+        break
+      case '--play-model':
+        playModel = resolve(next())
+        break
+      case '--python':
+        python = next()
+        break
+      case '--training-cwd':
+        trainingCwd = resolve(next())
         break
       case '-h':
       case '--help':
@@ -115,6 +135,9 @@ function parseArgs(argv: string[]) {
     report,
     policies: useMix ? undefined : policies,
     rules: { stickTheDealer, canadianLoner },
+    playModel,
+    python,
+    trainingCwd,
   }
 }
 
@@ -122,6 +145,23 @@ async function main() {
   const opts = parseArgs(process.argv)
   if (opts.out) {
     mkdirSync(dirname(opts.out), { recursive: true })
+  }
+
+  let bridge: PlayModelBridge | undefined
+  const needsModel =
+    opts.policies?.includes('play_model') ||
+    // mix never samples play_model
+    false
+  if (needsModel) {
+    if (!opts.playModel) {
+      console.error('play_model seats require --play-model PATH')
+      process.exit(1)
+    }
+    bridge = new PlayModelBridge({
+      python: opts.python,
+      modelPath: opts.playModel,
+      cwd: opts.trainingCwd,
+    })
   }
 
   const t0 = Date.now()
@@ -133,6 +173,7 @@ async function main() {
     policies: opts.policies,
     rules: opts.rules,
     outPath: opts.out,
+    playModelBridge: bridge,
     onGame: () => {
       done++
       if (opts.games >= 100 && done % Math.max(1, Math.floor(opts.games / 10)) === 0) {

@@ -61,14 +61,15 @@ export function buildReport(stats: GameStats[]): RunReport {
         ? {
             hardSeatWins,
             easySeatWins,
-            note: `${hardEasyGames} games with hard partnership vs easy partnership`,
+            note: `${hardEasyGames} games with hard/play_model partnership vs easy partnership`,
           }
         : undefined,
   }
 }
 
 function isHardish(id: PolicyId): boolean {
-  return id === 'hard' || id === 'noisy_hard'
+  // play_model is hybrid hard-bid + model play — treat as "challenger" vs easy
+  return id === 'hard' || id === 'noisy_hard' || id === 'play_model'
 }
 
 function isEasyish(id: PolicyId): boolean {

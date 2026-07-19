@@ -47,13 +47,14 @@ export function encodeEuchreObservation(
       card: { id: pc.card.id, suit: pc.card.suit, rank: pc.card.rank },
     })),
     leadingSuit: round?.currentTrick.leadingSuit ?? null,
-    // Completed tricks (public)
+    // Completed tricks (public) — compact: winners + cards only (no nested bloat)
+    // Full history needed for void inference offline; keep cards, drop redundancy later if size bites.
     completedTricks: (round?.tricks ?? []).map(t => ({
       winnerId: t.winnerId,
       leadingSuit: t.leadingSuit,
       cards: t.cards.map(pc => ({
         playerId: pc.playerId,
-        card: { id: pc.card.id, suit: pc.card.suit, rank: pc.card.rank },
+        cardId: pc.card.id,
       })),
     })),
     // Hands sizes (public knowledge of count only)

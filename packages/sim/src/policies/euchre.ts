@@ -213,6 +213,15 @@ export function createEuchrePolicy(
       return noisyPolicy(hardPolicy, epsilon, 'noisy_hard')
     case 'noisy_easy':
       return noisyPolicy(easyPolicy, epsilon, 'noisy_easy')
+    case 'play_model':
+      // Async hybrid — runner calls choosePlayModel when id is play_model.
+      // Placeholder so createEuchrePolicy does not throw during seat setup.
+      return {
+        id: 'play_model',
+        choose() {
+          throw new Error('play_model requires async runner path (choosePlayModel)')
+        },
+      }
     default:
       throw new Error(`Unknown Euchre policy: ${id}`)
   }
@@ -256,6 +265,7 @@ export function labelQualityFor(
   if (exploratory) return 'noise'
   if (policyId === 'hard' || policyId === 'noisy_hard') return 'teacher'
   if (policyId === 'random_legal') return 'noise'
+  if (policyId === 'play_model') return 'exploratory'
   // easy / noisy_easy non-ε
   return 'exploratory'
 }

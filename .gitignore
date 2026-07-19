@@ -55,6 +55,11 @@ packages/client/android/captures/
 packages/client/android/local.properties
 packages/client/android/.idea/
 
-# Sim training dumps
+# Sim / training dumps & models (regenerate locally)
 packages/sim/data/
+training/data/
+training/models/
+training/.venv/
 *.jsonl
+__pycache__/
+*.pyc

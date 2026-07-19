@@ -29,8 +29,9 @@ import {
   sampleMix,
   type MixSpec,
 } from '../policies/euchre.js'
+import { choosePlayModel, type PlayModelBridge } from '../policies/playModel.js'
 import { deriveSeed, mulberry32, uniformPick } from '../rng.js'
-import type { GameStats, PolicyId, Step } from '../types.js'
+import type { BuiltinPolicy, GameStats, PolicyId, Step } from '../types.js'
 import { JsonlWriter } from '../write/jsonl.js'
 
 export interface EuchreRunOptions {
@@ -45,6 +46,8 @@ export interface EuchreRunOptions {
   onGame?: (stats: GameStats, gameIndex: number) => void
   /** Safety cap for steps per game (default generous). */
   maxStepsPerGame?: number
+  /** S1.5: shared Python play-model bridge (required if any seat is play_model). */
+  playModelBridge?: PlayModelBridge
 }
 
 export interface EuchreRunResult {
@@ -60,7 +63,8 @@ const DECISION_PHASES = new Set([
 ])
 
 function needsHardTracker(id: PolicyId): boolean {
-  return id === 'hard' || id === 'noisy_hard'
+  // play_model uses hard for bids and hard tracker during play for consistency
+  return id === 'hard' || id === 'noisy_hard' || id === 'play_model'
 }
 
 export async function runEuchreSim(opts: EuchreRunOptions): Promise<EuchreRunResult> {
@@ -81,36 +85,57 @@ export async function runEuchreSim(opts: EuchreRunOptions): Promise<EuchreRunRes
     createdAt: new Date().toISOString(),
   })
 
+  const usesPlayModel =
+    !!opts.playModelBridge ||
+    opts.policies?.some(p => p === 'play_model') ||
+    false
+  if (usesPlayModel && opts.policies?.includes('play_model') && !opts.playModelBridge) {
+    throw new Error('play_model seats require playModelBridge (pass --play-model / --python)')
+  }
+  if (opts.playModelBridge) {
+    await opts.playModelBridge.start()
+  }
+
   const mixRng = mulberry32(opts.seed)
   const stats: GameStats[] = []
   let stepsWritten = 0
 
-  for (let gi = 0; gi < opts.games; gi++) {
-    const gameSeed = deriveSeed(opts.seed, gi)
-    const rng = mulberry32(gameSeed)
-    const policyIds = opts.policies ?? sampleMix(mix, mixRng)
-    const policies = policyIds.map(id => createEuchrePolicy(id, opts.epsilon))
+  try {
+    for (let gi = 0; gi < opts.games; gi++) {
+      const gameSeed = deriveSeed(opts.seed, gi)
+      const rng = mulberry32(gameSeed)
+      const policyIds = opts.policies ?? sampleMix(mix, mixRng)
+      if (policyIds.includes('play_model') && !opts.playModelBridge) {
+        throw new Error('mix sampled play_model without bridge')
+      }
+      const policies = policyIds.map(id => createEuchrePolicy(id, opts.epsilon))
 
-    // E4: per-seat trackers for hard seats only
-    const trackers: (GameTracker | null)[] = policyIds.map(id =>
-      needsHardTracker(id) ? new GameTracker() : null
-    )
+      // E4: per-seat trackers for hard seats only
+      const trackers: (GameTracker | null)[] = policyIds.map(id =>
+        needsHardTracker(id) ? new GameTracker() : null
+      )
 
-    const result = playOneGame({
-      gameIndex: gi,
-      seed: gameSeed,
-      rng,
-      policyIds,
-      policies,
-      trackers,
-      rules: opts.rules ?? {},
-      maxSteps,
-    })
+      const result = await playOneGame({
+        gameIndex: gi,
+        seed: gameSeed,
+        rng,
+        policyIds,
+        policies,
+        trackers,
+        rules: opts.rules ?? {},
+        maxSteps,
+        playModelBridge: opts.playModelBridge,
+      })
 
-    writer.writeSteps(result.steps)
-    stepsWritten += result.steps.length
-    stats.push(result.stats)
-    opts.onGame?.(result.stats, gi)
+      writer.writeSteps(result.steps)
+      stepsWritten += result.steps.length
+      stats.push(result.stats)
+      opts.onGame?.(result.stats, gi)
+    }
+  } finally {
+    if (opts.playModelBridge) {
+      await opts.playModelBridge.stop()
+    }
   }
 
   await writer.close()
@@ -122,14 +147,25 @@ interface PlayArgs {
   seed: number
   rng: () => number
   policyIds: PolicyId[]
-  policies: ReturnType<typeof createEuchrePolicy>[]
+  policies: BuiltinPolicy<EuchreGameState, EuchreAction>[]
   trackers: (GameTracker | null)[]
   rules: Partial<EuchreRules>
   maxSteps: number
+  playModelBridge?: PlayModelBridge
 }
 
-function playOneGame(args: PlayArgs): { steps: Step[]; stats: GameStats } {
-  const { gameIndex, seed, rng, policyIds, policies, trackers, rules, maxSteps } = args
+async function playOneGame(args: PlayArgs): Promise<{ steps: Step[]; stats: GameStats }> {
+  const {
+    gameIndex,
+    seed,
+    rng,
+    policyIds,
+    policies,
+    trackers,
+    rules,
+    maxSteps,
+    playModelBridge,
+  } = args
   const gameId = `euchre-${seed}-${gameIndex}`
 
   let state = createEuchreGame(['P0', 'P1', 'P2', 'P3'], -1, rules)
@@ -223,13 +259,17 @@ function playOneGame(args: PlayArgs): { steps: Step[]; stats: GameStats } {
     const policy = policies[seat]!
     const policyId = policyIds[seat]!
     const tracker = trackers[seat]
-    let chooseResult = policy.choose({
+    const ctx = {
       state,
       seat,
       legal,
       rng,
       tracker: tracker ?? undefined,
-    })
+    }
+    let chooseResult =
+      policyId === 'play_model' && playModelBridge
+        ? await choosePlayModel(playModelBridge, ctx)
+        : policy.choose(ctx)
     let action = chooseResult.action
     let exploratory = chooseResult.exploratory
     let labelQuality = labelQualityFor(policyId, exploratory)
