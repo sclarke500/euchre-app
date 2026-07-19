@@ -143,13 +143,24 @@ function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms))
 }
 
+export interface PlayModelChooseResult {
+  action: EuchreAction
+  exploratory: boolean
+  /**
+   * Play-phase only: whether hard AI was used instead of the model
+   * (low confidence, illegal, or error). Undefined for bid/discard.
+   */
+  usedHardFallback?: boolean
+}
+
 /** Hybrid: hard bids/discard, model plays cards; low confidence → hard. */
 export async function choosePlayModel(
   bridge: PlayModelBridge,
   ctx: BuiltinPolicyContext<EuchreGameState, EuchreAction>
-): Promise<{ action: EuchreAction; exploratory: boolean }> {
+): Promise<PlayModelChooseResult> {
   if (ctx.state.phase !== GamePhase.Playing) {
-    return hardPolicy.choose(ctx)
+    const r = hardPolicy.choose(ctx)
+    return { action: r.action, exploratory: r.exploratory }
   }
   if (ctx.legal.length === 0) throw new Error('play_model: no legal actions')
 
@@ -159,10 +170,12 @@ export async function choosePlayModel(
     const legalOk = ctx.legal.some(a => euchreActionKey(a) === euchreActionKey(action))
     if (!legalOk || confidence < bridge.confidenceFloor) {
       // Prefer hard over random when model is unsure or illegal
-      return hardPolicy.choose(ctx)
+      const r = hardPolicy.choose(ctx)
+      return { action: r.action, exploratory: r.exploratory, usedHardFallback: true }
     }
-    return { action, exploratory: false }
+    return { action, exploratory: false, usedHardFallback: false }
   } catch {
-    return hardPolicy.choose(ctx)
+    const r = hardPolicy.choose(ctx)
+    return { action: r.action, exploratory: r.exploratory, usedHardFallback: true }
   }
 }

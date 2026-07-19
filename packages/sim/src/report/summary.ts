@@ -10,6 +10,8 @@ export function buildReport(stats: GameStats[]): RunReport {
   let alone = 0
   let points = 0
   let fallback = 0
+  let modelPlayDecisions = 0
+  let modelHardFallbacks = 0
 
   // hard-vs-easy: games where seats 0,2 are hard and 1,3 are easy (or vice versa)
   let hardSeatWins = 0
@@ -25,6 +27,8 @@ export function buildReport(stats: GameStats[]): RunReport {
     alone += g.aloneHands
     points += g.pointsPerHand * Math.max(1, g.hands)
     fallback += g.fallbackCount
+    modelPlayDecisions += g.modelPlayDecisions ?? 0
+    modelHardFallbacks += g.modelHardFallbacks ?? 0
 
     const p = g.policyIds
     const t0Hard = isHardish(p[0]!) && isHardish(p[2]!)
@@ -44,6 +48,7 @@ export function buildReport(stats: GameStats[]): RunReport {
   }
 
   const n = Math.max(1, stats.length)
+  const modelTotal = modelPlayDecisions + modelHardFallbacks
   return {
     games: stats.length,
     completed: completed.length,
@@ -62,6 +67,14 @@ export function buildReport(stats: GameStats[]): RunReport {
             hardSeatWins,
             easySeatWins,
             note: `${hardEasyGames} games with hard/play_model partnership vs easy partnership`,
+          }
+        : undefined,
+    playModel:
+      modelTotal > 0
+        ? {
+            modelPlayDecisions,
+            modelHardFallbacks,
+            hardFallbackRate: modelHardFallbacks / modelTotal,
           }
         : undefined,
   }
@@ -93,6 +106,17 @@ export function formatReport(report: RunReport): string {
     const hardPct = total > 0 ? ((hardSeatWins / total) * 100).toFixed(1) : 'n/a'
     lines.push(`Hard vs Easy: hard partnership wins ${hardSeatWins}, easy ${easySeatWins} (${hardPct}% hard)`)
     lines.push(`  (${note})`)
+  }
+  if (report.playModel) {
+    const { modelPlayDecisions, modelHardFallbacks, hardFallbackRate } = report.playModel
+    const total = modelPlayDecisions + modelHardFallbacks
+    lines.push(
+      `play_model card decisions: ${total}  model=${modelPlayDecisions}  hard-fallback=${modelHardFallbacks}` +
+        ` (${(hardFallbackRate * 100).toFixed(1)}% hard fallback @ confidence floor)`
+    )
+    lines.push(
+      `  (high fallback rate means measured strength is partly hard AI, not the trained model)`
+    )
   }
   return lines.join('\n')
 }

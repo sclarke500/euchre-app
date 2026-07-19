@@ -35,7 +35,9 @@ python -m euchre_play.train \
   --model mlp
 ```
 
-Use **MLP** for the iteration loop. HGB is slower to serve over the subprocess bridge — not for live eval.
+`--model` defaults to **mlp** (keep it that way). HGB is optional offline only — slow to serve over the subprocess bridge; never use for live eval iteration.
+
+When rolling out with `play_model`, the report prints **hard-fallback rate** (confidence floor → hard AI). High fallback means win rate is partly hard, not pure model.
 
 ## Inner-loop metric: action-match (no rollouts)
 

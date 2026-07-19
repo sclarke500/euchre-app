@@ -74,7 +74,12 @@ export interface GameStats {
   aloneHands: number
   pointsPerHand: number
   policyIds: PolicyId[]
+  /** Illegal apply / same-ref random-legal retries */
   fallbackCount: number
+  /** play_model play-phase decisions that used the model (not hard) */
+  modelPlayDecisions?: number
+  /** play_model play-phase decisions that fell back to hard (low conf / illegal / error) */
+  modelHardFallbacks?: number
 }
 
 export interface RunReport {
@@ -93,5 +98,12 @@ export interface RunReport {
     hardSeatWins: number
     easySeatWins: number
     note: string
+  }
+  /** Aggregate play_model confidence-floor fallbacks (when any seat used play_model) */
+  playModel?: {
+    modelPlayDecisions: number
+    modelHardFallbacks: number
+    /** fraction of play_model card decisions that used hard instead of the model */
+    hardFallbackRate: number
   }
 }

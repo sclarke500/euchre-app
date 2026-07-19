@@ -44,8 +44,8 @@ def main() -> None:
     ap.add_argument(
         "--model",
         choices=("mlp", "hgb"),
-        default="hgb",
-        help="mlp or hist gradient boosting (default hgb)",
+        default="mlp",
+        help="mlp (default, fast eval) or hgb (slow over subprocess — not for live eval)",
     )
     ap.add_argument("--max-train", type=int, default=0, help="Subsample train rows (0=all)")
     args = ap.parse_args()

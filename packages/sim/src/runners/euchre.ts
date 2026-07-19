@@ -299,6 +299,8 @@ async function playOneGame(args: PlayArgs): Promise<{ steps: Step[]; stats: Game
   let pointsSum = 0
   let scoredHands = 0
   let fallbackCount = 0
+  let modelPlayDecisions = 0
+  let modelHardFallbacks = 0
   // Buffer indices of steps in current hand for handDelta backfill
   let handStepStart = 0
   let scoresAtHandStart: [number, number] = [0, 0]
@@ -385,6 +387,15 @@ async function playOneGame(args: PlayArgs): Promise<{ steps: Step[]; stats: Game
       policyId === 'play_model' && playModelBridge
         ? await choosePlayModel(playModelBridge, ctx)
         : policy.choose(ctx)
+    if (
+      policyId === 'play_model' &&
+      state.phase === GamePhase.Playing &&
+      'usedHardFallback' in chooseResult &&
+      chooseResult.usedHardFallback !== undefined
+    ) {
+      if (chooseResult.usedHardFallback) modelHardFallbacks++
+      else modelPlayDecisions++
+    }
     let action = chooseResult.action
     let exploratory = chooseResult.exploratory
     let labelQuality = labelQualityFor(policyId, exploratory)
@@ -476,6 +487,8 @@ async function playOneGame(args: PlayArgs): Promise<{ steps: Step[]; stats: Game
     pointsPerHand: scoredHands > 0 ? pointsSum / scoredHands : 0,
     policyIds: policyIds as [PolicyId, PolicyId, PolicyId, PolicyId],
     fallbackCount,
+    modelPlayDecisions,
+    modelHardFallbacks,
   }
 
   return { steps, stats }
