@@ -28,6 +28,7 @@ import type {
   SpadesTeamScore,
   SpadesTrick,
   SpadesClientPlayer,
+  SpadesClientGameState,
 } from '../spades/types.js'
 
 // ============================================
@@ -538,25 +539,8 @@ export interface PresidentYourTurnMessage {
 // Spades-Specific Types
 // ============================================
 
-export interface SpadesClientGameState {
-  gameType: 'spades'
-  players: SpadesClientPlayer[]
-  phase: SpadesPhase
-  currentTrick: SpadesTrick
-  completedTricks: SpadesTrick[]
-  currentPlayer: number
-  dealer: number
-  scores: SpadesTeamScore[]
-  roundNumber: number
-  gameOver: boolean
-  winner: number | null
-  spadesBroken: boolean
-  bidsComplete: boolean
-  winScore: number
-  loseScore: number
-  stateSeq: number
-  timedOutPlayer: number | null
-}
+// SpadesClientGameState is defined in ../spades/types.js (single source of truth)
+export type { SpadesClientGameState }
 
 export interface SpadesGameStateMessage {
   type: 'spades_game_state'
