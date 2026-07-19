@@ -6,27 +6,25 @@ import type {
   TeamScore,
   ClientGameState,
   ChatMode,
+  EuchreGameState,
+  EuchreRules,
 } from '@67cards/shared'
 import {
   GamePhase,
   BidAction,
-  createDeck,
-  dealCards,
-  createTrick,
-  playCardToTrick,
-  completeTrick,
-  isTrickComplete,
-  isPlayerSittingOut,
-  getLegalPlays,
-  calculateRoundScore,
-  isGameOver,
-  getWinner,
-  processBid,
   chooseDealerDiscard,
   GameTracker,
   createEuchreRemarkEngine,
   type EuchreRemarkState,
   type RemarkMode,
+  applyBid,
+  applyDealerDiscard,
+  applyPlay,
+  continueAfterTrick,
+  dealRound,
+  startBiddingRound1,
+  calculateRoundScore,
+  DEFAULT_EUCHRE_RULES,
 } from '@67cards/shared'
 import { getRandomAINames, GameTimings } from '@67cards/shared'
 import type { GameEvents, GameOptions, GamePlayer } from './types.js'
@@ -48,6 +46,8 @@ export class EuchreGame {
   private phase: GamePhase = GamePhase.Setup
   private currentDealer = 0
   private passCount = 0
+  private biddingStartPlayer = 0
+  private rules: EuchreRules = { ...DEFAULT_EUCHRE_RULES }
   private events: GameEvents
   private stateSeq = 0 // Incrementing sequence number for drift detection
   private turnReminderTimeout: ReturnType<typeof setTimeout> | null = null
@@ -68,6 +68,10 @@ export class EuchreGame {
     this.aiDifficulty = options.aiDifficulty === 'hard' ? 'hard' : 'easy'
     this.aiTracker = this.aiDifficulty === 'hard' ? new GameTracker() : null
     this.chatMode = options.chatMode ?? 'clean'
+    this.rules = {
+      stickTheDealer: options.stickTheDealer ?? false,
+      canadianLoner: options.canadianLoner ?? false,
+    }
   }
 
   getStateSeq(): number {
@@ -195,8 +199,7 @@ export class EuchreGame {
       goingAlone,
     }
 
-    this.processBidInternal(bid)
-    return true
+    return this.processBidInternal(bid)
   }
 
   /**
@@ -218,20 +221,14 @@ export class EuchreGame {
     const card = player.hand.find((c) => c.id === cardId)
     if (!card) return false
 
-    // Check if it's a legal play
-    const legalPlays = getLegalPlays(player.hand, this.currentRound.currentTrick, this.currentRound.trump!.suit)
-    if (!legalPlays.some((c) => c.id === cardId)) {
-      return false
-    }
-
     // Clear turn reminder and timeout status since player acted
     this.clearTurnReminderTimeout()
     if (this.timedOutPlayer === playerIndex) {
       this.timedOutPlayer = null
     }
 
-    this.playCardInternal(playerIndex, card)
-    return true
+    // Legality enforced by pure applyPlay (same-ref reject)
+    return this.playCardInternal(playerIndex, card)
   }
 
   /**
@@ -241,285 +238,189 @@ export class EuchreGame {
     const playerIndex = this.players.findIndex((p) => p.odusId === odusId)
     if (playerIndex === -1) return false
 
-    if (playerIndex !== this.currentDealer) return false
     if (this.phase !== GamePhase.DealerDiscard) return false
+    if (this.currentRound?.currentPlayer !== playerIndex) return false
 
-    const player = this.players[playerIndex]!
-    const cardIndex = player.hand.findIndex((c) => c.id === cardId)
-    if (cardIndex === -1) return false
-
-    // Clear turn reminder and timeout status since player acted
     this.clearTurnReminderTimeout()
     if (this.timedOutPlayer === playerIndex) {
       this.timedOutPlayer = null
     }
 
-    player.hand.splice(cardIndex, 1)
-    this.startPlayingPhase()
+    const prev = this.toPureState()
+    const next = applyDealerDiscard(prev, cardId)
+    if (next === prev) return false
+
+    this.applyPureState(next)
+    this.broadcastState()
+    this.processCurrentTurn()
     return true
+  }
+
+  // ---- Pure state bridge ----
+
+  private toPureState(): EuchreGameState {
+    return {
+      players: this.players.map(p => ({
+        id: p.seatIndex,
+        name: p.name,
+        hand: p.hand,
+        isHuman: p.isHuman,
+        teamId: p.teamId,
+      })),
+      currentRound: this.currentRound,
+      scores: this.scores,
+      gameOver: this.gameOver,
+      winner: this.winner,
+      phase: this.phase,
+      currentDealer: this.currentDealer,
+      passCount: this.passCount,
+      biddingStartPlayer: this.biddingStartPlayer,
+      rules: this.rules,
+    }
+  }
+
+  private applyPureState(next: EuchreGameState): void {
+    for (let i = 0; i < 4; i++) {
+      const pure = next.players[i]
+      const host = this.players[i]
+      if (!pure || !host) continue
+      host.hand = pure.hand
+    }
+    this.currentRound = next.currentRound
+    this.scores = next.scores
+    this.gameOver = next.gameOver
+    this.winner = next.winner
+    this.phase = next.phase
+    this.currentDealer = next.currentDealer
+    this.passCount = next.passCount
+    this.biddingStartPlayer = next.biddingStartPlayer
   }
 
   // ---- Internal methods ----
 
   private startNewRound(): void {
-    this.phase = GamePhase.Dealing
-
     if (this.aiTracker) {
       this.aiTracker.reset()
     }
 
-    // Create and deal deck
-    const deck = createDeck()
-    const [hand0, hand1, hand2, hand3, kitty] = dealCards(deck)
-
-    // Update player hands
-    this.players[0]!.hand = hand0
-    this.players[1]!.hand = hand1
-    this.players[2]!.hand = hand2
-    this.players[3]!.hand = hand3
-
-    // Turn up card is first card of kitty
-    const turnUpCard = kitty[0] ?? null
-
-    // Create new round
-    this.currentRound = {
-      dealer: this.currentDealer,
-      trump: null,
-      tricks: [],
-      currentTrick: createTrick(),
-      kitty,
-      turnUpCard,
-      biddingRound: 1,
-      currentPlayer: (this.currentDealer + 1) % 4,
-      goingAlone: false,
-      alonePlayer: null,
-    }
-
-    this.passCount = 0
-
-    // Broadcast state to all players
+    const next = dealRound(this.toPureState())
+    this.applyPureState(next)
     this.broadcastState()
 
-    // Start bidding
     setTimeout(() => {
-      this.phase = GamePhase.BiddingRound1
+      const bidding = startBiddingRound1(this.toPureState())
+      this.applyPureState(bidding)
       this.broadcastState()
       this.processCurrentTurn()
     }, GameTimings.phasePauseMs)
   }
 
-  private processBidInternal(bid: Bid): void {
-    if (!this.currentRound) return
+  private processBidInternal(bid: Bid): boolean {
+    if (!this.currentRound) return false
 
     const player = this.players[bid.playerId]!
+    const prev = this.toPureState()
+    const next = applyBid(prev, bid)
+    if (next === prev) return false
 
-    // Broadcast the bid
     this.events.onBidMade(bid.playerId, bid, player.name)
+    this.applyPureState(next)
 
-    console.log('Server processBidInternal - bid:', JSON.stringify(bid))
-    const newTrump = processBid(bid, this.currentRound.turnUpCard, this.currentRound.trump)
-    console.log('Server processBidInternal - newTrump:', JSON.stringify(newTrump))
-
-    // If trump was set (someone ordered up or called)
-    if (newTrump && !this.currentRound.trump) {
-      this.currentRound.trump = newTrump
-      console.log('Server trump set to:', this.currentRound.trump)
-      this.currentRound.goingAlone = newTrump.goingAlone
-      this.currentRound.alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
-
-      if (this.aiTracker) {
-        this.aiTracker.setTrump(newTrump.suit)
-      }
-
-      // If dealer picked up, they need to discard (unless partner is going alone)
-      if (bid.action === BidAction.PickUp || bid.action === BidAction.OrderUp) {
-        const alonePlayer = newTrump.goingAlone ? newTrump.calledBy : null
-        if (!isPlayerSittingOut(this.currentRound.dealer, alonePlayer)) {
-          this.handleDealerPickup()
-          return
-        }
-      }
-
-      // Start playing phase
-      this.startPlayingPhase()
-      return
+    if (next.currentRound?.trump && this.aiTracker) {
+      this.aiTracker.setTrump(next.currentRound.trump.suit)
     }
 
-    // Pass - continue bidding
-    if (bid.action === BidAction.Pass) {
-      this.passCount++
-
-      if (this.currentRound.biddingRound === 1) {
-        if (this.passCount >= 4) {
-          // Move to round 2
-          this.currentRound.biddingRound = 2
-          this.currentRound.currentPlayer = (this.currentRound.dealer + 1) % 4
-          this.passCount = 0
-          this.phase = GamePhase.BiddingRound2
-        } else {
-          this.currentRound.currentPlayer = (this.currentRound.currentPlayer + 1) % 4
-        }
-      } else {
-        // Round 2 — all four passed: throw in the hand and redeal
-        // (matches SP "Dealer Can Pass" default; stick-the-dealer needs table settings later)
-        if (this.passCount >= 4) {
-          this.currentDealer = (this.currentDealer + 1) % 4
-          this.startNewRound()
-          return
-        }
-        this.currentRound.currentPlayer = (this.currentRound.currentPlayer + 1) % 4
-      }
-
+    // Redeal path (R2 all-pass): pure already dealt
+    if (next.phase === GamePhase.Dealing) {
       this.broadcastState()
-      this.processCurrentTurn()
+      setTimeout(() => {
+        const bidding = startBiddingRound1(this.toPureState())
+        this.applyPureState(bidding)
+        this.broadcastState()
+        this.processCurrentTurn()
+      }, GameTimings.phasePauseMs)
+      return true
     }
-  }
 
-  private handleDealerPickup(): void {
-    if (!this.currentRound || !this.currentRound.turnUpCard) return
-
-    const dealer = this.players[this.currentRound.dealer]!
-    const turnCard = this.currentRound.turnUpCard
-
-    // Add turn card to dealer's hand
-    dealer.hand.push(turnCard)
-
-    // AI dealer discards automatically
-    if (!dealer.isHuman && this.currentRound.trump) {
-      const cardToDiscard = chooseDealerDiscard(dealer.hand, this.currentRound.trump.suit)
-      const index = dealer.hand.findIndex((c) => c.id === cardToDiscard.id)
-      if (index !== -1) {
-        dealer.hand.splice(index, 1)
+    // AI dealer discard
+    if (next.phase === GamePhase.DealerDiscard && next.currentRound?.trump) {
+      const dealerSeat = next.currentRound.dealer
+      const dealer = this.players[dealerSeat]
+      if (dealer && !dealer.isHuman) {
+        const cardToDiscard = chooseDealerDiscard(dealer.hand, next.currentRound.trump.suit)
+        const beforeDiscard = this.toPureState()
+        const afterDiscard = applyDealerDiscard(beforeDiscard, cardToDiscard.id)
+        if (afterDiscard !== beforeDiscard) {
+          this.applyPureState(afterDiscard)
+        }
       }
-      this.startPlayingPhase()
-      return
-    }
-
-    // Human dealer needs to discard
-    this.currentRound.currentPlayer = this.currentRound.dealer
-    this.phase = GamePhase.DealerDiscard
-    this.broadcastState()
-    this.notifyPlayerTurn(dealer.odusId!)
-  }
-
-  private startPlayingPhase(): void {
-    if (!this.currentRound) return
-
-    this.phase = GamePhase.Playing
-    this.currentRound.currentPlayer = (this.currentRound.dealer + 1) % 4
-
-    // Skip if player is sitting out
-    if (isPlayerSittingOut(this.currentRound.currentPlayer, this.currentRound.alonePlayer)) {
-      this.currentRound.currentPlayer = (this.currentRound.currentPlayer + 1) % 4
     }
 
     this.broadcastState()
     this.processCurrentTurn()
+    return true
   }
 
-  private playCardInternal(playerIndex: number, card: Card): void {
-    if (!this.currentRound || !this.currentRound.trump) return
+  private playCardInternal(playerIndex: number, card: Card): boolean {
+    if (!this.currentRound || !this.currentRound.trump) return false
 
     const player = this.players[playerIndex]!
+    const prev = this.toPureState()
+    const prevTrickCount = prev.currentRound?.tricks.length ?? 0
+    const next = applyPlay(prev, playerIndex, card.id)
+    if (next === prev) return false
 
-    // Remove card from player's hand
-    const cardIndex = player.hand.findIndex((c) => c.id === card.id)
-    if (cardIndex !== -1) {
-      player.hand.splice(cardIndex, 1)
-    }
-
-    // Add card to current trick
-    this.currentRound.currentTrick = playCardToTrick(
-      this.currentRound.currentTrick,
-      card,
-      playerIndex,
-      this.currentRound.trump.suit
-    )
-
-    // Broadcast the card played
+    this.applyPureState(next)
     this.events.onCardPlayed(playerIndex, card, player.name)
 
-    // Check if trick is complete
-    if (isTrickComplete(this.currentRound.currentTrick, this.currentRound.goingAlone)) {
-      this.completeTrickAndContinue()
-    } else {
-      // Next player's turn
-      this.advanceToNextPlayer()
+    const trickJustCompleted =
+      (next.currentRound?.tricks.length ?? 0) > prevTrickCount
+
+    if (trickJustCompleted && next.currentRound) {
+      const completedTrick = next.currentRound.tricks[next.currentRound.tricks.length - 1]!
+      if (this.aiTracker) {
+        this.aiTracker.recordTrick(completedTrick)
+      }
+      const winnerSeat = completedTrick.winnerId!
+      this.events.onTrickComplete(
+        winnerSeat,
+        this.players[winnerSeat]?.name ?? '',
+        completedTrick.cards.map(pc => ({ playerId: pc.playerId, card: pc.card }))
+      )
+
       this.broadcastState()
-      this.processCurrentTurn()
-    }
-  }
 
-  private advanceToNextPlayer(): void {
-    if (!this.currentRound) return
+      if (
+        next.phase === GamePhase.RoundComplete ||
+        next.phase === GamePhase.GameOver ||
+        (next.currentRound.tricks.length >= 5)
+      ) {
+        setTimeout(() => this.emitRoundCompleteEvents(), GameTimings.roundPauseMs)
+        return true
+      }
 
-    this.currentRound.currentPlayer = (this.currentRound.currentPlayer + 1) % 4
-
-    // Skip if sitting out
-    if (isPlayerSittingOut(this.currentRound.currentPlayer, this.currentRound.alonePlayer)) {
-      this.currentRound.currentPlayer = (this.currentRound.currentPlayer + 1) % 4
-    }
-  }
-
-  private completeTrickAndContinue(): void {
-    if (!this.currentRound || !this.currentRound.trump) return
-
-    // Complete the trick
-    const completedTrick = completeTrick(this.currentRound.currentTrick, this.currentRound.trump.suit)
-    this.currentRound.tricks.push(completedTrick)
-
-    if (this.aiTracker) {
-      this.aiTracker.recordTrick(completedTrick)
-    }
-
-    const winner = this.players[completedTrick.winnerId!]!
-
-    // Broadcast trick complete
-    this.events.onTrickComplete(
-      completedTrick.winnerId!,
-      winner.name,
-      completedTrick.cards.map((pc) => ({ playerId: pc.playerId, card: pc.card }))
-    )
-
-    this.phase = GamePhase.TrickComplete
-    this.broadcastState()
-
-    // Check if round is complete (5 tricks)
-    if (this.currentRound.tricks.length === 5) {
       setTimeout(() => {
-        this.completeRound()
-      }, GameTimings.roundPauseMs)
-    } else {
-      // Start next trick - shorter pause than round end
-      setTimeout(() => {
-        if (!this.currentRound || completedTrick.winnerId === null) return
-
-        this.currentRound.currentTrick = createTrick()
-        this.currentRound.currentPlayer = completedTrick.winnerId
-        this.phase = GamePhase.Playing
+        const before = this.toPureState()
+        const continued = continueAfterTrick(before)
+        if (continued !== before) {
+          this.applyPureState(continued)
+        }
         this.broadcastState()
         this.processCurrentTurn()
       }, GameTimings.trickPauseMs)
+      return true
     }
+
+    this.broadcastState()
+    this.processCurrentTurn()
+    return true
   }
 
-  private completeRound(): void {
-    if (!this.currentRound || !this.currentRound.trump) return
+  /** Scores already applied by pure applyPlay → finishRound */
+  private emitRoundCompleteEvents(): void {
+    if (!this.currentRound?.trump) return
 
-    this.phase = GamePhase.RoundComplete
-
-    // Calculate score
     const roundScore = calculateRoundScore(this.currentRound.tricks, this.currentRound.trump)
-    const currentScores: [number, number] = [this.scores[0]?.score ?? 0, this.scores[1]?.score ?? 0]
-    const newScores: [number, number] = [
-      currentScores[0] + roundScore.team0Points,
-      currentScores[1] + roundScore.team1Points,
-    ]
-
-    if (this.scores[0]) this.scores[0].score = newScores[0]
-    if (this.scores[1]) this.scores[1].score = newScores[1]
-
-    // Count tricks for each team
     let team0Tricks = 0
     let team1Tricks = 0
     for (const trick of this.currentRound.tricks) {
@@ -529,25 +430,17 @@ export class EuchreGame {
       }
     }
 
-    // Broadcast round complete
     this.events.onRoundComplete(
       this.scores,
       [team0Tricks, team1Tricks],
       [roundScore.team0Points, roundScore.team1Points]
     )
-
     this.broadcastState()
 
-    // Check for game over
-    if (isGameOver(newScores)) {
-      this.winner = getWinner(newScores)
-      this.gameOver = true
-      this.phase = GamePhase.GameOver
-
+    if (this.gameOver) {
       this.events.onGameOver(this.winner!, this.scores)
       this.broadcastState()
     } else {
-      // Next round
       setTimeout(() => {
         this.currentDealer = (this.currentDealer + 1) % 4
         this.startNewRound()

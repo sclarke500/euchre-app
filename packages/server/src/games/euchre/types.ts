@@ -30,4 +30,7 @@ export interface GameEvents {
 export interface GameOptions {
   aiDifficulty?: 'easy' | 'hard'
   chatMode?: 'clean' | 'unhinged'
+  /** Table rules — default can-pass (false). Stick-the-dealer needs lobby plumbing later. */
+  stickTheDealer?: boolean
+  canadianLoner?: boolean
 }

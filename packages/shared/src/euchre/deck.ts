@@ -24,12 +24,13 @@ export function createDeck(): Card[] {
 
 /**
  * Shuffle a deck using Fisher-Yates algorithm
+ * @param rng optional RNG in [0,1) for deterministic tests (default Math.random)
  */
-export function shuffleDeck(deck: Card[]): Card[] {
+export function shuffleDeck(deck: Card[], rng: () => number = Math.random): Card[] {
   const shuffled = [...deck]
 
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = Math.floor(rng() * (i + 1))
     const temp = shuffled[i]
     shuffled[i] = shuffled[j]!
     shuffled[j] = temp!
@@ -41,9 +42,10 @@ export function shuffleDeck(deck: Card[]): Card[] {
 /**
  * Deal cards to 4 players (5 cards each) and return kitty (4 cards)
  * Returns [player0Hand, player1Hand, player2Hand, player3Hand, kitty]
+ * Expects deck already shuffled if you need a specific order; still shuffles once for safety.
  */
-export function dealCards(deck: Card[]): [Card[], Card[], Card[], Card[], Card[]] {
-  const shuffled = shuffleDeck(deck)
+export function dealCards(deck: Card[], rng: () => number = Math.random): [Card[], Card[], Card[], Card[], Card[]] {
+  const shuffled = shuffleDeck(deck, rng)
 
   // Deal 5 cards to each of 4 players
   const player0Hand = shuffled.slice(0, 5)
