@@ -30,7 +30,7 @@ import {
   DEFAULT_PRESIDENT_RULES,
   createGameTimer,
   // Remarks engine
-  getPresidentRemark,
+  createPresidentRemarkEngine,
   type PresidentRemarkState,
   type RemarkMode,
 } from '@67cards/shared'
@@ -44,8 +44,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   const chatStore = useChatStore()
   const timer = createGameTimer()
   
-  // Remarks engine state
-  let previousRemarkState: PresidentRemarkState | null = null
+  // Remarks engine (holds previous state snapshot + cooldown)
+  const remarkEngine = createPresidentRemarkEngine()
   let pileJustCleared = false
 
   // State
@@ -218,13 +218,8 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const newState = getRemarkStateSnapshot()
     const remarkMode: RemarkMode = settingsStore.aiChatMode === 'unhinged' ? 'spicy' : 'mild'
     
-    const remark = getPresidentRemark(
-      previousRemarkState,
-      newState,
-      getPlayersForChat(),
-      remarkMode
-    )
-    
+    const remark = remarkEngine.process(newState, getPlayersForChat(), remarkMode)
+
     if (remark) {
       chatStore.receiveMessage({
         id: `ai-${remark.playerId}-${Date.now()}`,
@@ -235,13 +230,12 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
         timestamp: Date.now(),
       })
     }
-    
-    previousRemarkState = newState
+
     pileJustCleared = false
   }
 
   function captureStateForChat() {
-    previousRemarkState = getRemarkStateSnapshot()
+    remarkEngine.capture(getRemarkStateSnapshot())
   }
 
   // Actions

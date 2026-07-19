@@ -24,7 +24,7 @@ import {
   processBid,
   chooseDealerDiscard,
   GameTracker,
-  getEuchreRemark,
+  createEuchreRemarkEngine,
   type EuchreRemarkState,
   type RemarkMode,
 } from '@67cards/shared'
@@ -58,8 +58,8 @@ export class EuchreGame {
   private readonly aiDifficulty: 'easy' | 'hard'
   private readonly aiTracker: GameTracker | null
   
-  // Remarks engine state
-  private previousRemarkState: EuchreRemarkState | null = null
+  // Remarks engine (holds previous state snapshot + cooldown per game)
+  private remarkEngine = createEuchreRemarkEngine()
   private chatMode: ChatMode = 'clean'
 
   constructor(id: string, events: GameEvents, options: GameOptions = {}) {
@@ -632,19 +632,15 @@ export class EuchreGame {
     // Map ChatMode to RemarkMode
     const remarkMode: RemarkMode = this.chatMode === 'unhinged' ? 'spicy' : 'mild'
     
-    const remark = getEuchreRemark(
-      this.previousRemarkState,
+    const remark = this.remarkEngine.process(
       newRemarkState,
       this.getPlayersForChat(),
       remarkMode
     )
-    
+
     if (remark) {
       this.events.onBotChat(remark.playerId, remark.playerName, remark.text)
     }
-    
-    // Update previous state for next comparison
-    this.previousRemarkState = newRemarkState
   }
 
   private notifyPlayerTurn(odusId: string): void {

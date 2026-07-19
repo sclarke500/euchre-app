@@ -8,6 +8,7 @@ export { type AIChatMode } from './ai/personality.js'
 
 // Bot profiles and remarks (live in-game bot chat)
 export * from './ai/bots/index.js'
+export * from './ai/remarkEngine.js'
 
 // Shared chat types (e.g. ChatMode, used by server games)
 export * from './ai/chat/index.js'
@@ -52,7 +53,8 @@ export {
   chooseSpadesCardHard,
   chooseSpadesBidHard,
   // Remarks engine
-  getSpadesRemark,
+  createSpadesRemarkEngine,
   type SpadesRemarkState,
+  type SpadesRemarkFlags,
   type SpadesRemark,
 } from './spades/index.js'

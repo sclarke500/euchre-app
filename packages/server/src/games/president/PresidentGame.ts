@@ -18,7 +18,7 @@ import {
   getRankDisplayName,
   getRandomAINames,
   GameTimings,
-  getPresidentRemark,
+  createPresidentRemarkEngine,
   type PresidentRemarkState,
   type RemarkMode,
 } from '@67cards/shared'
@@ -60,8 +60,8 @@ export class PresidentGame {
   private readonly turnStyle: 'original' | 'passLockout' | 'singleRound'
   private readonly cardExchange: ReturnType<typeof createPresidentCardExchangeController>
   
-  // Remarks engine state
-  private previousRemarkState: PresidentRemarkState | null = null
+  // Remarks engine (holds previous state snapshot + cooldown per game)
+  private remarkEngine = createPresidentRemarkEngine()
   private chatMode: ChatMode = 'clean'
   private pileJustCleared = false  // Track if pile was cleared this turn
 
@@ -727,18 +727,15 @@ export class PresidentGame {
     
     const remarkMode: RemarkMode = this.chatMode === 'unhinged' ? 'spicy' : 'mild'
     
-    const remark = getPresidentRemark(
-      this.previousRemarkState,
+    const remark = this.remarkEngine.process(
       newRemarkState,
       this.getPlayersForChat(),
       remarkMode
     )
-    
+
     if (remark) {
       this.events.onBotChat(remark.playerId, remark.playerName, remark.text)
     }
-    
-    this.previousRemarkState = newRemarkState
   }
 
   private notifyPlayerTurn(odusId: string): void {

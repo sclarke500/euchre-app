@@ -114,6 +114,17 @@ Settings stored in `settingsStore.ts` with localStorage persistence:
 **President:**
 - Super 2s & Jokers: Standard rules have 2s as highest (2 twos beat 2 aces). When enabled, adds Jokers (beat everything) and 2s need one less card (2 twos beat 3 aces)
 
+### Bot Remarks System
+Bots comment on game events (chat bubbles). Three layers, all in `packages/shared/src`:
+
+1. **Detection** (per game): `euchre/remarks.ts`, `spades/remarks.ts`, `president/remarks.ts` diff old/new state snapshots (Spades also uses explicit `SpadesRemarkFlags` set by the game at trick/round completion). Each detected event carries a `type` (e.g. `alone_march`), a **category**, a sentiment, and a probability.
+2. **Engine** (`ai/remarkEngine.ts`): `createGameRemarkEngine(detectEvents)` — holds the previous snapshot + a **per-instance** 3s cooldown (was module-global; don't regress this, it silenced other server tables). Games expose `createXRemarkEngine()` factories; callers (3 server game classes + 3 singleplayer stores) hold one instance each and call `.process(newState, players, mode)` / `.capture(state)`.
+3. **Bot voices** (`ai/bots/*.ts`): text resolution chain in `getRemarkForEvent`: `bot.events[eventType]` (per-event override) → `bot.categories[category]` (brag_big / brag / gloat / wince_big / wince / ominous) → `bot.remarks[sentiment]` (legacy fallback, also serves celebrate/concede for game end).
+
+Notable events: Euchre `alone_march`, `euchred_loner`/`got_euchred_alone`, `march`, `game_point`; Spades `nil_broken`/`broke_nil` (fires **live** when a nil bidder takes their first trick — round-end scoring only flags made nils now), `blind_nil_*`, `bag_penalty` (detected via bags shrinking, since bags are stored `% 10`); President `rank_jump` (Scum→President), `rank_fall`, `repeat_president`. Gloat events fire even when the victim is the human (an AI opponent speaks).
+
+To add a new remarkable situation: add detection in the game's `detectEvents` (or a flag if it's mid-trick), map it to a category, optionally give bots per-event override lines.
+
 ### AI Difficulty Levels
 Two AI implementations in `packages/shared/src/`:
 

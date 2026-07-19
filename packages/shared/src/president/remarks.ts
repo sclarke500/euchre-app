@@ -1,11 +1,13 @@
 /**
  * President Remarks System
- * 
- * Detects positive/negative events and fetches remarks from bot profiles.
+ *
+ * Detects remark-worthy events by diffing state snapshots and maps them to
+ * remark categories. Text selection + cooldown live in the shared engine.
  */
 
-import { getRemark, type RemarkMode, type Sentiment } from '../ai/bots/index.js'
-import type { PlayerRank } from './types.js'
+import { createGameRemarkEngine, type BotRemark, type RemarkEvent } from '../ai/remarkEngine.js'
+import type { Sentiment } from '../ai/bots/index.js'
+import { PlayerRank } from './types.js'
 
 export type { RemarkMode } from '../ai/bots/index.js'
 
@@ -13,34 +15,7 @@ export type { RemarkMode } from '../ai/bots/index.js'
 // Types
 // ---------------------------------------------------------------------------
 
-export interface PresidentRemark {
-  playerId: number
-  playerName: string
-  text: string
-  sentiment: Sentiment
-}
-
-// ---------------------------------------------------------------------------
-// Event Probabilities
-// ---------------------------------------------------------------------------
-
-const eventProbability: Record<string, number> = {
-  game_won: 90,
-  game_lost: 70,
-  first_out: 85,      // Became President
-  last_out: 75,       // Became Scum
-  pile_cleared: 60,   // Bombed the pile
-  round_won: 70,      // Won the round
-  round_lost: 60,     // Lost the round
-}
-
-// Global cooldown
-let lastRemarkTime = 0
-const COOLDOWN_MS = 3000
-
-// ---------------------------------------------------------------------------
-// State Types
-// ---------------------------------------------------------------------------
+export type PresidentRemark = BotRemark
 
 export interface PresidentRemarkState {
   phase: string
@@ -65,133 +40,109 @@ interface Player {
 // Event Detection
 // ---------------------------------------------------------------------------
 
-interface DetectedEvent {
-  type: string
-  playerId: number
-  playerName: string
-  sentiment: Sentiment
+function scumRank(players: PresidentRemarkState['players']): number {
+  const maxRank = Math.max(...players.map(p => p.rank ?? 0))
+  return maxRank >= PlayerRank.ViceScum ? maxRank : -1
 }
 
 function detectEvents(
   oldState: PresidentRemarkState | null,
   newState: PresidentRemarkState,
   players: Player[]
-): DetectedEvent[] {
-  const events: DetectedEvent[] = []
-  
+): RemarkEvent[] {
+  const events: RemarkEvent[] = []
+
   const aiPlayers = players.filter(p => !p.isHuman)
   if (aiPlayers.length === 0 || !oldState) return events
-  
+
   const getAIById = (id: number) => aiPlayers.find(p => p.id === id)
-  
+
+  const push = (
+    type: string,
+    category: RemarkEvent['category'],
+    player: Player,
+    sentiment: Sentiment,
+    probability: number
+  ) => {
+    events.push({ type, category, playerId: player.id, playerName: player.name, sentiment, probability })
+  }
+
   // Game just ended
   if (!oldState.gameOver && newState.gameOver) {
     const firstFinisher = newState.finishedPlayers[0]
     if (firstFinisher !== undefined) {
       const winner = getAIById(firstFinisher)
-      if (winner) {
-        events.push({
-          type: 'game_won',
-          playerId: winner.id,
-          playerName: winner.name,
-          sentiment: 'positive'
-        })
-      }
-      
+      if (winner) push('game_won', 'celebrate', winner, 'positive', 90)
+
       const lastFinisher = newState.finishedPlayers[newState.finishedPlayers.length - 1]
       if (lastFinisher !== undefined && lastFinisher !== firstFinisher) {
         const loser = getAIById(lastFinisher)
-        if (loser) {
-          events.push({
-            type: 'game_lost',
-            playerId: loser.id,
-            playerName: loser.name,
-            sentiment: 'negative'
-          })
-        }
+        if (loser) push('game_lost', 'concede', loser, 'negative', 70)
       }
     }
     return events
   }
-  
+
   // Someone just finished
   if (newState.finishedPlayers.length > oldState.finishedPlayers.length) {
     const newlyFinished = newState.finishedPlayers.filter(
       id => !oldState.finishedPlayers.includes(id)
     )
-    
+
     for (const finisherId of newlyFinished) {
       const finisher = getAIById(finisherId)
       if (!finisher) continue
-      
+
       const finishPosition = newState.finishedPlayers.indexOf(finisherId) + 1
       const totalPlayers = players.length
-      
+
       if (finishPosition === 1) {
-        // First out - positive
-        events.push({
-          type: 'first_out',
-          playerId: finisher.id,
-          playerName: finisher.name,
-          sentiment: 'positive'
-        })
+        push('first_out', 'brag', finisher, 'positive', 85)
       } else if (finishPosition === totalPlayers) {
-        // Last out - negative
-        events.push({
-          type: 'last_out',
-          playerId: finisher.id,
-          playerName: finisher.name,
-          sentiment: 'negative'
-        })
+        push('last_out', 'wince', finisher, 'negative', 75)
       }
     }
   }
-  
+
   // Pile was cleared
   if (newState.pileCleared && !oldState.pileCleared && oldState.lastPlayerId !== null) {
     const clearer = getAIById(oldState.lastPlayerId)
-    if (clearer) {
-      events.push({
-        type: 'pile_cleared',
-        playerId: clearer.id,
-        playerName: clearer.name,
-        sentiment: 'positive'
-      })
-    }
+    if (clearer) push('pile_cleared', 'brag', clearer, 'positive', 60)
   }
-  
-  // Round complete
+
+  // Round complete: rank movements
   if (newState.roundNumber > oldState.roundNumber) {
-    // New President (positive)
-    const newPresident = newState.players.find(p => p.rank === 1)
-    if (newPresident) {
-      const presidentAI = getAIById(newPresident.id)
-      if (presidentAI) {
-        events.push({
-          type: 'round_won',
-          playerId: presidentAI.id,
-          playerName: presidentAI.name,
-          sentiment: 'positive'
-        })
-      }
-    }
-    
-    // New Scum (negative)
-    const maxRank = Math.max(...newState.players.map(p => p.rank ?? 0))
-    const newScum = newState.players.find(p => p.rank === maxRank)
-    if (newScum && maxRank >= 4) {
-      const scumAI = getAIById(newScum.id)
-      if (scumAI) {
-        events.push({
-          type: 'round_lost',
-          playerId: scumAI.id,
-          playerName: scumAI.name,
-          sentiment: 'negative'
-        })
+    const oldScum = scumRank(oldState.players)
+    const newScum = scumRank(newState.players)
+
+    for (const newPlayer of newState.players) {
+      const ai = getAIById(newPlayer.id)
+      if (!ai) continue
+
+      const oldRank = oldState.players.find(p => p.id === newPlayer.id)?.rank ?? null
+      const newRank = newPlayer.rank
+
+      if (newRank === PlayerRank.President) {
+        if (oldRank !== null && oldScum !== -1 && oldRank === oldScum) {
+          // Scum → President in one round: the great comeback
+          push('rank_jump', 'brag_big', ai, 'positive', 90)
+        } else if (oldRank === PlayerRank.President) {
+          // Dynasty continues
+          push('repeat_president', 'brag', ai, 'positive', 60)
+        } else {
+          push('round_won', 'brag', ai, 'positive', 70)
+        }
+      } else if (newScum !== -1 && newRank === newScum) {
+        if (oldRank === PlayerRank.President) {
+          // President → Scum: the great fall
+          push('rank_fall', 'wince_big', ai, 'negative', 85)
+        } else {
+          push('round_lost', 'wince', ai, 'negative', 60)
+        }
       }
     }
   }
-  
+
   return events
 }
 
@@ -199,33 +150,10 @@ function detectEvents(
 // Main Export
 // ---------------------------------------------------------------------------
 
-export function getPresidentRemark(
-  oldState: PresidentRemarkState | null,
-  newState: PresidentRemarkState,
-  players: Player[],
-  mode: RemarkMode
-): PresidentRemark | null {
-  const now = Date.now()
-  if (now - lastRemarkTime < COOLDOWN_MS) return null
-  
-  const events = detectEvents(oldState, newState, players)
-  if (events.length === 0) return null
-  
-  for (const event of events) {
-    const prob = eventProbability[event.type] ?? 50
-    if (Math.random() * 100 > prob) continue
-    
-    const text = getRemark(event.playerName, event.sentiment, mode)
-    if (!text) continue
-    
-    lastRemarkTime = now
-    return {
-      playerId: event.playerId,
-      playerName: event.playerName,
-      text,
-      sentiment: event.sentiment,
-    }
-  }
-  
-  return null
+/**
+ * Create a remark engine instance for one President game.
+ * Holds the previous state snapshot and the remark cooldown per instance.
+ */
+export function createPresidentRemarkEngine() {
+  return createGameRemarkEngine<PresidentRemarkState, Player>(detectEvents)
 }

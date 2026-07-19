@@ -1,11 +1,13 @@
 /**
  * Spades Remarks System
- * 
- * Detects positive/negative events and fetches remarks from bot profiles.
+ *
+ * Detects remark-worthy events by diffing state snapshots (plus explicit
+ * event flags set by the game at trick/round completion) and maps them to
+ * remark categories. Text selection + cooldown live in the shared engine.
  */
 
-import { getRemark, type RemarkMode, type Sentiment } from '../ai/bots/index.js'
-import type { SpadesBidType } from './types.js'
+import { createGameRemarkEngine, type BotRemark, type RemarkEvent } from '../ai/remarkEngine.js'
+import type { Sentiment } from '../ai/bots/index.js'
 
 export type { RemarkMode } from '../ai/bots/index.js'
 
@@ -13,47 +15,24 @@ export type { RemarkMode } from '../ai/bots/index.js'
 // Types
 // ---------------------------------------------------------------------------
 
-export interface SpadesRemark {
-  playerId: number
-  playerName: string
-  text: string
-  sentiment: Sentiment
+export type SpadesRemark = BotRemark
+
+/** Event flags set by the game when trick/round events occur */
+export interface SpadesRemarkFlags {
+  /** Nil bid survived the round (set at scoring) */
+  nilMade?: { playerId: number; blind: boolean }
+  /** Nil bidder just won their first trick — the nil died live */
+  nilBroken?: { playerId: number; blind: boolean }
+  /** Team bid more tricks than they took (set at scoring) */
+  setBid?: { teamId: number }
 }
 
-// ---------------------------------------------------------------------------
-// Event Probabilities
-// ---------------------------------------------------------------------------
-
-const eventProbability: Record<string, number> = {
-  game_won: 90,
-  game_lost: 70,
-  nil_made: 85,
-  nil_failed: 80,
-  opponent_nil_failed: 75,
-  got_set: 75,
-  set_opponent: 80,
-  round_won: 50,
-  round_lost: 40,
-}
-
-// Global cooldown
-let lastRemarkTime = 0
-const COOLDOWN_MS = 3000
-
-// ---------------------------------------------------------------------------
-// State Types
-// ---------------------------------------------------------------------------
-
-export interface SpadesRemarkState {
+export interface SpadesRemarkState extends SpadesRemarkFlags {
   phase: string
-  scores: { teamId: number; score: number }[]
+  scores: { teamId: number; score: number; bags?: number }[]
   roundNumber: number
   gameOver: boolean
   winner: number | null
-  // Event flags (set by game when events occur)
-  nilMade?: { playerId: number }
-  nilFailed?: { playerId: number }
-  setBid?: { teamId: number }
 }
 
 interface Player {
@@ -67,167 +46,111 @@ interface Player {
 // Event Detection
 // ---------------------------------------------------------------------------
 
-interface DetectedEvent {
-  type: string
-  playerId: number
-  playerName: string
-  sentiment: Sentiment
-}
-
 function detectEvents(
   oldState: SpadesRemarkState | null,
   newState: SpadesRemarkState,
   players: Player[]
-): DetectedEvent[] {
-  const events: DetectedEvent[] = []
-  
+): RemarkEvent[] {
+  const events: RemarkEvent[] = []
+
   const aiPlayers = players.filter(p => !p.isHuman)
   if (aiPlayers.length === 0 || !oldState) return events
-  
+
   const getAIOnTeam = (teamId: number) => aiPlayers.find(p => p.teamId === teamId)
   const getAINotOnTeam = (teamId: number) => aiPlayers.find(p => p.teamId !== teamId)
   const getAIById = (id: number) => aiPlayers.find(p => p.id === id)
-  
+
+  const push = (
+    type: string,
+    category: RemarkEvent['category'],
+    player: Player,
+    sentiment: Sentiment,
+    probability: number
+  ) => {
+    events.push({ type, category, playerId: player.id, playerName: player.name, sentiment, probability })
+  }
+
   // Game just ended
   if (!oldState.gameOver && newState.gameOver && newState.winner !== null) {
     const winningAI = getAIOnTeam(newState.winner)
     const losingAI = getAINotOnTeam(newState.winner)
-    
-    if (winningAI) {
-      events.push({
-        type: 'game_won',
-        playerId: winningAI.id,
-        playerName: winningAI.name,
-        sentiment: 'positive'
-      })
-    }
-    if (losingAI) {
-      events.push({
-        type: 'game_lost',
-        playerId: losingAI.id,
-        playerName: losingAI.name,
-        sentiment: 'negative'
-      })
-    }
+
+    if (winningAI) push('game_won', 'celebrate', winningAI, 'positive', 90)
+    if (losingAI) push('game_lost', 'concede', losingAI, 'negative', 70)
     return events
   }
-  
-  // Nil made (positive for nil bidder)
+
+  // Nil broken live — the bidder just won a trick mid-round
+  if (newState.nilBroken) {
+    const { playerId, blind } = newState.nilBroken
+    const bidder = players.find(p => p.id === playerId)
+
+    if (bidder && !bidder.isHuman) {
+      push(blind ? 'blind_nil_broken' : 'nil_broken', 'wince_big', bidder, 'negative', 85)
+    }
+    // Opponent gloats — works even when the broken nil belongs to the human
+    if (bidder) {
+      const gloater = getAINotOnTeam(bidder.teamId)
+      if (gloater) push('broke_nil', 'gloat', gloater, 'positive', 80)
+    }
+  }
+
+  // Nil made (set at scoring)
   if (newState.nilMade) {
     const nilPlayer = getAIById(newState.nilMade.playerId)
     if (nilPlayer) {
-      events.push({
-        type: 'nil_made',
-        playerId: nilPlayer.id,
-        playerName: nilPlayer.name,
-        sentiment: 'positive'
-      })
+      push(newState.nilMade.blind ? 'blind_nil_made' : 'nil_made', 'brag_big', nilPlayer, 'positive',
+        newState.nilMade.blind ? 95 : 85)
     }
   }
-  
-  // Nil failed (negative for nil bidder, positive for opponents)
-  if (newState.nilFailed) {
-    const failedPlayer = getAIById(newState.nilFailed.playerId)
-    if (failedPlayer) {
-      events.push({
-        type: 'nil_failed',
-        playerId: failedPlayer.id,
-        playerName: failedPlayer.name,
-        sentiment: 'negative'
-      })
-      
-      // Opponent gloats
-      const gloater = getAINotOnTeam(failedPlayer.teamId)
-      if (gloater) {
-        events.push({
-          type: 'opponent_nil_failed',
-          playerId: gloater.id,
-          playerName: gloater.name,
-          sentiment: 'positive'
-        })
-      }
-    }
-  }
-  
+
   // Team got set
   if (newState.setBid) {
     const setTeamAI = getAIOnTeam(newState.setBid.teamId)
-    if (setTeamAI) {
-      events.push({
-        type: 'got_set',
-        playerId: setTeamAI.id,
-        playerName: setTeamAI.name,
-        sentiment: 'negative'
-      })
-    }
-    
-    // Other team celebrates
+    if (setTeamAI) push('got_set', 'wince', setTeamAI, 'negative', 75)
+
     const celebrator = getAINotOnTeam(newState.setBid.teamId)
-    if (celebrator) {
-      events.push({
-        type: 'set_opponent',
-        playerId: celebrator.id,
-        playerName: celebrator.name,
-        sentiment: 'positive'
-      })
-    }
+    if (celebrator) push('set_opponent', 'gloat', celebrator, 'positive', 80)
   }
-  
-  // Round complete
-  const justCompletedRound = 
+
+  // Round complete: bag penalty + round won/lost
+  const justCompletedRound =
     (newState.phase === 'round_complete' || newState.phase === 'game_over') &&
     (oldState.phase !== 'round_complete' && oldState.phase !== 'game_over')
-  
+
   if (justCompletedRound) {
     const oldScore0 = oldState.scores.find(s => s.teamId === 0)?.score ?? 0
     const oldScore1 = oldState.scores.find(s => s.teamId === 1)?.score ?? 0
     const newScore0 = newState.scores.find(s => s.teamId === 0)?.score ?? 0
     const newScore1 = newState.scores.find(s => s.teamId === 1)?.score ?? 0
-    
-    const gain0 = newScore0 - oldScore0
-    const gain1 = newScore1 - oldScore1
-    
-    if (gain0 > gain1) {
-      const winnerAI = getAIOnTeam(0)
-      const loserAI = getAIOnTeam(1)
-      if (winnerAI) {
-        events.push({
-          type: 'round_won',
-          playerId: winnerAI.id,
-          playerName: winnerAI.name,
-          sentiment: 'positive'
-        })
-      }
-      if (loserAI && gain1 < 0) {
-        events.push({
-          type: 'round_lost',
-          playerId: loserAI.id,
-          playerName: loserAI.name,
-          sentiment: 'negative'
-        })
-      }
-    } else if (gain1 > gain0) {
-      const winnerAI = getAIOnTeam(1)
-      const loserAI = getAIOnTeam(0)
-      if (winnerAI) {
-        events.push({
-          type: 'round_won',
-          playerId: winnerAI.id,
-          playerName: winnerAI.name,
-          sentiment: 'positive'
-        })
-      }
-      if (loserAI && gain0 < 0) {
-        events.push({
-          type: 'round_lost',
-          playerId: loserAI.id,
-          playerName: loserAI.name,
-          sentiment: 'negative'
-        })
+
+    // Bag penalty: bags are stored % 10, so they only ever decrease when the
+    // 10-bag penalty (-100) was just applied
+    for (const teamId of [0, 1]) {
+      const oldBags = oldState.scores.find(s => s.teamId === teamId)?.bags
+      const newBags = newState.scores.find(s => s.teamId === teamId)?.bags
+      if (oldBags !== undefined && newBags !== undefined && newBags < oldBags) {
+        const bagged = getAIOnTeam(teamId)
+        if (bagged) push('bag_penalty', 'wince', bagged, 'negative', 70)
       }
     }
+
+    const gain0 = newScore0 - oldScore0
+    const gain1 = newScore1 - oldScore1
+
+    if (gain0 !== gain1) {
+      const winnerTeam = gain0 > gain1 ? 0 : 1
+      const loserTeam = 1 - winnerTeam
+      const loserGain = winnerTeam === 0 ? gain1 : gain0
+
+      const winnerAI = getAIOnTeam(winnerTeam)
+      if (winnerAI) push('round_won', 'brag', winnerAI, 'positive', 50)
+
+      const loserAI = getAIOnTeam(loserTeam)
+      if (loserAI && loserGain < 0) push('round_lost', 'wince', loserAI, 'negative', 40)
+    }
   }
-  
+
   return events
 }
 
@@ -235,33 +158,10 @@ function detectEvents(
 // Main Export
 // ---------------------------------------------------------------------------
 
-export function getSpadesRemark(
-  oldState: SpadesRemarkState | null,
-  newState: SpadesRemarkState,
-  players: Player[],
-  mode: RemarkMode
-): SpadesRemark | null {
-  const now = Date.now()
-  if (now - lastRemarkTime < COOLDOWN_MS) return null
-  
-  const events = detectEvents(oldState, newState, players)
-  if (events.length === 0) return null
-  
-  for (const event of events) {
-    const prob = eventProbability[event.type] ?? 50
-    if (Math.random() * 100 > prob) continue
-    
-    const text = getRemark(event.playerName, event.sentiment, mode)
-    if (!text) continue
-    
-    lastRemarkTime = now
-    return {
-      playerId: event.playerId,
-      playerName: event.playerName,
-      text,
-      sentiment: event.sentiment,
-    }
-  }
-  
-  return null
+/**
+ * Create a remark engine instance for one Spades game.
+ * Holds the previous state snapshot and the remark cooldown per instance.
+ */
+export function createSpadesRemarkEngine() {
+  return createGameRemarkEngine<SpadesRemarkState, Player>(detectEvents)
 }

@@ -1,11 +1,13 @@
 /**
  * Euchre Remarks System
- * 
- * Detects positive/negative events and fetches remarks from bot profiles.
- * Game logic only - knows nothing about individual bot personalities.
+ *
+ * Detects remark-worthy events by diffing state snapshots and maps them to
+ * remark categories. Text selection + cooldown live in the shared engine
+ * (ai/remarkEngine.ts); bot voices live in the bot profiles (ai/bots/).
  */
 
-import { getRemark, type RemarkMode, type Sentiment } from '../ai/bots/index.js'
+import { createGameRemarkEngine, type BotRemark, type RemarkEvent } from '../ai/remarkEngine.js'
+import type { Sentiment } from '../ai/bots/index.js'
 
 // Re-export for convenience
 export type { RemarkMode } from '../ai/bots/index.js'
@@ -14,35 +16,7 @@ export type { RemarkMode } from '../ai/bots/index.js'
 // Types
 // ---------------------------------------------------------------------------
 
-export interface EuchreRemark {
-  playerId: number
-  playerName: string
-  text: string
-  sentiment: Sentiment
-}
-
-// ---------------------------------------------------------------------------
-// Event Probabilities
-// ---------------------------------------------------------------------------
-
-// Probability of generating a remark for each event type (percentage)
-const eventProbability: Record<string, number> = {
-  game_won: 90,
-  game_lost: 70,
-  euchred_opponent: 75,
-  got_euchred: 70,
-  alone_success: 85,
-  made_call: 30,
-  stole_deal: 60,
-}
-
-// Global cooldown
-let lastRemarkTime = 0
-const COOLDOWN_MS = 3000
-
-// ---------------------------------------------------------------------------
-// State Types
-// ---------------------------------------------------------------------------
+export type EuchreRemark = BotRemark
 
 export interface EuchreRemarkState {
   phase: string
@@ -67,118 +41,111 @@ interface Player {
 // Event Detection
 // ---------------------------------------------------------------------------
 
-interface DetectedEvent {
-  type: string
-  playerId: number
-  playerName: string
-  sentiment: Sentiment
-}
+// Game is played to 10 points
+const GAME_POINT_SCORE = 9
 
 function detectEvents(
   oldState: EuchreRemarkState | null,
   newState: EuchreRemarkState,
   players: Player[]
-): DetectedEvent[] {
-  const events: DetectedEvent[] = []
-  
+): RemarkEvent[] {
+  const events: RemarkEvent[] = []
+
   const aiPlayers = players.filter(p => !p.isHuman)
   if (aiPlayers.length === 0 || !oldState) return events
-  
+
   const getAIOnTeam = (teamId: number) => aiPlayers.find(p => p.teamId === teamId)
   const getAINotOnTeam = (teamId: number) => aiPlayers.find(p => p.teamId !== teamId)
-  
+
+  const push = (
+    type: string,
+    category: RemarkEvent['category'],
+    player: Player,
+    sentiment: Sentiment,
+    probability: number
+  ) => {
+    events.push({ type, category, playerId: player.id, playerName: player.name, sentiment, probability })
+  }
+
   // Game just ended
   if (!oldState.gameOver && newState.gameOver && newState.winner !== null) {
     const winningAI = getAIOnTeam(newState.winner)
     const losingAI = getAINotOnTeam(newState.winner)
-    
-    if (winningAI) {
-      events.push({ 
-        type: 'game_won', 
-        playerId: winningAI.id, 
-        playerName: winningAI.name,
-        sentiment: 'positive'
-      })
-    }
-    if (losingAI) {
-      events.push({ 
-        type: 'game_lost', 
-        playerId: losingAI.id, 
-        playerName: losingAI.name,
-        sentiment: 'negative'
-      })
-    }
+
+    if (winningAI) push('game_won', 'celebrate', winningAI, 'positive', 90)
+    if (losingAI) push('game_lost', 'concede', losingAI, 'negative', 70)
     return events
   }
-  
+
   // Score changed = round completed
   const oldScore0 = oldState.scores.find(s => s.teamId === 0)?.score ?? 0
   const oldScore1 = oldState.scores.find(s => s.teamId === 1)?.score ?? 0
   const newScore0 = newState.scores.find(s => s.teamId === 0)?.score ?? 0
   const newScore1 = newState.scores.find(s => s.teamId === 1)?.score ?? 0
-  
+
   const team0Gained = newScore0 - oldScore0
   const team1Gained = newScore1 - oldScore1
-  
+
   if (team0Gained > 0 || team1Gained > 0) {
     const scoringTeam = team0Gained > 0 ? 0 : 1
+    const pointsGained = scoringTeam === 0 ? team0Gained : team1Gained
     const calledBy = oldState.currentRound?.trump?.calledBy ?? -1
     const callingTeam = calledBy !== -1 ? (calledBy % 2) : -1
     const wasAlone = oldState.currentRound?.goingAlone ?? false
     const dealer = oldState.currentRound?.dealer ?? 0
     const dealerTeam = dealer % 2
-    
+    const caller = players.find(p => p.id === calledBy)
+
     // Euchre: calling team didn't score
     const wasEuchre = callingTeam !== -1 && callingTeam !== scoringTeam
-    
-    if (wasEuchre) {
-      // Team that got euchred (negative)
+
+    if (wasEuchre && wasAlone) {
+      // Euchred a loner — the sweetest euchre there is
+      const gloater = getAIOnTeam(scoringTeam)
+      if (gloater) push('euchred_loner', 'gloat', gloater, 'positive', 90)
+
+      // The loner winces hard
+      if (caller && !caller.isHuman) push('got_euchred_alone', 'wince_big', caller, 'negative', 80)
+    } else if (wasEuchre) {
       const euchredAI = getAIOnTeam(callingTeam)
-      if (euchredAI) {
-        events.push({ 
-          type: 'got_euchred', 
-          playerId: euchredAI.id, 
-          playerName: euchredAI.name,
-          sentiment: 'negative'
-        })
-      }
-      
-      // Team that did the euchring (positive)
+      if (euchredAI) push('got_euchred', 'wince', euchredAI, 'negative', 70)
+
       const euchringAI = getAIOnTeam(scoringTeam)
-      if (euchringAI) {
-        events.push({ 
-          type: 'euchred_opponent', 
-          playerId: euchringAI.id, 
-          playerName: euchringAI.name,
-          sentiment: 'positive'
-        })
-      }
+      if (euchringAI) push('euchred_opponent', 'gloat', euchringAI, 'positive', 75)
     } else if (wasAlone && callingTeam === scoringTeam) {
-      // Made it going alone (positive)
-      const caller = players.find(p => p.id === calledBy)
       if (caller && !caller.isHuman) {
-        events.push({ 
-          type: 'alone_success', 
-          playerId: caller.id, 
-          playerName: caller.name,
-          sentiment: 'positive'
-        })
+        if (pointsGained >= 4) {
+          // Alone march — took all 5 tricks solo, 4 points
+          push('alone_march', 'brag_big', caller, 'positive', 95)
+        } else {
+          push('alone_success', 'brag', caller, 'positive', 85)
+        }
       }
     } else if (callingTeam === scoringTeam) {
-      // Made their call (positive)
-      const caller = players.find(p => p.id === calledBy)
-      if (caller && !caller.isHuman) {
-        const eventType = dealerTeam !== callingTeam ? 'stole_deal' : 'made_call'
-        events.push({ 
-          type: eventType, 
-          playerId: caller.id, 
-          playerName: caller.name,
-          sentiment: 'positive'
-        })
+      if (pointsGained >= 2) {
+        // March — took all 5 tricks with partner
+        const marcher = (caller && !caller.isHuman) ? caller : getAIOnTeam(callingTeam)
+        if (marcher) push('march', 'brag_big', marcher, 'positive', 70)
+      } else if (caller && !caller.isHuman) {
+        if (dealerTeam !== callingTeam) {
+          push('stole_deal', 'brag', caller, 'positive', 60)
+        } else {
+          push('made_call', 'brag', caller, 'positive', 30)
+        }
+      }
+    }
+
+    // Game point tension: a team just reached 9 (game is to 10)
+    for (const teamId of [0, 1]) {
+      const oldScore = teamId === 0 ? oldScore0 : oldScore1
+      const newScore = teamId === 0 ? newScore0 : newScore1
+      if (oldScore < GAME_POINT_SCORE && newScore >= GAME_POINT_SCORE && !newState.gameOver) {
+        const teamAI = getAIOnTeam(teamId)
+        if (teamAI) push('game_point', 'ominous', teamAI, 'positive', 45)
       }
     }
   }
-  
+
   return events
 }
 
@@ -187,40 +154,9 @@ function detectEvents(
 // ---------------------------------------------------------------------------
 
 /**
- * Process state change and maybe generate a remark
+ * Create a remark engine instance for one Euchre game.
+ * Holds the previous state snapshot and the remark cooldown per instance.
  */
-export function getEuchreRemark(
-  oldState: EuchreRemarkState | null,
-  newState: EuchreRemarkState,
-  players: Player[],
-  mode: RemarkMode
-): EuchreRemark | null {
-  // Cooldown check
-  const now = Date.now()
-  if (now - lastRemarkTime < COOLDOWN_MS) return null
-  
-  // Detect events
-  const events = detectEvents(oldState, newState, players)
-  if (events.length === 0) return null
-  
-  // Try each event
-  for (const event of events) {
-    // Roll against probability
-    const prob = eventProbability[event.type] ?? 50
-    if (Math.random() * 100 > prob) continue
-    
-    // Get remark from bot profile
-    const text = getRemark(event.playerName, event.sentiment, mode)
-    if (!text) continue
-    
-    lastRemarkTime = now
-    return {
-      playerId: event.playerId,
-      playerName: event.playerName,
-      text,
-      sentiment: event.sentiment,
-    }
-  }
-  
-  return null
+export function createEuchreRemarkEngine() {
+  return createGameRemarkEngine<EuchreRemarkState, Player>(detectEvents)
 }

@@ -7,7 +7,7 @@
 
 export * from './types.js'
 
-import type { BotProfile, RemarkMode, Sentiment } from './types.js'
+import type { BotProfile, RemarkCategory, RemarkMode, RemarkPool, Sentiment } from './types.js'
 import { tron } from './tron.js'
 import { data } from './data.js'
 import { neon } from './neon.js'
@@ -50,6 +50,37 @@ export function getRemark(
   if (!pool || pool.length === 0) return undefined
   
   return pool[Math.floor(Math.random() * pool.length)]
+}
+
+function pickFrom(pool: RemarkPool | undefined, mode: RemarkMode): string | undefined {
+  const lines = pool?.[mode]
+  if (!lines || lines.length === 0) return undefined
+  return lines[Math.floor(Math.random() * lines.length)]
+}
+
+/**
+ * Get a remark for a specific game event.
+ *
+ * Resolution chain (most specific wins):
+ *   1. bot.events[eventType]   — per-event override ("Alone and untouchable.")
+ *   2. bot.categories[category] — category pool in the bot's voice
+ *   3. bot.remarks[sentiment]  — legacy sentiment fallback
+ */
+export function getRemarkForEvent(
+  botName: string,
+  eventType: string,
+  category: RemarkCategory,
+  sentiment: Sentiment,
+  mode: RemarkMode
+): string | undefined {
+  const bot = bots[botName]
+  if (!bot) return undefined
+
+  return (
+    pickFrom(bot.events?.[eventType], mode) ??
+    pickFrom(bot.categories?.[category], mode) ??
+    pickFrom(bot.remarks[sentiment], mode)
+  )
 }
 
 /**

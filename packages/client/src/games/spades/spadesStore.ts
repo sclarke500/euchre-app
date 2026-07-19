@@ -16,8 +16,9 @@ import {
   chooseSpadesBidHard,
   createGameTimer,
   // Remarks engine
-  getSpadesRemark,
+  createSpadesRemarkEngine,
   type SpadesRemarkState,
+  type SpadesRemarkFlags,
   type RemarkMode,
 } from '@67cards/shared'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -30,9 +31,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   const tracker = new SpadesTracker()
   const timer = createGameTimer()
   
-  // Remarks engine state
-  let previousRemarkState: SpadesRemarkState | null = null
-  let remarkEventFlags: { nilMade?: { playerId: number }; nilFailed?: { playerId: number }; setBid?: { teamId: number } } = {}
+  // Remarks engine (holds previous state snapshot + cooldown)
+  const remarkEngine = createSpadesRemarkEngine()
+  let remarkEventFlags: SpadesRemarkFlags = {}
 
   // State
   const players = ref<SpadesPlayer[]>([])
@@ -142,7 +143,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   function getRemarkStateSnapshot(): SpadesRemarkState {
     return {
       phase: phase.value,
-      scores: scores.value.map(s => ({ teamId: s.teamId, score: s.score })),
+      scores: scores.value.map(s => ({ teamId: s.teamId, score: s.score, bags: s.bags })),
       roundNumber: roundNumber.value,
       gameOver: gameOver.value,
       winner: winner.value,
@@ -165,13 +166,8 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     const newState = getRemarkStateSnapshot()
     const remarkMode: RemarkMode = settingsStore.aiChatMode === 'unhinged' ? 'spicy' : 'mild'
     
-    const remark = getSpadesRemark(
-      previousRemarkState,
-      newState,
-      getPlayersForChat(),
-      remarkMode
-    )
-    
+    const remark = remarkEngine.process(newState, getPlayersForChat(), remarkMode)
+
     if (remark) {
       chatStore.receiveMessage({
         id: `ai-${remark.playerId}-${Date.now()}`,
@@ -182,27 +178,40 @@ export const useSpadesStore = defineStore('spadesGame', () => {
         timestamp: Date.now(),
       })
     }
-    
-    previousRemarkState = newState
+
     remarkEventFlags = {}
   }
 
   function captureStateForChat() {
-    previousRemarkState = getRemarkStateSnapshot()
+    remarkEngine.capture(getRemarkStateSnapshot())
   }
-  
+
+  // Live nil-death detection: the trick winner was a nil bidder taking their first trick
+  function flagNilBrokenIfNeeded(state: SpadesGameState, winnerId: number | undefined) {
+    if (winnerId === undefined) return
+    const winner = state.players[winnerId]
+    if (!winner?.bid) return
+    const isNilBid = winner.bid.type === SpadesBidType.Nil || winner.bid.type === SpadesBidType.BlindNil
+    if (isNilBid && winner.tricksWon === 1) {
+      remarkEventFlags.nilBroken = {
+        playerId: winner.id,
+        blind: winner.bid.type === SpadesBidType.BlindNil,
+      }
+    }
+  }
+
   // Detect nil/set events at round end by comparing pre and post-scoring state
   function detectRoundEndChatEvents(preScoreState: SpadesGameState, postScoreState: SpadesGameState) {
+    // Made nils only — failures are remarked live via nilBroken
     for (const player of preScoreState.players) {
       if (!player.bid) continue
-      
+
       const isNilBid = player.bid.type === SpadesBidType.Nil || player.bid.type === SpadesBidType.BlindNil
-      
-      if (isNilBid) {
-        if (player.tricksWon === 0) {
-          remarkEventFlags.nilMade = { playerId: player.id }
-        } else {
-          remarkEventFlags.nilFailed = { playerId: player.id }
+
+      if (isNilBid && player.tricksWon === 0) {
+        remarkEventFlags.nilMade = {
+          playerId: player.id,
+          blind: player.bid.type === SpadesBidType.BlindNil,
         }
       }
     }
@@ -348,6 +357,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       // Record completed trick for hard AI tracking
       if (lastTrick) tracker.recordTrick(lastTrick)
 
+      // A nil bidder taking a trick is remarked live, not at scoring
+      flagNilBrokenIfNeeded(state, lastTrick?.winnerId ?? undefined)
+
       if (lastTrick && trickCompleteCallback) {
         // Brief pause to let user see the completed trick before sweep
         await new Promise(r => setTimeout(r, CardTimings.sweep))
@@ -374,6 +386,11 @@ export const useSpadesStore = defineStore('spadesGame', () => {
         // Process chat after round complete
         processChatAfterStateChange()
         return
+      }
+
+      // Surface any live trick event (broken nil) before play continues
+      if (remarkEventFlags.nilBroken) {
+        processChatAfterStateChange()
       }
 
       // Continue to next trick

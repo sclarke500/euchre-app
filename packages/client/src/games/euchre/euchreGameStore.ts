@@ -37,7 +37,7 @@ import {
   isPartnerWinningHard,
   createGameTimer,
   // Remarks engine
-  getEuchreRemark,
+  createEuchreRemarkEngine,
   type EuchreRemarkState,
   type RemarkMode,
 } from '@67cards/shared'
@@ -54,8 +54,8 @@ export const useEuchreGameStore = defineStore('game', () => {
   const gameTracker = new GameTracker()
   const timer = createGameTimer()
 
-  // State snapshot for remarks engine
-  let previousRemarkState: EuchreRemarkState | null = null
+  // Remarks engine (holds previous state snapshot + cooldown)
+  const remarkEngine = createEuchreRemarkEngine()
 
   function getRemarkStateSnapshot(): EuchreRemarkState {
     return {
@@ -89,13 +89,8 @@ export const useEuchreGameStore = defineStore('game', () => {
 
     const newState = getRemarkStateSnapshot()
     const remarkMode: RemarkMode = settingsStore.aiChatMode === 'unhinged' ? 'spicy' : 'mild'
-    
-    const remark = getEuchreRemark(
-      previousRemarkState,
-      newState,
-      getPlayersForChat(),
-      remarkMode
-    )
+
+    const remark = remarkEngine.process(newState, getPlayersForChat(), remarkMode)
 
     if (remark) {
       chatStore.receiveMessage({
@@ -107,14 +102,11 @@ export const useEuchreGameStore = defineStore('game', () => {
         timestamp: Date.now(),
       })
     }
-
-    // Update previous state for next comparison
-    previousRemarkState = newState
   }
 
   // Capture state before a potentially remark-worthy change
   function captureStateForChat() {
-    previousRemarkState = getRemarkStateSnapshot()
+    remarkEngine.capture(getRemarkStateSnapshot())
   }
 
   // State

@@ -10,8 +10,9 @@ import {
   Spades,
   getRandomAINames,
   GameTimings,
-  getSpadesRemark,
+  createSpadesRemarkEngine,
   type SpadesRemarkState,
+  type SpadesRemarkFlags,
   type RemarkMode,
 } from '@67cards/shared'
 import type { SpadesClientGameState } from '@67cards/shared'
@@ -51,10 +52,10 @@ export class SpadesGame {
   private readonly TIMEOUT_AFTER_REMINDERS = 4
   private timedOutPlayer: number | null = null
   
-  // Remarks engine state
-  private previousRemarkState: SpadesRemarkState | null = null
+  // Remarks engine (holds previous state snapshot + cooldown per game)
+  private remarkEngine = createSpadesRemarkEngine()
   private chatMode: ChatMode = 'clean'
-  private remarkEventFlags: { nilMade?: { playerId: number }; nilFailed?: { playerId: number }; setBid?: { teamId: number } } = {}
+  private remarkEventFlags: SpadesRemarkFlags = {}
 
   constructor(id: string, events: SpadesGameEvents, options: { chatMode?: 'clean' | 'unhinged' } = {}) {
     this.id = id
@@ -374,7 +375,10 @@ export class SpadesGame {
 
       // Update winner's tricks won
       const winner = this.players[winnerId]
-      if (winner) winner.tricksWon++
+      if (winner) {
+        winner.tricksWon++
+        this.flagNilBrokenIfNeeded(winner)
+      }
 
       this.events.onTrickComplete(
         winnerId,
@@ -460,18 +464,29 @@ export class SpadesGame {
     this.broadcastState()
   }
   
+  // Live nil-death detection: the moment a nil bidder wins their first trick
+  private flagNilBrokenIfNeeded(winner: SpadesGamePlayer): void {
+    const bidType = winner.bid?.type
+    const isNilBid = bidType === SpadesBidType.Nil || bidType === SpadesBidType.BlindNil
+    if (isNilBid && winner.tricksWon === 1) {
+      this.remarkEventFlags.nilBroken = {
+        playerId: winner.seatIndex,
+        blind: bidType === SpadesBidType.BlindNil,
+      }
+    }
+  }
+
   private detectRoundEndChatEvents(gameState: ReturnType<typeof buildSpadesGameState>): void {
-    // Check for nil bids
+    // Check for made nils (failures are remarked live via nilBroken)
     for (const player of gameState.players) {
       if (!player.bid) continue
-      
+
       const isNilBid = player.bid.type === SpadesBidType.Nil || player.bid.type === SpadesBidType.BlindNil
-      
-      if (isNilBid) {
-        if (player.tricksWon === 0) {
-          this.remarkEventFlags.nilMade = { playerId: player.id }
-        } else {
-          this.remarkEventFlags.nilFailed = { playerId: player.id }
+
+      if (isNilBid && player.tricksWon === 0) {
+        this.remarkEventFlags.nilMade = {
+          playerId: player.id,
+          blind: player.bid.type === SpadesBidType.BlindNil,
         }
       }
     }
@@ -592,7 +607,10 @@ export class SpadesGame {
       this.completedTricks.push(this.currentTrick)
 
       const winner = this.players[winnerId]
-      if (winner) winner.tricksWon++
+      if (winner) {
+        winner.tricksWon++
+        this.flagNilBrokenIfNeeded(winner)
+      }
 
       this.events.onTrickComplete(
         winnerId,
@@ -736,7 +754,7 @@ export class SpadesGame {
   private getRemarkStateSnapshot(): SpadesRemarkState {
     return {
       phase: this.phase,
-      scores: this.scores.map(s => ({ teamId: s.teamId, score: s.score })),
+      scores: this.scores.map(s => ({ teamId: s.teamId, score: s.score, bags: s.bags })),
       roundNumber: this.roundNumber,
       gameOver: this.gameOver,
       winner: this.winner,
@@ -758,18 +776,15 @@ export class SpadesGame {
     
     const remarkMode: RemarkMode = this.chatMode === 'unhinged' ? 'spicy' : 'mild'
     
-    const remark = getSpadesRemark(
-      this.previousRemarkState,
+    const remark = this.remarkEngine.process(
       newRemarkState,
       this.getPlayersForChat(),
       remarkMode
     )
-    
+
     if (remark) {
       this.events.onBotChat(remark.playerId, remark.playerName, remark.text)
     }
-    
-    this.previousRemarkState = newRemarkState
   }
 
   // Public methods for game management
