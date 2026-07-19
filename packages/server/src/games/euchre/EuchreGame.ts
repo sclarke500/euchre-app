@@ -360,6 +360,13 @@ export class EuchreGame {
           this.currentRound.currentPlayer = (this.currentRound.currentPlayer + 1) % 4
         }
       } else {
+        // Round 2 — all four passed: throw in the hand and redeal
+        // (matches SP "Dealer Can Pass" default; stick-the-dealer needs table settings later)
+        if (this.passCount >= 4) {
+          this.currentDealer = (this.currentDealer + 1) % 4
+          this.startNewRound()
+          return
+        }
         this.currentRound.currentPlayer = (this.currentRound.currentPlayer + 1) % 4
       }
 

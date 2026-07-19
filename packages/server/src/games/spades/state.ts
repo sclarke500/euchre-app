@@ -36,6 +36,8 @@ interface BuildSpadesGameStateParams {
   bidsComplete: boolean
   winScore: number
   loseScore: number
+  blindNilEnabled?: boolean
+  handRevealed?: boolean[]
 }
 
 export function buildSpadesGameState({
@@ -53,6 +55,8 @@ export function buildSpadesGameState({
   bidsComplete,
   winScore,
   loseScore,
+  blindNilEnabled = false,
+  handRevealed = [true, true, true, true],
 }: BuildSpadesGameStateParams): SpadesGameState {
   return {
     gameType: 'spades',
@@ -70,6 +74,8 @@ export function buildSpadesGameState({
     bidsComplete,
     winScore,
     loseScore,
+    blindNilEnabled,
+    handRevealed,
   }
 }
 
@@ -91,6 +97,8 @@ interface BuildSpadesClientStateParams {
   loseScore: number
   stateSeq: number
   timedOutPlayer: number | null
+  blindNilEnabled?: boolean
+  handRevealed?: boolean[]
 }
 
 export function buildSpadesClientState({
@@ -111,7 +119,18 @@ export function buildSpadesClientState({
   loseScore,
   stateSeq,
   timedOutPlayer,
+  blindNilEnabled = false,
+  handRevealed = [true, true, true, true],
 }: BuildSpadesClientStateParams): SpadesClientGameState {
+  const viewer = forPlayerId
+    ? players.find((p) => p.odusId === forPlayerId)
+    : null
+  const viewerSeat = viewer?.seatIndex
+  const viewerMaySeeHand =
+    viewerSeat === undefined
+      ? true
+      : (handRevealed[viewerSeat] ?? true)
+
   const clientPlayers: SpadesClientPlayer[] = players.map((p) => {
     const clientPlayer: SpadesClientPlayer = {
       id: p.seatIndex,
@@ -125,7 +144,8 @@ export function buildSpadesClientState({
       disconnected: p.disconnected,
     }
 
-    if (forPlayerId && p.odusId === forPlayerId) {
+    // Hide own hand until pure handRevealed (enforces blind-nil pre-look over the wire)
+    if (forPlayerId && p.odusId === forPlayerId && viewerMaySeeHand) {
       clientPlayer.hand = p.hand
     }
 
@@ -150,5 +170,7 @@ export function buildSpadesClientState({
     loseScore,
     stateSeq,
     timedOutPlayer,
+    blindNilEnabled,
+    handRevealed: viewerSeat !== undefined ? (handRevealed[viewerSeat] ?? true) : true,
   }
 }

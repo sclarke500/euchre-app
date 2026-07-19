@@ -9,8 +9,9 @@
 ## Before You Start
 
 1. Read `docs/LLM_ONBOARDING.md` for architecture overview
-2. Study one existing game as reference (Spades is cleanest)
-3. Have game rules documented
+2. Read `docs/GAME_ARCHITECTURE.md` for the pure-game / host contract (**required**)
+3. Study Spades as reference (`packages/shared/src/spades/` + client apply pattern)
+4. Have game rules documented
 
 ---
 
@@ -19,11 +20,15 @@
 ### 1.1 Create game folder
 ```
 packages/shared/src/{gamename}/
-├── types.ts      # Game-specific types
-├── game.ts       # Core game logic (optional, can be server-only)
-├── ai.ts         # AI logic (optional)
+├── types.ts      # Game-specific types, rules, client projection types
+├── game.ts       # Pure transitions (REQUIRED) — (state, action) → state
+├── ai.ts         # AI decision helpers
+├── remarks.ts    # Optional bot remark detection
+├── tests/        # Pure + golden sequence tests
 └── index.ts      # Exports
 ```
+
+**`game.ts` is not optional.** Rules progression lives in shared pure functions. Server and client hosts only apply results. See illegal-action same-ref contract and wire-format freeze in `docs/GAME_ARCHITECTURE.md`.
 
 ### 1.2 Define types in `types.ts`
 

@@ -44,6 +44,9 @@ export class SpadesGame {
   private bidsComplete = false
   private winScore = 500
   private loseScore = -200
+  /** Table rule (default off until Spades table settings carry it). */
+  private blindNilEnabled = false
+  private handRevealed: boolean[] = [true, true, true, true]
   private events: SpadesGameEvents
   private stateSeq = 0
   private turnReminderTimeout: ReturnType<typeof setTimeout> | null = null
@@ -139,6 +142,8 @@ export class SpadesGame {
       loseScore: this.loseScore,
       stateSeq: this.stateSeq,
       timedOutPlayer: this.timedOutPlayer,
+      blindNilEnabled: this.blindNilEnabled,
+      handRevealed: this.handRevealed,
     })
     this.events.onStateChange(odusId, state)
 
@@ -299,6 +304,7 @@ export class SpadesGame {
     this.currentPlayer = (this.dealer + 1) % 4
     this.spadesBroken = false
     this.bidsComplete = false
+    this.handRevealed = this.players.map(() => !this.blindNilEnabled)
 
     this.broadcastState()
 
@@ -310,6 +316,25 @@ export class SpadesGame {
     }, GameTimings.roundPauseMs)
   }
 
+  /**
+   * Pure-path reveal for blind-nil pre-look (forfeits BlindNil for this seat).
+   * Additive host API; no-op when blind nil is off / already revealed.
+   */
+  revealHand(odusId: string): boolean {
+    const player = this.players.find((p) => p.odusId === odusId)
+    if (!player) return false
+    if (player.seatIndex !== this.currentPlayer) return false
+    if (this.phase !== SpadesPhase.Bidding) return false
+
+    const prev = this.toPureState()
+    const next = Spades.processRevealHand(prev, player.seatIndex)
+    if (next === prev) return false
+
+    this.applyPureState(next)
+    this.broadcastState()
+    return true
+  }
+
   makeBid(odusId: string, bid: SpadesBid): boolean {
     const player = this.players.find((p) => p.odusId === odusId)
     if (!player) return false
@@ -317,102 +342,21 @@ export class SpadesGame {
     if (this.phase !== SpadesPhase.Bidding) return false
     if (player.bid !== null) return false
 
-    // Validate bid
-    if (!Spades.isValidBid(bid, player.hand)) return false
+    const prev = this.toPureState()
+    const next = Spades.processBid(prev, player.seatIndex, bid)
+    if (next === prev) return false
 
-    player.bid = bid
+    this.applyPureState(next)
     this.events.onBidMade(player.seatIndex, bid, player.name)
-
-    // Check if all players have bid
-    const allBid = this.players.every(p => p.bid !== null)
-    if (allBid) {
-      this.bidsComplete = true
-      this.phase = SpadesPhase.Playing
-      this.currentPlayer = (this.dealer + 1) % 4
-    } else {
-      this.currentPlayer = (this.currentPlayer + 1) % 4
-    }
 
     this.broadcastState()
     this.scheduleAITurn()
     return true
   }
 
-  playCard(odusId: string, cardId: string): boolean {
-    const player = this.players.find((p) => p.odusId === odusId)
-    if (!player) return false
-    if (player.seatIndex !== this.currentPlayer) return false
-    if (this.phase !== SpadesPhase.Playing) return false
-
-    const card = player.hand.find(c => c.id === cardId)
-    if (!card) return false
-
-    // Verify legal play
-    const legalPlays = Spades.getLegalPlays(player.hand, this.currentTrick, this.spadesBroken)
-    if (!legalPlays.some(c => c.id === cardId)) return false
-
-    // Remove card from hand
-    player.hand = player.hand.filter(c => c.id !== cardId)
-
-    // Add to trick
-    this.currentTrick.cards.push({ card, playerId: player.seatIndex })
-    if (this.currentTrick.cards.length === 1) {
-      this.currentTrick.leadingSuit = card.suit
-    }
-
-    // Break spades if spade was played
-    if (card.suit === 'spades') {
-      this.spadesBroken = true
-    }
-
-    this.events.onCardPlayed(player.seatIndex, card, player.name)
-
-    // Check if trick complete
-    if (this.currentTrick.cards.length === 4) {
-      const winnerId = Spades.determineTrickWinner(this.currentTrick)
-      this.currentTrick.winnerId = winnerId
-      this.completedTricks.push(this.currentTrick)
-
-      // Update winner's tricks won
-      const winner = this.players[winnerId]
-      if (winner) {
-        winner.tricksWon++
-        this.flagNilBrokenIfNeeded(winner)
-      }
-
-      this.events.onTrickComplete(
-        winnerId,
-        this.players[winnerId]?.name ?? '',
-        this.currentTrick.cards.map(c => ({ playerId: c.playerId, card: c.card }))
-      )
-
-      this.phase = SpadesPhase.TrickComplete
-
-      // Check if round complete
-      if (this.completedTricks.length === 13) {
-        setTimeout(() => this.completeRound(), GameTimings.roundPauseMs)
-      } else {
-        // Continue playing - shorter pause than round end
-        setTimeout(() => {
-          this.currentTrick = Spades.createSpadesTrick()
-          this.currentPlayer = winnerId
-          this.phase = SpadesPhase.Playing
-          this.broadcastState()
-          this.scheduleAITurn()
-        }, GameTimings.trickPauseMs)
-      }
-    } else {
-      this.currentPlayer = (this.currentPlayer + 1) % 4
-      this.scheduleAITurn()
-    }
-
-    this.broadcastState()
-    return true
-  }
-
-  private completeRound(): void {
-    // Calculate scores
-    const gameState = buildSpadesGameState({
+  /** Snapshot mutable host fields into pure SpadesGameState. */
+  private toPureState() {
+    return buildSpadesGameState({
       players: this.players,
       phase: this.phase,
       currentTrick: this.currentTrick,
@@ -427,16 +371,113 @@ export class SpadesGame {
       bidsComplete: this.bidsComplete,
       winScore: this.winScore,
       loseScore: this.loseScore,
+      blindNilEnabled: this.blindNilEnabled,
+      handRevealed: this.handRevealed,
     })
-    
-    // Detect nil/set events BEFORE scoring for chat
-    this.detectRoundEndChatEvents(gameState)
-    
-    const completedState = Spades.completeRound(gameState)
+  }
 
-    this.scores = completedState.scores
-    this.gameOver = completedState.gameOver
-    this.winner = completedState.winner
+  /** Apply full pure SpadesGameState onto mutable host fields. */
+  private applyPureState(next: ReturnType<typeof buildSpadesGameState>): void {
+    for (let i = 0; i < 4; i++) {
+      const pure = next.players[i]
+      const host = this.players[i]
+      if (!pure || !host) continue
+      host.hand = pure.hand
+      host.bid = pure.bid
+      host.tricksWon = pure.tricksWon
+    }
+    this.phase = next.phase
+    this.currentTrick = next.currentTrick
+    this.completedTricks = next.completedTricks
+    this.currentPlayer = next.currentPlayer
+    this.dealer = next.dealer
+    this.scores = next.scores
+    this.roundNumber = next.roundNumber
+    this.gameOver = next.gameOver
+    this.winner = next.winner
+    this.spadesBroken = next.spadesBroken
+    this.bidsComplete = next.bidsComplete
+    this.handRevealed = next.handRevealed
+  }
+
+  playCard(odusId: string, cardId: string): boolean {
+    const player = this.players.find((p) => p.odusId === odusId)
+    if (!player) return false
+    if (player.seatIndex !== this.currentPlayer) return false
+    if (this.phase !== SpadesPhase.Playing) return false
+
+    const card = player.hand.find(c => c.id === cardId)
+    if (!card) return false
+
+    return this.applyPlay(player.seatIndex, card)
+  }
+
+  /**
+   * Pure play path: Spades.playCard → apply → events → schedule continue/round.
+   * Illegal → same-ref reject (returns false).
+   */
+  private applyPlay(seatIndex: number, card: { id: string; suit: string; rank: string }): boolean {
+    const player = this.players[seatIndex]
+    if (!player) return false
+
+    const prev = this.toPureState()
+    const next = Spades.playCard(prev, seatIndex, card as any)
+    if (next === prev) return false
+
+    const prevTrickCount = prev.completedTricks.length
+    const trickJustCompleted = next.completedTricks.length > prevTrickCount
+
+    this.applyPureState(next)
+    this.events.onCardPlayed(seatIndex, card as any, player.name)
+
+    if (trickJustCompleted) {
+      const lastTrick = next.completedTricks[next.completedTricks.length - 1]!
+      const winnerId = lastTrick.winnerId ?? 0
+      const winner = this.players[winnerId]
+      if (winner) this.flagNilBrokenIfNeeded(winner)
+
+      this.events.onTrickComplete(
+        winnerId,
+        this.players[winnerId]?.name ?? '',
+        lastTrick.cards.map(c => ({ playerId: c.playerId, card: c.card }))
+      )
+
+      // 13th trick: pure playCard already called completeRound (scores applied)
+      if (
+        next.completedTricks.length === 13 ||
+        next.phase === SpadesPhase.RoundComplete ||
+        next.phase === SpadesPhase.GameOver
+      ) {
+        this.broadcastState()
+        setTimeout(() => this.emitRoundCompleteAfterScoring(), GameTimings.roundPauseMs)
+        return true
+      }
+
+      // Mid-round trick: pure left phase TrickComplete; continue after pause
+      this.broadcastState()
+      setTimeout(() => {
+        const before = this.toPureState()
+        const continued = Spades.continuePlay(before)
+        if (continued !== before) {
+          this.applyPureState(continued)
+        }
+        this.broadcastState()
+        this.scheduleAITurn()
+      }, GameTimings.trickPauseMs)
+      return true
+    }
+
+    this.broadcastState()
+    this.scheduleAITurn()
+    return true
+  }
+
+  /**
+   * Host shell after pure completeRound already applied scores (13th trick via playCard).
+   * Do not call Spades.completeRound again — that would double-score.
+   */
+  private emitRoundCompleteAfterScoring(): void {
+    this.detectRoundEndChatEvents(this.toPureState())
 
     const teamTricks: [number, number] = [
       this.players.filter(p => p.teamId === 0).reduce((s, p) => s + p.tricksWon, 0),
@@ -448,20 +489,19 @@ export class SpadesGame {
     if (this.gameOver) {
       this.phase = SpadesPhase.GameOver
       this.events.onGameOver(this.winner ?? 0, this.scores)
-    } else {
-      this.phase = SpadesPhase.RoundComplete
-      // Start new round after delay. Clients show the round-summary modal
-      // ~3.5s after this broadcast (roundEnd 1500ms + 2000ms chat delay) —
-      // keep this above that so the modal is on screen before the deal
-      // starts behind it (players don't need to dismiss it first).
-      setTimeout(() => {
-        this.dealer = (this.dealer + 1) % 4
-        this.roundNumber++
-        this.startNewRound()
-      }, 5000)
+      this.broadcastState()
+      return
     }
 
+    this.phase = SpadesPhase.RoundComplete
     this.broadcastState()
+
+    // Clients show round-summary ~3.5s after broadcast — keep above that before redeal
+    setTimeout(() => {
+      this.dealer = (this.dealer + 1) % 4
+      this.roundNumber++
+      this.startNewRound()
+    }, 5000)
   }
   
   // Live nil-death detection: the moment a nil bidder wins their first trick
@@ -532,35 +572,22 @@ export class SpadesGame {
     const player = this.players[this.currentPlayer]
     if (!player || player.isHuman) return
 
-    const gameState = buildSpadesGameState({
-      players: this.players,
-      phase: this.phase,
-      currentTrick: this.currentTrick,
-      completedTricks: this.completedTricks,
-      currentPlayer: this.currentPlayer,
-      dealer: this.dealer,
-      scores: this.scores,
-      roundNumber: this.roundNumber,
-      gameOver: this.gameOver,
-      winner: this.winner,
-      spadesBroken: this.spadesBroken,
-      bidsComplete: this.bidsComplete,
-      winScore: this.winScore,
-      loseScore: this.loseScore,
-    })
-    const bid = computeSpadesAIBid({ player, gameState })
-
-    player.bid = bid
-    this.events.onBidMade(player.seatIndex, bid, player.name)
-
-    const allBid = this.players.every(p => p.bid !== null)
-    if (allBid) {
-      this.bidsComplete = true
-      this.phase = SpadesPhase.Playing
-      this.currentPlayer = (this.dealer + 1) % 4
-    } else {
-      this.currentPlayer = (this.currentPlayer + 1) % 4
+    let gameState = this.toPureState()
+    // AI reveals first when blind-nil pre-look is active (never bids BlindNil)
+    if (gameState.blindNilEnabled && !(gameState.handRevealed[player.seatIndex] ?? true)) {
+      const revealed = Spades.processRevealHand(gameState, player.seatIndex)
+      if (revealed !== gameState) {
+        this.applyPureState(revealed)
+        gameState = revealed
+      }
     }
+
+    const bid = computeSpadesAIBid({ player, gameState })
+    const next = Spades.processBid(gameState, player.seatIndex, bid)
+    if (next === gameState) return
+
+    this.applyPureState(next)
+    this.events.onBidMade(player.seatIndex, bid, player.name)
 
     this.broadcastState()
     this.scheduleAITurn()
@@ -570,73 +597,9 @@ export class SpadesGame {
     const player = this.players[this.currentPlayer]
     if (!player || player.isHuman) return
 
-    const gameState = buildSpadesGameState({
-      players: this.players,
-      phase: this.phase,
-      currentTrick: this.currentTrick,
-      completedTricks: this.completedTricks,
-      currentPlayer: this.currentPlayer,
-      dealer: this.dealer,
-      scores: this.scores,
-      roundNumber: this.roundNumber,
-      gameOver: this.gameOver,
-      winner: this.winner,
-      spadesBroken: this.spadesBroken,
-      bidsComplete: this.bidsComplete,
-      winScore: this.winScore,
-      loseScore: this.loseScore,
-    })
+    const gameState = this.toPureState()
     const card = computeSpadesAIPlay({ player, gameState })
-
-    // Play the card
-    player.hand = player.hand.filter(c => c.id !== card.id)
-    this.currentTrick.cards.push({ card, playerId: player.seatIndex })
-    if (this.currentTrick.cards.length === 1) {
-      this.currentTrick.leadingSuit = card.suit
-    }
-
-    if (card.suit === 'spades') {
-      this.spadesBroken = true
-    }
-
-    this.events.onCardPlayed(player.seatIndex, card, player.name)
-
-    if (this.currentTrick.cards.length === 4) {
-      const winnerId = Spades.determineTrickWinner(this.currentTrick)
-      this.currentTrick.winnerId = winnerId
-      this.completedTricks.push(this.currentTrick)
-
-      const winner = this.players[winnerId]
-      if (winner) {
-        winner.tricksWon++
-        this.flagNilBrokenIfNeeded(winner)
-      }
-
-      this.events.onTrickComplete(
-        winnerId,
-        this.players[winnerId]?.name ?? '',
-        this.currentTrick.cards.map(c => ({ playerId: c.playerId, card: c.card }))
-      )
-
-      this.phase = SpadesPhase.TrickComplete
-
-      if (this.completedTricks.length === 13) {
-        setTimeout(() => this.completeRound(), GameTimings.roundPauseMs)
-      } else {
-        setTimeout(() => {
-          this.currentTrick = Spades.createSpadesTrick()
-          this.currentPlayer = winnerId
-          this.phase = SpadesPhase.Playing
-          this.broadcastState()
-          this.scheduleAITurn()
-        }, GameTimings.roundPauseMs)
-      }
-    } else {
-      this.currentPlayer = (this.currentPlayer + 1) % 4
-      this.scheduleAITurn()
-    }
-
-    this.broadcastState()
+    this.applyPlay(player.seatIndex, card)
   }
 
   private scheduleTurnReminder(): void {
@@ -707,6 +670,8 @@ export class SpadesGame {
           loseScore: this.loseScore,
           stateSeq: this.stateSeq,
           timedOutPlayer: this.timedOutPlayer,
+          blindNilEnabled: this.blindNilEnabled,
+          handRevealed: this.handRevealed,
         })
         this.events.onStateChange(player.odusId, state)
 
@@ -742,6 +707,8 @@ export class SpadesGame {
       loseScore: this.loseScore,
       stateSeq: this.stateSeq,
       timedOutPlayer: this.timedOutPlayer,
+      blindNilEnabled: this.blindNilEnabled,
+      handRevealed: this.handRevealed,
     }))
     
     // Process bot remarks after state broadcast

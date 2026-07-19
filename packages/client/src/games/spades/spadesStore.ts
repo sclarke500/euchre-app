@@ -54,7 +54,8 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   const gameLost = ref(false) // Always false for singleplayer, but keeps interface consistent
   const winScore = ref(500)
   const loseScore = ref(-200)
-  const userCardsRevealed = ref(true) // Whether user can see their cards (false during blind nil decision)
+  const blindNilEnabled = ref(false)
+  const handRevealed = ref<boolean[]>([true, true, true, true])
 
   // Animation callbacks
   let dealCompleteResolve: (() => void) | null = null
@@ -78,6 +79,8 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     bidsComplete: bidsComplete.value,
     winScore: winScore.value,
     loseScore: loseScore.value,
+    blindNilEnabled: blindNilEnabled.value,
+    handRevealed: handRevealed.value,
   }))
 
   const humanPlayer = computed(() =>
@@ -93,9 +96,15 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     return isHumanTurn.value && phase.value === SpadesPhase.Bidding
   })
 
-  // Blind nil decision pending when: blind nil enabled, user's turn to bid, cards not revealed yet
+  const userCardsRevealed = computed(() => {
+    const human = humanPlayer.value
+    if (!human) return true
+    return handRevealed.value[human.id] ?? true
+  })
+
+  // Blind nil decision pending when: pure flag says seat not revealed on bid turn
   const blindNilDecisionPending = computed(() => {
-    return settingsStore.spadesBlindNil && isHumanBidding.value && !userCardsRevealed.value
+    return blindNilEnabled.value && isHumanBidding.value && !userCardsRevealed.value
   })
   
   // Show normal bid wheel only after cards revealed (or blind nil disabled)
@@ -249,23 +258,20 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
     const playerNames = [playerName, ...aiNames]
 
-    const state = Spades.createSpadesGame(playerNames, 0, 500, -200)
+    const state = Spades.createSpadesGame(
+      playerNames,
+      0,
+      500,
+      -200,
+      settingsStore.spadesBlindNil
+    )
     applyState(state)
 
     // Deal cards
     startRound()
   }
 
-  function startRound() {
-    tracker.reset()
-    const dealtState = Spades.dealSpadesCards(gameState.value)
-    applyState(dealtState)
-    phase.value = SpadesPhase.Dealing
-    
-    // Reset blind nil state: hide cards if blind nil is enabled
-    userCardsRevealed.value = !settingsStore.spadesBlindNil
-
-    // Wait for deal animation
+  function waitForDealThenBid() {
     const advancePhase = () => {
       const biddingState = Spades.startBiddingPhase(gameState.value)
       applyState(biddingState)
@@ -283,10 +289,24 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     })
   }
 
+  function startRound() {
+    tracker.reset()
+    const dealtState = Spades.dealSpadesCards(gameState.value)
+    applyState(dealtState)
+    waitForDealThenBid()
+  }
+
   function startNextRound() {
-    const newRoundState = Spades.startNewRound(gameState.value)
-    applyState(newRoundState)
-    startRound()
+    // Rotate dealer + deal once (do NOT call startNewRound then startRound — that double-deals)
+    tracker.reset()
+    const prepared: SpadesGameState = {
+      ...gameState.value,
+      dealer: (gameState.value.dealer + 1) % 4,
+      roundNumber: gameState.value.roundNumber + 1,
+    }
+    const dealtState = Spades.dealSpadesCards(prepared)
+    applyState(dealtState)
+    waitForDealThenBid()
   }
 
   function makeBid(bid: SpadesBid) {
@@ -307,20 +327,21 @@ export const useSpadesStore = defineStore('spadesGame', () => {
   function submitBlindNil() {
     const human = humanPlayer.value
     if (!human || !blindNilDecisionPending.value) return
-    
-    // Import is at top of file
+
     const blindNilBid: SpadesBid = { type: SpadesBidType.BlindNil, count: 0 }
-    userCardsRevealed.value = true // Reveal cards after bidding
-    
     const state = Spades.processBid(gameState.value, human.id, blindNilBid)
+    if (state === gameState.value) return
     applyState(state)
     processAITurn()
   }
 
   // Blind nil: user chooses to see cards (forfeits blind nil option)
   function revealCards() {
-    if (!blindNilDecisionPending.value) return
-    userCardsRevealed.value = true
+    const human = humanPlayer.value
+    if (!human || !blindNilDecisionPending.value) return
+    const state = Spades.processRevealHand(gameState.value, human.id)
+    if (state === gameState.value) return
+    applyState(state)
   }
 
   async function playCard(card: StandardCard) {
@@ -428,10 +449,15 @@ export const useSpadesStore = defineStore('spadesGame', () => {
       }
 
       if (phase.value === SpadesPhase.Bidding) {
+        // AI always reveals first (does not bid BlindNil) when pure pre-look is active
+        let state = gameState.value
+        if (state.blindNilEnabled && !(state.handRevealed[playerId] ?? true)) {
+          state = Spades.processRevealHand(state, playerId)
+        }
         const bid = hard
-          ? chooseSpadesBidHard(currentPlayerObj, gameState.value)
-          : Spades.chooseSpadesBid(currentPlayerObj, gameState.value)
-        const state = Spades.processBid(gameState.value, playerId, bid)
+          ? chooseSpadesBidHard(currentPlayerObj, state)
+          : Spades.chooseSpadesBid(currentPlayerObj, state)
+        state = Spades.processBid(state, playerId, bid)
         applyState(state)
         processAITurn()
       } else if (phase.value === SpadesPhase.Playing) {
@@ -456,6 +482,10 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     winner.value = state.winner
     spadesBroken.value = state.spadesBroken
     bidsComplete.value = state.bidsComplete
+    winScore.value = state.winScore
+    loseScore.value = state.loseScore
+    blindNilEnabled.value = state.blindNilEnabled
+    handRevealed.value = state.handRevealed
   }
 
   return {

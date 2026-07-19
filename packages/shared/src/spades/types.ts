@@ -77,6 +77,17 @@ export interface SpadesGameState {
   bidsComplete: boolean         // All players have bid
   winScore: number              // Score to win (default 500)
   loseScore: number             // Score to lose (default -200)
+
+  /**
+   * When true, BlindNil is available until the seat reveals their hand.
+   * Hands exist on state for rules/AI; hosts hide them until handRevealed[seat].
+   */
+  blindNilEnabled: boolean
+  /**
+   * Per-seat: hand is "seen" for bidding. BlindNil only legal when false.
+   * Normal/Nil require true when blindNilEnabled. When blind nil is off, all true after deal.
+   */
+  handRevealed: boolean[]
 }
 
 // Actions a player can take
@@ -123,6 +134,9 @@ export interface SpadesClientGameState {
   loseScore: number
   stateSeq: number              // For sync tracking
   timedOutPlayer: number | null // Player who timed out (if any)
+  /** Additive: blind-nil rule + whether this client may see their hand */
+  blindNilEnabled?: boolean
+  handRevealed?: boolean        // Requesting player's handRevealed flag
 }
 
 // Client-side player (hand only visible for own player)

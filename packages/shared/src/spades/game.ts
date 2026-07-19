@@ -13,6 +13,7 @@ import {
   type SpadesTeamScore,
   type SpadesRoundScore,
 } from './types.js'
+import { isValidBid } from './bidding.js'
 
 /**
  * Create an empty trick
@@ -51,7 +52,8 @@ export function createSpadesGame(
   playerNames: string[],
   humanPlayerIndex: number = 0,
   winScore: number = 500,
-  loseScore: number = -200
+  loseScore: number = -200,
+  blindNilEnabled: boolean = false
 ): SpadesGameState {
   if (playerNames.length !== 4) {
     throw new Error('Spades requires exactly 4 players')
@@ -80,6 +82,9 @@ export function createSpadesGame(
     bidsComplete: false,
     winScore,
     loseScore,
+    blindNilEnabled,
+    // Before first deal: revealed when blind nil is off; hidden when on
+    handRevealed: Array.from({ length: 4 }, () => !blindNilEnabled),
   }
 }
 
@@ -101,6 +106,9 @@ export function dealSpadesCards(state: SpadesGameState): SpadesGameState {
   // Player left of dealer starts bidding
   const firstBidder = (state.dealer + 1) % 4
 
+  // Blind-nil seats start unrevealed; otherwise hands are free to show
+  const handRevealed = state.players.map(() => !state.blindNilEnabled)
+
   return {
     ...state,
     players,
@@ -110,6 +118,7 @@ export function dealSpadesCards(state: SpadesGameState): SpadesGameState {
     currentPlayer: firstBidder,
     spadesBroken: false,
     bidsComplete: false,
+    handRevealed,
   }
 }
 
@@ -125,7 +134,26 @@ export function startBiddingPhase(state: SpadesGameState): SpadesGameState {
 }
 
 /**
+ * Seat reveals their hand for bidding (forfeits BlindNil if still available).
+ * Illegal if not bidding phase, wrong seat, or already revealed → same ref.
+ */
+export function processRevealHand(
+  state: SpadesGameState,
+  playerId: number
+): SpadesGameState {
+  if (state.phase !== SpadesPhase.Bidding) return state
+  if (state.currentPlayer !== playerId) return state
+
+  const revealed = state.handRevealed ?? [true, true, true, true]
+  if (revealed[playerId]) return state
+
+  const handRevealed = revealed.map((v, i) => (i === playerId ? true : v))
+  return { ...state, handRevealed }
+}
+
+/**
  * Process a player's bid
+ * Illegal / invalid → same state reference (hosts detect with next === prev)
  */
 export function processBid(
   state: SpadesGameState,
@@ -138,12 +166,25 @@ export function processBid(
   const player = state.players[playerId]
   if (!player || player.bid !== null) return state
 
-  // Validate bid
-  if (bid.type === SpadesBidType.Normal && (bid.count < 0 || bid.count > 13)) {
+  if (!isValidBid(bid, player.hand)) return state
+
+  const handRevealed = state.handRevealed ?? [true, true, true, true]
+  const seatRevealed = handRevealed[playerId] ?? true
+
+  // BlindNil only before the seat has seen their hand
+  if (bid.type === SpadesBidType.BlindNil) {
+    if (!state.blindNilEnabled || seatRevealed) return state
+  } else if (state.blindNilEnabled && !seatRevealed) {
+    // Must reveal (or bid blind nil) before normal/nil bids
     return state
   }
 
-  // Update player's bid
+  // Update player's bid; BlindNil also reveals the hand
+  const nextRevealed =
+    bid.type === SpadesBidType.BlindNil
+      ? handRevealed.map((v, i) => (i === playerId ? true : v))
+      : handRevealed
+
   const players = state.players.map(p =>
     p.id === playerId ? { ...p, bid } : p
   )
@@ -157,6 +198,7 @@ export function processBid(
     return {
       ...state,
       players,
+      handRevealed: nextRevealed,
       phase: SpadesPhase.Playing,
       currentPlayer: firstPlayer,
       bidsComplete: true,
@@ -167,6 +209,7 @@ export function processBid(
   return {
     ...state,
     players,
+    handRevealed: nextRevealed,
     currentPlayer: (playerId + 1) % 4,
   }
 }
