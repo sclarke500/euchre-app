@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Spades', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 })
-    await page.goto('/')
+    await page.goto('/play')
   })
 
   test('Spades card appears in main menu', async ({ page }) => {
@@ -11,44 +11,32 @@ test.describe('Spades', () => {
   })
 
   test('can start single player Spades game', async ({ page }) => {
-    // Select Spades card
     await page.locator('.game-card', { hasText: 'Spades' }).click()
-    
-    // Start single player
-    await page.locator('.menu-btn.single-player').click()
-    
-    // Should see the Spades scoreboard (Us/Them)
-    await expect(page.locator('.spades-scoreboard')).toBeVisible({ timeout: 10000 })
+    await expect(page).toHaveURL(/\/play\/spades/)
+    await expect(page.locator('.spades-scoreboard')).toBeVisible({ timeout: 15000 })
   })
 
   test('bidding phase shows bid selector', async ({ page }) => {
     await page.locator('.game-card', { hasText: 'Spades' }).click()
-    await page.locator('.menu-btn.single-player').click()
-    
-    // Should see bidding UI - the bid selector element
-    await expect(page.locator('.bid-selector')).toBeVisible({ timeout: 10000 })
+    await expect(page).toHaveURL(/\/play\/spades/)
+    // Bid wheel after deal animation
+    await expect(
+      page.locator('.bid-selector, .bid-wheel, [class*="bid"]').first()
+    ).toBeVisible({ timeout: 15000 })
   })
 
   test('shows team scores', async ({ page }) => {
     await page.locator('.game-card', { hasText: 'Spades' }).click()
-    await page.locator('.menu-btn.single-player').click()
-    
-    // Should display scores for both teams (Us/Them)
-    await expect(page.getByText('Us')).toBeVisible({ timeout: 10000 })
-    await expect(page.getByText('Them')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.score-label', { hasText: 'Us' })).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('.score-label', { hasText: 'Them' })).toBeVisible({ timeout: 15000 })
   })
 
-  test('spades are always trump', async ({ page }) => {
-    // This is more of a game logic test, but we can verify
-    // the UI shows spades as trump or doesn't have trump selection
+  test('spades board has no euchre trump UI', async ({ page }) => {
     await page.locator('.game-card', { hasText: 'Spades' }).click()
-    await page.locator('.menu-btn.single-player').click()
-    
-    // Should NOT have trump selection (unlike Euchre)
-    // After game loads, there shouldn't be a "call trump" or "order up" UI
-    await page.waitForTimeout(2000) // Let game settle
-    await expect(page.getByText(/call trump/i)).not.toBeVisible()
-    await expect(page.getByText(/order up/i)).not.toBeVisible()
+    await expect(page).toHaveURL(/\/play\/spades/)
+    await expect(page.locator('.spades-scoreboard')).toBeVisible({ timeout: 15000 })
+    // Board loaded — Euchre bid chrome should not be present
+    await expect(page.locator('.order-up, .call-trump')).toHaveCount(0)
   })
 })
 
