@@ -7,7 +7,7 @@
  */
 
 import type { Bid, Card, GameState, Player, Round, TeamScore, Trump } from './types.js'
-import { BidAction, GamePhase } from './types.js'
+import { BidAction, GamePhase, Suit } from './types.js'
 import { createDeck, dealCards } from './deck.js'
 import {
   completeTrick,
@@ -492,4 +492,153 @@ export function getLegalCards(state: EuchreGameState, playerId: number): Card[] 
   const player = state.players[playerId]
   if (!player) return []
   return getLegalPlays(player.hand, state.currentRound.currentTrick, state.currentRound.trump.suit)
+}
+
+// ---------------------------------------------------------------------------
+// E3: Per-phase legal action enumeration + single apply entry (sim / hosts)
+// ---------------------------------------------------------------------------
+
+/** Discrete legal action for Euchre (bids, discard, play). */
+export type EuchreAction =
+  | { kind: 'pass' }
+  | { kind: 'order_up'; goingAlone: boolean }
+  | { kind: 'pick_up'; goingAlone: boolean }
+  | { kind: 'call_trump'; suit: Suit; goingAlone: boolean }
+  | { kind: 'discard'; cardId: string }
+  | { kind: 'play'; cardId: string }
+
+const ALL_SUITS: Suit[] = [Suit.Hearts, Suit.Diamonds, Suit.Clubs, Suit.Spades]
+
+/** Stable key for membership checks / JSONL. */
+export function euchreActionKey(action: EuchreAction): string {
+  switch (action.kind) {
+    case 'pass':
+      return 'pass'
+    case 'order_up':
+      return `order_up:${action.goingAlone ? 1 : 0}`
+    case 'pick_up':
+      return `pick_up:${action.goingAlone ? 1 : 0}`
+    case 'call_trump':
+      return `call_trump:${action.suit}:${action.goingAlone ? 1 : 0}`
+    case 'discard':
+      return `discard:${action.cardId}`
+    case 'play':
+      return `play:${action.cardId}`
+  }
+}
+
+/**
+ * Enumerate legal actions for `seat` in the current phase.
+ * Empty if it is not that seat's turn (or phase has no player choice).
+ */
+export function legalEuchreActions(state: EuchreGameState, seat: number): EuchreAction[] {
+  const round = state.currentRound
+  if (!round) return []
+
+  switch (state.phase) {
+    case GamePhase.BiddingRound1: {
+      if (round.currentPlayer !== seat || !round.turnUpCard) return []
+      const isDealer = seat === round.dealer
+      const aloneFlags = [false, true]
+      const actions: EuchreAction[] = [{ kind: 'pass' }]
+      for (const goingAlone of aloneFlags) {
+        if (isDealer) {
+          actions.push({ kind: 'pick_up', goingAlone })
+        } else {
+          actions.push({ kind: 'order_up', goingAlone })
+        }
+      }
+      return actions
+    }
+
+    case GamePhase.BiddingRound2: {
+      if (round.currentPlayer !== seat || !round.turnUpCard) return []
+      const isDealer = seat === round.dealer
+      const stickBlocksPass =
+        state.rules.stickTheDealer && isDealer && state.passCount >= 3
+      const actions: EuchreAction[] = []
+      if (!stickBlocksPass) {
+        actions.push({ kind: 'pass' })
+      }
+      const excluded = round.turnUpCard.suit
+      for (const suit of ALL_SUITS) {
+        if (suit === excluded) continue
+        actions.push({ kind: 'call_trump', suit, goingAlone: false })
+        actions.push({ kind: 'call_trump', suit, goingAlone: true })
+      }
+      return actions
+    }
+
+    case GamePhase.DealerDiscard: {
+      if (round.currentPlayer !== seat || seat !== round.dealer) return []
+      const dealer = state.players[seat]
+      if (!dealer) return []
+      return dealer.hand.map(c => ({ kind: 'discard' as const, cardId: c.id }))
+    }
+
+    case GamePhase.Playing: {
+      if (round.currentPlayer !== seat) return []
+      if (isPlayerSittingOut(seat, round.alonePlayer)) return []
+      return getLegalCards(state, seat).map(c => ({
+        kind: 'play' as const,
+        cardId: c.id,
+      }))
+    }
+
+    default:
+      return []
+  }
+}
+
+/** Convert a discrete action into the Bid used by applyBid. */
+function actionToBid(seat: number, action: EuchreAction): Bid | null {
+  switch (action.kind) {
+    case 'pass':
+      return { playerId: seat, action: BidAction.Pass }
+    case 'order_up':
+      return {
+        playerId: seat,
+        action: BidAction.OrderUp,
+        goingAlone: action.goingAlone,
+      }
+    case 'pick_up':
+      return {
+        playerId: seat,
+        action: BidAction.PickUp,
+        goingAlone: action.goingAlone,
+      }
+    case 'call_trump':
+      return {
+        playerId: seat,
+        action: BidAction.CallTrump,
+        suit: action.suit,
+        goingAlone: action.goingAlone,
+      }
+    default:
+      return null
+  }
+}
+
+/**
+ * Apply a discrete EuchreAction for `seat`. Illegal → same reference.
+ */
+export function applyEuchreAction(
+  state: EuchreGameState,
+  seat: number,
+  action: EuchreAction
+): EuchreGameState {
+  switch (action.kind) {
+    case 'pass':
+    case 'order_up':
+    case 'pick_up':
+    case 'call_trump': {
+      const bid = actionToBid(seat, action)
+      if (!bid) return state
+      return applyBid(state, bid)
+    }
+    case 'discard':
+      return applyDealerDiscard(state, action.cardId)
+    case 'play':
+      return applyPlay(state, seat, action.cardId)
+  }
 }

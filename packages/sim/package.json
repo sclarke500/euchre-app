@@ -1,0 +1,24 @@
+{
+  "name": "@67cards/sim",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "sim": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "sim": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@67cards/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.4",
+    "tsx": "^4.19.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

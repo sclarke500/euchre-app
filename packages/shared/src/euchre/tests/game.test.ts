@@ -3,10 +3,12 @@ import { BidAction, GamePhase, Suit } from '../types.js'
 import {
   applyBid,
   applyDealerDiscard,
+  applyEuchreAction,
   applyPlay,
   continueAfterTrick,
   createEuchreGame,
   dealRound,
+  legalEuchreActions,
   startBiddingRound1,
 } from '../game.js'
 
@@ -191,5 +193,96 @@ describe('euchre pure game machine', () => {
 
     g = continueAfterTrick(g)
     expect(g.phase).toBe(GamePhase.Playing)
+  })
+
+  describe('legalEuchreActions (E3)', () => {
+    it('R1: non-dealer gets pass + order_up alone variants; others empty', () => {
+      let g = createEuchreGame(['A', 'B', 'C', 'D'])
+      g = { ...g, currentDealer: 0 }
+      g = dealRound(g, fixedRng(10))
+      g = startBiddingRound1(g)
+      const seat = g.currentRound!.currentPlayer // left of dealer = 1
+      expect(seat).toBe(1)
+      const legal = legalEuchreActions(g, seat)
+      expect(legal).toEqual(
+        expect.arrayContaining([
+          { kind: 'pass' },
+          { kind: 'order_up', goingAlone: false },
+          { kind: 'order_up', goingAlone: true },
+        ])
+      )
+      expect(legal).toHaveLength(3)
+      expect(legalEuchreActions(g, 0)).toEqual([])
+      expect(legalEuchreActions(g, 2)).toEqual([])
+    })
+
+    it('R1: dealer gets pick_up not order_up', () => {
+      let g = createEuchreGame(['A', 'B', 'C', 'D'])
+      g = { ...g, currentDealer: 0 }
+      g = dealRound(g, fixedRng(11))
+      g = startBiddingRound1(g)
+      // Pass 1,2,3 → dealer
+      for (let i = 0; i < 3; i++) {
+        g = applyBid(g, { playerId: g.currentRound!.currentPlayer, action: BidAction.Pass })
+      }
+      expect(g.currentRound!.currentPlayer).toBe(0)
+      const legal = legalEuchreActions(g, 0)
+      expect(legal.map(a => a.kind).sort()).toEqual(['pass', 'pick_up', 'pick_up'])
+      expect(legal.some(a => a.kind === 'order_up')).toBe(false)
+    })
+
+    it('R2: excludes turn-up suit; stickTheDealer blocks dealer pass', () => {
+      let g = createEuchreGame(['A', 'B', 'C', 'D'], 0, { stickTheDealer: true })
+      g = { ...g, currentDealer: 0 }
+      g = dealRound(g, fixedRng(12))
+      g = startBiddingRound1(g)
+      for (let i = 0; i < 4; i++) {
+        g = applyBid(g, { playerId: g.currentRound!.currentPlayer, action: BidAction.Pass })
+      }
+      expect(g.phase).toBe(GamePhase.BiddingRound2)
+      const turnSuit = g.currentRound!.turnUpCard!.suit
+      const legalR2 = legalEuchreActions(g, g.currentRound!.currentPlayer)
+      expect(legalR2.some(a => a.kind === 'pass')).toBe(true)
+      for (const a of legalR2) {
+        if (a.kind === 'call_trump') {
+          expect(a.suit).not.toBe(turnSuit)
+        }
+      }
+      // 1 pass + 3 suits × 2 alone = 7
+      expect(legalR2).toHaveLength(7)
+
+      // Three R2 passes → dealer stuck
+      for (let i = 0; i < 3; i++) {
+        g = applyBid(g, { playerId: g.currentRound!.currentPlayer, action: BidAction.Pass })
+      }
+      expect(g.currentRound!.currentPlayer).toBe(0)
+      const dealerLegal = legalEuchreActions(g, 0)
+      expect(dealerLegal.some(a => a.kind === 'pass')).toBe(false)
+      expect(dealerLegal.every(a => a.kind === 'call_trump')).toBe(true)
+      expect(dealerLegal).toHaveLength(6)
+    })
+
+    it('discard and play enumerate hand cards; applyEuchreAction matches apply*', () => {
+      let g = createEuchreGame(['A', 'B', 'C', 'D'])
+      g = { ...g, currentDealer: 0 }
+      g = dealRound(g, fixedRng(13))
+      g = startBiddingRound1(g)
+      g = applyEuchreAction(g, 1, { kind: 'order_up', goingAlone: false })
+      expect(g.phase).toBe(GamePhase.DealerDiscard)
+      const discardLegal = legalEuchreActions(g, 0)
+      expect(discardLegal).toHaveLength(6)
+      expect(discardLegal.every(a => a.kind === 'discard')).toBe(true)
+      const discardId = (discardLegal[0] as { cardId: string }).cardId
+      g = applyEuchreAction(g, 0, { kind: 'discard', cardId: discardId })
+      expect(g.phase).toBe(GamePhase.Playing)
+
+      const lead = g.currentRound!.currentPlayer
+      const playLegal = legalEuchreActions(g, lead)
+      expect(playLegal.length).toBeGreaterThan(0)
+      expect(playLegal.every(a => a.kind === 'play')).toBe(true)
+      const next = applyEuchreAction(g, lead, playLegal[0]!)
+      expect(next).not.toBe(g)
+      expect(next.players[lead]!.hand).toHaveLength(4)
+    })
   })
 })

@@ -8,6 +8,7 @@
 - `docs/GAME_ARCHITECTURE.md` — **Canonical pure-game / host contract** (read before adding a game).
 - `docs/NEW_GAME_GUIDE.md` — **Step-by-step guide** for implementing a new multiplayer game.
 - `docs/designs/pure-game-architecture-plan.md` — Migration plan to align Euchre/Spades/President.
+- `docs/designs/sim-training-data-plan.md` — Self-play sim + training-data design (`packages/sim`).
 
 ## Canonical Docs
 

@@ -13,14 +13,16 @@ Canonical status/planning docs:
 - `docs/ROADMAP.md`
 - `docs/GAME_ARCHITECTURE.md` — **pure game / thin host contract** (read before adding games)
 - `docs/designs/pure-game-architecture-plan.md` — migration plan
+- `docs/designs/sim-training-data-plan.md` — multi-policy self-play / training dumps
 
 ## Project Structure
 
 ```
 packages/
-├── client/     # Vue 3 + Vite frontend (@euchre/client)
-├── server/     # WebSocket game server (@euchre/server)
-└── shared/     # Shared types and game logic (@euchre/shared)
+├── client/     # Vue 3 + Vite frontend (@67cards/client)
+├── server/     # WebSocket game server (@67cards/server)
+├── shared/     # Shared types and game logic (@67cards/shared)
+└── sim/        # Headless multi-policy self-play (@67cards/sim)
 ```
 
 ## Tech Stack
@@ -28,6 +30,7 @@ packages/
 - **Frontend**: Vue 3, TypeScript, Pinia (state management), SCSS, Vite
 - **Backend**: Node.js, WebSocket (ws library)
 - **Shared**: TypeScript types and game logic
+- **Sim**: TypeScript runners over pure engines (no UI/WS)
 
 ## Common Commands
 
@@ -41,10 +44,15 @@ npm run build:shared                     # Build shared package
 npm run build:client                     # Build client
 npm run build:server                     # Build server
 npm run build                            # Build shared + client
+npm run build:sim                        # Build shared + sim
+
+# Self-play / training dumps (Euchre S1)
+npm run sim -- euchre --games 100 --mix default --seed 42 --out data/euchre.jsonl --report
+npm run sim -- euchre --policies hard,easy,hard,easy --report
 
 # Or use workspace flags
-npm run build --workspace=@euchre/shared
-npm run build --workspace=@euchre/server
+npm run build --workspace=@67cards/shared
+npm run build --workspace=@67cards/server
 ```
 
 ## Architecture Patterns
