@@ -222,6 +222,6 @@ See `docs/designs/pure-game-architecture-plan.md` for phased work:
 |---|---|---|---|
 | Spades | Yes (+ blind-nil `handRevealed`, bid 1–13) | Yes (double-deal fixed) | Bid + play apply pure (`processBid` / `playCard` / `continuePlay`); host is thin shell |
 | President | Partial (exchange) | Mostly | Play/pass yes; exchange no |
-| Euchre | Yes (`game.ts`: applyBid/play/discard) | Not yet (store still orchestrates) | Yes — bid/play/discard/deal apply pure |
+| Euchre | Yes (`game.ts`: applyBid/play/discard) | Yes — thin apply + animation shell | Yes — bid/play/discard/deal apply pure |
 
 See `docs/designs/pure-game-architecture-plan.md` for remaining phases.
