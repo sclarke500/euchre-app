@@ -11,6 +11,7 @@ import {
   getRandomAINames,
   GameTimings,
   createSpadesRemarkEngine,
+  SpadesTracker,
   type SpadesRemarkState,
   type SpadesRemarkFlags,
   type RemarkMode,
@@ -60,15 +61,24 @@ export class SpadesGame {
   private chatMode: ChatMode = 'clean'
   private remarkEventFlags: SpadesRemarkFlags = {}
 
+  private readonly aiDifficulty: 'easy' | 'hard'
+  private readonly spadesTracker: SpadesTracker | null
+
   constructor(
     id: string,
     events: SpadesGameEvents,
-    options: { chatMode?: 'clean' | 'unhinged'; blindNilEnabled?: boolean } = {}
+    options: {
+      chatMode?: 'clean' | 'unhinged'
+      blindNilEnabled?: boolean
+      aiDifficulty?: 'easy' | 'hard'
+    } = {}
   ) {
     this.id = id
     this.events = events
     this.chatMode = options.chatMode ?? 'clean'
     this.blindNilEnabled = options.blindNilEnabled ?? false
+    this.aiDifficulty = options.aiDifficulty === 'hard' ? 'hard' : 'easy'
+    this.spadesTracker = this.aiDifficulty === 'hard' ? new SpadesTracker() : null
   }
 
   getStateSeq(): number {
@@ -282,6 +292,7 @@ export class SpadesGame {
   }
 
   private startNewRound(): void {
+    this.spadesTracker?.reset()
     // Deal cards
     const gameState = Spades.createSpadesGame(
       this.players.map(p => p.name),
@@ -437,6 +448,7 @@ export class SpadesGame {
 
     if (trickJustCompleted) {
       const lastTrick = next.completedTricks[next.completedTricks.length - 1]!
+      this.spadesTracker?.recordTrick(lastTrick)
       const winnerId = lastTrick.winnerId ?? 0
       const winner = this.players[winnerId]
       if (winner) this.flagNilBrokenIfNeeded(winner)
@@ -587,7 +599,11 @@ export class SpadesGame {
       }
     }
 
-    const bid = computeSpadesAIBid({ player, gameState })
+    const bid = computeSpadesAIBid({
+      player,
+      gameState,
+      difficulty: this.aiDifficulty,
+    })
     const next = Spades.processBid(gameState, player.seatIndex, bid)
     if (next === gameState) return
 
@@ -603,7 +619,12 @@ export class SpadesGame {
     if (!player || player.isHuman) return
 
     const gameState = this.toPureState()
-    const card = computeSpadesAIPlay({ player, gameState })
+    const card = computeSpadesAIPlay({
+      player,
+      gameState,
+      difficulty: this.aiDifficulty,
+      tracker: this.spadesTracker,
+    })
     this.applyPlay(player.seatIndex, card)
   }
 

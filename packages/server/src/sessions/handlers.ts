@@ -327,6 +327,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       }, {
         chatMode: table.settings?.chatMode ?? 'clean',
         blindNilEnabled: table.settings?.blindNilEnabled ?? false,
+        aiDifficulty: table.settings?.aiDifficulty ?? 'hard',
       })
 
       spadesGame.initializePlayers(humanPlayers)
@@ -812,6 +813,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
       }, {
         chatMode: previousSettings?.chatMode ?? 'clean',
         blindNilEnabled: previousSettings?.blindNilEnabled ?? false,
+        aiDifficulty: previousSettings?.aiDifficulty ?? 'hard',
       })
 
       newSpadesGame.initializePlayers(humanPlayers)

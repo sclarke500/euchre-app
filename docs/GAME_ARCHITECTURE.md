@@ -164,23 +164,36 @@ Hosts must not silently diverge. Examples:
 
 ## Testing
 
-### Golden fixture format (shared-level primary)
+### Golden replay harness (Phase 5)
+
+Shared helper: `packages/shared/src/testing/golden.ts`
 
 ```ts
-{
-  initialState: /* post-deal preferred: explicit hands */,
-  rules: { … },
-  actions: [{ seat, action }, …],
-  expect: { scores, winner, terminalPhase }
-}
+import { runGoldenReplay } from '../testing/golden.js'
+
+runGoldenReplay({
+  name: 'spades-all-bid',
+  initialState, // post-deal preferred: explicit hands when scoring
+  apply: (state, seat, action) => processBid(state, seat, action),
+  steps: [
+    { seat: 0, action: { type: 'normal', count: 3 } },
+    { seat: 1, action: …, expectReject: true }, // same-ref illegal
+  ],
+  expect: {
+    phase: SpadesPhase.Playing,
+    assert: (s) => { /* scores, winner, … */ },
+  },
+})
 ```
 
 | Level | Acceptance gate? |
 |---|---|
-| Shared pure goldens | **Yes** |
+| Shared pure goldens (`runGoldenReplay`) | **Yes** |
 | Server `*Game` goldens (Node) | **Yes** where feasible |
 | SP Pinia store goldens | **No** (timers/animation; optional only) |
 | Playwright | UX only — not rules correctness |
+
+**Host checklist (grep before merge):** server `*Game` bid/play paths should call shared pure functions (`processBid` / `playCard` / `applyBid` / `processPlay` / `confirmExchange`), not reimplement phase math.
 
 ---
 
@@ -220,7 +233,7 @@ See `docs/designs/pure-game-architecture-plan.md` for phased work:
 
 | Game | Shared pure machine | Client applies pure | Server applies pure |
 |---|---|---|---|
-| Spades | Yes (+ blind-nil `handRevealed`, bid 1–13) | Yes (double-deal fixed) | Bid + play apply pure; host is thin shell |
+| Spades | Yes (+ blind-nil `handRevealed`, bid 1–13) | Yes (double-deal fixed) | Bid + play apply pure; **hard AI** via table `aiDifficulty` |
 | President | Play/pass + **simultaneous exchange** (`confirmExchange`) + joker clear | Simultaneous exchange via pure | Play/pass/exchange apply pure; host prompts + AI timers only |
 | Euchre | Yes (`game.ts`) | Yes — thin apply + animation shell | Yes; **table settings** stickTheDealer / canadianLoner via `TableSettings` |
 

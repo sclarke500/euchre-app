@@ -54,7 +54,8 @@ Game rules live in `packages/shared` as pure transitions. **Do not** reimplement
 
 - Shared: `create*Game` / `deal*` / `process*` / `apply*` → new state (illegal = same reference)
 - SP store / server: `toPureState → pureFn → applyPureState` + animation/WS/AI schedule only
-- Reference games: Spades (template), Euchre (`euchre/game.ts`), President (play/pass)
+- Reference games: Spades (template), Euchre (`euchre/game.ts`), President (play/pass/exchange)
+- Golden replays: `packages/shared/src/testing/golden.ts` (`runGoldenReplay`)
 - Details: `docs/GAME_ARCHITECTURE.md`
 
 ### Game Adapters
