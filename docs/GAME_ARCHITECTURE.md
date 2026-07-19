@@ -220,8 +220,8 @@ See `docs/designs/pure-game-architecture-plan.md` for phased work:
 
 | Game | Shared pure machine | Client applies pure | Server applies pure |
 |---|---|---|---|
-| Spades | Yes (+ blind-nil `handRevealed`, bid 1–13) | Yes (double-deal fixed) | Bid + play apply pure (`processBid` / `playCard` / `continuePlay`); host is thin shell |
-| President | Partial (exchange) | Mostly | Play/pass yes; exchange no |
-| Euchre | Yes (`game.ts`: applyBid/play/discard) | Yes — thin apply + animation shell | Yes — bid/play/discard/deal apply pure |
+| Spades | Yes (+ blind-nil `handRevealed`, bid 1–13) | Yes (double-deal fixed) | Bid + play apply pure; host is thin shell |
+| President | Play/pass pure (+ joker clear); exchange still dual SP/MP | Mostly | Play/pass apply pure + **passedThisTrick preserved**; exchange host-owned |
+| Euchre | Yes (`game.ts`) | Yes — thin apply + animation shell | Yes; **table settings** stickTheDealer / canadianLoner via `TableSettings` |
 
 See `docs/designs/pure-game-architecture-plan.md` for remaining phases.

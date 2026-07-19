@@ -48,6 +48,16 @@ packages/
 
 ## Canonical Patterns
 
+### Pure game rules (shared)
+
+**Read first:** `docs/GAME_ARCHITECTURE.md`
+
+Rules live in `packages/shared/src/{game}/` as pure `(state, action) → state` transitions.
+Hosts (SP Pinia store + server `*Game`) only **apply** results. Illegal actions return the
+**same state reference** (`next === prev`). Legal actions always return a **new** object.
+
+Reference: Spades (`game.ts` / `tricks.ts`) + Spades client apply; President play/pass apply pattern.
+
 ### Client Architecture (per multiplayer game)
 
 ```
@@ -73,7 +83,7 @@ Router → Handlers → GameRuntime → Game Class
 | **Handlers** | `sessions/handlers.ts` | Game creation, restart, state requests |
 | **Runtime** | `sessions/runtime.ts` | Unified interface for all games |
 | **Registry** | `sessions/registry.ts` | Active game instances |
-| **Game Class** | `*Game.ts` | Game rules, state, AI |
+| **Game Class** | `*Game.ts` | Thin host: apply pure rules, multiplayer shell (WS, AI delays, privacy) — **not** a second rules engine |
 
 ---
 

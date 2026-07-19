@@ -529,20 +529,25 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     captureStateForChat()
 
     const playingPlayer = currentPlayer.value
-    const state = processPlay(gameState.value, playingPlayer, cards)
+    const prev = gameState.value
+    const state = processPlay(prev, playingPlayer, cards)
+    if (state === prev) return
 
-    // Update state
+    // Update state from pure result (joker auto-clear included when superTwos)
     players.value = state.players
     currentPile.value = state.currentPile
     currentPlayer.value = state.currentPlayer
     consecutivePasses.value = state.consecutivePasses
+    passedThisTrick.value = state.passedThisTrick
     finishedPlayers.value = state.finishedPlayers
     lastPlayerId.value = state.lastPlayerId
     lastPlayedCards.value = cards
+    phase.value = state.phase
 
     // Wait for play animation before continuing
     if (playAnimationCallback) {
-      const playIndex = state.currentPile.plays.length - 1
+      // After joker clear, pile may be empty — use 0 as play index for anim hook
+      const playIndex = Math.max(0, state.currentPile.plays.length - 1)
       await playAnimationCallback({ cards, playerId: playingPlayer, playIndex })
     }
 
@@ -552,14 +557,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
       return
     }
 
-    // Check if joker was played - auto-clear pile since nothing can beat it
+    // Joker clear: pure emptied pile — host only runs clear animation/callbacks
     const playedJoker = cards.some(c => c.rank === 'Joker')
-    if (playedJoker && rules.value.superTwosMode) {
-      await new Promise(r => setTimeout(r, CardTimings.roundEnd))
-      currentPile.value = createEmptyPile()
-      currentPlayer.value = playingPlayer // Joker player leads again
-      consecutivePasses.value = 0
-      passedThisTrick.value = []
+    if (playedJoker && rules.value.superTwosMode && state.currentPile.plays.length === 0) {
       lastPlayedCards.value = null
       pileJustCleared = true
       processChatAfterStateChange()

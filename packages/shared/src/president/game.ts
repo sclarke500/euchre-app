@@ -233,6 +233,23 @@ export function processPlay(
     }
   }
 
+  const pileAfterPlay = addPlayToPile(state.currentPile, play)
+
+  // Joker (super 2s): unbeatable — clear pile and same player leads again
+  const playedJoker = cards.some(c => c.rank === FullRank.Joker)
+  if (playedJoker && state.rules.superTwosMode) {
+    return {
+      ...state,
+      players,
+      currentPile: createEmptyPile(),
+      currentPlayer: playerId,
+      consecutivePasses: 0,
+      passedThisTrick: [],
+      finishedPlayers,
+      lastPlayerId: playerId,
+    }
+  }
+
   // Get next player
   const nextPlayer = getNextActivePlayer(
     { ...state, players },
@@ -241,14 +258,15 @@ export function processPlay(
 
   const turnStyle = state.rules.turnStyle || 'original'
 
-  // In single round mode, track who has acted this trick
-  // A play resets the cycle - this player becomes the new "owner" and everyone gets one chance
-  const newPassedThisTrick = turnStyle === 'singleRound' ? [] : []
+  // In single round mode, a play resets the cycle — everyone gets another chance
+  // In passLockout, a play clears pass lockouts for a fresh cycle on the new lead chain
+  const newPassedThisTrick =
+    turnStyle === 'singleRound' || turnStyle === 'passLockout' ? [] : (state.passedThisTrick ?? [])
 
   return {
     ...state,
     players,
-    currentPile: addPlayToPile(state.currentPile, play),
+    currentPile: pileAfterPlay,
     currentPlayer: nextPlayer,
     consecutivePasses: 0,
     passedThisTrick: newPassedThisTrick,

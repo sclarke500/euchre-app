@@ -297,6 +297,13 @@ export const useLobbyStore = defineStore('lobby', () => {
       isPrivate: extraSettings?.isPrivate ?? false,
       bootInactive: extraSettings?.bootInactive ?? true,
       chatMode: settingsStore.botChatEnabled ? chatMode : undefined,
+      ...(selectedGameType.value === 'euchre' && {
+        stickTheDealer: settingsStore.isStickTheDealer(),
+        canadianLoner: settingsStore.canadianLoner,
+      }),
+      ...(selectedGameType.value === 'spades' && {
+        blindNilEnabled: settingsStore.spadesBlindNil,
+      }),
       ...(selectedGameType.value === 'president' && { 
         superTwosMode: settingsStore.superTwosAndJokers,
         turnStyle: settingsStore.presidentTurnStyle,

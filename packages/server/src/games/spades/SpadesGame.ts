@@ -60,10 +60,15 @@ export class SpadesGame {
   private chatMode: ChatMode = 'clean'
   private remarkEventFlags: SpadesRemarkFlags = {}
 
-  constructor(id: string, events: SpadesGameEvents, options: { chatMode?: 'clean' | 'unhinged' } = {}) {
+  constructor(
+    id: string,
+    events: SpadesGameEvents,
+    options: { chatMode?: 'clean' | 'unhinged'; blindNilEnabled?: boolean } = {}
+  ) {
     this.id = id
     this.events = events
     this.chatMode = options.chatMode ?? 'clean'
+    this.blindNilEnabled = options.blindNilEnabled ?? false
   }
 
   getStateSeq(): number {

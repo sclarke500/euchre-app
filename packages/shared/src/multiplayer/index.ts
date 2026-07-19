@@ -53,6 +53,12 @@ export interface TableSettings {
   superTwosMode?: boolean // President only
   turnStyle?: 'original' | 'passLockout' | 'singleRound' // President only (default 'original')
   maxRounds?: number // President only (default 5)
+  /** Euchre: stick the dealer in bidding R2 (default false = can pass / redeal) */
+  stickTheDealer?: boolean
+  /** Euchre: ordering partner's turn-up forces alone (default false) */
+  canadianLoner?: boolean
+  /** Spades: allow blind nil with pre-look gate (default false) */
+  blindNilEnabled?: boolean
   aiDifficulty?: 'easy' | 'hard' // All games
   chatEnabled?: boolean // Enable in-game chat (default true)
   isPrivate?: boolean // Private game - won't show in public lobby (default false)

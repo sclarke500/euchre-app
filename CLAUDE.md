@@ -11,6 +11,8 @@ A card game platform featuring Euchre, President, Spades, and Klondike. Built as
 Canonical status/planning docs:
 - `docs/DOCUMENTATION_INDEX.md`
 - `docs/ROADMAP.md`
+- `docs/GAME_ARCHITECTURE.md` — **pure game / thin host contract** (read before adding games)
+- `docs/designs/pure-game-architecture-plan.md` — migration plan
 
 ## Project Structure
 
@@ -46,6 +48,14 @@ npm run build --workspace=@euchre/server
 ```
 
 ## Architecture Patterns
+
+### Pure game state machines
+Game rules live in `packages/shared` as pure transitions. **Do not** reimplement bid/play/score phase graphs in the client store or server `*Game` class.
+
+- Shared: `create*Game` / `deal*` / `process*` / `apply*` → new state (illegal = same reference)
+- SP store / server: `toPureState → pureFn → applyPureState` + animation/WS/AI schedule only
+- Reference games: Spades (template), Euchre (`euchre/game.ts`), President (play/pass)
+- Details: `docs/GAME_ARCHITECTURE.md`
 
 ### Game Adapters
 The client uses a `useGameAdapter` composable that abstracts game state access. Components inject the adapter and use it uniformly for both singleplayer and multiplayer modes.

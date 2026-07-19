@@ -326,6 +326,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
         },
       }, {
         chatMode: table.settings?.chatMode ?? 'clean',
+        blindNilEnabled: table.settings?.blindNilEnabled ?? false,
       })
 
       spadesGame.initializePlayers(humanPlayers)
@@ -459,6 +460,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     }, {
       aiDifficulty: table.settings?.aiDifficulty ?? 'hard',
       chatMode: table.settings?.chatMode ?? 'clean',
+      stickTheDealer: table.settings?.stickTheDealer ?? false,
+      canadianLoner: table.settings?.canadianLoner ?? false,
     })
 
     game.initializePlayers(humanPlayers)
@@ -808,6 +811,7 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
         },
       }, {
         chatMode: previousSettings?.chatMode ?? 'clean',
+        blindNilEnabled: previousSettings?.blindNilEnabled ?? false,
       })
 
       newSpadesGame.initializePlayers(humanPlayers)
@@ -941,6 +945,8 @@ export function createSessionHandlers(deps: SessionDependencies): SessionHandler
     }, {
       aiDifficulty: previousSettings?.aiDifficulty ?? 'hard',
       chatMode: previousSettings?.chatMode ?? 'clean',
+      stickTheDealer: previousSettings?.stickTheDealer ?? false,
+      canadianLoner: previousSettings?.canadianLoner ?? false,
     })
 
     newGame.initializePlayers(humanPlayers)

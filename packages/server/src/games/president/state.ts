@@ -84,6 +84,8 @@ interface BuildPresidentGameStateParams {
   superTwosMode: boolean
   turnStyle: 'original' | 'passLockout' | 'singleRound'
   awaitingGiveCards: number | null
+  /** Required for passLockout / singleRound turn styles */
+  passedThisTrick?: number[]
 }
 
 export function buildPresidentGameState({
@@ -99,6 +101,7 @@ export function buildPresidentGameState({
   superTwosMode,
   turnStyle,
   awaitingGiveCards,
+  passedThisTrick = [],
 }: BuildPresidentGameStateParams): PresidentGameState {
   return {
     gameType: 'president',
@@ -116,7 +119,7 @@ export function buildPresidentGameState({
     currentPile,
     currentPlayer,
     consecutivePasses,
-    passedThisTrick: [],
+    passedThisTrick,
     finishedPlayers,
     roundNumber,
     gameOver,
@@ -142,6 +145,7 @@ export function applyPresidentGameState(
   finishedPlayers: number[]
   gameOver: boolean
   lastPlayerId: number | null
+  passedThisTrick: number[]
 } {
   for (let i = 0; i < players.length && i < state.players.length; i++) {
     const statePlayer = state.players[i]!
@@ -161,5 +165,6 @@ export function applyPresidentGameState(
     finishedPlayers: state.finishedPlayers,
     gameOver: state.gameOver,
     lastPlayerId: state.lastPlayerId,
+    passedThisTrick: state.passedThisTrick ?? [],
   }
 }

@@ -41,6 +41,7 @@ export class PresidentGame {
   private currentPile: PresidentPile = createEmptyPile()
   private currentPlayer = 0
   private consecutivePasses = 0
+  private passedThisTrick: number[] = []
   private finishedPlayers: number[] = []
   private roundNumber = 1
   private gameOver = false
@@ -332,20 +333,7 @@ export class PresidentGame {
       this.phase = PresidentPhase.Dealing
 
       // Build game state for shared functions
-      const gameState = buildPresidentGameState({
-        players: this.players,
-        phase: this.phase,
-        currentPile: this.currentPile,
-        currentPlayer: this.currentPlayer,
-        consecutivePasses: this.consecutivePasses,
-        finishedPlayers: this.finishedPlayers,
-        roundNumber: this.roundNumber,
-        gameOver: this.gameOver,
-        lastPlayerId: this.lastPlayerId,
-        superTwosMode: this.superTwosMode,
-        turnStyle: this.turnStyle,
-        awaitingGiveCards: null,
-      })
+      const gameState = this.toPureState()
 
       // Deal cards using shared function
       const dealtState = dealPresidentCards(gameState)
@@ -361,6 +349,7 @@ export class PresidentGame {
 
       this.currentPile = createEmptyPile()
       this.consecutivePasses = 0
+      this.passedThisTrick = []
       this.finishedPlayers = []
       this.lastPlayerId = null
 
@@ -412,11 +401,9 @@ export class PresidentGame {
     return 0
   }
 
-  private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {
-    const player = this.players[playerIndex]!
-
-    // Use shared processPlay function
-    const gameState = buildPresidentGameState({
+  /** Snapshot host fields into pure PresidentGameState (includes passedThisTrick). */
+  private toPureState() {
+    return buildPresidentGameState({
       players: this.players,
       phase: this.phase,
       currentPile: this.currentPile,
@@ -427,11 +414,13 @@ export class PresidentGame {
       gameOver: this.gameOver,
       lastPlayerId: this.lastPlayerId,
       superTwosMode: this.superTwosMode,
-        turnStyle: this.turnStyle,
+      turnStyle: this.turnStyle,
       awaitingGiveCards: null,
+      passedThisTrick: this.passedThisTrick,
     })
-    const newState = processPlay(gameState, playerIndex, cards)
+  }
 
+  private applyPure(newState: ReturnType<typeof processPlay>): void {
     const nextState = applyPresidentGameState(this.players, newState)
     this.phase = nextState.phase
     this.currentPile = nextState.currentPile
@@ -440,6 +429,19 @@ export class PresidentGame {
     this.finishedPlayers = nextState.finishedPlayers
     this.gameOver = nextState.gameOver
     this.lastPlayerId = nextState.lastPlayerId
+    this.passedThisTrick = nextState.passedThisTrick
+  }
+
+  private playCardsInternal(playerIndex: number, cards: StandardCard[]): void {
+    const player = this.players[playerIndex]!
+    const prevFinishOrder = player.finishOrder
+
+    // Use shared processPlay (includes joker auto-clear when superTwos)
+    const gameState = this.toPureState()
+    const newState = processPlay(gameState, playerIndex, cards)
+    if (newState === gameState) return
+
+    this.applyPure(newState)
 
     // Get play type for the broadcast
     const playType = cards.length === 1 ? 'single' :
@@ -451,7 +453,7 @@ export class PresidentGame {
 
     // Check if player just finished
     const newPlayer = this.players[playerIndex]!
-    if (newPlayer.finishOrder !== null && player.finishOrder === null) {
+    if (newPlayer.finishOrder !== null && prevFinishOrder === null) {
       // Just finished - will get rank assigned at round end
       this.events.onPlayerFinished(
         playerIndex,
@@ -467,23 +469,11 @@ export class PresidentGame {
       return
     }
 
-    // Check if joker was played - auto-clear pile since nothing can beat it
+    // Joker clear is pure; still emit pile-cleared for clients when joker emptied the pile
     const playedJoker = cards.some(c => c.rank === 'Joker')
-    if (playedJoker && this.superTwosMode) {
-      this.broadcastState()
-      // Brief pause to show the joker, then auto-clear
-      setTimeout(() => {
-        this.currentPile = createEmptyPile()
-        this.currentPlayer = playerIndex // Joker player leads again
-        this.consecutivePasses = 0
-        this.events.onPileCleared(playerIndex)
-        this.pileJustCleared = true
-        this.broadcastState()
-        setTimeout(() => {
-          this.processCurrentTurn()
-        }, 300)
-      }, GameTimings.aiThinkMs)
-      return
+    if (playedJoker && this.superTwosMode && this.currentPile.plays.length === 0) {
+      this.events.onPileCleared(playerIndex)
+      this.pileJustCleared = true
     }
 
     this.broadcastState()
@@ -493,35 +483,15 @@ export class PresidentGame {
   private passInternal(playerIndex: number): void {
     const player = this.players[playerIndex]!
 
-    // Use shared processPass function
-    const gameState = buildPresidentGameState({
-      players: this.players,
-      phase: this.phase,
-      currentPile: this.currentPile,
-      currentPlayer: this.currentPlayer,
-      consecutivePasses: this.consecutivePasses,
-      finishedPlayers: this.finishedPlayers,
-      roundNumber: this.roundNumber,
-      gameOver: this.gameOver,
-      lastPlayerId: this.lastPlayerId,
-      superTwosMode: this.superTwosMode,
-        turnStyle: this.turnStyle,
-      awaitingGiveCards: null,
-    })
+    const gameState = this.toPureState()
     const newState = processPass(gameState, playerIndex)
+    if (newState === gameState) return
 
     // Check if pile was cleared
     const pileCleared = newState.currentPile.currentRank === null &&
                         this.currentPile.currentRank !== null
 
-    const nextState = applyPresidentGameState(this.players, newState)
-    this.phase = nextState.phase
-    this.currentPile = nextState.currentPile
-    this.currentPlayer = nextState.currentPlayer
-    this.consecutivePasses = nextState.consecutivePasses
-    this.finishedPlayers = nextState.finishedPlayers
-    this.gameOver = nextState.gameOver
-    this.lastPlayerId = nextState.lastPlayerId
+    this.applyPure(newState)
 
     // Broadcast the pass
     this.events.onPassed(playerIndex, player.name)
@@ -545,31 +515,11 @@ export class PresidentGame {
       console.log('handleRoundComplete called, roundNumber:', this.roundNumber)
 
       // Assign ranks based on finish order
-      const gameState = buildPresidentGameState({
-        players: this.players,
-        phase: this.phase,
-        currentPile: this.currentPile,
-        currentPlayer: this.currentPlayer,
-        consecutivePasses: this.consecutivePasses,
-        finishedPlayers: this.finishedPlayers,
-        roundNumber: this.roundNumber,
-        gameOver: this.gameOver,
-        lastPlayerId: this.lastPlayerId,
-        superTwosMode: this.superTwosMode,
-        turnStyle: this.turnStyle,
-        awaitingGiveCards: null,
-      })
+      const gameState = this.toPureState()
       console.log('Game state built, players finishOrders:', gameState.players.map(p => p.finishOrder))
       const rankedState = assignRanks(gameState)
       console.log('Ranks assigned:', rankedState.players.map(p => ({ id: p.id, rank: p.rank, cardsToGive: p.cardsToGive })))
-      const nextState = applyPresidentGameState(this.players, rankedState)
-      this.phase = nextState.phase
-      this.currentPile = nextState.currentPile
-      this.currentPlayer = nextState.currentPlayer
-      this.consecutivePasses = nextState.consecutivePasses
-      this.finishedPlayers = nextState.finishedPlayers
-      this.gameOver = nextState.gameOver
-      this.lastPlayerId = nextState.lastPlayerId
+      this.applyPure(rankedState)
 
     // Build rankings for broadcast
     const rankings = this.players
@@ -619,20 +569,7 @@ export class PresidentGame {
 
     // Skip if player is finished
     if (player.finishOrder !== null) {
-      const gameState = buildPresidentGameState({
-        players: this.players,
-        phase: this.phase,
-        currentPile: this.currentPile,
-        currentPlayer: this.currentPlayer,
-        consecutivePasses: this.consecutivePasses,
-        finishedPlayers: this.finishedPlayers,
-        roundNumber: this.roundNumber,
-        gameOver: this.gameOver,
-        lastPlayerId: this.lastPlayerId,
-        superTwosMode: this.superTwosMode,
-        turnStyle: this.turnStyle,
-        awaitingGiveCards: null,
-      })
+      const gameState = this.toPureState()
       this.currentPlayer = getNextActivePlayer(gameState, this.currentPlayer)
       this.processCurrentTurn()
       return
@@ -648,20 +585,7 @@ export class PresidentGame {
     setTimeout(() => {
       if (this.phase !== PresidentPhase.Playing) return
 
-      const gameState = buildPresidentGameState({
-        players: this.players,
-        phase: this.phase,
-        currentPile: this.currentPile,
-        currentPlayer: this.currentPlayer,
-        consecutivePasses: this.consecutivePasses,
-        finishedPlayers: this.finishedPlayers,
-        roundNumber: this.roundNumber,
-        gameOver: this.gameOver,
-        lastPlayerId: this.lastPlayerId,
-        superTwosMode: this.superTwosMode,
-        turnStyle: this.turnStyle,
-        awaitingGiveCards: null,
-      })
+      const gameState = this.toPureState()
       const play = computePresidentAIPlay({
         player,
         currentPile: this.currentPile,
