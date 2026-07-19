@@ -11,28 +11,30 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Data (hard×4 play-teacher dumps — preferred)
+## Data (default mix — preferred for models that face easy/noise)
+
+Hard×4 self-play is a closed ecosystem; eval vs easy needs teachers facing weak opponents
+(plan §4.2). Prefer **default mix** dumps, filter `labelQuality: teacher` (built into play_teacher).
 
 ```bash
-# Train (seed 42) — compact teacher play lines only
-npm run sim -- euchre --games 5000 --policies hard,hard,hard,hard --seed 42 \
+# Train / val — compact teacher play lines from default multi-policy mix
+npm run sim -- euchre --games 5000 --mix default --seed 42 \
   --dump-mode play_teacher \
-  --out training/data/euchre-hard4-train-5k.jsonl --report
+  --out training/data/euchre-mix-train-5k.jsonl --report
 
-# Val (disjoint seed)
-npm run sim -- euchre --games 1000 --policies hard,hard,hard,hard --seed 1000042 \
+npm run sim -- euchre --games 1000 --mix default --seed 1000042 \
   --dump-mode play_teacher \
-  --out training/data/euchre-hard4-val-1k.jsonl --report
+  --out training/data/euchre-mix-val-1k.jsonl --report
 ```
 
 ## Train (play-phase teacher only)
 
 ```bash
 python -m euchre_play.train \
-  --train data/euchre-hard4-train-5k.jsonl \
-  --val data/euchre-hard4-val-1k.jsonl \
-  --out models/play_mlp_hard4.joblib \
-  --model mlp
+  --train data/euchre-mix-train-5k.jsonl \
+  --val data/euchre-mix-val-1k.jsonl \
+  --out models/play_mlp_mix.joblib
+# --model defaults to mlp
 ```
 
 `--model` defaults to **mlp** (keep it that way). HGB is optional offline only — slow to serve over the subprocess bridge; never use for live eval iteration.
@@ -43,11 +45,12 @@ When rolling out with `play_model`, the report prints **hard-fallback rate** (co
 
 ```bash
 python -m euchre_play.action_match \
-  --model models/play_mlp_hard4.joblib \
-  --val data/euchre-hard4-val-1k.jsonl
+  --model models/play_mlp_mix.joblib \
+  --val data/euchre-mix-val-1k.jsonl
 ```
 
-This is the default “did this change help?” signal (seconds).
+Reports **overall**, **forced (1 legal)**, and **contested (2+ legal)** plus lead/follow/trick#.  
+**Contested match** is the real signal — overall is inflated by forced plays (~40% of steps).
 
 ## Milestone metric: mirrored-deal eval
 

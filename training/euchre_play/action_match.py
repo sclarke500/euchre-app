@@ -2,20 +2,23 @@
 """
 Offline action-match metric (inner-loop iteration signal).
 
-On held-out teacher play steps: how often does the model pick the same card
-as the teacher label? Seconds, no sim rollouts, no subprocess games.
+Overall match is inflated by forced plays (1 legal card). Report:
+  - overall
+  - forced (len(legal)==1) — should be ~100%
+  - contested (len(legal)>=2) — the real skill signal
+  - contested × lead vs follow
+  - contested × trick number (0–4) when available from obs
 
-  python -m euchre_play.action_match --model models/play_mlp_hard4.joblib --val data/euchre-hard4-val-1k.jsonl
+  python -m euchre_play.action_match --model models/play_mlp.joblib --val data/val.jsonl
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
+from collections import defaultdict
 
 import joblib
-import numpy as np
 
 from .cards import CARD_IDS, N_CARDS
 from .dataset import is_play_teacher_step, iter_jsonl, legal_play_card_ids
@@ -50,6 +53,44 @@ def predict_legal(clf, observation: dict, legal_ids: list[str]) -> str:
     return pred_id if pred_id in legal_ids else legal_ids[0]
 
 
+def trick_number(obs: dict) -> int | None:
+    """0–4 index of current trick within the hand, from completedTricks count."""
+    completed = obs.get("completedTricks")
+    if completed is None:
+        return None
+    return len(completed)
+
+
+def is_lead(obs: dict) -> bool:
+    """Leading the trick: empty currentTrick (and no leadingSuit yet)."""
+    ct = obs.get("currentTrick") or []
+    return len(ct) == 0
+
+
+class Bucket:
+    __slots__ = ("hit", "n")
+
+    def __init__(self) -> None:
+        self.hit = 0
+        self.n = 0
+
+    def add(self, ok: bool) -> None:
+        self.n += 1
+        self.hit += int(ok)
+
+    def rate(self) -> float | None:
+        return (self.hit / self.n) if self.n else None
+
+    def as_dict(self) -> dict:
+        r = self.rate()
+        return {
+            "n": self.n,
+            "hit": self.hit,
+            "match": None if r is None else round(r, 4),
+            "match_pct": None if r is None else round(r * 100, 2),
+        }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Offline action-match vs teacher labels")
     ap.add_argument("--model", required=True)
@@ -58,8 +99,14 @@ def main() -> None:
     args = ap.parse_args()
 
     clf, meta = load_model(args.model)
-    hit = 0
-    n = 0
+
+    overall = Bucket()
+    forced = Bucket()  # 1 legal
+    contested = Bucket()  # 2+ legal
+    lead = Bucket()
+    follow = Bucket()
+    by_trick: dict[int, Bucket] = defaultdict(Bucket)
+    by_n_legal: dict[int, Bucket] = defaultdict(Bucket)
     skipped = 0
 
     for rec in iter_jsonl(args.val):
@@ -76,27 +123,68 @@ def main() -> None:
         except KeyError:
             skipped += 1
             continue
-        pred = predict_legal(clf, rec.get("observation") or {}, legal)
-        hit += int(pred == true_id)
-        n += 1
-        if args.max_steps and n >= args.max_steps:
+
+        obs = rec.get("observation") or {}
+        pred = predict_legal(clf, obs, legal)
+        ok = pred == true_id
+        n_legal = len(legal)
+
+        overall.add(ok)
+        by_n_legal[n_legal].add(ok)
+
+        if n_legal <= 1:
+            forced.add(ok)
+        else:
+            contested.add(ok)
+            if is_lead(obs):
+                lead.add(ok)
+            else:
+                follow.add(ok)
+            tn = trick_number(obs)
+            if tn is not None:
+                by_trick[tn].add(ok)
+
+        if args.max_steps and overall.n >= args.max_steps:
             break
 
-    if n == 0:
+    if overall.n == 0:
         raise SystemExit("no play-teacher steps found")
 
-    rate = hit / n
     out = {
         "model": str(args.model),
         "val": str(args.val),
-        "examples": n,
         "skipped": skipped,
-        "action_match": rate,
-        "action_match_pct": round(rate * 100, 2),
         "feature_dim": meta.get("feature_dim"),
+        "overall": overall.as_dict(),
+        "forced_1_legal": forced.as_dict(),
+        "contested_2plus_legal": contested.as_dict(),
+        "contested_lead": lead.as_dict(),
+        "contested_follow": follow.as_dict(),
+        "contested_by_trick": {
+            str(k): by_trick[k].as_dict() for k in sorted(by_trick.keys())
+        },
+        "by_n_legal": {
+            str(k): by_n_legal[k].as_dict() for k in sorted(by_n_legal.keys())
+        },
     }
     print(json.dumps(out, indent=2))
-    print(f"\naction-match: {rate * 100:.2f}%  ({hit}/{n})")
+
+    def line(label: str, b: Bucket) -> str:
+        r = b.rate()
+        if r is None:
+            return f"  {label}: n=0"
+        return f"  {label}: {r * 100:.2f}%  ({b.hit}/{b.n})"
+
+    print("\n=== action-match breakdown ===")
+    print(line("overall", overall))
+    print(line("forced (1 legal)", forced))
+    print(line("contested (2+ legal)  ← real skill signal", contested))
+    print(line("  contested lead", lead))
+    print(line("  contested follow", follow))
+    if by_trick:
+        print("  contested by trick #:")
+        for k in sorted(by_trick.keys()):
+            print(line(f"    trick {k}", by_trick[k]))
 
 
 if __name__ == "__main__":
