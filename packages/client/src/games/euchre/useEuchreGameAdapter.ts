@@ -111,14 +111,26 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
     }))
   })
 
+  let cachedTrumpKey: string | null = null
+  let cachedTrump: EuchreTrumpInfo | null = null
+
   const trump = computed<EuchreTrumpInfo | null>(() => {
     const round = store.currentRound
-    if (!round?.trump) return null
-    return {
-      suit: round.trump.suit,
-      calledBy: round.trump.calledBy,
-      goingAlone: round.trump.goingAlone,
+    if (!round?.trump) {
+      cachedTrumpKey = null
+      cachedTrump = null
+      return null
     }
+    const key = `${round.trump.suit}:${round.trump.calledBy}:${round.trump.goingAlone}`
+    if (key !== cachedTrumpKey) {
+      cachedTrumpKey = key
+      cachedTrump = {
+        suit: round.trump.suit,
+        calledBy: round.trump.calledBy,
+        goingAlone: round.trump.goingAlone,
+      }
+    }
+    return cachedTrump
   })
 
   const turnUpCard = computed(() => store.currentRound?.turnUpCard ?? null)
