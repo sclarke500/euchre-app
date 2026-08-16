@@ -29,6 +29,20 @@ export function createWebSocketServer(options: WebSocketTransportOptions): Trans
 
   const app = express()
   app.use(express.json())
+
+  // CORS for /api — the native apps call these endpoints directly from the
+  // WebView origin (capacitor://localhost / https://localhost), which is
+  // cross-origin. The JSON POST triggers an OPTIONS preflight.
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204)
+      return
+    }
+    next()
+  })
   
   const httpServer = createServer(app)
   const wss = new WebSocketServer({ server: httpServer })

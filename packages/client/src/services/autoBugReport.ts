@@ -1,11 +1,18 @@
+import { Capacitor } from '@capacitor/core'
 import { websocket } from './websocket'
 
 const RATE_LIMIT_MS = 60_000 // 1 report per minute
 let lastReportTime = 0
 
-// Always use relative URL - Vite (dev) and Netlify (prod) both proxy /api to backend
+// Web: relative URL — Vite (dev) and Netlify (prod) both proxy /api to backend.
+// Native: the WebView origin is capacitor://localhost (iOS) / https://localhost
+// (Android), so a relative fetch never leaves the device — derive the real
+// server origin from the WS URL instead (wss://host → https://host).
 function getApiBaseUrl(): string {
-  return ''
+  if (!Capacitor.isNativePlatform()) return ''
+  const wsUrl = import.meta.env.VITE_WS_URL
+  if (!wsUrl) return ''
+  return wsUrl.replace(/^wss:/, 'https:').replace(/^ws:/, 'http:')
 }
 
 export async function sendBugReport(payload: Record<string, unknown>): Promise<void> {
