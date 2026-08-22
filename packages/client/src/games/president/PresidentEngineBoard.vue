@@ -181,6 +181,20 @@
       </div>
     </Modal>
 
+    <!-- Resume saved game prompt (single-player only) -->
+    <Modal :show="savedGame !== null" scale-with-board :dismiss-on-backdrop="false" aria-label="Resume game">
+      <div class="round-modal dialog-panel">
+        <h2 class="dialog-title">Game In Progress</h2>
+        <p class="panel-message dialog-text">
+          Continue where you left off? Round {{ savedGame?.round }} of 5<span v-if="savedGame?.rank"> &mdash; you are {{ savedGame?.rank }}</span>.
+        </p>
+        <div class="modal-buttons dialog-actions">
+          <button class="modal-btn dialog-btn dialog-btn--primary confirm" @click="handleResumeGame">Continue</button>
+          <button class="modal-btn dialog-btn dialog-btn--muted" @click="handleNewGame">New Game</button>
+        </div>
+      </div>
+    </Modal>
+
     <!-- Leave confirmation modal -->
     <Modal :show="showLeaveConfirm" scale-with-board aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
       <div class="game-dialog">
@@ -649,8 +663,22 @@ function handlePlayAgain() {
   if (props.mode === 'multiplayer') {
     lobbyStore?.restartGame()
   } else {
-    presidentStore?.startNewGame()
+    presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
   }
+}
+
+// Resume prompt (single-player). Resuming redeals the interrupted round with
+// the saved ranks/opponents — no mid-round visual restore involved.
+const savedGame = ref<{ round: number; rank: string } | null>(null)
+
+function handleResumeGame() {
+  savedGame.value = null
+  presidentStore?.resumeSavedGame()
+}
+
+function handleNewGame() {
+  savedGame.value = null
+  presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
 }
 
 // ── Bug Report ──────────────────────────────────────────────────────────
@@ -691,7 +719,12 @@ onMounted(async () => {
   if (props.mode === 'multiplayer') {
     game.initialize?.()
   } else {
-    presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
+    const saved = presidentStore?.getSavedGame() ?? null
+    if (saved) {
+      savedGame.value = saved
+    } else {
+      presidentStore?.startNewGame(settingsStore.presidentPlayerCount)
+    }
   }
   await nextTick()
   if (tableRef.value) {

@@ -168,6 +168,86 @@ export const useEuchreGameStore = defineStore('game', () => {
     passCount.value = next.passCount
     biddingStartPlayer.value = next.biddingStartPlayer
     gameRules.value = next.rules
+    saveProgress()
+  }
+
+  // ---- Progress persistence ----
+  //
+  // Only the round boundary is persisted (scores, dealer, player names, rules).
+  // Resuming redeals the interrupted hand rather than trying to rebuild a
+  // half-played trick — mid-hand restore was the flaky part of the old
+  // save/resume system (director animation state, AI timers, tracker).
+
+  const SAVE_KEY = 'euchre:sp:progress'
+  const SAVE_VERSION = 1
+
+  interface SavedProgress {
+    v: number
+    savedAt: number
+    playerNames: string[]
+    scores: TeamScore[]
+    currentDealer: number
+    rules: EuchreRules
+  }
+
+  function saveProgress() {
+    try {
+      if (players.value.length !== 4) return
+      if (gameOver.value || phase.value === GamePhase.GameOver || phase.value === GamePhase.Setup) {
+        localStorage.removeItem(SAVE_KEY)
+        return
+      }
+      const data: SavedProgress = {
+        v: SAVE_VERSION,
+        savedAt: Date.now(),
+        playerNames: players.value.map(p => p.name),
+        scores: scores.value.map(s => ({ ...s })),
+        // On the round summary the dealer hasn't rotated yet; persist the
+        // *next* hand's dealer so a resume doesn't replay the finished round.
+        currentDealer: phase.value === GamePhase.RoundComplete
+          ? (currentDealer.value + 1) % 4
+          : currentDealer.value,
+        rules: { ...gameRules.value },
+      }
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data))
+    } catch {
+      // localStorage unavailable (private mode, quota) — persistence is best-effort
+    }
+  }
+
+  function readSavedProgress(): SavedProgress | null {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY)
+      if (!raw) return null
+      const data = JSON.parse(raw) as Partial<SavedProgress>
+      if (
+        data.v !== SAVE_VERSION ||
+        !Array.isArray(data.playerNames) || data.playerNames.length !== 4 ||
+        !Array.isArray(data.scores) || data.scores.length !== 2 ||
+        typeof data.currentDealer !== 'number' || data.currentDealer < 0 || data.currentDealer > 3 ||
+        !data.rules
+      ) {
+        return null
+      }
+      return data as SavedProgress
+    } catch {
+      return null
+    }
+  }
+
+  /** Saved-game summary for the resume prompt, or null if nothing worth resuming. */
+  function getSavedGame(): { us: number; them: number } | null {
+    const data = readSavedProgress()
+    if (!data) return null
+    const us = data.scores[0]?.score ?? 0
+    const them = data.scores[1]?.score ?? 0
+    // A 0-0 game has nothing to resume
+    if (us === 0 && them === 0) return null
+    return { us, them }
+  }
+
+  function clearSavedGame() {
+    try { localStorage.removeItem(SAVE_KEY) } catch { /* ignore */ }
   }
 
   // Computed
@@ -208,31 +288,52 @@ export const useEuchreGameStore = defineStore('game', () => {
   }
 
   function startNewGame() {
+    clearSavedGame()
+    beginGame(null)
+  }
+
+  /**
+   * Resume a saved game: same players, scores, rules and dealer, with the
+   * interrupted hand redealt. Falls back to a new game if nothing is saved.
+   */
+  function resumeSavedGame() {
+    beginGame(readSavedProgress())
+  }
+
+  function beginGame(saved: SavedProgress | null) {
     timer.cancelAll()
 
     const aiNames = getRandomAINames(3)
     const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
 
     // Snapshot rules at game start (not live from settings mid-round)
-    gameRules.value = {
-      stickTheDealer: settingsStore.isStickTheDealer(),
-      canadianLoner: settingsStore.canadianLoner === true,
-    }
+    gameRules.value = saved
+      ? { ...saved.rules }
+      : {
+          stickTheDealer: settingsStore.isStickTheDealer(),
+          canadianLoner: settingsStore.canadianLoner === true,
+        }
 
+    const names = saved?.playerNames
     players.value = [
       { id: 0, name: playerName, hand: [], isHuman: true, teamId: 0 },
-      { id: 1, name: aiNames[0] ?? 'Tron', hand: [], isHuman: false, teamId: 1 },
-      { id: 2, name: aiNames[1] ?? 'Data', hand: [], isHuman: false, teamId: 0 },
-      { id: 3, name: aiNames[2] ?? 'Neon', hand: [], isHuman: false, teamId: 1 },
+      { id: 1, name: names?.[1] ?? aiNames[0] ?? 'Tron', hand: [], isHuman: false, teamId: 1 },
+      { id: 2, name: names?.[2] ?? aiNames[1] ?? 'Data', hand: [], isHuman: false, teamId: 0 },
+      { id: 3, name: names?.[3] ?? aiNames[2] ?? 'Neon', hand: [], isHuman: false, teamId: 1 },
     ]
 
-    scores.value = [
-      { teamId: 0, score: 0 },
-      { teamId: 1, score: 0 },
-    ]
+    scores.value = saved
+      ? [
+          { teamId: 0, score: saved.scores[0]?.score ?? 0 },
+          { teamId: 1, score: saved.scores[1]?.score ?? 0 },
+        ]
+      : [
+          { teamId: 0, score: 0 },
+          { teamId: 1, score: 0 },
+        ]
     gameOver.value = false
     winner.value = null
-    currentDealer.value = Math.floor(Math.random() * 4)
+    currentDealer.value = saved ? saved.currentDealer : Math.floor(Math.random() * 4)
     phase.value = GamePhase.Setup
     currentRound.value = null
     passCount.value = 0
@@ -523,6 +624,9 @@ export const useEuchreGameStore = defineStore('game', () => {
     lastAIBidAction,
 
     startNewGame,
+    resumeSavedGame,
+    getSavedGame,
+    clearSavedGame,
     startNewRound,
     makeBid,
     playCard,

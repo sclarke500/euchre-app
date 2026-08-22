@@ -111,9 +111,12 @@ When a card is played from the player's hand:
 - Trump calling has two rounds of bidding
 - "Going alone" - partner sits out
 
-### Singleplayer Start Behavior
-- Singleplayer games (Euchre, Spades, President) always start fresh when opened.
-- "Resume old game" localStorage restore flows have been removed from board/store/director layers.
+### Singleplayer Progress Persistence
+Singleplayer games persist progress to localStorage so a killed app / closed tab doesn't lose the game.
+
+- **Euchre / Spades / President persist the round boundary only** (`euchre:sp:progress`, `spades:sp:progress`, `president:sp:progress`): scores/bags/ranks, dealer, round number, AI names, frozen rules. Written from the store's `applyState`/`applyPureState` (+ round-complete paths), cleared on GameOver or New Game. On open, if there's a game worth resuming (non-0-0 score / a completed round), the board shows a **Continue / New Game** prompt. Continue = `resumeSavedGame()` → same opponents/scores/dealer, and the interrupted hand is **redealt**. When saved on the round-summary screen, the *next* hand's dealer/round is stored so the finished round isn't replayed (President: saved `roundNumber` is a seed — `startNewRound` bumps it when ranks exist).
+- **Deliberately no mid-hand restore** for the trick/pile games: the old full-state save/resume (removed Feb 2026) was flaky because the director had to rebuild animation/AI/timer state from a half-played trick. Don't reintroduce that.
+- **Klondike persists full state** (`klondike:sp:progress` = state + undo history, `klondike:sp:elapsed` = timer) and **auto-resumes silently** — it has no AI/timers and its layout is a pure function of state (`syncPositionsFromState`), so the board just snaps cards into place instead of dealing.
 
 ### Player Timeout System
 - Turn reminders sent every 15 seconds

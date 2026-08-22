@@ -28,11 +28,26 @@ const containersRef = ref<InstanceType<typeof KlondikeContainers> | null>(null)
 const elapsedSeconds = ref(0)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 
-function startTimer() {
-  elapsedSeconds.value = 0
+// Elapsed time is persisted separately from the game state (it ticks every
+// second; the state save is larger and only written on moves).
+const ELAPSED_KEY = 'klondike:sp:elapsed'
+
+function readSavedElapsed(): number {
+  try {
+    const n = Number(localStorage.getItem(ELAPSED_KEY))
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
+  } catch {
+    return 0
+  }
+}
+
+function startTimer(initialSeconds = 0) {
+  stopTimer()
+  elapsedSeconds.value = initialSeconds
   timerInterval = setInterval(() => {
     if (!store.isWon) {
       elapsedSeconds.value++
+      try { localStorage.setItem(ELAPSED_KEY, String(elapsedSeconds.value)) } catch { /* ignore */ }
     }
   }, 1000)
 }
@@ -601,17 +616,28 @@ onMounted(async () => {
   await nextTick()
   updateCardSize()
 
-  // Start the game with saved draw mode setting
-  const drawCount = settings.klondikeDrawMode === 'single' ? 1 : 3
-  const recycleMode = settings.klondikeDrawMode === 'wrap' ? 'wrap' : 'strict'
-  store.startNewGame(drawCount, recycleMode)
-  startTimer()
+  // Resume an unfinished game if there is one; otherwise start fresh with the
+  // saved draw mode setting.
+  const resumed = store.resumeSavedGame()
+  if (resumed) {
+    startTimer(readSavedElapsed())
+  } else {
+    const drawCount = settings.klondikeDrawMode === 'single' ? 1 : 3
+    const recycleMode = settings.klondikeDrawMode === 'wrap' ? 'wrap' : 'strict'
+    store.startNewGame(drawCount, recycleMode)
+    startTimer()
+  }
 
   window.addEventListener('resize', updateCardSize)
 
-  // Wait for containers to be measured before animating
+  // A resumed game is already mid-play — snap cards into place, no deal.
+  const settle = resumed
+    ? async () => { syncPositionsFromState(); isAnimating.value = false }
+    : animateDeal
+
+  // Wait for containers to be measured before laying out
   if (containersReadyForLayout()) {
-    await animateDeal()
+    await settle()
   } else {
     // Watch for containers to become ready
     const unwatch = watch(
@@ -619,7 +645,7 @@ onMounted(async () => {
       async (ready) => {
         if (ready) {
           unwatch()
-          await animateDeal()
+          await settle()
         }
       }
     )

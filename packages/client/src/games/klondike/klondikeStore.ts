@@ -88,6 +88,82 @@ export const useKlondikeStore = defineStore('klondike', () => {
     isWon.value = state.isWon
     drawCount.value = state.drawCount
     recycleMode.value = state.recycleMode
+    saveProgress()
+  }
+
+  // ---- Progress persistence ----
+  //
+  // Klondike has no AI, timers, or multi-seat animation state, so the full
+  // game state (plus undo history) is safe to persist and restore directly.
+  // The board auto-resumes an unfinished game on open.
+
+  const SAVE_KEY = 'klondike:sp:progress'
+  const SAVE_VERSION = 1
+
+  interface SavedProgress {
+    v: number
+    savedAt: number
+    state: KlondikeState
+    history: string[]
+  }
+
+  function saveProgress() {
+    try {
+      if (isWon.value || moveCount.value === 0) {
+        localStorage.removeItem(SAVE_KEY)
+        return
+      }
+      const data: SavedProgress = {
+        v: SAVE_VERSION,
+        savedAt: Date.now(),
+        state: { ...gameState.value, selection: null },
+        history: history.value,
+      }
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data))
+    } catch {
+      // best-effort
+    }
+  }
+
+  function readSavedProgress(): SavedProgress | null {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY)
+      if (!raw) return null
+      const data = JSON.parse(raw) as Partial<SavedProgress>
+      const st = data.state
+      if (
+        data.v !== SAVE_VERSION ||
+        !st ||
+        !Array.isArray(st.tableau) || st.tableau.length !== 7 ||
+        !Array.isArray(st.foundations) || st.foundations.length !== 4 ||
+        !Array.isArray(st.stock) || !Array.isArray(st.waste) ||
+        typeof st.moveCount !== 'number' || st.isWon ||
+        !Array.isArray(data.history)
+      ) {
+        return null
+      }
+      return data as SavedProgress
+    } catch {
+      return null
+    }
+  }
+
+  function hasSavedGame(): boolean {
+    return readSavedProgress() !== null
+  }
+
+  /** Restore the saved game in place. Returns false (and leaves state untouched) if none. */
+  function resumeSavedGame(): boolean {
+    const saved = readSavedProgress()
+    if (!saved) return false
+    history.value = saved.history
+    updateState({ ...saved.state, selection: null }, false)
+    isAutoCompleting.value = false
+    return true
+  }
+
+  function clearSavedGame() {
+    try { localStorage.removeItem(SAVE_KEY) } catch { /* ignore */ }
   }
 
   // Actions
@@ -99,6 +175,7 @@ export const useKlondikeStore = defineStore('klondike', () => {
   }
 
   function startNewGame(newDrawCount?: 1 | 3, newRecycleMode?: RecycleMode) {
+    clearSavedGame()
     history.value = []
     if (newDrawCount !== undefined) drawCount.value = newDrawCount
     if (newRecycleMode !== undefined) recycleMode.value = newRecycleMode
@@ -272,6 +349,9 @@ export const useKlondikeStore = defineStore('klondike', () => {
 
     // Actions
     startNewGame,
+    hasSavedGame,
+    resumeSavedGame,
+    clearSavedGame,
     handleDrawCard,
     handleTableauTap,
     handleEmptyTableauTap,

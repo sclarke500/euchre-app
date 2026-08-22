@@ -140,6 +140,28 @@
       </div>
     </Modal>
 
+    <!-- Resume saved game prompt (single-player only) -->
+    <Modal :show="savedGame !== null" scale-with-board :dismiss-on-backdrop="false" aria-label="Resume game">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Game In Progress</div>
+        <div class="game-over-result dialog-text">Continue where you left off? (Round {{ savedGame?.round }})</div>
+        <div class="game-over-scores dialog-text">
+          <div class="final-score">
+            <span class="final-score__label">Us</span>
+            <span class="final-score__value">{{ savedGame?.us }}</span>
+          </div>
+          <div class="final-score">
+            <span class="final-score__label">Them</span>
+            <span class="final-score__value">{{ savedGame?.them }}</span>
+          </div>
+        </div>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleResumeGame">Continue</button>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="handleNewGame">New Game</button>
+        </div>
+      </div>
+    </Modal>
+
     <!-- Leave confirmation -->
     <Modal :show="showLeaveConfirm" scale-with-board aria-label="Leave game confirmation" @close="showLeaveConfirm = false">
       <div class="game-dialog">
@@ -257,6 +279,7 @@ import { useSpadesGameAdapter } from './useSpadesGameAdapter'
 import { useSpadesDirector } from './useSpadesDirector'
 import { useSpadesBoardUi } from './useSpadesBoardUi'
 import { useLobbyStore } from '@/stores/lobbyStore'
+import { useSpadesStore } from './spadesStore'
 import confetti from 'canvas-confetti'
 
 const props = withDefaults(defineProps<{
@@ -303,8 +326,28 @@ const {
   onGameLost: () => emit('leave-game'),
 })
 
+// Resume prompt (single-player). Resuming redeals the interrupted hand with
+// the saved scores/dealer/opponents — no mid-hand visual restore involved.
+const spStore = props.mode === 'singleplayer' ? useSpadesStore() : null
+const savedGame = ref<{ us: number; them: number; round: number } | null>(null)
+
 if (props.mode === 'singleplayer') {
-  initializeGame()
+  const saved = spStore?.getSavedGame() ?? null
+  if (saved) {
+    savedGame.value = saved
+  } else {
+    initializeGame()
+  }
+}
+
+function handleResumeGame() {
+  savedGame.value = null
+  spStore?.resumeSavedGame()
+}
+
+function handleNewGame() {
+  savedGame.value = null
+  spStore?.startNewGame()
 }
 
 const {

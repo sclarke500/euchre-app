@@ -14,6 +14,7 @@
     :trump-color="trumpColor"
     :current-turn-seat="currentTurnSeat"
     :dimmed-card-ids="dimmedCardIds"
+    :highlighted-card-ids="highlightedCardIds"
     layout="normal"
     game-name="EUCHRE"
     @card-click="handleCardClick"
@@ -70,6 +71,28 @@
         <div v-else class="game-over-actions dialog-actions">
           <div class="panel-message dialog-text">Waiting for host to start new game...</div>
           <button class="action-btn dialog-btn dialog-btn--muted" @click="emit('leave-game')">Leave</button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Resume saved game prompt (single-player only) -->
+    <Modal :show="savedGame !== null" scale-with-board :dismiss-on-backdrop="false" aria-label="Resume game">
+      <div class="game-over-panel dialog-panel">
+        <div class="game-over-title dialog-title">Game In Progress</div>
+        <div class="game-over-result dialog-text">Continue where you left off?</div>
+        <div class="game-over-scores dialog-text">
+          <div class="final-score">
+            <span class="final-score__label">Us</span>
+            <span class="final-score__value">{{ savedGame?.us }}</span>
+          </div>
+          <div class="final-score">
+            <span class="final-score__label">Them</span>
+            <span class="final-score__value">{{ savedGame?.them }}</span>
+          </div>
+        </div>
+        <div class="game-over-actions dialog-actions">
+          <button class="action-btn dialog-btn dialog-btn--primary primary" @click="handleResumeGame">Continue</button>
+          <button class="action-btn dialog-btn dialog-btn--muted" @click="handleNewGame">New Game</button>
         </div>
       </div>
     </Modal>
@@ -365,6 +388,15 @@ const showActionPanel = computed(() => {
 
 const isUserDealer = computed(() => game.dealer.value === game.myPlayerId.value)
 
+// Highlight the ordered-up card in the dealer's hand so the user can tell
+// which card they just picked up (the hand gets re-sorted, so it would
+// otherwise blend in).
+const highlightedCardIds = computed<Set<string>>(() => {
+  if (game.phase.value !== GamePhase.DealerDiscard || !isUserDealer.value) return new Set()
+  const turnUp = game.turnUpCard.value
+  return turnUp ? new Set([turnUp.id]) : new Set()
+})
+
 // Stick the dealer check
 const mustCall = computed(() => {
   return game.biddingRound.value === 2 && isUserDealer.value
@@ -557,6 +589,20 @@ function handlePlayAgain() {
   }
 }
 
+// Resume prompt (single-player). Resuming redeals the interrupted hand with
+// the saved scores/dealer/opponents — no mid-hand visual restore involved.
+const savedGame = ref<{ us: number; them: number } | null>(null)
+
+function handleResumeGame() {
+  savedGame.value = null
+  gameStore?.resumeSavedGame()
+}
+
+function handleNewGame() {
+  savedGame.value = null
+  gameStore?.startNewGame()
+}
+
 // Leave confirmation for multiplayer
 const showLeaveConfirm = ref(false)
 const showRulesModal = ref(false)
@@ -583,7 +629,12 @@ onMounted(async () => {
   if (props.mode === 'multiplayer') {
     mpStore?.initialize()
   } else {
-    gameStore?.startNewGame()
+    const saved = gameStore?.getSavedGame() ?? null
+    if (saved) {
+      savedGame.value = saved
+    } else {
+      gameStore?.startNewGame()
+    }
   }
   await nextTick()
   if (tableRef.value) {

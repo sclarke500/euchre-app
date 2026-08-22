@@ -249,22 +249,130 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     }
   }
 
+  // ---- Progress persistence ----
+  //
+  // Only the round boundary is persisted (scores/bags, dealer, round number,
+  // player names, rules). Resuming redeals the interrupted hand — no attempt
+  // is made to rebuild a half-played trick (that was the flaky part of the
+  // old full-state save/resume).
+
+  const SAVE_KEY = 'spades:sp:progress'
+  const SAVE_VERSION = 1
+
+  interface SavedProgress {
+    v: number
+    savedAt: number
+    playerNames: string[]
+    scores: SpadesTeamScore[]
+    dealer: number
+    roundNumber: number
+    winScore: number
+    loseScore: number
+    blindNilEnabled: boolean
+  }
+
+  function saveProgress() {
+    try {
+      if (players.value.length !== 4) return
+      if (gameOver.value || phase.value === SpadesPhase.GameOver || phase.value === SpadesPhase.Setup) {
+        localStorage.removeItem(SAVE_KEY)
+        return
+      }
+      const data: SavedProgress = {
+        v: SAVE_VERSION,
+        savedAt: Date.now(),
+        playerNames: players.value.map(p => p.name),
+        scores: scores.value.map(s => ({ ...s })),
+        // On the round summary the dealer/round haven't advanced yet; persist
+        // the *next* hand's values so a resume doesn't replay the finished round.
+        dealer: phase.value === SpadesPhase.RoundComplete ? (dealer.value + 1) % 4 : dealer.value,
+        roundNumber: phase.value === SpadesPhase.RoundComplete ? roundNumber.value + 1 : roundNumber.value,
+        winScore: winScore.value,
+        loseScore: loseScore.value,
+        blindNilEnabled: blindNilEnabled.value,
+      }
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data))
+    } catch {
+      // best-effort
+    }
+  }
+
+  function readSavedProgress(): SavedProgress | null {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY)
+      if (!raw) return null
+      const data = JSON.parse(raw) as Partial<SavedProgress>
+      if (
+        data.v !== SAVE_VERSION ||
+        !Array.isArray(data.playerNames) || data.playerNames.length !== 4 ||
+        !Array.isArray(data.scores) || data.scores.length !== 2 ||
+        typeof data.dealer !== 'number' || data.dealer < 0 || data.dealer > 3 ||
+        typeof data.roundNumber !== 'number'
+      ) {
+        return null
+      }
+      return data as SavedProgress
+    } catch {
+      return null
+    }
+  }
+
+  /** Saved-game summary for the resume prompt, or null if nothing worth resuming. */
+  function getSavedGame(): { us: number; them: number; round: number } | null {
+    const data = readSavedProgress()
+    if (!data) return null
+    // Nothing has happened yet in round 1 — nothing to resume
+    if (data.roundNumber <= 1) return null
+    return {
+      us: data.scores[0]?.score ?? 0,
+      them: data.scores[1]?.score ?? 0,
+      round: data.roundNumber,
+    }
+  }
+
+  function clearSavedGame() {
+    try { localStorage.removeItem(SAVE_KEY) } catch { /* ignore */ }
+  }
+
   // Actions
   function startNewGame() {
+    clearSavedGame()
+    beginGame(null)
+  }
+
+  /** Resume a saved game: same players/scores/dealer, interrupted hand redealt. */
+  function resumeSavedGame() {
+    beginGame(readSavedProgress())
+  }
+
+  function beginGame(saved: SavedProgress | null) {
     // Cancel any pending timers from previous game
     timer.cancelAll()
     
     const aiNames = getRandomAINames(3)
     const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
-    const playerNames = [playerName, ...aiNames]
+    const playerNames = saved
+      ? [playerName, ...saved.playerNames.slice(1)]
+      : [playerName, ...aiNames]
 
-    const state = Spades.createSpadesGame(
+    let state = Spades.createSpadesGame(
       playerNames,
       0,
-      500,
-      -200,
-      settingsStore.spadesBlindNil
+      saved?.winScore ?? 500,
+      saved?.loseScore ?? -200,
+      saved ? saved.blindNilEnabled : settingsStore.spadesBlindNil
     )
+    if (saved) {
+      state = {
+        ...state,
+        dealer: saved.dealer,
+        roundNumber: saved.roundNumber,
+        scores: [
+          { teamId: 0, score: saved.scores[0]?.score ?? 0, bags: saved.scores[0]?.bags ?? 0 },
+          { teamId: 1, score: saved.scores[1]?.score ?? 0, bags: saved.scores[1]?.bags ?? 0 },
+        ],
+      }
+    }
     applyState(state)
 
     // Deal cards
@@ -399,6 +507,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
         if (state.gameOver) {
           phase.value = SpadesPhase.GameOver
+          clearSavedGame()
         } else {
           // Show round summary (UI will call startNextRound when ready)
           phase.value = SpadesPhase.RoundComplete
@@ -486,6 +595,7 @@ export const useSpadesStore = defineStore('spadesGame', () => {
     loseScore.value = state.loseScore
     blindNilEnabled.value = state.blindNilEnabled
     handRevealed.value = state.handRevealed
+    saveProgress()
   }
 
   return {
@@ -519,6 +629,9 @@ export const useSpadesStore = defineStore('spadesGame', () => {
 
     // Actions
     startNewGame,
+    resumeSavedGame,
+    getSavedGame,
+    clearSavedGame,
     startRound,
     startNextRound,
     makeBid,

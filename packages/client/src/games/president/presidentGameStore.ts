@@ -228,7 +228,104 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
   }
 
   // Actions
+  // ---- Progress persistence ----
+  //
+  // Only the round boundary is persisted (player names + ranks, round number,
+  // rules). Resuming redeals the interrupted round — no attempt is made to
+  // rebuild a half-played pile (that was the flaky part of the old
+  // full-state save/resume).
+
+  const SAVE_KEY = 'president:sp:progress'
+  const SAVE_VERSION = 1
+
+  interface SavedProgress {
+    v: number
+    savedAt: number
+    playerNames: string[]
+    ranks: (PlayerRank | null)[]
+    /** Seed value: `startNewRound` bumps this by one when ranks exist. */
+    roundNumber: number
+    rules: PresidentRules
+  }
+
+  function saveProgress() {
+    try {
+      if (players.value.length < 4) return
+      if (gameOver.value || phase.value === PresidentPhase.GameOver || phase.value === PresidentPhase.Setup) {
+        localStorage.removeItem(SAVE_KEY)
+        return
+      }
+      const hasRanks = players.value.some(p => p.rank !== null)
+      // roundNumber is only incremented by startNewRound (when ranks exist).
+      //  - On the round summary: ranks just assigned, roundNumber = N, next deal → N+1. Seed N.
+      //  - Mid-round N with ranks: redeal must produce N again. Seed N-1.
+      //  - Round 1 (no ranks): seed as-is (startNewRound doesn't bump).
+      const seedRound = !hasRanks || phase.value === PresidentPhase.RoundComplete
+        ? roundNumber.value
+        : roundNumber.value - 1
+      const data: SavedProgress = {
+        v: SAVE_VERSION,
+        savedAt: Date.now(),
+        playerNames: players.value.map(p => p.name),
+        ranks: players.value.map(p => p.rank),
+        roundNumber: seedRound,
+        rules: { ...rules.value },
+      }
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data))
+    } catch {
+      // best-effort
+    }
+  }
+
+  function readSavedProgress(): SavedProgress | null {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY)
+      if (!raw) return null
+      const data = JSON.parse(raw) as Partial<SavedProgress>
+      if (
+        data.v !== SAVE_VERSION ||
+        !Array.isArray(data.playerNames) || data.playerNames.length < 4 || data.playerNames.length > 8 ||
+        !Array.isArray(data.ranks) || data.ranks.length !== data.playerNames.length ||
+        typeof data.roundNumber !== 'number' ||
+        !data.rules
+      ) {
+        return null
+      }
+      return data as SavedProgress
+    } catch {
+      return null
+    }
+  }
+
+  /** Saved-game summary for the resume prompt, or null if nothing worth resuming. */
+  function getSavedGame(): { round: number; rank: string } | null {
+    const data = readSavedProgress()
+    if (!data) return null
+    // No completed round yet — nothing to resume
+    if (!data.ranks.some(r => r !== null)) return null
+    const myRank = data.ranks[0]
+    return {
+      round: data.roundNumber + 1,
+      rank: myRank !== null && myRank !== undefined ? getRankDisplayName(myRank) : '',
+    }
+  }
+
+  function clearSavedGame() {
+    try { localStorage.removeItem(SAVE_KEY) } catch { /* ignore */ }
+  }
+
   function startNewGame(numPlayers: number = 4) {
+    clearSavedGame()
+    beginGame(numPlayers, null)
+  }
+
+  /** Resume a saved game: same players/ranks, interrupted round redealt. */
+  function resumeSavedGame() {
+    const saved = readSavedProgress()
+    beginGame(saved?.playerNames.length ?? settingsStore.presidentPlayerCount, saved)
+  }
+
+  function beginGame(numPlayers: number, saved: SavedProgress | null) {
     // Cancel any pending timers from previous game
     timer.cancelAll()
     
@@ -239,17 +336,28 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
 
     // Create player names array
-    const playerNames = [playerName, ...aiNames]
+    const playerNames = saved
+      ? [playerName, ...saved.playerNames.slice(1)]
+      : [playerName, ...aiNames]
 
-    // Build rules from settings
-    rules.value = {
-      superTwosMode: settingsStore.isSuperTwosAndJokers(),
-      whoLeads: 'scum', // Scum leads after card exchange (standard rule)
-      turnStyle: settingsStore.presidentTurnStyle,
-    }
+    // Build rules from settings (or restore the frozen rules of a saved game)
+    rules.value = saved
+      ? { ...saved.rules }
+      : {
+          superTwosMode: settingsStore.isSuperTwosAndJokers(),
+          whoLeads: 'scum', // Scum leads after card exchange (standard rule)
+          turnStyle: settingsStore.presidentTurnStyle,
+        }
 
     // Create game with rules
-    const state = createPresidentGame(playerNames, 0, rules.value)
+    let state = createPresidentGame(playerNames, 0, rules.value)
+    if (saved) {
+      state = {
+        ...state,
+        players: state.players.map((p, i) => ({ ...p, rank: saved.ranks[i] ?? null })),
+        roundNumber: saved.roundNumber,
+      }
+    }
 
     // Initialize state
     players.value = state.players
@@ -288,6 +396,7 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     awaitingGiveBack.value = state.awaitingGiveBack
     exchangeParticipants.value = state.exchangeParticipants ?? []
     roundNumber.value = state.roundNumber
+    saveProgress()
 
     // Wait for deal animation to complete before advancing phase.
     // The director calls dealAnimationComplete() when dealing visuals are done.
@@ -534,9 +643,11 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
     if (roundNumber.value >= 5) {
       gameOver.value = true
       phase.value = PresidentPhase.GameOver
+      clearSavedGame()
     } else {
       // Show summary modal - user must click Continue to proceed
       showRoundSummary.value = true
+      saveProgress()
     }
     
     // Process chat after round complete (will detect first/last out, game over)
@@ -622,6 +733,9 @@ export const usePresidentGameStore = defineStore('presidentGame', () => {
 
     // Actions
     startNewGame,
+    resumeSavedGame,
+    getSavedGame,
+    clearSavedGame,
     startRound,
     playCards,
     pass,
