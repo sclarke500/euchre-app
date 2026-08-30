@@ -2,6 +2,13 @@ export interface ResyncStaleContext {
   staleThresholdMs: number
   timeSinceLastUpdate: number
   isWaitingForUs: boolean
+  /**
+   * How many stale checks have fired in a row without any state arriving in
+   * between. 1 on the first fire; 2+ means an earlier recovery attempt (e.g. a
+   * resync request) went unanswered — likely a zombie socket that reports OPEN
+   * but delivers nothing, so callers should escalate to a forced reconnect.
+   */
+  consecutiveStaleFires: number
 }
 
 export interface MultiplayerResyncWatchdog {
@@ -28,6 +35,7 @@ export function createMultiplayerResyncWatchdog(
   const idleThresholdMs = options.idleThresholdMs ?? 30000
 
   let lastStateReceivedAt = 0
+  let consecutiveStaleFires = 0
   let intervalHandle: ReturnType<typeof setInterval> | null = null
 
   function now(): number {
@@ -37,6 +45,7 @@ export function createMultiplayerResyncWatchdog(
   return {
     markStateReceived() {
       lastStateReceivedAt = now()
+      consecutiveStaleFires = 0
     },
 
     start() {
@@ -54,10 +63,12 @@ export function createMultiplayerResyncWatchdog(
         const timeSinceLastUpdate = now() - lastStateReceivedAt
 
         if (timeSinceLastUpdate > staleThresholdMs) {
+          consecutiveStaleFires++
           options.onStaleState({
             staleThresholdMs,
             timeSinceLastUpdate,
             isWaitingForUs,
+            consecutiveStaleFires,
           })
           lastStateReceivedAt = now()
         }
@@ -72,6 +83,7 @@ export function createMultiplayerResyncWatchdog(
 
     reset() {
       lastStateReceivedAt = 0
+      consecutiveStaleFires = 0
     },
   }
 }

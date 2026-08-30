@@ -310,27 +310,33 @@ export function processPass(
 
   // Check if trick should end (pile clears)
   let shouldClearPile = false
-  
+
+  // When the pile owner went out on their final play, they're no longer active,
+  // so every remaining active player must decline before the pile clears —
+  // don't reserve a "slot" for an owner who isn't there.
+  const pileOwnerActive = state.lastPlayerId !== null
+    && state.players[state.lastPlayerId]?.finishOrder === null
+
   if (state.lastPlayerId !== null) {
     if (turnStyle === 'original') {
-      // Original mode: everyone passed consecutively
-      shouldClearPile = newConsecutivePasses >= activePlayers.length - 1
-    } else if (turnStyle === 'passLockout') {
-      // Pass lockout mode: only last player remains who hasn't passed
-      shouldClearPile = playersStillInTrick.length <= 1
-    } else if (turnStyle === 'singleRound') {
-      // Single round mode: everyone has had their one turn
-      // Clear when only the last player who played is left (they don't get another turn)
-      shouldClearPile = playersStillInTrick.length <= 1
+      // Original mode: everyone (except the pile owner, if still in) passed consecutively
+      const passesNeeded = pileOwnerActive ? activePlayers.length - 1 : activePlayers.length
+      shouldClearPile = newConsecutivePasses >= passesNeeded
+    } else if (turnStyle === 'passLockout' || turnStyle === 'singleRound') {
+      // passLockout: only the pile owner remains who hasn't passed
+      // singleRound: everyone has had their one turn (owner doesn't get another)
+      shouldClearPile = playersStillInTrick.length <= (pileOwnerActive ? 1 : 0)
     }
   }
 
   if (shouldClearPile) {
-    // If last player finished, find next active player after them
-    const lastPlayer = state.players[state.lastPlayerId!]
-    const newLeader = lastPlayer?.finishOrder !== null
-      ? getNextActivePlayer(state, state.lastPlayerId!)
-      : state.lastPlayerId!
+    // If last player finished, find next active player after them.
+    // Compute against a fresh trick (passedThisTrick: []) — the old trick's pass
+    // list would make getNextActivePlayer skip players who passed on the ending
+    // pile, handing the lead to an effectively arbitrary seat.
+    const newLeader = pileOwnerActive
+      ? state.lastPlayerId!
+      : getNextActivePlayer({ ...state, passedThisTrick: [] }, state.lastPlayerId!)
     return {
       ...state,
       currentPile: createEmptyPile(),

@@ -55,13 +55,21 @@ export const usePresidentMultiplayerStore = defineStore('presidentMultiplayer', 
   const resyncWatchdog = createMultiplayerResyncWatchdog({
     isGameActive: () => gameState.value !== null,
     isWaitingForUs: () => isMyTurn.value || isInExchange.value,
-    onStaleState: ({ staleThresholdMs, timeSinceLastUpdate, isWaitingForUs }) => {
+    onStaleState: ({ staleThresholdMs, timeSinceLastUpdate, isWaitingForUs, consecutiveStaleFires }) => {
       logMultiplayerEvent('president-mp', 'stale_state_resync', getDebugSnapshot(), {
         staleThresholdMs,
         timeSinceLastUpdate,
         isWaitingForUs,
+        consecutiveStaleFires,
       })
-      requestStateResync()
+      if (consecutiveStaleFires >= 2) {
+        // A resync request already went unanswered — the socket is likely a
+        // zombie. Reconnecting re-identifies via join_lobby, which makes the
+        // server resend full game state.
+        websocket.forceReconnect()
+      } else {
+        requestStateResync()
+      }
     },
   })
 

@@ -248,6 +248,17 @@ class WebSocketService {
     }
   }
 
+  // Escape hatch for a socket that reports OPEN but delivers nothing — a
+  // "zombie" after a network switch (WiFi↔cellular) or NAT timeout. TCP can
+  // take minutes to notice on its own; callers (e.g. the multiplayer resync
+  // watchdog) invoke this when resync requests go unanswered. onReconnect
+  // handlers re-identify to the server, which resends game state.
+  forceReconnect(): void {
+    if (this.userClosed || !this.url) return
+    console.log('Force reconnect requested (suspected zombie socket)')
+    this.reconnectNow()
+  }
+
   // Tear down any existing socket without triggering the backoff path, reset the
   // attempt budget, and open a fresh connection immediately.
   private reconnectNow(): void {

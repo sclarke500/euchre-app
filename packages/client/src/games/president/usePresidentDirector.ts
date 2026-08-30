@@ -426,37 +426,56 @@ export function usePresidentDirector(
   // ── Pile sync (for resync after server restart) ────────────────────────
   // Only syncs when there's a clear mismatch - avoids interfering with normal animations
 
-  function syncVisualPileWithServer(serverPile: { plays?: Array<{ cards: StandardCard[] }> } | null) {
+  async function syncVisualPileWithServer(serverPile: { plays?: Array<{ cards: StandardCard[] }> } | null) {
     const centerPile = engine.getPiles().find(p => p.id === 'center')
     if (!centerPile) return
 
     // Count cards in server pile
     let serverCardCount = 0
-    let serverPlayCount = 0
-    if (serverPile?.plays) {
-      serverPlayCount = serverPile.plays.length
-      for (const play of serverPile.plays) {
-        serverCardCount += play.cards.length
-      }
+    const serverPlays = serverPile?.plays ?? []
+    for (const play of serverPlays) {
+      serverCardCount += play.cards.length
     }
 
     const visualCardCount = centerPile.cards.length
 
-    // Only clear if server says pile is empty but we have visual cards
-    // (this handles the case where pile was cleared on server but we missed the message)
-    if (serverCardCount === 0 && visualCardCount > 0) {
-      console.log('[PresidentDirector] Pile sync: server pile empty, clearing', visualCardCount, 'stale visual cards')
-      centerPile.clear()
-      engine.refreshCards()
-      mpPilePlayCount = 0
+    // In normal flow the queue is serial, so by the time a game_state applies,
+    // the visual pile matches the server pile card-for-card (placeholder IDs
+    // aside). A count mismatch means we missed messages — a zombie socket,
+    // reconnect, or resync — so the visual pile holds a stale trick: its
+    // leftover high-zIndex cards sit ON TOP of newly played cards (the
+    // "my card went under the pile" bug), or played cards are missing entirely.
+    if (visualCardCount === serverCardCount) {
+      mpPilePlayCount = serverPlays.length
+      return
     }
-    
-    // Also sync mpPilePlayCount if it drifted significantly
-    // (allows animations to use correct play indices after resync)
-    if (Math.abs(mpPilePlayCount - serverPlayCount) > 1) {
-      console.log('[PresidentDirector] Pile sync: correcting mpPilePlayCount from', mpPilePlayCount, 'to', serverPlayCount)
-      mpPilePlayCount = serverPlayCount
+
+    console.log(`[PresidentDirector] Pile sync: rebuilding visual pile (visual=${visualCardCount}, server=${serverCardCount})`)
+    centerPile.clear()
+
+    // Lay the server's plays back out exactly where animations would have
+    // put them, so play indices/zIndexes line up for subsequent plays.
+    const cardsToPosition: Array<{ cardId: string; pos: CardPosition }> = []
+    for (let playIndex = 0; playIndex < serverPlays.length; playIndex++) {
+      const play = serverPlays[playIndex]!
+      for (let i = 0; i < play.cards.length; i++) {
+        const card = play.cards[i]!
+        centerPile.addCard({ id: card.id, suit: card.suit, rank: card.rank }, true)
+        const pos = getPileCardPosition(playIndex, i, play.cards.length)
+        pos.rotation = 180 + (pos.rotation ?? 0)
+        centerPile.setCardTargetPosition(card.id, pos)
+        cardsToPosition.push({ cardId: card.id, pos })
+      }
     }
+
+    engine.refreshCards()
+    await nextTick()
+
+    for (const { cardId, pos } of cardsToPosition) {
+      engine.getCardRef(cardId)?.setPosition(pos)
+    }
+
+    mpPilePlayCount = serverPlays.length
   }
 
   // ── Pile sweep animation ──────────────────────────────────────────────
@@ -630,10 +649,9 @@ export function usePresidentDirector(
         if (newPhase !== oldPhase) {
           await handlePhaseTransitionMP(newPhase, oldPhase)
         }
-        // Sync visual pile with server state (handles resync after server restart)
-        syncVisualPileWithServer(msg.state.currentPile)
-        // Sync pile play count from game state
-        mpPilePlayCount = msg.state.currentPile?.plays?.length ?? 0
+        // Sync visual pile with server state (handles missed messages after a
+        // zombie socket / reconnect / resync); also keeps mpPilePlayCount in step
+        await syncVisualPileWithServer(msg.state.currentPile)
         // During exchange phases, sync user hand with server state
         // (cards may be added/removed by exchange)
         const wasInExchange = oldPhase === PresidentPhase.CardExchange
