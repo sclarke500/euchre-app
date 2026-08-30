@@ -28,7 +28,7 @@ defineEmits<{
   bottom: calc(20% + 20px); // Just above user's hand area
   left: 50%;
   transform: translateX(-50%);
-  z-index: 600;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   display: flex;
   gap: 12px;
 }

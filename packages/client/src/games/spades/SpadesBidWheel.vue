@@ -109,7 +109,7 @@ watch(() => props.visible, (visible) => {
   right: calc(8px + var(--safe-right, 0px));
   top: 55%;
   transform: translateY(-50%);
-  z-index: 600;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -367,7 +367,7 @@ defineExpose({
 
 .dealer-chip-animated {
   position: absolute;
-  z-index: 550;
+  z-index: 650; // above avatars (600)
   transition:
     left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
     top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -521,7 +521,7 @@ defineExpose({
   left: var(--table-left, 20%);
   right: var(--table-right, 20%);
   border-radius: 40px;
-  z-index: 250; // above won-trick (50) + opponent backs (200), below avatars (350)
+  z-index: 250; // above won-trick (50) + opponent backs (200), below avatars (600)
   pointer-events: none;
   padding: 12px; // ring thickness == felt inset on .table-surface::after
   background:

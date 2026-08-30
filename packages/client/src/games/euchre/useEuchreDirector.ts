@@ -461,7 +461,7 @@ export function useEuchreDirector(
 
     const deckPos = deck.getCardPosition(deck.cards.length - 1)
     await Promise.all([
-      cardRef?.moveTo({ ...deckPos, flipY: 0, zIndex: 1000 }, DISCARD_MS),
+      cardRef?.moveTo({ ...deckPos, flipY: 0, zIndex: 340 }, DISCARD_MS),
       userHand.setMode('fanned', AnimationDurations.medium),
     ])
 
@@ -660,7 +660,7 @@ export function useEuchreDirector(
         if (discardedId && dealerHand && deck) {
           const deckTargetPos: CardPosition = {
             ...deck.getCardPosition(deck.cards.length),
-            zIndex: 1000,
+            zIndex: 340, // above hand/play bands, below avatars (600)
           }
           await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
           await dealerHand.setMode('fanned', AnimationDurations.fast)
@@ -789,7 +789,7 @@ export function useEuchreDirector(
               if (discardedId && dealerHand && deck) {
                 const deckTargetPos: CardPosition = {
                   ...deck.getCardPosition(deck.cards.length),
-                  zIndex: 1000,
+                  zIndex: 340, // above hand/play bands, below avatars (600)
                 }
                 await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
                 await dealerHand.setMode('fanned', AnimationDurations.fast)
@@ -1059,7 +1059,7 @@ export function useEuchreDirector(
             if (discardedId && dealerHand && deck) {
               const deckTargetPos: CardPosition = {
                 ...deck.getCardPosition(deck.cards.length),
-                zIndex: 1000,
+                zIndex: 340, // above hand/play bands, below avatars (600)
               }
               await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
               await dealerHand.setMode('fanned', AnimationDurations.fast)

@@ -182,7 +182,11 @@ export function useCardTable(): CardTableEngine {
       const startPos = cardRef.getPosition()
       const handIndex = to.cards.length - 1
       const targetPos = to.getCardPosition(handIndex)
-      cardRef.setPosition({ ...startPos, zIndex: 1000 + handIndex })
+      // Keep the deck-stack z for the start frame. The old `1000 + handIndex`
+      // override put each dealt card ABOVE the avatars (600) for the two rAF
+      // frames before moveTo snapped it to the hand band — with the deal
+      // stagger that read as cards flickering in/out around the avatars.
+      cardRef.setPosition(startPos)
       // Double rAF ensures browser paints start position before animating
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
       cardRef.moveTo(targetPos, flightMs)

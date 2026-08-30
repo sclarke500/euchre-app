@@ -661,7 +661,7 @@ export function useCardController(
       y: center.y + o.y,
       rotation: o.rotation,
       // Above the user hand band (300..~312 — playing the trick's first card at
-      // 300 made it slide UNDER the rest of the fan), below avatars (350).
+      // 300 made it slide UNDER the rest of the fan), below avatars (600).
       zIndex: 320 + cardIndex,
       scale: CardScales.playArea,
       flipY: 180,
@@ -724,7 +724,7 @@ export function useCardController(
         x: seat?.handPosition.x ?? tableCenter.value.x,
         y: seat?.handPosition.y ?? tableCenter.value.y,
         rotation: seat?.rotation ?? 0,
-        zIndex: 900,
+        zIndex: 340, // start frame only — below avatars (600)
         scale: seatIndex === userSeatIndex ? (config.userHandScale ?? CardScales.userHand) : (config.opponentHandScale ?? CardScales.opponentHand),
         flipY: 0,
       }
@@ -1069,7 +1069,7 @@ export function useCardController(
             x: avatarPos.x,
             y: avatarPos.y,
             rotation: 0,
-            zIndex: 1,  // Below avatars (350+)
+            zIndex: 1,  // Below avatars (600)
             scale: hideScale,
           })
         }
@@ -1113,7 +1113,7 @@ export function useCardController(
             x: targetPos.x,
             y: targetPos.y,
             rotation: 0,
-            zIndex: 1,  // Below avatars (350+)
+            zIndex: 1,  // Below avatars (600)
             scale: hideScale,
           }, duration))
         }
@@ -1145,7 +1145,7 @@ export function useCardController(
         x: targetPos.x,
         y: targetPos.y,
         rotation: 0,
-        zIndex: 1,  // Below avatars (350+)
+        zIndex: 1,  // Below avatars (600)
         scale: 0.05, // Shrink to essentially invisible
         flipY: 0,    // Face down
       }, durationMs)
@@ -1211,7 +1211,7 @@ export function useCardController(
           x: targetPos.x,
           y: targetPos.y,
           rotation: 0,
-          zIndex: 600,
+          zIndex: 340, // slips under the recipient's avatar (600)
           scale: CardScales.mini,
           flipY: 0, // flip to back as it leaves
         }, durationMs)
@@ -1252,7 +1252,7 @@ export function useCardController(
               x: senderPos.x,
               y: senderPos.y,
               rotation: 0,
-              zIndex: 600,
+              zIndex: 340, // emerges from under the sender's avatar (600)
               scale: CardScales.mini,
               flipY: 0,
             })

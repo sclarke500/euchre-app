@@ -246,7 +246,7 @@ defineExpose({ reset })
   left: calc(12px + var(--safe-left, 0px));
   bottom: 50%;
   transform: translateY(50%);
-  z-index: 600;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   display: flex;
   flex-direction: column;
   align-items: center;

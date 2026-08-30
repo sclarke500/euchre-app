@@ -713,7 +713,7 @@ onUnmounted(() => {
   right: calc(8px + var(--safe-right, 0px));
   transform: scale(0.85); // -15%, anchored to its top-right corner
   transform-origin: top right;
-  z-index: 500;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
   border-radius: 12px;
@@ -906,7 +906,7 @@ onUnmounted(() => {
   bottom: calc(16px + var(--safe-bottom, 0px));
   transform: scale(0.9); // -10%, anchored to its bottom-right corner
   transform-origin: bottom right;
-  z-index: 600;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -1124,6 +1124,6 @@ onUnmounted(() => {
   position: absolute;
   top: 60px;
   left: 10px; // ScaledContainer handles safe areas now
-  z-index: 500;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
 }
 </style>

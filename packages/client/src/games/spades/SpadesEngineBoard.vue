@@ -564,7 +564,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   right: calc(8px + var(--safe-right, 0px));
   transform: scale(0.85); // -15%, anchored to its top-right corner
   transform-origin: top right;
-  z-index: 500;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
   border-radius: 12px;
@@ -776,7 +776,7 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   // The canvas is full-bleed (felt under notches) — HUD must add --safe-* itself.
   bottom: calc(16px + var(--safe-bottom, 0px));
   left: calc(16px + var(--safe-left, 0px));
-  z-index: 600;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -881,6 +881,6 @@ watch(() => adapter.gameOver.value, (gameOver) => {
   position: absolute;
   top: calc(60px + var(--safe-top, 0px));
   left: calc(10px + var(--safe-left, 0px));
-  z-index: 500;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
 }
 </style>

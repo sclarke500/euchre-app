@@ -770,7 +770,7 @@ onUnmounted(() => {
   position: fixed;
   top: calc(8px + var(--safe-top, 0px));
   right: calc(8px + var(--safe-right, 0px));
-  z-index: 500;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   background: rgba(20, 20, 30, 0.85);
   border: 1px solid $surface-500;
   border-radius: 12px;
@@ -823,7 +823,7 @@ onUnmounted(() => {
   right: calc(8px + var(--safe-right, 0px));
   top: 50%;
   transform: translateY(-50%);
-  z-index: 600;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -1114,6 +1114,6 @@ onUnmounted(() => {
   position: absolute;
   top: calc(60px + var(--safe-top, 0px));
   left: calc(10px + var(--safe-left, 0px));
-  z-index: 500;
+  z-index: 700; // HUD band: above avatars (600) + dealer chip (650)
 }
 </style>
