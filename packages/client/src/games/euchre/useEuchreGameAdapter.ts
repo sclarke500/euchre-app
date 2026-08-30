@@ -82,6 +82,8 @@ export interface EuchreGameAdapter {
   setPlayAnimationCallback?: (cb: ((data: { card: Card; playerId: number }) => Promise<void>) | null) => void
   setTrickCompleteCallback?: (cb: ((winnerId: number) => Promise<void>) | null) => void
   setDealAnimationCallback?: (cb: (() => Promise<void>) | null) => void
+  /** Director signals the store that dealing visuals are done (SP: gates bidding start) */
+  dealAnimationComplete?: () => void
   setDiscardAnimationCallback?: (cb: (() => void) | null) => void
   startPlayingPhase?: () => void
 }
@@ -199,7 +201,9 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
     turnUpCard,
     biddingRound,
     dealer,
-    gameOver: computed(() => store.gameOver),
+    // UI reads the animation-gated flag so the game-over modal/confetti wait
+    // for the final play + trick sweep to finish (store.gameOver flips earlier)
+    gameOver: computed(() => store.gameOverDisplayed),
     winner: computed(() => store.winner),
     tricksTaken,
     tricksWonByPlayer,
@@ -255,6 +259,7 @@ function createSinglePlayerAdapter(): EuchreGameAdapter {
     setDealAnimationCallback: (cb) => store.setDealAnimationCallback(cb),
     setDiscardAnimationCallback: (cb) => store.setDiscardAnimationCallback(cb),
     startPlayingPhase: () => store.startPlayingPhase(),
+    dealAnimationComplete: () => store.dealAnimationComplete(),
   }
 }
 

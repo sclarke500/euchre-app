@@ -217,13 +217,19 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
     tableSkew: target.tableSkew ?? false,
   }
 
-  position.value = resolved
-
   const el = rootEl.value
   if (!el || duration <= 0) {
+    position.value = resolved
     displayFlipY.value = resolved.flipY ?? 0
     return Promise.resolve()
   }
+
+  // Fly at whichever z is higher, start or target: a card dropping to a lower
+  // band (re-sort to a lower fan index, trick sweep to a won pile) must not pop
+  // beneath cards it's still visually crossing — the lower target z applies on
+  // landing instead (see done() below). Rising cards still lift immediately.
+  const flightZ = Math.max(start.zIndex ?? 0, resolved.zIndex)
+  position.value = { ...resolved, zIndex: flightZ }
 
   scheduleFaceFlip(start.flipY ?? 0, resolved.flipY ?? 0, duration)
 
@@ -239,6 +245,12 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
       if (flight?.anim === anim) {
         flight = null
         el.style.willChange = ''
+        // Landed: settle from the held flight z to the real target z.
+        // Superseded moves skip this (flight was already reassigned/cleared),
+        // so they can't clobber the newer move's z.
+        if (position.value.zIndex !== resolved.zIndex) {
+          position.value = { ...position.value, zIndex: resolved.zIndex }
+        }
       }
       resolve()
     }

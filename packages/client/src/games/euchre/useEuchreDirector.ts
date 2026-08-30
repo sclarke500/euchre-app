@@ -380,6 +380,11 @@ export function useEuchreDirector(
 
     engine.refreshCards()
     isAnimating.value = false
+
+    // Signal the store that dealing visuals are done — SP bidding starts on
+    // this (with a store-side fallback timer), never on a timer racing the
+    // animation. No-op in MP, where the message queue paces the game.
+    game.dealAnimationComplete?.()
   }
 
   // ── Sort user hand ──────────────────────────────────────────────────────

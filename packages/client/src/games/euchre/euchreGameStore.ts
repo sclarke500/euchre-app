@@ -106,6 +106,10 @@ export const useEuchreGameStore = defineStore('game', () => {
     { teamId: 1, score: 0 },
   ])
   const gameOver = ref(false)
+  // UI-facing game-over flag: set only after the final play + trick sweep
+  // animations finish, so the game-over modal (and confetti) don't pop while
+  // the last card is still in flight. Logic paths keep using `gameOver`.
+  const gameOverDisplayed = ref(false)
   const winner = ref<number | null>(null)
   const phase = ref<GamePhase>(GamePhase.Setup)
   const currentDealer = ref(0)
@@ -279,11 +283,35 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   // ---- Deal / round lifecycle ----
 
+  // Deal animation gate — the director calls dealAnimationComplete() when the
+  // dealing visuals (flights + fan + sort) are done; only then does bidding
+  // start. A fixed timer here used to race the animation, so AI bids could
+  // announce before the user had even seen their hand.
+  let dealCompleteResolve: (() => void) | null = null
+
+  function dealAnimationComplete() {
+    if (dealCompleteResolve) {
+      const resolve = dealCompleteResolve
+      dealCompleteResolve = null
+      timer.cancel('deal-fallback')
+      resolve()
+    }
+  }
+
   function scheduleBiddingAfterDeal() {
-    timer.schedule('deal-fallback', CardTimings.roundEnd, () => {
+    const advance = () => {
       const next = startBiddingRound1(toPureState())
       applyPureState(next)
       processAITurn()
+    }
+    dealCompleteResolve = advance
+    // Fallback: if no director signals within 15s (headless/tests, or an
+    // animation path failed), advance anyway so the game can't get stuck.
+    timer.schedule('deal-fallback', 15000, () => {
+      if (dealCompleteResolve === advance) {
+        dealCompleteResolve = null
+        advance()
+      }
     })
   }
 
@@ -302,6 +330,8 @@ export const useEuchreGameStore = defineStore('game', () => {
 
   function beginGame(saved: SavedProgress | null) {
     timer.cancelAll()
+    dealCompleteResolve = null
+    gameOverDisplayed.value = false
 
     const aiNames = getRandomAINames(3)
     const playerName = localStorage.getItem('odusNickname')?.trim() || 'You'
@@ -463,6 +493,9 @@ export const useEuchreGameStore = defineStore('game', () => {
         processChatAfterStateChange()
 
         if (next.phase === GamePhase.GameOver || next.gameOver) {
+          // Final card has landed and the trick was swept (awaited above) —
+          // now the game-over modal may show.
+          gameOverDisplayed.value = true
           return
         }
 
@@ -614,6 +647,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     currentRound,
     scores,
     gameOver,
+    gameOverDisplayed,
     winner,
     phase,
     currentPlayer,
@@ -638,6 +672,7 @@ export const useEuchreGameStore = defineStore('game', () => {
     setDealAnimationCallback,
     setDiscardAnimationCallback,
     startPlayingPhase,
+    dealAnimationComplete,
 
     cancelTimers: () => timer.cancelAll(),
     pauseTimers: () => timer.pauseAll(),

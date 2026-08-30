@@ -660,7 +660,9 @@ export function useCardController(
       x: center.x + o.x,
       y: center.y + o.y,
       rotation: o.rotation,
-      zIndex: 300 + cardIndex, // Below user avatar (500)
+      // Above the user hand band (300..~312 — playing the trick's first card at
+      // 300 made it slide UNDER the rest of the fan), below avatars (350).
+      zIndex: 320 + cardIndex,
       scale: CardScales.playArea,
       flipY: 180,
       tableSkew: true, // Cards on table get 3D skew
@@ -680,7 +682,8 @@ export function useCardController(
       x: center.x + groupOffsetX + cardSpread,
       y: center.y + groupOffsetY,
       rotation: 180 + groupRot,
-      zIndex: 300 + playIndex * 4 + cardIndex, // Below user avatar (500)
+      // Same band as getTrickCardPosition: above user hand (300+), below avatars
+      zIndex: 320 + playIndex * 4 + cardIndex,
       scale: CardScales.playArea,
       flipY: 180,
       tableSkew: true, // Cards on table get 3D skew
