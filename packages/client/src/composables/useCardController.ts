@@ -660,9 +660,12 @@ export function useCardController(
       x: center.x + o.x,
       y: center.y + o.y,
       rotation: o.rotation,
-      // Above the user hand band (300..~312 — playing the trick's first card at
-      // 300 made it slide UNDER the rest of the fan), below avatars (600).
-      zIndex: 320 + cardIndex,
+      // Physical-card model: the pile band sits BELOW the user hand (300+) —
+      // your hand is closest to your eyes — and above opponent hands (200+).
+      // The user's own played card keeps its in-hand z during flight
+      // (applyZAtLanding in playCard) and takes this z only when it lands,
+      // so the next played card stacks on top.
+      zIndex: 260 + cardIndex,
       scale: CardScales.playArea,
       flipY: 180,
       tableSkew: true, // Cards on table get 3D skew
@@ -682,8 +685,9 @@ export function useCardController(
       x: center.x + groupOffsetX + cardSpread,
       y: center.y + groupOffsetY,
       rotation: 180 + groupRot,
-      // Same band as getTrickCardPosition: above user hand (300+), below avatars
-      zIndex: 320 + playIndex * 4 + cardIndex,
+      // Same band as getTrickCardPosition: below user hand (300+), above
+      // opponent hands (200+); user plays land into it via applyZAtLanding
+      zIndex: 260 + playIndex * 4 + cardIndex,
       scale: CardScales.playArea,
       flipY: 180,
       tableSkew: true, // Cards on table get 3D skew
@@ -717,7 +721,13 @@ export function useCardController(
     const hasCardInHand = !!fromHand?.cards.some((managed) => managed.card.id === card.id)
 
     if (fromHand && hasCardInHand) {
-      await engine.moveCard(card.id, fromHand, pile, target, moveDuration)
+      // User's own card: keep its in-hand z while it slides out of the fan
+      // (the hand band is the highest card band, so it stays above the table),
+      // then take the pile z on landing. Opponent cards snap to the pile z at
+      // flight start — an upward move out of their lower band.
+      const fromUserHand = seatIndex === userSeatIndex
+      await engine.moveCard(card.id, fromHand, pile, target, moveDuration,
+        fromUserHand ? { applyZAtLanding: true } : undefined)
     } else {
       const seat = tableLayout.value?.seats[seatIndex]
       let startPos: CardPosition = {

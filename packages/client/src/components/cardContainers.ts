@@ -11,7 +11,7 @@ export interface CardPosition {
 }
 
 export interface BoardCardRef {
-  moveTo: (target: CardPosition, duration?: number) => Promise<void>
+  moveTo: (target: CardPosition, duration?: number, opts?: { applyZAtLanding?: boolean }) => Promise<void>
   setPosition: (pos: CardPosition) => void
   getPosition: () => CardPosition
   setArcFan: (enabled: boolean) => void

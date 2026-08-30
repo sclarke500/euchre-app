@@ -33,7 +33,7 @@ export interface CardTableEngine {
   // Card operations
   addCardToDeck: (card: EngineCard, faceUp?: boolean) => ManagedCard
   dealCard: (from: Deck, to: Hand, flightMs?: number) => Promise<ManagedCard | null>
-  moveCard: (cardId: string, from: CardContainer, to: CardContainer, targetPos?: CardPosition, duration?: number) => Promise<void>
+  moveCard: (cardId: string, from: CardContainer, to: CardContainer, targetPos?: CardPosition, duration?: number, opts?: { applyZAtLanding?: boolean }) => Promise<void>
   flipCard: (cardId: string, faceUp: boolean, duration?: number) => Promise<void>
 
   // Bulk operations
@@ -200,7 +200,8 @@ export function useCardTable(): CardTableEngine {
     from: CardContainer,
     to: CardContainer,
     targetPos?: CardPosition,
-    duration: number = CardTimings.move
+    duration: number = CardTimings.move,
+    opts?: { applyZAtLanding?: boolean }
   ): Promise<void> {
     console.log(`[CardTable] moveCard: ${cardId} from ${from.id} to ${to.id}`)
     const managed = from.removeCard(cardId)
@@ -223,7 +224,7 @@ export function useCardTable(): CardTableEngine {
       to.setCardRef(cardId, cardRef)
       const target = targetPos ?? to.getCardPosition(to.cards.length - 1)
       console.log(`[CardTable] moveCard: animating ${cardId} to`, target)
-      await cardRef.moveTo(target, duration)
+      await cardRef.moveTo(target, duration, opts)
     } else {
       console.warn(`[CardTable] moveCard: no cardRef for ${cardId}`)
     }

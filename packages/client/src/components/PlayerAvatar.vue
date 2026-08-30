@@ -206,7 +206,7 @@ const bubblePosition = computed(() => {
   align-items: center;
   gap: 3px;
   // Avatars own the 600 band: above EVERY card band (won-trick 50+, deck 100+,
-  // opponent hands 200+, user hand 300+, play area 320+, president pile 500+,
+  // opponent hands 200+, play area 260+, user hand 300+, president pile 500+,
   // transient flights ≤560), below the dealer chip (650). Cards must never be
   // given a z ≥ 600 — they'd flash over the avatars.
   z-index: 600;

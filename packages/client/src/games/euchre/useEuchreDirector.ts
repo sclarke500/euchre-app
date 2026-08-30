@@ -461,7 +461,9 @@ export function useEuchreDirector(
 
     const deckPos = deck.getCardPosition(deck.cards.length - 1)
     await Promise.all([
-      cardRef?.moveTo({ ...deckPos, flipY: 0, zIndex: 340 }, DISCARD_MS),
+      // Keeps its in-hand z while leaving the fan, lands on top of the kitty
+      // (deck stack sits at 240-250)
+      cardRef?.moveTo({ ...deckPos, flipY: 0, zIndex: 255 }, DISCARD_MS, { applyZAtLanding: true }),
       userHand.setMode('fanned', AnimationDurations.medium),
     ])
 
@@ -660,7 +662,7 @@ export function useEuchreDirector(
         if (discardedId && dealerHand && deck) {
           const deckTargetPos: CardPosition = {
             ...deck.getCardPosition(deck.cards.length),
-            zIndex: 340, // above hand/play bands, below avatars (600)
+            zIndex: 255, // lands on top of the kitty stack (240-250)
           }
           await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
           await dealerHand.setMode('fanned', AnimationDurations.fast)
@@ -789,7 +791,7 @@ export function useEuchreDirector(
               if (discardedId && dealerHand && deck) {
                 const deckTargetPos: CardPosition = {
                   ...deck.getCardPosition(deck.cards.length),
-                  zIndex: 340, // above hand/play bands, below avatars (600)
+                  zIndex: 255, // lands on top of the kitty stack (240-250)
                 }
                 await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
                 await dealerHand.setMode('fanned', AnimationDurations.fast)
@@ -1059,7 +1061,7 @@ export function useEuchreDirector(
             if (discardedId && dealerHand && deck) {
               const deckTargetPos: CardPosition = {
                 ...deck.getCardPosition(deck.cards.length),
-                zIndex: 340, // above hand/play bands, below avatars (600)
+                zIndex: 255, // lands on top of the kitty stack (240-250)
               }
               await engine.moveCard(discardedId, dealerHand, deck, deckTargetPos, DISCARD_MS)
               await dealerHand.setMode('fanned', AnimationDurations.fast)

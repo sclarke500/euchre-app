@@ -202,7 +202,11 @@ function scheduleFaceFlip(startFlip: number, targetFlip: number, duration: numbe
   }, crossing * duration)
 }
 
-function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
+function moveTo(
+  target: CardPosition,
+  duration: number = 350,
+  opts?: { applyZAtLanding?: boolean }
+): Promise<void> {
   const start = currentVisualPosition()
   cancelFlight()
 
@@ -217,15 +221,22 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
     tableSkew: target.tableSkew ?? false,
   }
 
-  // z snaps to the target at flight start (matching the rest of position.value).
-  // Do NOT "hold the higher z" during flight: a trick swept to a won pile must
-  // drop below the user's hand band immediately or it slides over the fan and
-  // pops under on landing. Cards that need to fly above things get that from
-  // their target band instead (play area 320+ > hand 300+).
-  position.value = resolved
+  // By default z snaps to the target at flight start (matching the rest of
+  // position.value) — a trick swept to a won pile must drop below the user's
+  // hand band immediately, and an opponent's played card should lift over
+  // their fan right away.
+  //
+  // applyZAtLanding is the physical-card exception, used for cards leaving the
+  // USER'S hand: the card keeps its in-hand z during flight (sliding out of
+  // the fan naturally, above everything on the table since the hand band is
+  // the highest card band) and only takes the target z when it lands on the
+  // pile — so the next played card stacks on top of it.
+  const flightZ = opts?.applyZAtLanding ? (start.zIndex ?? resolved.zIndex) : resolved.zIndex
+  position.value = { ...resolved, zIndex: flightZ }
 
   const el = rootEl.value
   if (!el || duration <= 0) {
+    position.value = resolved
     displayFlipY.value = resolved.flipY ?? 0
     return Promise.resolve()
   }
@@ -244,6 +255,12 @@ function moveTo(target: CardPosition, duration: number = 350): Promise<void> {
       if (flight?.anim === anim) {
         flight = null
         el.style.willChange = ''
+        // Landed: apply the deferred target z (applyZAtLanding). A superseded
+        // move skips this — flight was already cleared/reassigned — so it
+        // can't clobber the newer move's z.
+        if (position.value.zIndex !== resolved.zIndex) {
+          position.value = { ...position.value, zIndex: resolved.zIndex }
+        }
       }
       resolve()
     }
